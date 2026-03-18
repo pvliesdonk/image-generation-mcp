@@ -129,7 +129,10 @@ def resize_image(image_data: bytes, width: int, height: int) -> bytes:
         Resized image bytes in the same format as the source.
     """
     img = Image.open(io.BytesIO(image_data))
-    src_format = img.format or "PNG"
+    src_format = img.format
+    if not src_format:
+        msg = "Could not determine source image format."
+        raise ValueError(msg)
     img = img.resize((width, height), Image.Resampling.LANCZOS)
 
     buf = io.BytesIO()
@@ -152,10 +155,13 @@ def crop_to_dimensions(image_data: bytes, width: int, height: int) -> bytes:
         Cropped image bytes in the same format as the source.
     """
     img = Image.open(io.BytesIO(image_data))
-    src_format = img.format or "PNG"
+    src_format = img.format
+    if not src_format:
+        msg = "Could not determine source image format."
+        raise ValueError(msg)
     src_w, src_h = img.size
 
-    # Scale down if source is smaller than target in either dimension
+    # Scale up if source is smaller than target in either dimension
     scale = max(width / src_w, height / src_h)
     if scale > 1:
         img = img.resize(
