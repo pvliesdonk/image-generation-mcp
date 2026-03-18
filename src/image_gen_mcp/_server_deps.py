@@ -54,6 +54,15 @@ def make_service_lifespan(config: ServerConfig) -> Any:
         # Always register placeholder (zero-cost, no API key needed)
         service.register_provider("placeholder", PlaceholderImageProvider())
 
+        # Register OpenAI if API key is configured
+        if config.openai_api_key:
+            from image_gen_mcp.providers.openai import OpenAIImageProvider
+
+            service.register_provider(
+                "openai",
+                OpenAIImageProvider(api_key=config.openai_api_key),
+            )
+
         try:
             yield {"service": service, "config": config}
         finally:
