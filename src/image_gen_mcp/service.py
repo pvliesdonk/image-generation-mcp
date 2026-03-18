@@ -340,7 +340,6 @@ class ImageService:
         if count:
             logger.info("Loaded %d images from scratch directory", count)
 
-    # ------------------------------------------------------------------
 
 
 _MIME_TO_EXT: dict[str, str] = {
