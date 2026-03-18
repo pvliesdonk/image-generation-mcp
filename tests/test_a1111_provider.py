@@ -119,8 +119,8 @@ class TestA1111Provider:
 
         request = httpx_mock.get_request()
         payload = json.loads(request.content)
-        assert payload["width"] == 1024
-        assert payload["height"] == 768
+        assert payload["width"] == 912
+        assert payload["height"] == 512
 
     async def test_generate_negative_prompt(self, httpx_mock) -> None:
         b64_image = base64.b64encode(b"data").decode()

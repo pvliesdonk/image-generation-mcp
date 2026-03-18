@@ -36,8 +36,7 @@ class _A1111Preset:
 
     sizes: dict[str, tuple[int, int]] = field(repr=False)
     steps: int = 30
-    sampler: str = "DPM++ 2M"
-    scheduler: str = "karras"
+    sampler: str = "DPM++ 2M Karras"
     cfg_scale: float = 7.0
     quality_tier: str = "medium"
 
@@ -45,14 +44,13 @@ class _A1111Preset:
 _SD15_PRESET = _A1111Preset(
     sizes={
         "1:1": (768, 768),
-        "16:9": (1024, 768),
-        "9:16": (768, 1024),
+        "16:9": (912, 512),
+        "9:16": (512, 912),
         "3:2": (768, 512),
         "2:3": (512, 768),
     },
     steps=30,
-    sampler="DPM++ 2M",
-    scheduler="karras",
+    sampler="DPM++ 2M Karras",
     cfg_scale=7.0,
     quality_tier="medium",
 )
@@ -68,8 +66,7 @@ _SDXL_SIZES: dict[str, tuple[int, int]] = {
 _SDXL_PRESET = _A1111Preset(
     sizes=_SDXL_SIZES,
     steps=35,
-    sampler="DPM++ 2M",
-    scheduler="karras",
+    sampler="DPM++ 2M Karras",
     cfg_scale=7.5,
     quality_tier="high",
 )
@@ -77,8 +74,7 @@ _SDXL_PRESET = _A1111Preset(
 _SDXL_LIGHTNING_PRESET = _A1111Preset(
     sizes=_SDXL_SIZES,
     steps=6,
-    sampler="DPM++ SDE",
-    scheduler="karras",
+    sampler="DPM++ SDE Karras",
     cfg_scale=2.0,
     quality_tier="high",
 )
@@ -164,7 +160,6 @@ class A1111ImageProvider:
             "steps": self._preset.steps,
             "cfg_scale": self._preset.cfg_scale,
             "sampler_name": self._preset.sampler,
-            "scheduler": self._preset.scheduler,
         }
 
         if self._model:
