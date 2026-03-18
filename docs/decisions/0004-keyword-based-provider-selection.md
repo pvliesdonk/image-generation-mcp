@@ -52,7 +52,7 @@ The selection rules are ordered lists of `(keywords, preferred_providers)`:
 | realistic, photo, photography, headshot, portrait photo, product shot | a1111 → openai |
 | text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, sketch | a1111 → openai |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | a1111 → openai |
 | anime, manga, kawaii, chibi | a1111 → openai |
 
 Default fallback (no keyword match): openai → a1111 → placeholder.
