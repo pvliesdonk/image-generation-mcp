@@ -61,7 +61,9 @@ class TestOpenAIProvider:
 
     def test_dalle3_rejects_webp_format(self) -> None:
         with pytest.raises(ImageProviderError, match="dall-e-3 does not support"):
-            OpenAIImageProvider(api_key="sk-test", model="dall-e-3", output_format="webp")
+            OpenAIImageProvider(
+                api_key="sk-test", model="dall-e-3", output_format="webp"
+            )
 
     async def test_unsupported_aspect_ratio_raises(self) -> None:
         provider = OpenAIImageProvider(api_key="sk-test")
@@ -88,6 +90,8 @@ class TestOpenAIProvider:
         assert result.image_data == b"fake-png-data"
         assert result.content_type == "image/png"
         assert result.provider_metadata["model"] == "gpt-image-1"
+        assert result.provider_metadata["quality"] == "standard"
+        assert result.provider_metadata["api_quality"] == "high"
         assert result.provider_metadata["revised_prompt"] == "enhanced prompt"
 
     async def test_negative_prompt_appended(self) -> None:
@@ -107,7 +111,7 @@ class TestOpenAIProvider:
 
         await provider.generate("a cat", negative_prompt="dogs")
 
-        call_kwargs = provider._client.images.generate.call_args[1]
+        call_kwargs = provider._client.images.generate.call_args.kwargs
         assert "Avoid: dogs" in call_kwargs["prompt"]
 
     async def test_empty_response_raises(self) -> None:
@@ -139,7 +143,7 @@ class TestOpenAIProvider:
 
         await provider.generate("test", quality="standard")
 
-        call_kwargs = provider._client.images.generate.call_args[1]
+        call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["quality"] == "high"
 
 

@@ -67,7 +67,6 @@ class OpenAIImageProvider:
         output_format: str = "png",
     ) -> None:
         self._model = model
-        self._api_key = api_key
         self._output_format = output_format
 
         if output_format not in _FORMAT_TO_CONTENT_TYPE:
@@ -89,9 +88,9 @@ class OpenAIImageProvider:
 
         self._content_type = _FORMAT_TO_CONTENT_TYPE[output_format]
         self._sizes = _GPT_IMAGE_SIZES if self._is_gpt_image else _DALLE3_SIZES
-        self._client: AsyncOpenAI = self._create_client()
+        self._client: AsyncOpenAI = self._create_client(api_key)
 
-    def _create_client(self) -> AsyncOpenAI:
+    def _create_client(self, api_key: str) -> AsyncOpenAI:
         """Create the AsyncOpenAI client (deferred import)."""
         try:
             from openai import AsyncOpenAI as _AsyncOpenAI
@@ -99,7 +98,7 @@ class OpenAIImageProvider:
             raise ImageProviderError(
                 "openai", "openai package not installed. Run: uv add openai"
             ) from e
-        return _AsyncOpenAI(api_key=self._api_key)
+        return _AsyncOpenAI(api_key=api_key)
 
     async def generate(
         self,
@@ -129,8 +128,9 @@ class OpenAIImageProvider:
         if negative_prompt:
             effective_prompt = f"{prompt}\n\nAvoid: {negative_prompt}"
 
+        api_quality = quality
         if self._is_gpt_image:
-            quality = {"standard": "high", "hd": "high"}.get(quality, quality)
+            api_quality = {"standard": "high", "hd": "high"}.get(quality, quality)
 
         size = self._sizes.get(aspect_ratio)
         if size is None:
@@ -144,7 +144,7 @@ class OpenAIImageProvider:
             "OpenAI image generation: model=%s size=%s quality=%s",
             self._model,
             size,
-            quality,
+            api_quality,
         )
 
         try:
@@ -153,7 +153,7 @@ class OpenAIImageProvider:
                 "prompt": effective_prompt,
                 "n": 1,
                 "size": size,
-                "quality": quality,
+                "quality": api_quality,
             }
             if self._is_gpt_image:
                 api_kwargs["output_format"] = self._output_format
@@ -177,6 +177,7 @@ class OpenAIImageProvider:
             "model": self._model,
             "size": size,
             "quality": quality,
+            "api_quality": api_quality,
         }
         revised_prompt = getattr(image_item, "revised_prompt", None)
         if revised_prompt:
@@ -208,9 +209,7 @@ class OpenAIImageProvider:
             status = error.status_code
             body = getattr(error, "body", None) or {}
             code = (
-                body.get("error", {}).get("code", "")
-                if isinstance(body, dict)
-                else ""
+                body.get("error", {}).get("code", "") if isinstance(body, dict) else ""
             )
             if status == 400 and (
                 code == "content_policy_violation"
