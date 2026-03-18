@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -67,47 +68,54 @@ def _parse_bool(value: str) -> bool:
     return value.strip().lower() in ("true", "1", "yes")
 
 
+_DEFAULT_SCRATCH_DIR = Path.home() / ".image-gen-mcp" / "images"
+
+
 @dataclass
 class ServerConfig:
     """Server configuration loaded from environment variables.
 
-    Add your domain-specific fields here.  Use :func:`load_config` to
-    populate them from environment variables at startup.
-
     Attributes:
-        read_only: When ``True`` (default), write-tagged tools are hidden via
-            ``mcp.disable(tags={"write"})``.
-
-    Example::
-
-        # TODO: replace with your domain fields, e.g.:
-        # data_dir: Path = Path("/data")
-        # max_results: int = 50
+        read_only: When ``True`` (default), write-tagged tools are hidden.
+        scratch_dir: Directory for saving generated images.
+        openai_api_key: OpenAI API key for gpt-image-1 / dall-e-3.
+        a1111_host: Automatic1111 WebUI base URL.
+        default_provider: Default provider for generation (``"auto"``
+            selects based on prompt analysis).
     """
 
     read_only: bool = True
+    scratch_dir: Path = field(default_factory=lambda: _DEFAULT_SCRATCH_DIR)
+    openai_api_key: str | None = None
+    a1111_host: str | None = None
+    default_provider: str = "auto"
 
 
 def load_config() -> ServerConfig:
     """Load configuration from environment variables.
 
-    Currently reads:
+    Reads:
 
     - ``IMAGE_GEN_MCP_READ_ONLY``: disable write tools; default ``true``.
-
-    TODO: Add your domain-specific env vars here and populate the
-    corresponding :class:`ServerConfig` fields.
+    - ``IMAGE_GEN_MCP_SCRATCH_DIR``: image save directory.
+    - ``IMAGE_GEN_MCP_OPENAI_API_KEY``: OpenAI API key.
+    - ``IMAGE_GEN_MCP_A1111_HOST``: A1111 WebUI URL.
+    - ``IMAGE_GEN_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
 
     Returns:
         A populated :class:`ServerConfig` instance.
-
-    Example::
-
-        config = load_config()
-        # config.read_only == True by default
     """
     raw_read_only = _env("READ_ONLY")
     read_only = _parse_bool(raw_read_only) if raw_read_only is not None else True
     logger.debug("load_config: read_only=%s (raw=%r)", read_only, raw_read_only)
 
-    return ServerConfig(read_only=read_only)
+    raw_scratch = _env("SCRATCH_DIR")
+    scratch_dir = Path(raw_scratch) if raw_scratch else _DEFAULT_SCRATCH_DIR
+
+    return ServerConfig(
+        read_only=read_only,
+        scratch_dir=scratch_dir,
+        openai_api_key=_env("OPENAI_API_KEY"),
+        a1111_host=_env("A1111_HOST"),
+        default_provider=_env("DEFAULT_PROVIDER") or "auto",
+    )
