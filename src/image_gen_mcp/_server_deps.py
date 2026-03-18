@@ -63,6 +63,15 @@ def make_service_lifespan(config: ServerConfig) -> Any:
                 OpenAIImageProvider(api_key=config.openai_api_key),
             )
 
+        # Register A1111 if host is configured
+        if config.a1111_host:
+            from image_gen_mcp.providers.a1111 import A1111ImageProvider
+
+            service.register_provider(
+                "a1111",
+                A1111ImageProvider(host=config.a1111_host),
+            )
+
         try:
             yield {"service": service, "config": config}
         finally:
