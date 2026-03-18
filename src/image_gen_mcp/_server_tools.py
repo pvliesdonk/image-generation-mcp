@@ -6,6 +6,7 @@ Exposes ``generate_image`` and ``list_providers`` tools to MCP clients.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 
@@ -57,18 +58,20 @@ def register_tools(mcp: FastMCP) -> None:
             quality=quality,
         )
 
-        # Save to scratch directory
-        file_path = service.save_to_scratch(result, provider_name)
+        # Save to scratch directory (blocking I/O → offload to thread)
+        file_path = await asyncio.to_thread(
+            service.save_to_scratch, result, provider_name
+        )
 
         # Build base64 for MCP ImageContent
         b64_data = service.get_image_base64(result)
 
         # Build metadata
         metadata = {
+            **result.provider_metadata,
             "provider": provider_name,
             "file_path": str(file_path),
             "size_bytes": result.size_bytes,
-            **result.provider_metadata,
         }
 
         return ToolResult(

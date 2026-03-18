@@ -90,6 +90,8 @@ class TestAuthModeSelection:
             server = create_server()
 
         assert isinstance(server.auth, MultiAuth)
+        # OIDCProxy is an OAuthProvider — must be server=, not in verifiers=,
+        # so that MultiAuth.get_routes() delegates OAuth endpoints to it.
         assert server.auth.server is mock_oidc
         verifiers = server.auth.verifiers
         assert len(verifiers) == 1

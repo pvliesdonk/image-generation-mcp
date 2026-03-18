@@ -11,6 +11,10 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 
 from image_gen_mcp._server_deps import get_service
+from image_gen_mcp.providers.types import (
+    SUPPORTED_ASPECT_RATIOS,
+    SUPPORTED_QUALITY_LEVELS,
+)
 from image_gen_mcp.service import ImageService
 
 
@@ -34,14 +38,8 @@ def register_resources(mcp: FastMCP) -> None:
         return json.dumps(
             {
                 "providers": providers,
-                "supported_aspect_ratios": [
-                    "1:1",
-                    "16:9",
-                    "9:16",
-                    "3:2",
-                    "2:3",
-                ],
-                "supported_quality_levels": ["standard", "hd"],
+                "supported_aspect_ratios": SUPPORTED_ASPECT_RATIOS,
+                "supported_quality_levels": SUPPORTED_QUALITY_LEVELS,
             },
             indent=2,
         )
