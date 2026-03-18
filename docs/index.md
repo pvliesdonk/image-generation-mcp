@@ -1,4 +1,4 @@
-# FastMCP Server Template
+# Image Gen MCP Server
 
 A production-ready FastMCP server scaffold. Replace this page with your service's documentation.
 
@@ -13,7 +13,7 @@ A production-ready FastMCP server scaffold. Replace this page with your service'
 
 ## Quick start
 
-See [TEMPLATE.md](https://github.com/pvliesdonk/fastmcp-server-template/blob/main/TEMPLATE.md)
+See [TEMPLATE.md](https://github.com/pvliesdonk/image-gen-mcp/blob/main/TEMPLATE.md)
 for the step-by-step guide to customising this template for your own MCP server.
 
 ## Authentication

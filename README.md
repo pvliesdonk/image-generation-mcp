@@ -1,4 +1,4 @@
-# fastmcp-server-template
+# image-gen-mcp
 
 > **This is a template repository.** Click "Use this template" to create your own MCP server, then follow [TEMPLATE.md](TEMPLATE.md) to customise it.
 
@@ -15,31 +15,31 @@ A production-ready [FastMCP](https://gofastmcp.com) server scaffold with batteri
 
 ```bash
 # Install and run (stdio transport)
-pip install fastmcp-server-template[mcp]
-mcp-server serve
+pip install image-gen-mcp[mcp]
+image-gen-mcp serve
 
 # Or with HTTP transport
-mcp-server serve --transport http --port 8000
+image-gen-mcp serve --transport http --port 8000
 ```
 
 ## Configuration
 
-All configuration is via environment variables prefixed with `MCP_SERVER_`:
+All configuration is via environment variables prefixed with `IMAGE_GEN_MCP_`:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MCP_SERVER_READ_ONLY` | `true` | Disable write tools |
-| `MCP_SERVER_BEARER_TOKEN` | — | Enable bearer token auth |
-| `MCP_SERVER_LOG_LEVEL` | `INFO` | Log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
-| `MCP_SERVER_SERVER_NAME` | `mcp-server` | Server name shown to clients |
-| `MCP_SERVER_INSTRUCTIONS` | (dynamic) | System instructions for LLM context |
+| `IMAGE_GEN_MCP_READ_ONLY` | `true` | Disable write tools |
+| `IMAGE_GEN_MCP_BEARER_TOKEN` | — | Enable bearer token auth |
+| `IMAGE_GEN_MCP_LOG_LEVEL` | `INFO` | Log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `IMAGE_GEN_MCP_SERVER_NAME` | `image-gen-mcp` | Server name shown to clients |
+| `IMAGE_GEN_MCP_INSTRUCTIONS` | (dynamic) | System instructions for LLM context |
 
 ## Authentication
 
 The server supports four auth modes:
 
 1. **Multi-auth** — both bearer token and OIDC configured; either credential accepted
-2. **Bearer token** — set `MCP_SERVER_BEARER_TOKEN` to a secret string
+2. **Bearer token** — set `IMAGE_GEN_MCP_BEARER_TOKEN` to a secret string
 3. **OIDC** — full OAuth 2.1 flow via `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, and `BASE_URL`
 4. **No auth** — server accepts all connections (default)
 

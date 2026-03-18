@@ -8,11 +8,11 @@
 #   ./scripts/rename.sh my-weather-service my_weather_service WEATHER_MCP "Weather MCP Server"
 #
 # What it replaces (case-sensitive, across all text files):
-#   fastmcp-server-template  → <repo-name>
-#   fastmcp_server_template  → <python_module>
-#   MCP_SERVER               → <ENV_PREFIX>
-#   FastMCP Server Template  → <Human Name>
-#   mcp-server               → <repo-name>  (CLI command)
+#   image-gen-mcp  → <repo-name>
+#   image_gen_mcp  → <python_module>
+#   IMAGE_GEN_MCP               → <ENV_PREFIX>
+#   Image Gen MCP Server  → <Human Name>
+#   image-gen-mcp               → <repo-name>  (CLI command)
 #
 # Safe to run multiple times (idempotent after first run).
 
@@ -31,11 +31,11 @@ HUMAN_NAME="$4"
 CLI_CMD="$REPO_NAME"
 
 echo "Renaming template:"
-echo "  repo name    : fastmcp-server-template → $REPO_NAME"
-echo "  python module: fastmcp_server_template → $PYTHON_MODULE"
-echo "  env prefix   : MCP_SERVER → $ENV_PREFIX"
-echo "  human name   : FastMCP Server Template → $HUMAN_NAME"
-echo "  CLI command  : mcp-server → $CLI_CMD"
+echo "  repo name    : image-gen-mcp → $REPO_NAME"
+echo "  python module: image_gen_mcp → $PYTHON_MODULE"
+echo "  env prefix   : IMAGE_GEN_MCP → $ENV_PREFIX"
+echo "  human name   : Image Gen MCP Server → $HUMAN_NAME"
+echo "  CLI command  : image-gen-mcp → $CLI_CMD"
 echo
 
 # Text files to update (exclude binary, .git, __pycache__, site, uv.lock)
@@ -44,19 +44,19 @@ FILES=$(git ls-files | grep -v -E '\.(png|jpg|gif|ico|woff|woff2|eot|ttf|svg)$' 
 for f in $FILES; do
     if [ -f "$f" ]; then
         sed -i \
-            -e "s|fastmcp-server-template|$REPO_NAME|g" \
-            -e "s|fastmcp_server_template|$PYTHON_MODULE|g" \
-            -e "s|MCP_SERVER|$ENV_PREFIX|g" \
-            -e "s|FastMCP Server Template|$HUMAN_NAME|g" \
-            -e "s|mcp-server|$CLI_CMD|g" \
+            -e "s|image-gen-mcp|$REPO_NAME|g" \
+            -e "s|image_gen_mcp|$PYTHON_MODULE|g" \
+            -e "s|IMAGE_GEN_MCP|$ENV_PREFIX|g" \
+            -e "s|Image Gen MCP Server|$HUMAN_NAME|g" \
+            -e "s|image-gen-mcp|$CLI_CMD|g" \
             "$f"
     fi
 done
 
 # Rename the source directory
-if [ -d "src/fastmcp_server_template" ] && [ ! -d "src/$PYTHON_MODULE" ]; then
-    mv "src/fastmcp_server_template" "src/$PYTHON_MODULE"
-    echo "Renamed src/fastmcp_server_template → src/$PYTHON_MODULE"
+if [ -d "src/image_gen_mcp" ] && [ ! -d "src/$PYTHON_MODULE" ]; then
+    mv "src/image_gen_mcp" "src/$PYTHON_MODULE"
+    echo "Renamed src/image_gen_mcp → src/$PYTHON_MODULE"
 fi
 
 echo

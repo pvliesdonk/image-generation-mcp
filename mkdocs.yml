@@ -1,8 +1,8 @@
-site_name: FastMCP Server Template
-site_url: https://pvliesdonk.github.io/fastmcp-server-template/
+site_name: Image Gen MCP Server
+site_url: https://pvliesdonk.github.io/image-gen-mcp/
 site_description: Production-ready FastMCP server scaffold
-repo_url: https://github.com/pvliesdonk/fastmcp-server-template
-repo_name: pvliesdonk/fastmcp-server-template
+repo_url: https://github.com/pvliesdonk/image-gen-mcp
+repo_name: pvliesdonk/image-gen-mcp
 edit_uri: edit/main/docs/
 
 theme:

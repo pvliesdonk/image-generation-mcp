@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.pvliesdonk/fastmcp-server-template",
-  "title": "FastMCP Server Template",
+  "name": "io.github.pvliesdonk/image-gen-mcp",
+  "title": "Image Gen MCP Server",
   "description": "FastMCP server template — replace this with your description",
   "version": "0.1.0",
   "repository": {
-    "url": "https://github.com/pvliesdonk/fastmcp-server-template",
+    "url": "https://github.com/pvliesdonk/image-gen-mcp",
     "source": "github"
   },
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "fastmcp-server-template",
+      "identifier": "image-gen-mcp",
       "version": "0.1.0",
       "transport": {
         "type": "stdio"
@@ -19,7 +19,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/pvliesdonk/fastmcp-server-template:0.1.0",
+      "identifier": "ghcr.io/pvliesdonk/image-gen-mcp:0.1.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{--port}/mcp"
