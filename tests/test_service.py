@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
 from image_gen_mcp.providers.types import ImageProviderError, ImageResult
@@ -10,12 +15,12 @@ from image_gen_mcp.service import ImageService
 
 
 @pytest.fixture
-def scratch_dir(tmp_path):
+def scratch_dir(tmp_path: Path) -> Path:
     return tmp_path / "scratch"
 
 
 @pytest.fixture
-def service(scratch_dir):
+def service(scratch_dir: Path) -> ImageService:
     svc = ImageService(scratch_dir=scratch_dir)
     svc.register_provider("placeholder", PlaceholderImageProvider())
     return svc
@@ -29,7 +34,7 @@ class TestProviderRegistry:
         assert "placeholder" in providers
         assert providers["placeholder"]["available"] is True
 
-    def test_empty_registry(self, scratch_dir) -> None:
+    def test_empty_registry(self, scratch_dir: Path) -> None:
         svc = ImageService(scratch_dir=scratch_dir)
         assert svc.list_providers() == {}
 
@@ -48,7 +53,7 @@ class TestGenerate:
     async def test_generate_auto_with_only_placeholder(
         self, service: ImageService
     ) -> None:
-        name, result = await service.generate("a cat", provider="auto")
+        name, result = await service.generate("a cat")
         assert name == "placeholder"
         assert result.image_data
 
@@ -58,7 +63,7 @@ class TestGenerate:
         with pytest.raises(ImageProviderError, match="not available"):
             await service.generate("test", provider="nonexistent")
 
-    async def test_generate_no_providers_raises(self, scratch_dir) -> None:
+    async def test_generate_no_providers_raises(self, scratch_dir: Path) -> None:
         svc = ImageService(scratch_dir=scratch_dir)
         with pytest.raises(ImageProviderError, match="No providers available"):
             await svc.generate("test", provider="auto")
@@ -85,7 +90,7 @@ class TestScratchSave:
         assert path.read_bytes() == result.image_data
 
     async def test_save_creates_scratch_dir(
-        self, scratch_dir, service: ImageService
+        self, scratch_dir: Path, service: ImageService
     ) -> None:
         assert not scratch_dir.exists()
         _, result = await service.generate("test", provider="placeholder")

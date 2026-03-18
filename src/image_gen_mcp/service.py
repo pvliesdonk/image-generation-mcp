@@ -60,10 +60,10 @@ class ImageService:
             Dict of provider name → ``{available: True, description: str}``.
         """
         result: dict[str, dict[str, Any]] = {}
-        for name in self._providers:
+        for name, prov in self._providers.items():
             result[name] = {
                 "available": True,
-                "description": f"{name} image provider",
+                "description": f"{type(prov).__name__} ({name})",
             }
         return result
 
@@ -100,7 +100,7 @@ class ImageService:
         self,
         prompt: str,
         *,
-        provider: str = "auto",
+        provider: str | None = None,
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
@@ -109,7 +109,7 @@ class ImageService:
 
         Args:
             prompt: Text prompt for image generation.
-            provider: Provider name or ``"auto"`` for automatic selection.
+            provider: Provider name, or ``None`` to use the configured default.
             negative_prompt: Things to avoid in the image.
             aspect_ratio: Desired aspect ratio.
             quality: Quality level.
@@ -120,7 +120,9 @@ class ImageService:
         Raises:
             ImageProviderError: If generation fails.
         """
-        resolved_name, resolved_provider = self._resolve_provider(provider)
+        resolved_name, resolved_provider = self._resolve_provider(
+            provider or self._default_provider
+        )
 
         logger.info(
             "Generating image with provider=%s, aspect_ratio=%s",
@@ -151,7 +153,7 @@ class ImageService:
 
         # Build filename: {timestamp}-{provider}-{hash}.png
         ts = int(time.time())
-        content_hash = hashlib.md5(result.image_data).hexdigest()[:8]
+        content_hash = hashlib.sha256(result.image_data).hexdigest()[:8]
         ext = _mime_to_ext(result.content_type)
         filename = f"{ts}-{provider_name}-{content_hash}{ext}"
 

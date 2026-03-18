@@ -101,7 +101,7 @@ class PlaceholderImageProvider:
             aspect_ratio, _ASPECT_RATIO_TO_SIZE["1:1"]
         )
 
-        idx = int(hashlib.md5(prompt.encode()).hexdigest(), 16) % len(_PALETTE)
+        idx = int(hashlib.sha256(prompt.encode()).hexdigest(), 16) % len(_PALETTE)
         r, g, b = _PALETTE[idx]
 
         image_data = _make_png(width, height, r, g, b)
