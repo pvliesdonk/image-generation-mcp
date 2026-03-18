@@ -43,8 +43,7 @@ def _cmd_serve(args: argparse.Namespace) -> None:
         from image_gen_mcp.mcp_server import create_server
     except ImportError:
         logger.error(
-            "FastMCP is not installed. Install with: "
-            "pip install image-gen-mcp[mcp]"
+            "FastMCP is not installed. Install with: pip install image-gen-mcp[mcp]"
         )
         sys.exit(1)
 

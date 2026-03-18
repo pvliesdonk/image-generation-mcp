@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
 ]
-dependencies = []
+dependencies = ["httpx>=0.27"]
 
 [project.optional-dependencies]
 mcp = ["fastmcp>=3.0,<4"]
@@ -70,6 +70,7 @@ ignore = ["E501"]
 "src/image_gen_mcp/_server_tools.py" = ["B008", "TCH001", "TCH002"]
 "src/image_gen_mcp/_server_resources.py" = ["B008", "TCH001", "TCH002"]
 "src/image_gen_mcp/_server_prompts.py" = ["B008", "TCH002"]
+"src/image_gen_mcp/providers/*.py" = ["TCH002"]
 # pytest fixtures need runtime imports.
 "tests/*.py" = ["TCH002"]
 
