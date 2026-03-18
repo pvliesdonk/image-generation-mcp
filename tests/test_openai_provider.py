@@ -65,6 +65,32 @@ class TestOpenAIProvider:
                 api_key="sk-test", model="dall-e-3", output_format="webp"
             )
 
+    def test_dalle3_rejects_jpeg_format(self) -> None:
+        with pytest.raises(ImageProviderError, match="dall-e-3 does not support"):
+            OpenAIImageProvider(
+                api_key="sk-test", model="dall-e-3", output_format="jpeg"
+            )
+
+    async def test_dalle3_generate_sends_response_format(self) -> None:
+        provider = OpenAIImageProvider(api_key="sk-test", model="dall-e-3")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("a landscape")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["response_format"] == "b64_json"
+        assert "output_format" not in call_kwargs
+
     async def test_unsupported_aspect_ratio_raises(self) -> None:
         provider = OpenAIImageProvider(api_key="sk-test")
         with pytest.raises(ImageProviderError, match="Unsupported aspect_ratio"):

@@ -43,7 +43,7 @@ _FORMAT_TO_CONTENT_TYPE: dict[str, str] = {
     "webp": "image/webp",
 }
 
-_DALLE3_FORMATS: frozenset[str] = frozenset({"png", "jpeg"})
+_DALLE3_FORMATS: frozenset[str] = frozenset({"png"})
 
 
 def _is_gpt_image_model(model: str) -> bool:
@@ -193,12 +193,7 @@ class OpenAIImageProvider:
 
     def _handle_error(self, error: Exception) -> NoReturn:
         """Convert OpenAI exceptions to ImageProvider exceptions."""
-        try:
-            from openai import APIConnectionError, APIStatusError
-        except ImportError:
-            raise ImageProviderError(
-                "openai", f"Image generation failed: {error}"
-            ) from error
+        from openai import APIConnectionError, APIStatusError
 
         if isinstance(error, APIConnectionError):
             raise ImageProviderConnectionError(
