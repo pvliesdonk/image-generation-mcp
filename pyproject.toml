@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
 ]
-dependencies = ["httpx>=0.27"]
+dependencies = ["httpx>=0.27", "Pillow>=10.0"]
 
 [project.optional-dependencies]
 mcp = ["fastmcp>=3.0,<4"]
