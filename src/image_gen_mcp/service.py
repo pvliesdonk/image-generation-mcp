@@ -8,7 +8,6 @@ generated images to the scratch directory.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import io
 import json
@@ -342,43 +341,6 @@ class ImageService:
             logger.info("Loaded %d images from scratch directory", count)
 
     # ------------------------------------------------------------------
-    # Legacy scratch save (kept for backward compatibility)
-    # ------------------------------------------------------------------
-
-    def save_to_scratch(self, result: ImageResult, provider_name: str) -> Path:
-        """Save an image result to the scratch directory.
-
-        Args:
-            result: The image result to save.
-            provider_name: Provider name for the filename.
-
-        Returns:
-            Path to the saved file.
-        """
-        self._scratch_dir.mkdir(parents=True, exist_ok=True)
-
-        ts = int(time.time())
-        content_hash = hashlib.sha256(result.image_data).hexdigest()[:8]
-        ext = _mime_to_ext(result.content_type)
-        filename = f"{ts}-{provider_name}-{content_hash}{ext}"
-
-        path = self._scratch_dir / filename
-        path.write_bytes(result.image_data)
-
-        logger.info("Saved image to %s (%d bytes)", path, result.size_bytes)
-        return path
-
-    @staticmethod
-    def get_image_base64(result: ImageResult) -> str:
-        """Encode image data as base64 string.
-
-        Args:
-            result: The image result to encode.
-
-        Returns:
-            Base64-encoded string.
-        """
-        return base64.b64encode(result.image_data).decode("ascii")
 
 
 _MIME_TO_EXT: dict[str, str] = {
