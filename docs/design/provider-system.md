@@ -120,10 +120,10 @@ the prompt using keyword matching with word boundaries:
 
 | Prompt Keywords | Preferred Provider Chain |
 |----------------|------------------------|
-| realistic, photo, portrait, headshot, product shot | a1111 → openai |
-| text, logo, typography, poster, banner, sign | openai |
+| realistic, photo, photography, headshot, portrait photo, product shot | a1111 → openai |
+| text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, sketch | a1111 → openai |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | a1111 → openai |
 | anime, manga, kawaii, chibi | a1111 → openai |
 | *(no match)* | openai → a1111 → placeholder |
 
