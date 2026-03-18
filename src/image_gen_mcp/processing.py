@@ -27,7 +27,7 @@ def _validate_format(fmt: str) -> str:
     """Normalise and validate an output format string.
 
     Returns:
-        Pillow-compatible format string (upper-case).
+        Normalised lowercase format string.
 
     Raises:
         ValueError: If *fmt* is not a supported format.
