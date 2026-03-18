@@ -188,10 +188,14 @@ Every generated image is saved to `IMAGE_GEN_MCP_SCRATCH_DIR` (default
 
 ### Tools
 
-| Tool | Tags | Description |
-|------|------|-------------|
-| `generate_image` | `write` | Generate image, return thumbnail + resource URIs |
-| `list_providers` | *(none)* | List available providers with availability info |
+| Tool | Tags | Task | Description |
+|------|------|------|-------------|
+| `generate_image` | `write` | `task=True` | Generate image, return thumbnail + resource URIs |
+| `list_providers` | *(none)* | -- | List available providers with availability info |
+
+`generate_image` supports both foreground and background execution via
+`task=True` (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)).
+Progress is reported at 4 stages via `Context.report_progress()`.
 
 `generate_image` returns a `ToolResult` with:
 - `ImageContent` -- thumbnail (~256px WebP, ~10-50KB) for immediate visual feedback
@@ -244,4 +248,3 @@ All environment variables use the `IMAGE_GEN_MCP_` prefix.
 - **Rate limiting:** Per-provider request throttling
 - **Auto-cleanup:** TTL-based scratch directory cleanup
 - **Response caching:** Cache frequently-requested transforms
-- **Background tasks:** Non-blocking generation with progress reporting
