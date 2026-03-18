@@ -64,7 +64,7 @@ controls execution mode:
 Progress stages:
 1. Selecting provider (0/3)
 2. Generating image (1/3)
-3. Saving and processing (2/3)
+3. Saving to scratch (2/3)
 4. Done (3/3)
 
 **Critical constraint:** The tool function must contain zero conditional logic

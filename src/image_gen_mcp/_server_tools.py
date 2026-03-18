@@ -80,7 +80,7 @@ def register_tools(mcp: FastMCP) -> None:
             quality=quality,
         )
 
-        await ctx.report_progress(2, 3, "Saving and processing")
+        await ctx.report_progress(2, 3, "Saving to scratch")
 
         # Register in the image registry (blocking I/O -> offload)
         record = await asyncio.to_thread(
