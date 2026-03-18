@@ -13,14 +13,15 @@ Provider capabilities and supported features.
 ```json
 {
   "providers": {
-    "placeholder": { "available": true },
-    "openai": { "available": true },
-    "a1111": { "available": false }
+    "placeholder": { "available": true, "description": "PlaceholderImageProvider (placeholder)" },
+    "openai": { "available": true, "description": "OpenAIImageProvider (openai)" }
   },
   "supported_aspect_ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"],
   "supported_quality_levels": ["standard", "hd"]
 }
 ```
+
+Only registered (configured) providers appear. Unavailable providers are not listed.
 
 ---
 

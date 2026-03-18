@@ -37,10 +37,10 @@ When `provider="auto"` (the default), the server analyzes your prompt using keyw
 
 | Prompt keywords | Preferred provider chain |
 |----------------|--------------------------|
-| realistic, photo, photography, portrait photo, product shot | a1111 -> openai |
-| text, logo, typography, poster, banner, signage | openai |
+| realistic, photo, photography, portrait photo, product shot, headshot | a1111 -> openai |
+| text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, sketch | a1111 -> openai |
+| art, painting, illustration, watercolor, sketch, drawing | a1111 -> openai |
 | anime, manga, kawaii, chibi | a1111 -> openai |
 | *(no match)* | openai -> a1111 -> placeholder |
 

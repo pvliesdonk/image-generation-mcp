@@ -89,16 +89,17 @@ JSON object with provider names and availability information:
 ```json
 {
   "placeholder": {
-    "available": true
+    "available": true,
+    "description": "PlaceholderImageProvider (placeholder)"
   },
   "openai": {
-    "available": true
-  },
-  "a1111": {
-    "available": false
+    "available": true,
+    "description": "OpenAIImageProvider (openai)"
   }
 }
 ```
+
+Only registered (configured) providers appear in the response.
 
 ### Example
 
