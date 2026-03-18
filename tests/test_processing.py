@@ -67,6 +67,14 @@ def test_generate_thumbnail_formats(png_256: bytes) -> None:
         assert len(data) > 0
 
 
+def test_generate_thumbnail_png_uses_optimize(png_256: bytes) -> None:
+    """PNG thumbnail uses optimize=True (no quality kwarg)."""
+    data, content_type = generate_thumbnail(png_256, max_size=64, fmt="png")
+    assert content_type == "image/png"
+    img = Image.open(io.BytesIO(data))
+    assert img.format == "PNG"
+
+
 # --- convert_format ---
 
 
@@ -101,6 +109,18 @@ def test_optimize_png_valid(png_256: bytes) -> None:
     img = Image.open(io.BytesIO(data))
     assert img.format == "PNG"
     assert len(data) <= len(png_256)
+
+
+def test_optimize_png_rejects_non_png() -> None:
+    """optimize_png raises ValueError for non-PNG input."""
+    # Create a JPEG image
+    img = Image.new("RGB", (10, 10), (128, 128, 128))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    jpeg_data = buf.getvalue()
+
+    with pytest.raises(ValueError, match="requires PNG input"):
+        optimize_png(jpeg_data)
 
 
 # --- resize_image ---

@@ -40,12 +40,21 @@ def _validate_format(fmt: str) -> str:
 
 
 def _ensure_rgb(img: Image.Image, target_format: str) -> Image.Image:
-    """Convert RGBA → RGB (white background) when saving to JPEG."""
-    if target_format == "jpeg" and img.mode == "RGBA":
-        background = Image.new("RGB", img.size, (255, 255, 255))
-        background.paste(img, mask=img.split()[3])
-        return background
+    """Convert to RGB when saving to JPEG (handles RGBA, P, LA, and similar modes)."""
+    if target_format == "jpeg" and img.mode not in ("RGB", "L"):
+        if img.mode == "RGBA":
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])
+            return background
+        return img.convert("RGB")
     return img
+
+
+def _save_kwargs(fmt_lower: str, quality: int) -> dict[str, object]:
+    """Build keyword arguments for ``Image.save()`` based on format."""
+    if fmt_lower == "png":
+        return {"optimize": True}
+    return {"quality": quality}
 
 
 def generate_thumbnail(
@@ -74,7 +83,7 @@ def generate_thumbnail(
     img = _ensure_rgb(img, fmt_lower)
 
     buf = io.BytesIO()
-    img.save(buf, format=fmt_lower, quality=quality)
+    img.save(buf, format=fmt_lower, **_save_kwargs(fmt_lower, quality))
     return buf.getvalue(), _FORMAT_TO_MIME[fmt_lower]
 
 
@@ -101,7 +110,7 @@ def convert_format(
     img = _ensure_rgb(img, fmt_lower)
 
     buf = io.BytesIO()
-    img.save(buf, format=fmt_lower, quality=quality)
+    img.save(buf, format=fmt_lower, **_save_kwargs(fmt_lower, quality))
     return buf.getvalue(), _FORMAT_TO_MIME[fmt_lower]
 
 
@@ -131,8 +140,8 @@ def resize_image(image_data: bytes, width: int, height: int) -> bytes:
 def crop_to_dimensions(image_data: bytes, width: int, height: int) -> bytes:
     """Center-crop an image to *width* x*height*.
 
-    If the requested dimensions exceed the source, the image is resized
-    down first to fit.
+    If the requested dimensions exceed the source, the image is scaled
+    up to fill the target area before cropping.
 
     Args:
         image_data: Source image bytes.
@@ -175,6 +184,9 @@ def optimize_png(image_data: bytes) -> bytes:
         Optimized PNG bytes.
     """
     img = Image.open(io.BytesIO(image_data))
+    if img.format != "PNG":
+        msg = f"optimize_png requires PNG input, got {img.format!r}"
+        raise ValueError(msg)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
