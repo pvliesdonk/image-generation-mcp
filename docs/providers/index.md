@@ -12,7 +12,7 @@ image-gen-mcp supports multiple image generation providers. Each provider is reg
 | **Speed** | 5-15s | 10-60s (depends on GPU) | Instant |
 | **Cost** | Per-image API pricing | Self-hosted (GPU cost) | Free |
 | **Negative prompt** | Appended as "Avoid:" clause | Native support | Ignored |
-| **Requires** | `OPENAI_API_KEY` | Running A1111 WebUI + `A1111_HOST` | Nothing |
+| **Requires** | `IMAGE_GEN_MCP_OPENAI_API_KEY` | Running A1111 WebUI + `IMAGE_GEN_MCP_A1111_HOST` | Nothing |
 
 ## Which provider should I use?
 
@@ -40,7 +40,7 @@ When `provider="auto"` (the default), the server analyzes your prompt using keyw
 | realistic, photo, photography, portrait photo, product shot, headshot | a1111 -> openai |
 | text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, sketch, drawing | a1111 -> openai |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | a1111 -> openai |
 | anime, manga, kawaii, chibi | a1111 -> openai |
 | *(no match)* | openai -> a1111 -> placeholder |
 

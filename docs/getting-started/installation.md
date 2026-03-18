@@ -35,6 +35,7 @@
 | `openai` | `openai>=1.0` | OpenAI provider only (no MCP server) |
 | `all` | `fastmcp[tasks]` + `openai` | Full installation with all providers |
 | `dev` | All above + pytest, ruff, mypy, pip-audit | Development and testing |
+| `docs` | mkdocs-material, mkdocstrings, mkdocs-llmstxt | Documentation site build |
 
 ## From source
 
