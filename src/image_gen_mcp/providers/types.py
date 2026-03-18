@@ -90,10 +90,10 @@ class ImageProvider(Protocol):
         ...
 
 
-SUPPORTED_ASPECT_RATIOS: list[str] = ["1:1", "16:9", "9:16", "3:2", "2:3"]
+SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = ("1:1", "16:9", "9:16", "3:2", "2:3")
 """Aspect ratios supported across providers."""
 
-SUPPORTED_QUALITY_LEVELS: list[str] = ["standard", "hd"]
+SUPPORTED_QUALITY_LEVELS: tuple[str, ...] = ("standard", "hd")
 """Quality levels supported across providers."""
 
 

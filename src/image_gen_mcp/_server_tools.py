@@ -16,6 +16,7 @@ from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, TextContent
 
 from ._server_deps import get_service
+from .providers.types import SUPPORTED_ASPECT_RATIOS, SUPPORTED_QUALITY_LEVELS
 from .service import ImageService
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,19 @@ def register_tools(mcp: FastMCP) -> None:
         Returns:
             The generated image as ImageContent with metadata.
         """
+        if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
+            msg = (
+                f"Unsupported aspect_ratio '{aspect_ratio}'. "
+                f"Supported: {list(SUPPORTED_ASPECT_RATIOS)}"
+            )
+            raise ValueError(msg)
+        if quality not in SUPPORTED_QUALITY_LEVELS:
+            msg = (
+                f"Unsupported quality '{quality}'. "
+                f"Supported: {list(SUPPORTED_QUALITY_LEVELS)}"
+            )
+            raise ValueError(msg)
+
         provider_name, result = await service.generate(
             prompt,
             provider=provider,
