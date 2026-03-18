@@ -78,7 +78,7 @@ def generate_thumbnail(
         ValueError: If *fmt* is not supported.
     """
     fmt_lower = _validate_format(fmt)
-    img = Image.open(io.BytesIO(image_data))
+    img: Image.Image = Image.open(io.BytesIO(image_data))
     img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
     img = _ensure_rgb(img, fmt_lower)
 
@@ -106,7 +106,7 @@ def convert_format(
         ValueError: If *fmt* is not supported.
     """
     fmt_lower = _validate_format(fmt)
-    img = Image.open(io.BytesIO(image_data))
+    img: Image.Image = Image.open(io.BytesIO(image_data))
     img = _ensure_rgb(img, fmt_lower)
 
     buf = io.BytesIO()
@@ -128,7 +128,7 @@ def resize_image(image_data: bytes, width: int, height: int) -> bytes:
     Returns:
         Resized image bytes in the same format as the source.
     """
-    img = Image.open(io.BytesIO(image_data))
+    img: Image.Image = Image.open(io.BytesIO(image_data))
     src_format = img.format
     if not src_format:
         msg = "Could not determine source image format."
@@ -154,7 +154,7 @@ def crop_to_dimensions(image_data: bytes, width: int, height: int) -> bytes:
     Returns:
         Cropped image bytes in the same format as the source.
     """
-    img = Image.open(io.BytesIO(image_data))
+    img: Image.Image = Image.open(io.BytesIO(image_data))
     src_format = img.format
     if not src_format:
         msg = "Could not determine source image format."
