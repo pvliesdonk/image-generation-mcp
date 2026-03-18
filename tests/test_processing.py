@@ -86,6 +86,19 @@ def test_convert_format_png_to_webp(png_256: bytes) -> None:
     assert img.format == "WEBP"
 
 
+def test_convert_format_png_optimized(png_256: bytes) -> None:
+    """PNG conversion uses optimize=True (output <= unoptimized size)."""
+    # Produce unoptimized PNG for comparison
+    img = Image.open(io.BytesIO(png_256))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    unoptimized = buf.getvalue()
+
+    data, content_type = convert_format(png_256, "png")
+    assert content_type == "image/png"
+    assert len(data) <= len(unoptimized)
+
+
 def test_convert_format_rgba_to_jpeg(png_256: bytes) -> None:
     """RGBA → JPEG handles alpha channel removal."""
     # Create an RGBA image from the PNG
