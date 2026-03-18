@@ -22,7 +22,6 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "realistic",
             "photo",
             "photography",
-            "professional",
             "headshot",
             "portrait photo",
             "product shot",
@@ -37,7 +36,7 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "typography",
             "poster",
             "banner",
-            "sign",
+            "signage",
             "lettering",
             "font",
         ],
@@ -98,10 +97,15 @@ def select_provider(
         if _matches_any(prompt_lower, keywords):
             for provider in preferred:
                 if provider in available_providers:
+                    matched_kw = next(
+                        kw
+                        for kw in keywords
+                        if re.search(r"\b" + re.escape(kw) + r"\b", prompt_lower)
+                    )
                     logger.debug(
                         "Provider selected by keyword: %s (matched: %s)",
                         provider,
-                        keywords[0],
+                        matched_kw,
                     )
                     return provider
 

@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
+from image_gen_mcp.providers.selector import select_provider
 from image_gen_mcp.providers.types import ImageProvider, ImageProviderError, ImageResult
 
 logger = logging.getLogger(__name__)
@@ -94,8 +95,6 @@ class ImageService:
             ImageProviderError: If no matching provider is available.
         """
         if provider == "auto":
-            from image_gen_mcp.providers.selector import select_provider
-
             selected = select_provider(prompt, set(self._providers))
             return selected, self._providers[selected]
 

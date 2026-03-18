@@ -49,8 +49,8 @@ The selection rules are ordered lists of `(keywords, preferred_providers)`:
 
 | Keywords | Preferred Provider Chain |
 |----------|------------------------|
-| realistic, photo, portrait, headshot, product shot | a1111 → openai |
-| text, logo, typography, poster, banner, sign | openai |
+| realistic, photo, photography, headshot, portrait photo, product shot | a1111 → openai |
+| text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
 | art, painting, illustration, watercolor, sketch | a1111 → openai |
 | anime, manga, kawaii, chibi | a1111 → openai |

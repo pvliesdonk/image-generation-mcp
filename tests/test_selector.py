@@ -74,6 +74,21 @@ class TestSelectProvider:
         available = {"openai", "a1111"}
         assert select_provider("REALISTIC PHOTO of a car", available) == "a1111"
 
+    # -- Regression tests ----------------------------------------------------
+
+    def test_professional_logo_selects_openai(self) -> None:
+        """'professional' should not route logo prompts to a1111."""
+        available = {"openai", "a1111", "placeholder"}
+        assert select_provider("professional logo design", available) == "openai"
+
+    def test_sign_no_false_positive(self) -> None:
+        """'sign' (generic) should not match; 'signage' should."""
+        available = {"openai", "a1111", "placeholder"}
+        # "give me a sign" should fall to default chain
+        assert select_provider("give me a sign", available) == "openai"
+        # "signage" should match text-rendering rule
+        assert select_provider("neon signage on brick wall", available) == "openai"
+
     # -- Word boundary matching --------------------------------------------
 
     def test_word_boundary_no_false_positive(self) -> None:
