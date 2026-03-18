@@ -13,12 +13,12 @@ See https://gofastmcp.com/servers/tools for the full tool API.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 
 from ._server_deps import get_service
+from .service import ImageService
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def register_tools(mcp: FastMCP) -> None:
     # -----------------------------------------------------------------------
 
     @mcp.tool()
-    def ping(ctx: Any = Depends(get_service)) -> str:  # noqa: ARG001
+    def ping(ctx: ImageService = Depends(get_service)) -> str:  # noqa: ARG001
         """Health check.
 
         Returns:
@@ -50,7 +50,7 @@ def register_tools(mcp: FastMCP) -> None:
     @mcp.tool(tags={"write"})
     def example_write(
         message: str,
-        ctx: Any = Depends(get_service),  # noqa: ARG001
+        ctx: ImageService = Depends(get_service),  # noqa: ARG001
     ) -> str:
         """Example write operation — replace with your domain write tools.
 
