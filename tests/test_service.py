@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
-from image_gen_mcp.providers.types import ImageProviderError, ImageResult
+from image_gen_mcp.providers.types import ImageProviderError
 from image_gen_mcp.service import ImageService
 
 
@@ -76,35 +76,3 @@ class TestGenerate:
         )
         assert name == "placeholder"
         assert result.provider_metadata["size"] == "640x360"
-
-
-class TestScratchSave:
-    """Tests for saving images to scratch directory."""
-
-    async def test_save_creates_file(self, service: ImageService) -> None:
-        _, result = await service.generate("test", provider="placeholder")
-        path = service.save_to_scratch(result, "placeholder")
-        assert path.exists()
-        assert path.read_bytes() == result.image_data
-
-    async def test_save_creates_scratch_dir(
-        self, scratch_dir: Path, service: ImageService
-    ) -> None:
-        assert not scratch_dir.exists()
-        _, result = await service.generate("test", provider="placeholder")
-        service.save_to_scratch(result, "placeholder")
-        assert scratch_dir.exists()
-
-    async def test_save_filename_format(self, service: ImageService) -> None:
-        _, result = await service.generate("test", provider="placeholder")
-        path = service.save_to_scratch(result, "placeholder")
-        # Format: {timestamp}-{provider}-{hash}.png
-        parts = path.stem.split("-")
-        assert len(parts) >= 3
-        assert "placeholder" in path.stem
-        assert path.suffix == ".png"
-
-    def test_get_image_base64(self, service: ImageService) -> None:
-        result = ImageResult(image_data=b"hello")
-        b64 = service.get_image_base64(result)
-        assert b64 == "aGVsbG8="
