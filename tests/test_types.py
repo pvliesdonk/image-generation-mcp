@@ -53,6 +53,11 @@ class TestImageResult:
         assert result.image_data == original
         assert result.content_type == "image/webp"
 
+    def test_from_base64_default_content_type(self) -> None:
+        b64 = base64.b64encode(b"data").decode()
+        result = ImageResult.from_base64(b64)
+        assert result.content_type == "image/png"
+
     def test_from_base64_with_metadata(self) -> None:
         b64 = base64.b64encode(b"data").decode()
         result = ImageResult.from_base64(b64, model="gpt-image-1", size="1024x1024")

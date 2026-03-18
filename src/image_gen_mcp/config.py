@@ -11,6 +11,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -106,16 +107,25 @@ def load_config() -> ServerConfig:
         A populated :class:`ServerConfig` instance.
     """
     raw_read_only = _env("READ_ONLY")
-    read_only = _parse_bool(raw_read_only) if raw_read_only is not None else True
-    logger.debug("load_config: read_only=%s (raw=%r)", read_only, raw_read_only)
+    logger.debug("load_config: raw read_only=%r", raw_read_only)
 
-    raw_scratch = _env("SCRATCH_DIR")
-    scratch_dir = Path(raw_scratch) if raw_scratch else _DEFAULT_SCRATCH_DIR
+    # Build kwargs — only set values that are explicitly configured,
+    # letting ServerConfig dataclass defaults apply for the rest.
+    kwargs: dict[str, Any] = {}
 
-    return ServerConfig(
-        read_only=read_only,
-        scratch_dir=scratch_dir,
-        openai_api_key=_env("OPENAI_API_KEY"),
-        a1111_host=_env("A1111_HOST"),
-        default_provider=_env("DEFAULT_PROVIDER") or "auto",
-    )
+    if raw_read_only is not None:
+        kwargs["read_only"] = _parse_bool(raw_read_only)
+
+    if raw_scratch := _env("SCRATCH_DIR"):
+        kwargs["scratch_dir"] = Path(raw_scratch)
+
+    if key := _env("OPENAI_API_KEY"):
+        kwargs["openai_api_key"] = key
+
+    if host := _env("A1111_HOST"):
+        kwargs["a1111_host"] = host
+
+    if provider := _env("DEFAULT_PROVIDER"):
+        kwargs["default_provider"] = provider
+
+    return ServerConfig(**kwargs)

@@ -649,48 +649,6 @@ wheels = [
 ]
 
 [[package]]
-name = "fastmcp-server-template"
-version = "0.1.0"
-source = { editable = "." }
-
-[package.optional-dependencies]
-all = [
-    { name = "fastmcp" },
-]
-dev = [
-    { name = "mypy" },
-    { name = "pip-audit" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-docs = [
-    { name = "mkdocs-llmstxt" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
-]
-mcp = [
-    { name = "fastmcp" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "fastmcp", marker = "extra == 'all'", specifier = ">=3.0,<4" },
-    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.0,<4" },
-    { name = "mkdocs-llmstxt", marker = "extra == 'docs'", specifier = ">=0.2" },
-    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
-    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
-    { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.7" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
-]
-provides-extras = ["mcp", "all", "dev", "docs"]
-
-[[package]]
 name = "filelock"
 version = "3.25.2"
 source = { registry = "https://pypi.org/simple" }
@@ -773,6 +731,52 @@ sdist = { url = "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a72335
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea", size = 71008, upload-time = "2025-10-12T14:55:18.883Z" },
 ]
+
+[[package]]
+name = "image-gen-mcp"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "httpx" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "fastmcp" },
+]
+dev = [
+    { name = "mypy" },
+    { name = "pip-audit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+docs = [
+    { name = "mkdocs-llmstxt" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+]
+mcp = [
+    { name = "fastmcp" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastmcp", marker = "extra == 'all'", specifier = ">=3.0,<4" },
+    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.0,<4" },
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "mkdocs-llmstxt", marker = "extra == 'docs'", specifier = ">=0.2" },
+    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.24" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },
+    { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.7" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
+]
+provides-extras = ["mcp", "all", "dev", "docs"]
 
 [[package]]
 name = "importlib-metadata"
