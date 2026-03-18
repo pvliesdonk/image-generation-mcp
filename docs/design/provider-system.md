@@ -195,7 +195,7 @@ Every generated image is saved to `IMAGE_GEN_MCP_SCRATCH_DIR` (default
 
 `generate_image` supports both foreground and background execution via
 `task=True` (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)).
-Progress is reported at 4 stages via `Context.report_progress()`.
+Progress is reported at 3 stages via `Context.report_progress()`.
 
 `generate_image` returns a `ToolResult` with:
 - `ImageContent` -- thumbnail (~256px WebP, ~10-50KB) for immediate visual feedback
