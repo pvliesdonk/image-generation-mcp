@@ -1,4 +1,4 @@
-"""Tests for MCP server factory — auth wiring and read-only mode."""
+"""Tests for MCP server factory — auth wiring, read-only mode, and tools."""
 
 from __future__ import annotations
 
@@ -90,8 +90,6 @@ class TestAuthModeSelection:
             server = create_server()
 
         assert isinstance(server.auth, MultiAuth)
-        # OIDCProxy is an OAuthProvider — must be server=, not in verifiers=,
-        # so that MultiAuth.get_routes() delegates OAuth endpoints to it.
         assert server.auth.server is mock_oidc
         verifiers = server.auth.verifiers
         assert len(verifiers) == 1
@@ -102,16 +100,16 @@ class TestReadOnlyMode:
     """Tests for read-only vs read-write tool visibility."""
 
     async def test_read_only_by_default(self) -> None:
-        """Server is read-only by default — write tools are disabled."""
+        """Server is read-only by default — write tools are hidden."""
         server = create_server()
         tool_names = [t.name for t in await server.list_tools()]
-        assert "ping" in tool_names
-        assert "example_write" not in tool_names
+        assert "list_providers" in tool_names
+        assert "generate_image" not in tool_names
 
     async def test_read_write_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Setting READ_ONLY=false makes write tools visible."""
         monkeypatch.setenv("IMAGE_GEN_MCP_READ_ONLY", "false")
         server = create_server()
         tool_names = [t.name for t in await server.list_tools()]
-        assert "ping" in tool_names
-        assert "example_write" in tool_names
+        assert "list_providers" in tool_names
+        assert "generate_image" in tool_names

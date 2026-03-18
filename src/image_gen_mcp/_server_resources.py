@@ -1,20 +1,17 @@
 """MCP resource registrations.
 
-TODO: Add your domain resources here.
-
-Resources expose read-only structured data to LLM clients via URI patterns.
-See https://gofastmcp.com/servers/resources for the full resource API.
-
-Example::
-
-    @mcp.resource("info://service")
-    async def service_info(ctx: Context = Depends(get_service)) -> str:
-        return json.dumps({"status": "ok", "version": "1.0"})
+Exposes provider capabilities and service info as MCP resources.
 """
 
 from __future__ import annotations
 
+import json
+
 from fastmcp import FastMCP
+from fastmcp.dependencies import Depends
+
+from image_gen_mcp._server_deps import get_service
+from image_gen_mcp.service import ImageService
 
 
 def register_resources(mcp: FastMCP) -> None:
@@ -23,4 +20,28 @@ def register_resources(mcp: FastMCP) -> None:
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register resources on.
     """
-    # TODO: Add your domain resources here.
+
+    @mcp.resource("info://providers")
+    async def provider_capabilities(
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Available image generation providers and their capabilities.
+
+        Returns:
+            JSON with provider names, availability, and supported features.
+        """
+        providers = service.list_providers()
+        return json.dumps(
+            {
+                "providers": providers,
+                "supported_aspect_ratios": [
+                    "1:1",
+                    "16:9",
+                    "9:16",
+                    "3:2",
+                    "2:3",
+                ],
+                "supported_quality_levels": ["standard", "hd"],
+            },
+            indent=2,
+        )
