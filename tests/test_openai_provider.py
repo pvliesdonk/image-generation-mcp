@@ -187,3 +187,28 @@ class TestErrorHandling:
 
         with pytest.raises(ImageContentPolicyError):
             await provider.generate("test")
+
+    @pytest.mark.usefixtures("_mock_openai")
+    async def test_content_policy_error_structured_body(self) -> None:
+        """Structured body[error][code] path triggers content policy error."""
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        from openai import APIStatusError
+
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(
+            side_effect=APIStatusError(
+                message="Your request was rejected",
+                response=mock_response,
+                body={
+                    "error": {"code": "content_policy_violation", "message": "rejected"}
+                },
+            )
+        )
+
+        with pytest.raises(ImageContentPolicyError):
+            await provider.generate("test")
