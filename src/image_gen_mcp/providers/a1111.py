@@ -57,14 +57,16 @@ _SD15_PRESET = _A1111Preset(
     quality_tier="medium",
 )
 
+_SDXL_SIZES: dict[str, tuple[int, int]] = {
+    "1:1": (1024, 1024),
+    "16:9": (1344, 768),
+    "9:16": (768, 1344),
+    "3:2": (1216, 832),
+    "2:3": (832, 1216),
+}
+
 _SDXL_PRESET = _A1111Preset(
-    sizes={
-        "1:1": (1024, 1024),
-        "16:9": (1344, 768),
-        "9:16": (768, 1344),
-        "3:2": (1216, 832),
-        "2:3": (832, 1216),
-    },
+    sizes=_SDXL_SIZES,
     steps=35,
     sampler="DPM++ 2M",
     scheduler="karras",
@@ -73,13 +75,7 @@ _SDXL_PRESET = _A1111Preset(
 )
 
 _SDXL_LIGHTNING_PRESET = _A1111Preset(
-    sizes={
-        "1:1": (1024, 1024),
-        "16:9": (1344, 768),
-        "9:16": (768, 1344),
-        "3:2": (1216, 832),
-        "2:3": (832, 1216),
-    },
+    sizes=_SDXL_SIZES,
     steps=6,
     sampler="DPM++ SDE",
     scheduler="karras",
@@ -190,7 +186,7 @@ class A1111ImageProvider:
             raise ImageProviderConnectionError(
                 "a1111", f"Cannot connect to A1111 at {self._host}: {e}"
             ) from e
-        except (httpx.TimeoutException, httpx.PoolTimeout) as e:
+        except httpx.TimeoutException as e:
             raise ImageProviderConnectionError(
                 "a1111",
                 f"Request to A1111 timed out after {_DEFAULT_TIMEOUT}s: {e}",

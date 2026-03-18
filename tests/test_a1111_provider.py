@@ -157,9 +157,12 @@ class TestA1111Provider:
         with pytest.raises(ImageProviderError, match="missing 'images'"):
             await provider.generate("test")
 
-    async def test_connection_error(self) -> None:
-        provider = A1111ImageProvider(host="http://unreachable:9999")
-        # Use a real httpx client but targeting an unreachable host
+    async def test_connection_error(self, monkeypatch) -> None:
+        async def _raise_connect(*args: Any, **kwargs: Any) -> None:
+            raise httpx.ConnectError("simulated")
+
+        monkeypatch.setattr(httpx.AsyncClient, "post", _raise_connect)
+        provider = A1111ImageProvider(host="http://localhost:7860")
         with pytest.raises(ImageProviderConnectionError, match="Cannot connect"):
             await provider.generate("test")
 

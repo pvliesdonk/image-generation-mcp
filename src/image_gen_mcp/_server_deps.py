@@ -69,12 +69,15 @@ def make_service_lifespan(config: ServerConfig) -> Any:
 
             service.register_provider(
                 "a1111",
-                A1111ImageProvider(host=config.a1111_host),
+                A1111ImageProvider(host=config.a1111_host, model=config.a1111_model),
             )
 
         try:
             yield {"service": service, "config": config}
         finally:
+            for provider in service._providers.values():
+                if hasattr(provider, "aclose"):
+                    await provider.aclose()
             logger.info("Service shut down")
 
     return _service_lifespan
