@@ -78,6 +78,12 @@ A minimalist logo for "Acme Corp" with clean sans-serif typography,
 blue and white color scheme, modern design
 ```
 
+## Cost
+
+OpenAI charges per image generated. Pricing varies by model, size, and quality level. See the [OpenAI pricing page](https://openai.com/api/pricing/) for current rates.
+
+`gpt-image-1` is generally more expensive than `dall-e-3` but produces higher quality output with more flexible format options.
+
 ## Error handling
 
 | Error | Cause | Resolution |

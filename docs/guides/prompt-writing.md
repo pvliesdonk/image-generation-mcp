@@ -86,6 +86,23 @@ sharp focus, commercial photography, high resolution
 night, wind, detailed, anime style, masterpiece
 ```
 
+### Weighted tokens (emphasis)
+
+Use parentheses to increase or decrease emphasis on specific tokens:
+
+```
+# Increase emphasis (1.1x per level of parentheses)
+(detailed face)       # 1.1x emphasis
+((detailed face))     # 1.21x emphasis
+(detailed face:1.5)   # 1.5x emphasis (explicit weight)
+
+# Decrease emphasis
+[blurry background]   # 0.9x emphasis
+(blurry background:0.5)  # 0.5x emphasis (explicit weight)
+```
+
+Weights are relative to the baseline of 1.0. Values above 1.0 strengthen a concept; values below 1.0 weaken it. Extreme weights (above 1.8 or below 0.3) often produce artifacts.
+
 ### Quality tags
 
 Add these to improve output quality:

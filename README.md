@@ -71,6 +71,9 @@ docker pull ghcr.io/pvliesdonk/image-gen-mcp:latest
 # Placeholder only -- no API keys needed
 IMAGE_GEN_MCP_READ_ONLY=false image-gen-mcp serve
 
+# Generate your first image -- ask Claude or call via MCP client:
+#   generate_image(prompt="a sunset over the ocean", provider="placeholder")
+
 # With OpenAI
 IMAGE_GEN_MCP_READ_ONLY=false \
 IMAGE_GEN_MCP_OPENAI_API_KEY=sk-... \
@@ -223,6 +226,12 @@ The `image://{id}/view` resource template supports CDN-style transforms:
 | `sd_prompt_guide` | *(none)* | Stable Diffusion prompt writing guide -- CLIP tag format, quality tags, negative prompts, BREAK syntax, aspect ratios |
 
 ## Providers
+
+| Provider | Best for | Requires |
+|----------|----------|----------|
+| **OpenAI** | Text, logos, typography, general-purpose | `IMAGE_GEN_MCP_OPENAI_API_KEY` |
+| **A1111** | Photorealism, portraits, anime, artistic styles | Running A1111 WebUI + `IMAGE_GEN_MCP_A1111_HOST` |
+| **Placeholder** | Testing, drafts, CI | Nothing (always available) |
 
 ### OpenAI
 
