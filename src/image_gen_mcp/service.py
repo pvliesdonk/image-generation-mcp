@@ -163,7 +163,8 @@ class ImageService:
         logger.info("Saved image to %s (%d bytes)", path, result.size_bytes)
         return path
 
-    def get_image_base64(self, result: ImageResult) -> str:
+    @staticmethod
+    def get_image_base64(result: ImageResult) -> str:
         """Encode image data as base64 string.
 
         Args:
@@ -175,11 +176,13 @@ class ImageService:
         return base64.b64encode(result.image_data).decode("ascii")
 
 
+_MIME_TO_EXT: dict[str, str] = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+}
+
+
 def _mime_to_ext(content_type: str) -> str:
     """Map MIME type to file extension."""
-    mapping = {
-        "image/png": ".png",
-        "image/jpeg": ".jpg",
-        "image/webp": ".webp",
-    }
-    return mapping.get(content_type, ".png")
+    return _MIME_TO_EXT.get(content_type, ".png")
