@@ -42,9 +42,7 @@ class TestProviderRegistry:
 class TestGenerate:
     """Tests for the generate method."""
 
-    async def test_generate_with_explicit_provider(
-        self, service: ImageService
-    ) -> None:
+    async def test_generate_with_explicit_provider(self, service: ImageService) -> None:
         name, result = await service.generate("a cat", provider="placeholder")
         assert name == "placeholder"
         assert result.image_data

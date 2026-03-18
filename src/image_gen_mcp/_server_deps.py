@@ -70,8 +70,8 @@ def get_service(ctx: Context = CurrentContext()) -> ImageService:
     Raises:
         RuntimeError: If the server lifespan has not run.
     """
-    service: Any = ctx.lifespan_context.get("service")
-    if service is None:
+    service = ctx.lifespan_context.get("service")
+    if not isinstance(service, ImageService):
         msg = "Service not initialised — server lifespan has not run"
         raise RuntimeError(msg)
     return service

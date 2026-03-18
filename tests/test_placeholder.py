@@ -15,7 +15,9 @@ class TestPlaceholderProvider:
     def provider(self) -> PlaceholderImageProvider:
         return PlaceholderImageProvider()
 
-    async def test_implements_protocol(self, provider: PlaceholderImageProvider) -> None:
+    async def test_implements_protocol(
+        self, provider: PlaceholderImageProvider
+    ) -> None:
         assert isinstance(provider, ImageProvider)
 
     async def test_generate_returns_image_result(
@@ -26,9 +28,7 @@ class TestPlaceholderProvider:
         assert result.content_type == "image/png"
         assert result.provider_metadata["quality"] == "placeholder"
 
-    async def test_png_signature(
-        self, provider: PlaceholderImageProvider
-    ) -> None:
+    async def test_png_signature(self, provider: PlaceholderImageProvider) -> None:
         result = await provider.generate("test")
         assert result.image_data[:8] == b"\x89PNG\r\n\x1a\n"
 

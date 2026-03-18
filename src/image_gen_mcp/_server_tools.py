@@ -17,7 +17,6 @@ from typing import Any
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
-from fastmcp.server.context import Context
 
 from ._server_deps import get_service
 
@@ -36,7 +35,7 @@ def register_tools(mcp: FastMCP) -> None:
     # -----------------------------------------------------------------------
 
     @mcp.tool()
-    def ping(ctx: Context = Depends(get_service)) -> str:  # noqa: ARG001
+    def ping(ctx: Any = Depends(get_service)) -> str:  # noqa: ARG001
         """Health check.
 
         Returns:

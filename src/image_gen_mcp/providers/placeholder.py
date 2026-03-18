@@ -94,9 +94,7 @@ class PlaceholderImageProvider:
             ImageResult with a solid-color PNG.
         """
         if aspect_ratio not in _ASPECT_RATIO_TO_SIZE:
-            logger.warning(
-                "Unknown aspect_ratio %r, falling back to 1:1", aspect_ratio
-            )
+            logger.warning("Unknown aspect_ratio %r, falling back to 1:1", aspect_ratio)
         width, height = _ASPECT_RATIO_TO_SIZE.get(
             aspect_ratio, _ASPECT_RATIO_TO_SIZE["1:1"]
         )
