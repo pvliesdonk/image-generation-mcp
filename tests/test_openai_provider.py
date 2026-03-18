@@ -59,6 +59,10 @@ class TestOpenAIProvider:
         with pytest.raises(ImageProviderError, match="Unsupported output_format"):
             OpenAIImageProvider(api_key="sk-test", output_format="gif")
 
+    def test_dalle3_rejects_webp_format(self) -> None:
+        with pytest.raises(ImageProviderError, match="dall-e-3 does not support"):
+            OpenAIImageProvider(api_key="sk-test", model="dall-e-3", output_format="webp")
+
     async def test_unsupported_aspect_ratio_raises(self) -> None:
         provider = OpenAIImageProvider(api_key="sk-test")
         with pytest.raises(ImageProviderError, match="Unsupported aspect_ratio"):

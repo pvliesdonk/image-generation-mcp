@@ -23,6 +23,7 @@ mcp = ["fastmcp>=3.0,<4"]
 openai = ["openai>=1.0"]
 all = ["fastmcp>=3.0,<4", "openai>=1.0"]
 dev = [
+    "image-gen-mcp[all]",
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",

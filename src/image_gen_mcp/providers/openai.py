@@ -43,6 +43,8 @@ _FORMAT_TO_CONTENT_TYPE: dict[str, str] = {
     "webp": "image/webp",
 }
 
+_DALLE3_FORMATS: frozenset[str] = frozenset({"png", "jpeg"})
+
 
 def _is_gpt_image_model(model: str) -> bool:
     """Return True for gpt-image-* models (not dall-e)."""
@@ -75,8 +77,17 @@ class OpenAIImageProvider:
                 f"Unsupported output_format '{output_format}'. Supported: {supported}",
             )
 
-        self._content_type = _FORMAT_TO_CONTENT_TYPE[output_format]
         self._is_gpt_image = _is_gpt_image_model(model)
+
+        if not self._is_gpt_image and output_format not in _DALLE3_FORMATS:
+            supported_dalle3 = ", ".join(sorted(_DALLE3_FORMATS))
+            raise ImageProviderError(
+                "openai",
+                f"dall-e-3 does not support output_format '{output_format}'. "
+                f"Supported: {supported_dalle3}",
+            )
+
+        self._content_type = _FORMAT_TO_CONTENT_TYPE[output_format]
         self._sizes = _GPT_IMAGE_SIZES if self._is_gpt_image else _DALLE3_SIZES
         self._client: AsyncOpenAI = self._create_client()
 
@@ -195,7 +206,16 @@ class OpenAIImageProvider:
 
         if isinstance(error, APIStatusError):
             status = error.status_code
-            if status == 400 and "content_policy" in str(error).lower():
+            body = getattr(error, "body", None) or {}
+            code = (
+                body.get("error", {}).get("code", "")
+                if isinstance(body, dict)
+                else ""
+            )
+            if status == 400 and (
+                code == "content_policy_violation"
+                or "content_policy" in str(error).lower()
+            ):
                 raise ImageContentPolicyError(
                     "openai", f"Content policy rejection: {error}"
                 ) from error
