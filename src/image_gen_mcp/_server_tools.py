@@ -16,6 +16,7 @@ from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, TextContent
 
 from ._server_deps import get_service
+from .processing import generate_thumbnail
 from .providers.types import SUPPORTED_ASPECT_RATIOS, SUPPORTED_QUALITY_LEVELS
 from .service import ImageService
 
@@ -49,7 +50,8 @@ def register_tools(mcp: FastMCP) -> None:
             quality: Quality level (``standard`` or ``hd``).
 
         Returns:
-            The generated image as ImageContent with metadata.
+            A thumbnail preview plus resource URIs for full-resolution
+            access and on-demand transforms.
         """
         if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
             msg = (
@@ -72,28 +74,44 @@ def register_tools(mcp: FastMCP) -> None:
             quality=quality,
         )
 
-        # Save to scratch directory (blocking I/O → offload to thread)
-        file_path = await asyncio.to_thread(
-            service.save_to_scratch, result, provider_name
+        # Register in the image registry (blocking I/O -> offload)
+        record = await asyncio.to_thread(
+            service.register_image,
+            result,
+            provider_name,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
         )
 
-        # Build base64 for MCP ImageContent
-        b64_data = service.get_image_base64(result)
+        # Generate thumbnail (blocking Pillow -> offload)
+        thumb_data, thumb_mime = await asyncio.to_thread(
+            generate_thumbnail, result.image_data
+        )
+        thumb_b64 = __import__("base64").b64encode(thumb_data).decode("ascii")
 
-        # Build metadata
+        # Build metadata with resource URIs
         metadata = {
-            **result.provider_metadata,
+            "image_id": record.id,
+            "original_uri": f"image://{record.id}/view",
+            "resource_template": (
+                f"image://{record.id}"
+                "/view{?format,width,height,quality}"
+            ),
+            "original_size_bytes": result.size_bytes,
+            "thumbnail_size_bytes": len(thumb_data),
             "provider": provider_name,
-            "file_path": str(file_path),
-            "size_bytes": result.size_bytes,
+            "file_path": str(record.original_path),
+            **result.provider_metadata,
         }
 
         return ToolResult(
             content=[
                 ImageContent(
                     type="image",
-                    data=b64_data,
-                    mimeType=result.content_type,
+                    data=thumb_b64,
+                    mimeType=thumb_mime,
                 ),
                 TextContent(
                     type="text",

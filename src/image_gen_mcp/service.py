@@ -1,25 +1,46 @@
-"""Image generation service — orchestrates providers and scratch storage.
+"""Image generation service -- orchestrates providers and scratch storage.
 
 The ``ImageService`` is the DI service object injected into MCP tools.
-It holds registered providers, dispatches generation requests, and
-saves generated images to the scratch directory.
+It holds registered providers, dispatches generation requests, manages
+an in-memory image registry backed by sidecar JSON files, and saves
+generated images to the scratch directory.
 """
 
 from __future__ import annotations
 
 import base64
 import hashlib
+import io
+import json
 import logging
 import time
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
-if TYPE_CHECKING:
-    from pathlib import Path
+from PIL import Image
 
-from image_gen_mcp.providers.selector import select_provider
 from image_gen_mcp.providers.types import ImageProvider, ImageProviderError, ImageResult
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ImageRecord:
+    """Metadata for a registered image in the scratch directory."""
+
+    id: str
+    original_path: Path
+    content_type: str
+    provider: str
+    prompt: str
+    negative_prompt: str | None
+    aspect_ratio: str
+    quality: str
+    original_dimensions: tuple[int, int]
+    provider_metadata: dict[str, Any]
+    created_at: float
 
 
 class ImageService:
@@ -38,6 +59,10 @@ class ImageService:
         self._providers: dict[str, ImageProvider] = {}
         self._scratch_dir = scratch_dir
         self._default_provider = default_provider
+        self._images: dict[str, ImageRecord] = {}
+
+        # Rebuild registry from existing sidecar files
+        self._load_registry()
 
     @property
     def scratch_dir(self) -> Path:
@@ -69,7 +94,7 @@ class ImageService:
         """List registered providers with availability info.
 
         Returns:
-            Dict of provider name → ``{available: True, description: str}``.
+            Dict of provider name -> ``{available: True, description: str}``.
         """
         result: dict[str, dict[str, Any]] = {}
         for name, prov in self._providers.items():
@@ -95,6 +120,8 @@ class ImageService:
             ImageProviderError: If no matching provider is available.
         """
         if provider == "auto":
+            from image_gen_mcp.providers.selector import select_provider
+
             selected = select_provider(prompt, set(self._providers))
             return selected, self._providers[selected]
 
@@ -149,6 +176,168 @@ class ImageService:
 
         return resolved_name, result
 
+    # ------------------------------------------------------------------
+    # Image registry
+    # ------------------------------------------------------------------
+
+    def register_image(
+        self,
+        result: ImageResult,
+        provider_name: str,
+        *,
+        prompt: str,
+        negative_prompt: str | None = None,
+        aspect_ratio: str = "1:1",
+        quality: str = "standard",
+    ) -> ImageRecord:
+        """Register a generated image in the scratch directory.
+
+        Saves the original image, writes a sidecar JSON metadata file,
+        and stores the record in the in-memory registry.
+
+        Args:
+            result: The image result to register.
+            provider_name: Name of the provider that generated the image.
+            prompt: The generation prompt.
+            negative_prompt: Things to avoid (if any).
+            aspect_ratio: Requested aspect ratio.
+            quality: Requested quality level.
+
+        Returns:
+            The created ImageRecord.
+        """
+        self._scratch_dir.mkdir(parents=True, exist_ok=True)
+
+        # Content-addressed ID
+        image_id = hashlib.sha256(result.image_data).hexdigest()[:12]
+
+        # Extract original dimensions via Pillow
+        img = Image.open(io.BytesIO(result.image_data))
+        original_dimensions = img.size  # (width, height)
+
+        # Save original
+        ext = _mime_to_ext(result.content_type)
+        original_filename = f"{image_id}-original{ext}"
+        original_path = self._scratch_dir / original_filename
+        original_path.write_bytes(result.image_data)
+
+        # Build record
+        record = ImageRecord(
+            id=image_id,
+            original_path=original_path,
+            content_type=result.content_type,
+            provider=provider_name,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            original_dimensions=original_dimensions,
+            provider_metadata=result.provider_metadata,
+            created_at=time.time(),
+        )
+
+        # Write sidecar JSON
+        sidecar_path = self._scratch_dir / f"{image_id}.json"
+        sidecar_data = {
+            "id": record.id,
+            "prompt": record.prompt,
+            "negative_prompt": record.negative_prompt,
+            "provider": record.provider,
+            "aspect_ratio": record.aspect_ratio,
+            "quality": record.quality,
+            "content_type": record.content_type,
+            "original_filename": original_filename,
+            "original_size_bytes": result.size_bytes,
+            "original_dimensions": list(record.original_dimensions),
+            "provider_metadata": record.provider_metadata,
+            "created_at": datetime.fromtimestamp(
+                record.created_at, tz=UTC
+            ).isoformat(),
+        }
+        sidecar_path.write_text(json.dumps(sidecar_data, indent=2))
+
+        # Store in registry
+        self._images[image_id] = record
+
+        logger.info(
+            "Registered image %s from %s (%d bytes)",
+            image_id,
+            provider_name,
+            result.size_bytes,
+        )
+        return record
+
+    def get_image(self, image_id: str) -> ImageRecord:
+        """Look up a registered image by ID.
+
+        Args:
+            image_id: The content-addressed image ID.
+
+        Returns:
+            The ImageRecord for the image.
+
+        Raises:
+            ImageProviderError: If the image ID is not found.
+        """
+        if image_id not in self._images:
+            raise ImageProviderError(
+                "registry",
+                f"Image '{image_id}' not found",
+            )
+        return self._images[image_id]
+
+    def list_images(self) -> list[ImageRecord]:
+        """Return all registered images.
+
+        Returns:
+            List of ImageRecord instances.
+        """
+        return list(self._images.values())
+
+    def _load_registry(self) -> None:
+        """Rebuild the in-memory registry from sidecar JSON files."""
+        if not self._scratch_dir.exists():
+            return
+
+        count = 0
+        for sidecar_path in sorted(self._scratch_dir.glob("*.json")):
+            try:
+                data = json.loads(sidecar_path.read_text())
+                image_id = data["id"]
+                original_path = self._scratch_dir / data["original_filename"]
+
+                # Parse ISO timestamp back to epoch
+                created_at = (
+                    datetime.fromisoformat(data["created_at"]).timestamp()
+                )
+
+                record = ImageRecord(
+                    id=image_id,
+                    original_path=original_path,
+                    content_type=data["content_type"],
+                    provider=data["provider"],
+                    prompt=data["prompt"],
+                    negative_prompt=data.get("negative_prompt"),
+                    aspect_ratio=data.get("aspect_ratio", "1:1"),
+                    quality=data.get("quality", "standard"),
+                    original_dimensions=tuple(data["original_dimensions"]),
+                    provider_metadata=data.get("provider_metadata", {}),
+                    created_at=created_at,
+                )
+                self._images[image_id] = record
+                count += 1
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                logger.warning(
+                    "Skipping corrupt sidecar file: %s", sidecar_path
+                )
+
+        if count:
+            logger.info("Loaded %d images from scratch directory", count)
+
+    # ------------------------------------------------------------------
+    # Legacy scratch save (kept for backward compatibility)
+    # ------------------------------------------------------------------
+
     def save_to_scratch(self, result: ImageResult, provider_name: str) -> Path:
         """Save an image result to the scratch directory.
 
@@ -161,7 +350,6 @@ class ImageService:
         """
         self._scratch_dir.mkdir(parents=True, exist_ok=True)
 
-        # Build filename: {timestamp}-{provider}-{hash}.png
         ts = int(time.time())
         content_hash = hashlib.sha256(result.image_data).hexdigest()[:8]
         ext = _mime_to_ext(result.content_type)
