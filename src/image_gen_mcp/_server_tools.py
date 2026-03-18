@@ -1,23 +1,22 @@
-"""MCP tool registrations.
+"""MCP tool registrations for image generation.
 
-TODO: Replace the example tools with your domain tools.
-
-Each tool function is decorated with ``@mcp.tool()`` inside
-:func:`register_tools`.  Write tools should be tagged with
-``tags={"write"}`` so they can be hidden in read-only mode via
-``mcp.disable(tags={"write"})``.
-
-See https://gofastmcp.com/servers/tools for the full tool API.
+Exposes ``generate_image`` and ``list_providers`` tools to MCP clients.
+``generate_image`` is tagged ``write`` (hidden in read-only mode).
 """
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
+from fastmcp.tools import ToolResult
+from mcp.types import ImageContent, TextContent
 
 from ._server_deps import get_service
+from .providers.types import SUPPORTED_ASPECT_RATIOS, SUPPORTED_QUALITY_LEVELS
 from .service import ImageService
 
 logger = logging.getLogger(__name__)
@@ -30,36 +29,87 @@ def register_tools(mcp: FastMCP) -> None:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
     """
 
-    # -----------------------------------------------------------------------
-    # Example read tool — replace with your domain tools.
-    # -----------------------------------------------------------------------
-
-    @mcp.tool()
-    def ping(ctx: ImageService = Depends(get_service)) -> str:  # noqa: ARG001
-        """Health check.
-
-        Returns:
-            The string ``'pong'``.
-        """
-        return "pong"
-
-    # -----------------------------------------------------------------------
-    # Example write tool — tagged so it can be hidden in read-only mode.
-    # -----------------------------------------------------------------------
-
     @mcp.tool(tags={"write"})
-    def example_write(
-        message: str,
-        ctx: ImageService = Depends(get_service),  # noqa: ARG001
-    ) -> str:
-        """Example write operation — replace with your domain write tools.
+    async def generate_image(
+        prompt: str,
+        provider: str = "auto",
+        negative_prompt: str | None = None,
+        aspect_ratio: str = "1:1",
+        quality: str = "standard",
+        service: ImageService = Depends(get_service),
+    ) -> ToolResult:
+        """Generate an image from a text prompt.
 
         Args:
-            message: The message to echo back.
+            prompt: Text description of the desired image.
+            provider: Provider name or ``"auto"`` for automatic selection.
+            negative_prompt: Things to avoid in the image.
+            aspect_ratio: Desired ratio (``1:1``, ``16:9``, ``9:16``,
+                ``3:2``, ``2:3``).
+            quality: Quality level (``standard`` or ``hd``).
 
         Returns:
-            Confirmation string.
+            The generated image as ImageContent with metadata.
         """
-        # TODO: Replace with your actual write logic.
-        logger.info("example_write called: %r", message)
-        return f"wrote: {message}"
+        if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
+            msg = (
+                f"Unsupported aspect_ratio '{aspect_ratio}'. "
+                f"Supported: {list(SUPPORTED_ASPECT_RATIOS)}"
+            )
+            raise ValueError(msg)
+        if quality not in SUPPORTED_QUALITY_LEVELS:
+            msg = (
+                f"Unsupported quality '{quality}'. "
+                f"Supported: {list(SUPPORTED_QUALITY_LEVELS)}"
+            )
+            raise ValueError(msg)
+
+        provider_name, result = await service.generate(
+            prompt,
+            provider=provider,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+        )
+
+        # Save to scratch directory (blocking I/O → offload to thread)
+        file_path = await asyncio.to_thread(
+            service.save_to_scratch, result, provider_name
+        )
+
+        # Build base64 for MCP ImageContent
+        b64_data = service.get_image_base64(result)
+
+        # Build metadata
+        metadata = {
+            **result.provider_metadata,
+            "provider": provider_name,
+            "file_path": str(file_path),
+            "size_bytes": result.size_bytes,
+        }
+
+        return ToolResult(
+            content=[
+                ImageContent(
+                    type="image",
+                    data=b64_data,
+                    mimeType=result.content_type,
+                ),
+                TextContent(
+                    type="text",
+                    text=json.dumps(metadata, indent=2),
+                ),
+            ]
+        )
+
+    @mcp.tool()
+    async def list_providers(
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """List available image generation providers.
+
+        Returns:
+            JSON object with provider names and availability info.
+        """
+        providers = service.list_providers()
+        return json.dumps(providers, indent=2)
