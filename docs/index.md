@@ -1,45 +1,99 @@
-# Image Gen MCP Server
+# image-gen-mcp
 
-Multi-provider image generation MCP server built on FastMCP. Supports OpenAI
-(gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI), and a zero-cost
-placeholder provider for testing.
+Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (A1111 WebUI), or a zero-cost placeholder provider.
+
+## Features
+
+- **Multi-provider** -- OpenAI (gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI), and placeholder
+- **Auto-selection** -- keyword-based routing picks the best provider for your prompt
+- **Image assets** -- content-addressed registry with thumbnail previews and resource URI-based transforms
+- **Background tasks** -- hybrid foreground (progress streaming) and background (polling) execution
+- **MCP native** -- tools, resources, and prompts following the MCP specification
+- **Authentication** -- bearer token, OIDC, and multi-auth support
+- **Docker ready** -- multi-arch image with privilege dropping
+
+## Architecture
+
+```
+MCP Client (Claude Desktop / Claude Code)
+    |
+    v
++---------------------------------------------+
+|  MCP Layer                                   |
+|  Tools:     generate_image, list_providers   |
+|  Resources: info://providers                 |
+|             image://{id}/view{?transforms}   |
+|             image://{id}/metadata            |
+|             image://list                     |
+|  Prompts:   select_provider, sd_prompt_guide |
++------------------+---+----------------------+
+                   |   |
+  Depends(service) |   | processing.py
+                   v   v
++---------------------------------------------+
+|  ImageService                                |
+|  - Provider registry (name -> instance)      |
+|  - Image registry (content-addressed IDs)    |
+|  - generate() -> dispatches to provider      |
+|  - register_image() -> saves + indexes       |
++------+----------+----------+----------------+
+       |          |          |
+       v          v          v
+  +---------+ +--------+ +--------------+
+  | OpenAI  | | A1111  | | Placeholder  |
+  |Provider | |Provider| | Provider     |
+  +---------+ +--------+ +--------------+
+```
 
 ## Quick start
 
 ```bash
 # Install
-uv sync --extra mcp --extra dev
+pip install image-gen-mcp[all]
 
-# Start server (stdio mode, placeholder only — no API keys needed)
-IMAGE_GEN_MCP_READ_ONLY=false uv run image-gen-mcp serve
+# Run with placeholder (no API keys needed)
+IMAGE_GEN_MCP_READ_ONLY=false image-gen-mcp serve
 
-# Start server (HTTP mode, with OpenAI)
+# Run with OpenAI
 IMAGE_GEN_MCP_READ_ONLY=false \
 IMAGE_GEN_MCP_OPENAI_API_KEY=sk-... \
-uv run image-gen-mcp serve --transport http --port 8000
+image-gen-mcp serve
 ```
 
-## Design
+## Navigation
 
-- [Provider System Design](design/provider-system.md) — architecture, provider
-  protocol, selection logic, configuration reference
+<div class="grid cards" markdown>
 
-## Architecture Decisions
+-   **Getting Started**
 
-- [ADR-0001: Multi-Provider Architecture](decisions/0001-multi-provider-architecture.md) —
-  direct generation with MCP prompt guidance (no prompt distillation)
-- [ADR-0002: Provider Protocol and Registry](decisions/0002-provider-protocol-and-registry.md) —
-  runtime-checkable Protocol with registry pattern
-- [ADR-0003: A1111 Model-Aware Presets](decisions/0003-a1111-model-aware-presets.md) —
-  auto-detect SD architecture from checkpoint name
-- [ADR-0004: Keyword-Based Provider Selection](decisions/0004-keyword-based-provider-selection.md) —
-  word-boundary keyword matching with fallback chain
+    ---
 
-## Deployment
+    Install, configure, and connect to Claude Desktop or Claude Code.
 
-- [Docker](deployment/docker.md)
-- [OIDC](deployment/oidc.md)
+    [:octicons-arrow-right-24: Installation](getting-started/installation.md)
 
-## Guides
+-   **Providers**
 
-- [Authentication](guides/authentication.md) — bearer token, OIDC, multi-auth setup
+    ---
+
+    Compare providers, set up OpenAI or A1111, use the placeholder.
+
+    [:octicons-arrow-right-24: Provider overview](providers/index.md)
+
+-   **Configuration**
+
+    ---
+
+    All environment variables with types, defaults, and descriptions.
+
+    [:octicons-arrow-right-24: Configuration reference](configuration.md)
+
+-   **MCP Interface**
+
+    ---
+
+    Tools, resources, and prompts exposed to MCP clients.
+
+    [:octicons-arrow-right-24: Tools](tools.md) | [:octicons-arrow-right-24: Resources](resources.md) | [:octicons-arrow-right-24: Prompts](prompts.md)
+
+</div>

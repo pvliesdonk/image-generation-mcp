@@ -1,6 +1,6 @@
 site_name: Image Gen MCP Server
 site_url: https://pvliesdonk.github.io/image-gen-mcp/
-site_description: Production-ready FastMCP server scaffold
+site_description: Multi-provider image generation MCP server built on FastMCP
 repo_url: https://github.com/pvliesdonk/image-gen-mcp
 repo_name: pvliesdonk/image-gen-mcp
 edit_uri: edit/main/docs/
@@ -34,8 +34,42 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
+exclude_docs: |
+  design/**
+  decisions/**
+
 plugins:
   - search
+  - llmstxt:
+      full_output: llms-full.txt
+      markdown_description: >
+        image-gen-mcp is a multi-provider image generation MCP server
+        supporting OpenAI (gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI),
+        and a zero-cost placeholder provider. Features keyword-based auto-selection,
+        background tasks with progress reporting, and resource-based image transforms.
+      sections:
+        Getting Started:
+          - index.md: Overview -- features, providers, quick start
+          - getting-started/installation.md: Installation from PyPI, uv, source, or Docker
+          - getting-started/claude-desktop.md: Claude Desktop MCP configuration
+          - getting-started/claude-code.md: Claude Code MCP configuration
+        Providers:
+          - providers/index.md: Provider comparison and selection guide
+          - providers/openai.md: OpenAI provider setup and capabilities
+          - providers/a1111.md: A1111 Stable Diffusion WebUI setup
+          - providers/placeholder.md: Zero-cost placeholder for testing
+        Configuration:
+          - configuration.md: All environment variables with types and defaults
+        MCP Interface:
+          - tools.md: MCP tools with parameters and examples
+          - resources.md: MCP resources with URI patterns
+          - prompts.md: MCP prompts with workflow descriptions
+        Guides:
+          - guides/authentication.md: Authentication modes -- bearer, OIDC, multi-auth
+          - guides/prompt-writing.md: Provider-specific prompt writing tips
+        Deployment:
+          - deployment/docker.md: Docker Compose, Traefik, volumes
+          - deployment/oidc.md: OIDC authentication setup
   - mkdocstrings:
       handlers:
         python:
@@ -69,8 +103,24 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Claude Desktop: getting-started/claude-desktop.md
+      - Claude Code: getting-started/claude-code.md
+  - Providers:
+      - Overview: providers/index.md
+      - OpenAI: providers/openai.md
+      - A1111 (Stable Diffusion): providers/a1111.md
+      - Placeholder: providers/placeholder.md
+  - Configuration: configuration.md
+  - MCP Interface:
+      - Tools: tools.md
+      - Resources: resources.md
+      - Prompts: prompts.md
   - Guides:
       - Authentication: guides/authentication.md
+      - Prompt Writing: guides/prompt-writing.md
+      - Image Assets: guides/image-assets.md
   - Deployment:
       - Docker: deployment/docker.md
       - OIDC Authentication: deployment/oidc.md

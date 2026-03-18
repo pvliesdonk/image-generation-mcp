@@ -31,3 +31,16 @@ src/image_gen_mcp/
 - Write tools tagged `tags={"write"}`, hidden via `mcp.disable(tags={"write"})` in read-only mode
 - Auth: `_build_bearer_auth()` + `_build_oidc_auth()` called in `create_server()`; MultiAuth when both set
 - `_ENV_PREFIX` in `config.py` controls all env var names — change once, affects everything
+
+## Documentation
+
+Every PR that changes user-facing behavior must update the corresponding documentation:
+
+- **New/changed tools or resources** → update `docs/tools.md` and `docs/resources.md`
+- **New/changed env vars** → update `docs/configuration.md` AND the README config table
+- **New/changed provider behavior** → update the provider's page in `docs/providers/`
+- **New MCP client configuration** → update `docs/getting-started/claude-desktop.md` or `claude-code.md`
+
+The architect-reviewer conformance check includes documentation currency. A PR that adds a tool without documenting it is incomplete.
+
+Internal design docs (`docs/design/`, `docs/decisions/`) are developer reference — they are NOT part of the mkdocs site. ADRs are created/updated as part of implementation issues, not documentation issues.
