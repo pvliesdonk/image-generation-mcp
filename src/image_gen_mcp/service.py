@@ -39,7 +39,7 @@ class ImageRecord:
     aspect_ratio: str
     quality: str
     original_dimensions: tuple[int, int]
-    provider_metadata: dict[str, Any]
+    provider_metadata: dict[str, Any]  # treat as read-only; frozen prevents reassignment
     created_at: float
 
 
@@ -305,6 +305,13 @@ class ImageService:
                 data = json.loads(sidecar_path.read_text())
                 image_id = data["id"]
                 original_path = self._scratch_dir / data["original_filename"]
+                if not original_path.exists():
+                    logger.warning(
+                        "Skipping sidecar %s: original file missing (%s)",
+                        sidecar_path,
+                        original_path,
+                    )
+                    continue
 
                 # Parse ISO timestamp back to epoch
                 created_at = (

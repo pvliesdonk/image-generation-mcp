@@ -7,6 +7,7 @@ Exposes ``generate_image`` and ``list_providers`` tools to MCP clients.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 
@@ -89,12 +90,13 @@ def register_tools(mcp: FastMCP) -> None:
         thumb_data, thumb_mime = await asyncio.to_thread(
             generate_thumbnail, result.image_data
         )
-        thumb_b64 = __import__("base64").b64encode(thumb_data).decode("ascii")
+        thumb_b64 = base64.b64encode(thumb_data).decode("ascii")
 
         # Build metadata with resource URIs
         metadata = {
             "image_id": record.id,
             "original_uri": f"image://{record.id}/view",
+            "metadata_uri": f"image://{record.id}/metadata",
             "resource_template": (
                 f"image://{record.id}"
                 "/view{?format,width,height,quality}"

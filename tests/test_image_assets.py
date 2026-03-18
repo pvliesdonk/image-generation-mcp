@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
 from image_gen_mcp.providers.types import ImageProviderError, ImageResult
@@ -19,11 +23,9 @@ async def image_result() -> ImageResult:
 
 
 @pytest.fixture
-def service(tmp_path: object) -> ImageService:
+def service(tmp_path: Path) -> ImageService:
     """Create an ImageService with a temp scratch directory."""
-    from pathlib import Path
-
-    return ImageService(scratch_dir=Path(str(tmp_path)))
+    return ImageService(scratch_dir=tmp_path)
 
 
 # --- register_image ---

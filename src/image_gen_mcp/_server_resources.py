@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import json
 import logging
+from datetime import UTC, datetime
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
@@ -19,6 +20,7 @@ from image_gen_mcp.processing import convert_format, crop_to_dimensions, resize_
 from image_gen_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_QUALITY_LEVELS,
+    ImageProviderError,
 )
 from image_gen_mcp.service import ImageService
 
@@ -127,7 +129,13 @@ def register_resources(mcp: FastMCP) -> None:
 
         # Read sidecar JSON directly
         sidecar_path = service.scratch_dir / f"{record.id}.json"
-        return sidecar_path.read_text()
+        try:
+            return sidecar_path.read_text()
+        except FileNotFoundError:
+            raise ImageProviderError(
+                "registry",
+                f"Metadata file missing for image '{image_id}'",
+            ) from None
 
     @mcp.resource("image://list", mime_type="application/json")
     async def image_list(
@@ -152,7 +160,9 @@ def register_resources(mcp: FastMCP) -> None:
                     "/view{?format,width,height,quality}"
                 ),
                 "prompt": img.prompt,
-                "created_at": img.created_at,
+                "created_at": datetime.fromtimestamp(
+                    img.created_at, tz=UTC
+                ).isoformat(),
             }
             for img in images
         ]
