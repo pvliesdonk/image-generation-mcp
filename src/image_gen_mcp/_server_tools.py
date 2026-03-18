@@ -12,7 +12,8 @@ import json
 import logging
 
 from fastmcp import FastMCP
-from fastmcp.dependencies import Depends
+from fastmcp.dependencies import CurrentContext, Depends
+from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, TextContent
 
@@ -31,7 +32,7 @@ def register_tools(mcp: FastMCP) -> None:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
     """
 
-    @mcp.tool(tags={"write"})
+    @mcp.tool(tags={"write"}, task=True)
     async def generate_image(
         prompt: str,
         provider: str = "auto",
@@ -39,6 +40,7 @@ def register_tools(mcp: FastMCP) -> None:
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         service: ImageService = Depends(get_service),
+        ctx: Context = CurrentContext(),
     ) -> ToolResult:
         """Generate an image from a text prompt.
 
@@ -67,6 +69,7 @@ def register_tools(mcp: FastMCP) -> None:
             )
             raise ValueError(msg)
 
+        await ctx.report_progress(0, 2, "Generating image")
         provider_name, result = await service.generate(
             prompt,
             provider=provider,
@@ -74,6 +77,8 @@ def register_tools(mcp: FastMCP) -> None:
             aspect_ratio=aspect_ratio,
             quality=quality,
         )
+
+        await ctx.report_progress(1, 2, "Saving to scratch")
 
         # Register in the image registry (blocking I/O -> offload)
         record = await asyncio.to_thread(
@@ -106,6 +111,8 @@ def register_tools(mcp: FastMCP) -> None:
             "file_path": str(record.original_path),
             **result.provider_metadata,
         }
+
+        await ctx.report_progress(2, 2, "Done")
 
         return ToolResult(
             content=[
