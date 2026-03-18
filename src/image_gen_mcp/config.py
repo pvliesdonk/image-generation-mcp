@@ -89,6 +89,7 @@ class ServerConfig:
     scratch_dir: Path = field(default_factory=lambda: _DEFAULT_SCRATCH_DIR)
     openai_api_key: str | None = None
     a1111_host: str | None = None
+    a1111_model: str | None = None
     default_provider: str = "auto"
 
 
@@ -101,6 +102,7 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GEN_MCP_SCRATCH_DIR``: image save directory.
     - ``IMAGE_GEN_MCP_OPENAI_API_KEY``: OpenAI API key.
     - ``IMAGE_GEN_MCP_A1111_HOST``: A1111 WebUI URL.
+    - ``IMAGE_GEN_MCP_A1111_MODEL``: A1111 checkpoint name for preset detection.
     - ``IMAGE_GEN_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
 
     Returns:
@@ -123,6 +125,9 @@ def load_config() -> ServerConfig:
 
     if host := _env("A1111_HOST"):
         kwargs["a1111_host"] = host
+
+    if model := _env("A1111_MODEL"):
+        kwargs["a1111_model"] = model
 
     if provider := _env("DEFAULT_PROVIDER"):
         kwargs["default_provider"] = provider

@@ -43,6 +43,17 @@ class ImageService:
         """The scratch directory for saved images."""
         return self._scratch_dir
 
+    @property
+    def providers(self) -> dict[str, ImageProvider]:
+        """Registered providers (read-only view)."""
+        return self._providers
+
+    async def aclose(self) -> None:
+        """Close all providers that support async cleanup."""
+        for provider in self._providers.values():
+            if hasattr(provider, "aclose"):
+                await provider.aclose()
+
     def register_provider(self, name: str, provider: ImageProvider) -> None:
         """Register an image provider.
 
