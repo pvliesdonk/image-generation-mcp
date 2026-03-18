@@ -44,14 +44,13 @@ Returns a `ToolResult` with two content items:
 
 ### Progress reporting
 
-The tool reports progress at 4 stages:
+The tool reports progress at 3 stages:
 
 | Progress | Stage |
 |----------|-------|
-| 0/3 | Selecting provider |
-| 1/3 | Generating image |
-| 2/3 | Saving to scratch |
-| 3/3 | Done |
+| 0/2 | Generating image |
+| 1/2 | Saving to scratch |
+| 2/2 | Done |
 
 In foreground mode (default), clients receive these as streaming progress notifications. In background mode (`task=True`), clients poll for progress updates.
 
