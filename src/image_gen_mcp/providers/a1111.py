@@ -49,10 +49,6 @@ _SD15_PRESET = _A1111Preset(
         "3:2": (768, 512),
         "2:3": (512, 768),
     },
-    steps=30,
-    sampler="DPM++ 2M Karras",
-    cfg_scale=7.0,
-    quality_tier="medium",
 )
 
 _SDXL_SIZES: dict[str, tuple[int, int]] = {
