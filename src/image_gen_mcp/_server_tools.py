@@ -69,9 +69,7 @@ def register_tools(mcp: FastMCP) -> None:
             )
             raise ValueError(msg)
 
-        await ctx.report_progress(0, 3, "Selecting provider")
-
-        await ctx.report_progress(1, 3, "Generating image")
+        await ctx.report_progress(0, 2, "Generating image")
         provider_name, result = await service.generate(
             prompt,
             provider=provider,
@@ -80,7 +78,7 @@ def register_tools(mcp: FastMCP) -> None:
             quality=quality,
         )
 
-        await ctx.report_progress(2, 3, "Saving to scratch")
+        await ctx.report_progress(1, 2, "Saving to scratch")
 
         # Register in the image registry (blocking I/O -> offload)
         record = await asyncio.to_thread(
@@ -114,7 +112,7 @@ def register_tools(mcp: FastMCP) -> None:
             **result.provider_metadata,
         }
 
-        await ctx.report_progress(3, 3, "Done")
+        await ctx.report_progress(2, 2, "Done")
 
         return ToolResult(
             content=[

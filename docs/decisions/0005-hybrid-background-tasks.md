@@ -62,10 +62,9 @@ controls execution mode:
   polls for progress and result.
 
 Progress stages:
-1. Selecting provider (0/3)
-2. Generating image (1/3)
-3. Saving to scratch (2/3)
-4. Done (3/3)
+1. Generating image (0/2)
+2. Saving to scratch (1/2)
+3. Done (2/2)
 
 **Critical constraint:** The tool function must contain zero conditional logic
 based on execution mode. There must be no `if ctx.is_background_task:`

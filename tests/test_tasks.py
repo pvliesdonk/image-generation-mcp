@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import inspect
+
 from fastmcp import FastMCP
 
 from image_gen_mcp._server_tools import register_tools
@@ -29,9 +31,7 @@ async def test_list_providers_no_task() -> None:
 
 
 async def test_progress_stages_present() -> None:
-    """generate_image source contains 4 report_progress calls."""
-    import inspect
-
+    """generate_image source contains 3 report_progress calls."""
     mcp = FastMCP("test")
     register_tools(mcp)
 
@@ -40,8 +40,7 @@ async def test_progress_stages_present() -> None:
 
     # Inspect the function source for progress calls
     source = inspect.getsource(tool.fn)
-    assert source.count("report_progress") == 4
-    assert '"Selecting provider"' in source
+    assert source.count("report_progress") == 3
     assert '"Generating image"' in source
     assert '"Saving to scratch"' in source
     assert '"Done"' in source
