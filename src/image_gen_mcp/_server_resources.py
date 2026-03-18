@@ -85,11 +85,8 @@ def register_resources(mcp: FastMCP) -> None:
         data = record.original_path.read_bytes()
         content_type = record.content_type
 
-        # Apply format conversion
-        if format:
-            data, content_type = convert_format(data, format, quality=quality)
-
-        # Apply resize/crop
+        # Apply resize/crop first (always from original to prevent quality
+        # degradation — see ADR-0006)
         if width > 0 and height > 0:
             data = crop_to_dimensions(data, width, height)
         elif width > 0:
@@ -104,6 +101,10 @@ def register_resources(mcp: FastMCP) -> None:
             ratio = height / img.height
             new_width = round(img.width * ratio)
             data = resize_image(data, new_width, height)
+
+        # Apply format conversion last (one encode from spatial result)
+        if format:
+            data, content_type = convert_format(data, format, quality=quality)
 
         return ResourceResult(
             ResourceContent(content=data, mime_type=content_type)
