@@ -98,8 +98,7 @@ def register_tools(mcp: FastMCP) -> None:
             "original_uri": f"image://{record.id}/view",
             "metadata_uri": f"image://{record.id}/metadata",
             "resource_template": (
-                f"image://{record.id}"
-                "/view{?format,width,height,quality}"
+                f"image://{record.id}/view{{?format,width,height,quality}}"
             ),
             "original_size_bytes": result.size_bytes,
             "thumbnail_size_bytes": len(thumb_data),

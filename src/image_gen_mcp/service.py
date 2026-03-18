@@ -38,7 +38,9 @@ class ImageRecord:
     aspect_ratio: str
     quality: str
     original_dimensions: tuple[int, int]
-    provider_metadata: dict[str, Any]  # treat as read-only; frozen prevents reassignment
+    provider_metadata: dict[
+        str, Any
+    ]  # treat as read-only; frozen prevents reassignment
     created_at: float
 
 
@@ -249,9 +251,7 @@ class ImageService:
             "original_size_bytes": result.size_bytes,
             "original_dimensions": list(record.original_dimensions),
             "provider_metadata": record.provider_metadata,
-            "created_at": datetime.fromtimestamp(
-                record.created_at, tz=UTC
-            ).isoformat(),
+            "created_at": datetime.fromtimestamp(record.created_at, tz=UTC).isoformat(),
         }
         sidecar_path.write_text(json.dumps(sidecar_data, indent=2))
 
@@ -313,9 +313,7 @@ class ImageService:
                     continue
 
                 # Parse ISO timestamp back to epoch
-                created_at = (
-                    datetime.fromisoformat(data["created_at"]).timestamp()
-                )
+                created_at = datetime.fromisoformat(data["created_at"]).timestamp()
 
                 record = ImageRecord(
                     id=image_id,
@@ -333,13 +331,10 @@ class ImageService:
                 self._images[image_id] = record
                 count += 1
             except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-                logger.warning(
-                    "Skipping corrupt sidecar file: %s", sidecar_path
-                )
+                logger.warning("Skipping corrupt sidecar file: %s", sidecar_path)
 
         if count:
             logger.info("Loaded %d images from scratch directory", count)
-
 
 
 _MIME_TO_EXT: dict[str, str] = {

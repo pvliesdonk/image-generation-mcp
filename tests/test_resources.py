@@ -36,9 +36,7 @@ def registered(
     service: ImageService, image_result: ImageResult
 ) -> tuple[ImageService, str]:
     """Register a test image and return (service, image_id)."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="resource test"
-    )
+    record = service.register_image(image_result, "placeholder", prompt="resource test")
     return service, record.id
 
 

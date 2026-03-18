@@ -76,5 +76,3 @@ class TestGenerate:
         )
         assert name == "placeholder"
         assert result.provider_metadata["size"] == "640x360"
-
-

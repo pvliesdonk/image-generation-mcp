@@ -106,9 +106,7 @@ def register_resources(mcp: FastMCP) -> None:
         if format:
             data, content_type = convert_format(data, format, quality=quality)
 
-        return ResourceResult(
-            ResourceContent(content=data, mime_type=content_type)
-        )
+        return ResourceResult([ResourceContent(content=data, mime_type=content_type)])
 
     @mcp.resource(
         "image://{image_id}/metadata",
@@ -157,8 +155,7 @@ def register_resources(mcp: FastMCP) -> None:
                 "original_uri": f"image://{img.id}/view",
                 "metadata_uri": f"image://{img.id}/metadata",
                 "resource_template": (
-                    f"image://{img.id}"
-                    "/view{?format,width,height,quality}"
+                    f"image://{img.id}/view{{?format,width,height,quality}}"
                 ),
                 "prompt": img.prompt,
                 "created_at": datetime.fromtimestamp(

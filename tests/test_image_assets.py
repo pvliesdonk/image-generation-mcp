@@ -35,9 +35,7 @@ def test_register_image_creates_file(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """Registering an image saves the original to scratch."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="test image"
-    )
+    record = service.register_image(image_result, "placeholder", prompt="test image")
     assert record.original_path.exists()
     assert record.original_path.read_bytes() == image_result.image_data
 
@@ -70,12 +68,8 @@ def test_register_image_content_addressed(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """Same image data produces the same ID."""
-    r1 = service.register_image(
-        image_result, "placeholder", prompt="first"
-    )
-    r2 = service.register_image(
-        image_result, "placeholder", prompt="second"
-    )
+    r1 = service.register_image(image_result, "placeholder", prompt="first")
+    r2 = service.register_image(image_result, "placeholder", prompt="second")
     assert r1.id == r2.id
 
 
@@ -86,9 +80,7 @@ def test_sidecar_written_on_register(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """Registering an image creates both original and sidecar JSON."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="test image"
-    )
+    record = service.register_image(image_result, "placeholder", prompt="test image")
     sidecar_path = service.scratch_dir / f"{record.id}.json"
     assert sidecar_path.exists()
     assert record.original_path.exists()
@@ -105,9 +97,7 @@ def test_sidecar_contains_prompt(
         negative_prompt="blurry",
         aspect_ratio="16:9",
     )
-    sidecar = json.loads(
-        (service.scratch_dir / f"{record.id}.json").read_text()
-    )
+    sidecar = json.loads((service.scratch_dir / f"{record.id}.json").read_text())
     assert sidecar["prompt"] == "a sunset over mountains"
     assert sidecar["negative_prompt"] == "blurry"
     assert sidecar["provider"] == "placeholder"
@@ -118,12 +108,8 @@ def test_sidecar_contains_provider_metadata(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """Sidecar JSON includes provider-specific metadata."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="test"
-    )
-    sidecar = json.loads(
-        (service.scratch_dir / f"{record.id}.json").read_text()
-    )
+    record = service.register_image(image_result, "placeholder", prompt="test")
+    sidecar = json.loads((service.scratch_dir / f"{record.id}.json").read_text())
     assert "provider_metadata" in sidecar
     # Placeholder provider includes quality, size, color
     assert sidecar["provider_metadata"]["quality"] == "placeholder"
@@ -133,25 +119,17 @@ def test_sidecar_contains_dimensions(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """Sidecar JSON includes original image dimensions."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="test"
-    )
-    sidecar = json.loads(
-        (service.scratch_dir / f"{record.id}.json").read_text()
-    )
+    record = service.register_image(image_result, "placeholder", prompt="test")
+    sidecar = json.loads((service.scratch_dir / f"{record.id}.json").read_text())
     assert sidecar["original_dimensions"] == [256, 256]
 
 
 # --- get_image / list_images ---
 
 
-def test_get_image_found(
-    service: ImageService, image_result: ImageResult
-) -> None:
+def test_get_image_found(service: ImageService, image_result: ImageResult) -> None:
     """get_image returns the registered record."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="test"
-    )
+    record = service.register_image(image_result, "placeholder", prompt="test")
     found = service.get_image(record.id)
     assert found.id == record.id
     assert found.prompt == "test"
@@ -163,9 +141,7 @@ def test_get_image_not_found(service: ImageService) -> None:
         service.get_image("nonexistent")
 
 
-def test_list_images(
-    service: ImageService, image_result: ImageResult
-) -> None:
+def test_list_images(service: ImageService, image_result: ImageResult) -> None:
     """list_images returns all registered images."""
     service.register_image(image_result, "placeholder", prompt="test")
     images = service.list_images()
@@ -185,9 +161,7 @@ def test_registry_rebuild_on_startup(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """A new ImageService loads existing sidecar files from scratch."""
-    record = service.register_image(
-        image_result, "placeholder", prompt="rebuild test"
-    )
+    record = service.register_image(image_result, "placeholder", prompt="rebuild test")
 
     # Create a fresh service pointing at the same scratch dir
     new_service = ImageService(scratch_dir=service.scratch_dir)
@@ -201,9 +175,7 @@ def test_registry_rebuild_ignores_corrupt_json(
     service: ImageService, image_result: ImageResult
 ) -> None:
     """Corrupt sidecar files are logged and skipped."""
-    service.register_image(
-        image_result, "placeholder", prompt="good"
-    )
+    service.register_image(image_result, "placeholder", prompt="good")
 
     # Write a corrupt sidecar
     corrupt_path = service.scratch_dir / "corrupt.json"
