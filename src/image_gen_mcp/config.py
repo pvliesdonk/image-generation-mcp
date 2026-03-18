@@ -107,7 +107,6 @@ def load_config() -> ServerConfig:
         A populated :class:`ServerConfig` instance.
     """
     raw_read_only = _env("READ_ONLY")
-    logger.debug("load_config: raw read_only=%r", raw_read_only)
 
     # Build kwargs — only set values that are explicitly configured,
     # letting ServerConfig dataclass defaults apply for the rest.
@@ -128,4 +127,6 @@ def load_config() -> ServerConfig:
     if provider := _env("DEFAULT_PROVIDER"):
         kwargs["default_provider"] = provider
 
-    return ServerConfig(**kwargs)
+    config = ServerConfig(**kwargs)
+    logger.debug("load_config: read_only=%s (raw=%r)", config.read_only, raw_read_only)
+    return config
