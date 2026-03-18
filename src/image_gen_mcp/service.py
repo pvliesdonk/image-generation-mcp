@@ -78,11 +78,14 @@ class ImageService:
             }
         return result
 
-    def _resolve_provider(self, provider: str) -> tuple[str, ImageProvider]:
+    def _resolve_provider(
+        self, provider: str, prompt: str
+    ) -> tuple[str, ImageProvider]:
         """Resolve a provider name to an instance.
 
         Args:
             provider: Provider name or ``"auto"``.
+            prompt: The generation prompt (used for auto-selection).
 
         Returns:
             Tuple of (resolved_name, provider_instance).
@@ -91,13 +94,10 @@ class ImageService:
             ImageProviderError: If no matching provider is available.
         """
         if provider == "auto":
-            # Simple fallback: first non-placeholder, then placeholder
-            for name, prov in self._providers.items():
-                if name != "placeholder":
-                    return name, prov
-            if "placeholder" in self._providers:
-                return "placeholder", self._providers["placeholder"]
-            raise ImageProviderError("auto", "No providers available")
+            from image_gen_mcp.providers.selector import select_provider
+
+            selected = select_provider(prompt, set(self._providers))
+            return selected, self._providers[selected]
 
         if provider not in self._providers:
             available = ", ".join(self._providers) or "none"
@@ -132,7 +132,7 @@ class ImageService:
             ImageProviderError: If generation fails.
         """
         resolved_name, resolved_provider = self._resolve_provider(
-            provider or self._default_provider
+            provider or self._default_provider, prompt
         )
 
         logger.info(

@@ -1,6 +1,4 @@
-"""MCP prompt registrations.
-
-TODO: Add your domain prompts here.
+"""MCP prompt registrations — provider selection and prompt guidance.
 
 Prompts provide reusable LLM instruction templates exposed to clients.
 Write prompts should be tagged with ``tags={"write"}`` so they are hidden
@@ -13,6 +11,131 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+_SELECT_PROVIDER_PROMPT = """\
+You have access to an image generation MCP server with multiple providers.
+Choose the best provider for the user's request based on these guidelines:
+
+## Provider Strengths
+
+### OpenAI (gpt-image-1 / dall-e-3)
+- **Best for:** Text rendering, logos, typography, posters, banners, signs
+- **Good at:** General-purpose generation, following complex instructions
+- **Supports:** Negative prompt (as "Avoid:" clause), multiple quality levels
+- **Prompt style:** Natural language descriptions work well
+
+### A1111 / Stable Diffusion WebUI
+- **Best for:** Photorealism, portraits, product shots, artistic styles
+- **Good at:** Anime/manga, watercolor, oil painting, illustration
+- **Supports:** Native negative prompt, fine-grained parameter control
+- **Prompt style:** Comma-separated tags work best (see sd_prompt_guide)
+- **Note:** Requires a running A1111 WebUI instance
+
+### Placeholder
+- **Best for:** Quick drafts, testing, mock-ups
+- **Produces:** Solid-color PNG images (no real generation)
+- **Use when:** You need a fast placeholder without API costs
+
+## Selection Rules
+
+1. If the request involves **text, logos, or typography** → use **openai**
+2. If the request involves **photorealism, portraits, or product shots** → prefer **a1111** (fall back to openai)
+3. If the request involves **art, illustration, anime, or painting** → prefer **a1111** (fall back to openai)
+4. If the request is a **quick test or placeholder** → use **placeholder**
+5. For **general requests** → default to **openai** (most versatile)
+
+## Usage
+
+Call `generate_image` with `provider="auto"` for automatic selection,
+or specify a provider name directly. Use `list_providers` to see which
+providers are currently available.
+"""
+
+_SD_PROMPT_GUIDE = """\
+When generating images with the A1111 (Stable Diffusion) provider, format
+prompts as comma-separated tags for best results. This guide covers the
+CLIP-based prompt format used by Stable Diffusion models.
+
+## Prompt Format
+
+Use comma-separated descriptive tags, ordered by importance:
+
+```
+subject, medium, style, lighting, camera, quality tags
+```
+
+### Example Prompts
+
+**Portrait:**
+```
+1girl, long hair, blue eyes, school uniform, standing, cherry blossoms,
+soft lighting, detailed face, masterpiece, best quality
+```
+
+**Landscape:**
+```
+mountain landscape, sunset, dramatic clouds, lake reflection,
+cinematic lighting, wide angle, 8k, highly detailed
+```
+
+**Product shot:**
+```
+white sneakers, product photography, studio lighting, white background,
+sharp focus, commercial photography, high resolution
+```
+
+## Quality Tags
+
+Add these to improve output quality:
+- `masterpiece, best quality` — general quality boost
+- `highly detailed, sharp focus` — detail enhancement
+- `8k, ultra high res` — resolution boost (use sparingly)
+- `professional, award winning` — style refinement
+
+## Negative Prompt
+
+Always include a negative prompt to avoid common artifacts:
+
+**General-purpose negative:**
+```
+lowres, bad anatomy, bad hands, text, error, missing fingers,
+extra digit, fewer digits, cropped, worst quality, low quality,
+normal quality, jpeg artifacts, signature, watermark, blurry
+```
+
+**For photorealism, add:**
+```
+cartoon, anime, illustration, painting, drawing, art, sketch
+```
+
+**For anime/illustration, add:**
+```
+photo, realistic, 3d render
+```
+
+## CLIP Token Limits
+
+- **SD 1.5:** 77 tokens per CLIP chunk. Use `BREAK` to start a new chunk.
+- **SDXL:** 77 tokens per chunk, but two CLIP encoders (ViT-L + ViT-bigG).
+
+Keep prompts concise. Front-load the most important tags — tokens beyond
+the first 77-token chunk have diminishing influence.
+
+## BREAK Syntax
+
+Use `BREAK` to separate prompt concepts into different CLIP chunks:
+
+```
+1girl, detailed face, blue eyes BREAK
+forest background, sunlight through trees BREAK
+masterpiece, best quality, sharp focus
+```
+
+## Aspect Ratios
+
+Supported aspect ratios: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`.
+The server maps these to optimal pixel dimensions for each SD model.
+"""
+
 
 def register_prompts(mcp: FastMCP) -> None:
     """Register all MCP prompts on *mcp*.
@@ -20,4 +143,22 @@ def register_prompts(mcp: FastMCP) -> None:
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register prompts on.
     """
-    # TODO: Add your domain prompts here.
+
+    @mcp.prompt(
+        name="select_provider",
+        description="Guidelines for selecting the best image generation provider",
+    )
+    def select_provider() -> str:
+        """Return provider selection guidance."""
+        return _SELECT_PROVIDER_PROMPT
+
+    @mcp.prompt(
+        name="sd_prompt_guide",
+        description=(
+            "Guide for writing Stable Diffusion prompts "
+            "(CLIP tag format, negative prompts, BREAK syntax)"
+        ),
+    )
+    def sd_prompt_guide() -> str:
+        """Return Stable Diffusion prompt writing guide."""
+        return _SD_PROMPT_GUIDE
