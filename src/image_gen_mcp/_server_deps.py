@@ -2,9 +2,6 @@
 
 Provides :func:`get_service` and :func:`make_service_lifespan` which are
 imported by the tool, resource, and prompt registration modules.
-
-TODO: Replace ``MyService`` / the placeholder dict with your actual business
-object (database connection, API client, in-memory index, etc.).
 """
 
 from __future__ import annotations
@@ -16,6 +13,9 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext
 from fastmcp.server.context import Context
 from fastmcp.server.lifespan import lifespan
+
+from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
+from image_gen_mcp.service import ImageService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -43,38 +43,35 @@ def make_service_lifespan(config: ServerConfig) -> Any:
     async def _service_lifespan(
         server: FastMCP,  # noqa: ARG001
     ) -> AsyncIterator[dict[str, Any]]:
-        """Initialise the service at server startup, tear down on shutdown."""
+        """Initialise the ImageService at server startup."""
         logger.info("Service starting up (read_only=%s)", config.read_only)
 
-        # TODO: Replace this placeholder with your real service initialisation.
-        # Examples:
-        #   service = MyDatabase(config.data_dir)
-        #   await service.connect()
-        #   service = MyApiClient(api_key=config.api_key)
-        service: dict[str, Any] = {"ready": True}
+        service = ImageService(
+            scratch_dir=config.scratch_dir,
+            default_provider=config.default_provider,
+        )
+
+        # Always register placeholder (zero-cost, no API key needed)
+        service.register_provider("placeholder", PlaceholderImageProvider())
 
         try:
             yield {"service": service, "config": config}
         finally:
-            # TODO: Add teardown logic here.
-            # Examples:
-            #   await service.close()
-            #   service.flush()
             logger.info("Service shut down")
 
     return _service_lifespan
 
 
-def get_service(ctx: Context = CurrentContext()) -> Any:
-    """Resolve the service object from lifespan context.
+def get_service(ctx: Context = CurrentContext()) -> ImageService:
+    """Resolve the ImageService from lifespan context.
 
     Used as a ``Depends()`` default in tool/resource/prompt signatures.
 
     Raises:
         RuntimeError: If the server lifespan has not run.
     """
-    service: Any = ctx.lifespan_context.get("service")
-    if service is None:
+    service = ctx.lifespan_context.get("service")
+    if not isinstance(service, ImageService):
         msg = "Service not initialised — server lifespan has not run"
         raise RuntimeError(msg)
     return service
