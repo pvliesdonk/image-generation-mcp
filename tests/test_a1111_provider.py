@@ -158,7 +158,7 @@ class TestA1111Provider:
             await provider.generate("test")
 
     async def test_connection_error(self, monkeypatch) -> None:
-        async def _raise_connect(*args: Any, **kwargs: Any) -> None:
+        async def _raise_connect(*_args: Any, **_kwargs: Any) -> None:
             raise httpx.ConnectError("simulated")
 
         monkeypatch.setattr(httpx.AsyncClient, "post", _raise_connect)

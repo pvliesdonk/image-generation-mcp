@@ -75,9 +75,7 @@ def make_service_lifespan(config: ServerConfig) -> Any:
         try:
             yield {"service": service, "config": config}
         finally:
-            for provider in service._providers.values():
-                if hasattr(provider, "aclose"):
-                    await provider.aclose()
+            await service.aclose()
             logger.info("Service shut down")
 
     return _service_lifespan
