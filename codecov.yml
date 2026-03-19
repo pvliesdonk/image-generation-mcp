@@ -23,7 +23,6 @@ coverage:
 ignore:
   - "tests/**"
   - "docs/**"
-  - "src/mcp_imagegen/__main__.py"
 
 comment:
   layout: "reach,diff,flags,files"
