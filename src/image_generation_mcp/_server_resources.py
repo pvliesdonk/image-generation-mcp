@@ -24,6 +24,7 @@ from image_generation_mcp.processing import (
 )
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
+    SUPPORTED_BACKGROUNDS,
     SUPPORTED_QUALITY_LEVELS,
     ImageProviderError,
 )
@@ -63,6 +64,7 @@ def register_resources(mcp: FastMCP) -> None:
                 "providers": providers,
                 "supported_aspect_ratios": SUPPORTED_ASPECT_RATIOS,
                 "supported_quality_levels": SUPPORTED_QUALITY_LEVELS,
+                "supported_backgrounds": SUPPORTED_BACKGROUNDS,
             },
             indent=2,
         )

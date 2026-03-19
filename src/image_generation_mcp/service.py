@@ -164,13 +164,18 @@ class ImageService:
         return result
 
     def _resolve_provider(
-        self, provider: str, prompt: str
+        self,
+        provider: str,
+        prompt: str,
+        *,
+        background: str = "opaque",
     ) -> tuple[str, ImageProvider]:
         """Resolve a provider name to an instance.
 
         Args:
             provider: Provider name or ``"auto"``.
             prompt: The generation prompt (used for auto-selection).
+            background: Requested background mode (used for capability filtering).
 
         Returns:
             Tuple of (resolved_name, provider_instance).
@@ -190,7 +195,12 @@ class ImageService:
         if provider == "auto":
             from image_generation_mcp.providers.selector import select_provider
 
-            selected = select_provider(prompt, set(self._providers))
+            selected = select_provider(
+                prompt,
+                set(self._providers),
+                capabilities=self._capabilities or None,
+                background=background,
+            )
             return selected, self._providers[selected]
 
         if provider not in self._providers:
@@ -229,8 +239,19 @@ class ImageService:
             ImageProviderError: If generation fails.
         """
         resolved_name, resolved_provider = self._resolve_provider(
-            provider or self._default_provider, prompt
+            provider or self._default_provider,
+            prompt,
+            background=background,
         )
+
+        # Warn if the resolved provider has degraded capabilities
+        caps = self._capabilities.get(resolved_name)
+        if caps and caps.degraded:
+            logger.warning(
+                "Generating with degraded provider %s — capability "
+                "discovery failed at startup",
+                resolved_name,
+            )
 
         logger.info(
             "Generating image with provider=%s, aspect_ratio=%s",
