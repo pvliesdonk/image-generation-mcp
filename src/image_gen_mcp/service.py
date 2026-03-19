@@ -16,7 +16,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from PIL import Image
 
@@ -91,7 +91,7 @@ class ImageService:
         self._providers[name] = provider
         logger.info("Registered image provider: %s", name)
 
-    _PROVIDER_DESCRIPTIONS: dict[str, str] = {
+    _PROVIDER_DESCRIPTIONS: ClassVar[dict[str, str]] = {
         "openai": (
             "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, "
             "and general-purpose generation"
@@ -101,8 +101,7 @@ class ImageService:
             "portraits, and artistic styles"
         ),
         "placeholder": (
-            "Zero-cost solid-color PNG — instant, no API key, "
-            "for testing and drafts"
+            "Zero-cost solid-color PNG — instant, no API key, for testing and drafts"
         ),
     }
 
@@ -116,9 +115,7 @@ class ImageService:
         for name in self._providers:
             result[name] = {
                 "available": True,
-                "description": self._PROVIDER_DESCRIPTIONS.get(
-                    name, name
-                ),
+                "description": self._PROVIDER_DESCRIPTIONS.get(name, name),
             }
         return result
 
@@ -155,8 +152,7 @@ class ImageService:
                 )
             raise ImageProviderError(
                 provider,
-                f"Provider '{provider}' not available. "
-                f"Available: {available}",
+                f"Provider '{provider}' not available. Available: {available}",
             )
         return provider, self._providers[provider]
 
