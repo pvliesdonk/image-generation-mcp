@@ -3,7 +3,7 @@
   "name": "io.github.pvliesdonk/image-generation-mcp",
   "title": "Image Generation MCP Server",
   "description": "FastMCP server template — replace this with your description",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "repository": {
     "url": "https://github.com/pvliesdonk/image-generation-mcp",
     "source": "github"
@@ -12,14 +12,14 @@
     {
       "registryType": "pypi",
       "identifier": "image-generation-mcp",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/pvliesdonk/image-generation-mcp:0.1.0",
+      "identifier": "ghcr.io/pvliesdonk/image-generation-mcp:1.0.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{--port}/mcp"
