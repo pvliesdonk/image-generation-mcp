@@ -230,3 +230,23 @@ jobs:
           subject-digest: ${{ steps.build-push.outputs.digest }}
           sbom-path: sbom-docker.cdx.json
           push-to-registry: true
+
+  publish-registry:
+    needs: [release, publish-pypi]
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 1
+
+      - name: Publish to MCP Registry
+        uses: nicepkg/mcp-publisher@v1.5.0
+        with:
+          auth-method: github-oidc
