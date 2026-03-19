@@ -20,7 +20,7 @@ rpm:
 
 contents:
   - src: image-generation-mcp.service
-    dst: /etc/systemd/system/image-generation-mcp.service
+    dst: /usr/lib/systemd/system/image-generation-mcp.service
     type: config|noreplace
 
   - src: env.example

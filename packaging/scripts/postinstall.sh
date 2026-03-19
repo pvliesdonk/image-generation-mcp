@@ -6,13 +6,13 @@ CONFIG_DIR="/etc/image-generation-mcp"
 ENV_FILE="$CONFIG_DIR/env"
 EXAMPLE_FILE="$CONFIG_DIR/env.example"
 
-systemctl daemon-reload
+systemctl daemon-reload 2>/dev/null || true
 
 # Install uv if not already present
 if ! command -v uvx >/dev/null 2>&1; then
     echo "  Installing uv (required for image-generation-mcp)..."
     if command -v curl >/dev/null 2>&1; then
-        curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh >/dev/null 2>&1
+        curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
     else
         echo "  WARNING: curl not found — install uv manually:"
         echo "    curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_INSTALL_DIR=/usr/local/bin sh"

@@ -16,7 +16,7 @@ echo "==> Testing install of $ABS_DEB in Debian container..."
 
 docker run --rm -v "$ABS_DEB:/tmp/pkg.deb:ro" debian:bookworm-slim bash -eux -c '
     apt-get update -qq
-    apt-get install -y -qq python3 >/dev/null 2>&1
+    apt-get install -y -qq python3 curl
 
     dpkg -i /tmp/pkg.deb || apt-get install -f -y -qq
 
@@ -29,7 +29,7 @@ docker run --rm -v "$ABS_DEB:/tmp/pkg.deb:ro" debian:bookworm-slim bash -eux -c 
     echo "OK: data dir exists"
 
     # Verify service file
-    test -f /etc/systemd/system/image-generation-mcp.service
+    test -f /usr/lib/systemd/system/image-generation-mcp.service
     echo "OK: service file exists"
 
     # Verify env file
