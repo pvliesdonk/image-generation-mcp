@@ -30,7 +30,7 @@ Provider capabilities and supported features.
             "supported_formats": ["png"],
             "supports_negative_prompt": false,
             "supports_background": true,
-            "max_resolution": null,
+            "max_resolution": 640,
             "default_steps": null,
             "default_cfg": null
           }
