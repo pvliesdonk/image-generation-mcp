@@ -93,8 +93,8 @@ All exceptions carry `provider: str` and `message: str` for clear error reportin
 
 - **Purpose:** Zero-cost solid-color PNG generation for testing and drafts
 - **No dependencies:** Pure Python PNG encoder (zlib + struct)
-- **Color:** Deterministic from MD5 hash of prompt
-- **Aspect ratios:** Maps to pixel sizes (480x480, 640x360, etc.)
+- **Color:** Selected from 6-color palette via SHA-256 hash of prompt
+- **Aspect ratios:** Maps to pixel sizes (256x256, 640x360, etc.)
 - **Always registered** -- no API key or service needed
 
 ### OpenAI Provider

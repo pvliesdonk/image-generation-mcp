@@ -15,14 +15,21 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
-from mcp.types import ImageContent, TextContent
+from mcp.types import Icon, ImageContent, TextContent
 
 from ._server_deps import get_service
 from .processing import generate_thumbnail
-from .providers.types import SUPPORTED_ASPECT_RATIOS, SUPPORTED_QUALITY_LEVELS
+from .providers.types import (
+    SUPPORTED_ASPECT_RATIOS,
+    SUPPORTED_QUALITY_LEVELS,
+    ImageContentPolicyError,
+    ImageProviderConnectionError,
+)
 from .service import ImageService
 
 logger = logging.getLogger(__name__)
+
+_LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 
 
 def register_tools(mcp: FastMCP) -> None:
@@ -32,7 +39,11 @@ def register_tools(mcp: FastMCP) -> None:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
     """
 
-    @mcp.tool(tags={"write"}, task=True)
+    @mcp.tool(
+        tags={"write"},
+        task=True,
+        icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
+    )
     async def generate_image(
         prompt: str,
         provider: str = "auto",
@@ -42,15 +53,28 @@ def register_tools(mcp: FastMCP) -> None:
         service: ImageService = Depends(get_service),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
-        """Generate an image from a text prompt.
+        """Generate an image and return a thumbnail preview with resource URIs.
+
+        Call list_providers first to see available providers. Returns an
+        inline thumbnail plus URIs for full-resolution access and
+        on-demand transforms (resize, crop, format conversion).
 
         Args:
             prompt: Text description of the desired image.
-            provider: Provider name or ``"auto"`` for automatic selection.
-            negative_prompt: Things to avoid in the image.
+            provider: Which provider to use. ``"auto"`` (default) selects
+                based on prompt analysis. ``"openai"`` — best for text,
+                logos, and general-purpose. ``"a1111"`` — best for
+                photorealism, portraits, and artistic styles.
+                ``"placeholder"`` — instant zero-cost solid-color PNG
+                for testing.
+            negative_prompt: Things to avoid in the image. A1111 supports
+                this natively via CLIP. OpenAI appends as an "Avoid:"
+                clause (weaker effect). Placeholder ignores it.
             aspect_ratio: Desired ratio (``1:1``, ``16:9``, ``9:16``,
                 ``3:2``, ``2:3``).
-            quality: Quality level (``standard`` or ``hd``).
+            quality: Quality level. ``"hd"`` vs ``"standard"`` only
+                affects OpenAI (gpt-image-1 maps both to its highest
+                tier). A1111 and placeholder ignore this parameter.
 
         Returns:
             A thumbnail preview plus resource URIs for full-resolution
@@ -70,13 +94,26 @@ def register_tools(mcp: FastMCP) -> None:
             raise ValueError(msg)
 
         await ctx.report_progress(0, 2, "Generating image")
-        provider_name, result = await service.generate(
-            prompt,
-            provider=provider,
-            negative_prompt=negative_prompt,
-            aspect_ratio=aspect_ratio,
-            quality=quality,
-        )
+        try:
+            provider_name, result = await service.generate(
+                prompt,
+                provider=provider,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+            )
+        except ImageContentPolicyError as e:
+            raise ImageContentPolicyError(
+                e.provider,
+                "Content policy rejected the prompt. "
+                "Try rephrasing or use a different provider.",
+            ) from None
+        except ImageProviderConnectionError as e:
+            raise ImageProviderConnectionError(
+                e.provider,
+                "Provider is unreachable. Check that it is running, "
+                "or try a different provider.",
+            ) from None
 
         await ctx.report_progress(1, 2, "Saving to scratch")
 
@@ -128,7 +165,9 @@ def register_tools(mcp: FastMCP) -> None:
             ]
         )
 
-    @mcp.tool()
+    @mcp.tool(
+        icons=[Icon(src=_LUCIDE.format("layers"), mimeType="image/svg+xml")],
+    )
     async def list_providers(
         service: ImageService = Depends(get_service),
     ) -> str:

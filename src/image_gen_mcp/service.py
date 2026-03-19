@@ -16,7 +16,7 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from PIL import Image
 
@@ -91,6 +91,20 @@ class ImageService:
         self._providers[name] = provider
         logger.info("Registered image provider: %s", name)
 
+    _PROVIDER_DESCRIPTIONS: ClassVar[dict[str, str]] = {
+        "openai": (
+            "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, "
+            "and general-purpose generation"
+        ),
+        "a1111": (
+            "Stable Diffusion via A1111 WebUI — best for photorealism, "
+            "portraits, and artistic styles"
+        ),
+        "placeholder": (
+            "Zero-cost solid-color PNG — instant, no API key, for testing and drafts"
+        ),
+    }
+
     def list_providers(self) -> dict[str, dict[str, Any]]:
         """List registered providers with availability info.
 
@@ -98,10 +112,10 @@ class ImageService:
             Dict of provider name -> ``{available: True, description: str}``.
         """
         result: dict[str, dict[str, Any]] = {}
-        for name, prov in self._providers.items():
+        for name in self._providers:
             result[name] = {
                 "available": True,
-                "description": f"{type(prov).__name__} ({name})",
+                "description": self._PROVIDER_DESCRIPTIONS.get(name, name),
             }
         return result
 
@@ -120,6 +134,15 @@ class ImageService:
         Raises:
             ImageProviderError: If no matching provider is available.
         """
+        if not self._providers:
+            raise ImageProviderError(
+                provider,
+                "No providers are registered. Configure at least one: "
+                "set IMAGE_GEN_MCP_OPENAI_API_KEY for OpenAI, "
+                "IMAGE_GEN_MCP_A1111_HOST for Stable Diffusion, "
+                "or the placeholder provider is always available.",
+            )
+
         if provider == "auto":
             from image_gen_mcp.providers.selector import select_provider
 
@@ -127,7 +150,7 @@ class ImageService:
             return selected, self._providers[selected]
 
         if provider not in self._providers:
-            available = ", ".join(self._providers) or "none"
+            available = ", ".join(self._providers)
             raise ImageProviderError(
                 provider,
                 f"Provider '{provider}' not available. Available: {available}",
@@ -280,8 +303,9 @@ class ImageService:
         """
         if image_id not in self._images:
             raise ImageProviderError(
-                "registry",
-                f"Image '{image_id}' not found",
+                "server",
+                f"Image '{image_id}' not found. "
+                "Read image://list to see available IDs.",
             )
         return self._images[image_id]
 

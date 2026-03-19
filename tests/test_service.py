@@ -63,7 +63,7 @@ class TestGenerate:
 
     async def test_generate_no_providers_raises(self, scratch_dir: Path) -> None:
         svc = ImageService(scratch_dir=scratch_dir)
-        with pytest.raises(ImageProviderError, match="No providers available"):
+        with pytest.raises(ImageProviderError, match="No providers are registered"):
             await svc.generate("test", provider="auto")
 
     async def test_generate_passes_params(self, service: ImageService) -> None:

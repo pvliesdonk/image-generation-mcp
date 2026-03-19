@@ -43,16 +43,18 @@ def _build_default_instructions(*, read_only: bool) -> str:
         Instructions string suitable for the ``instructions`` parameter
         of :class:`~fastmcp.FastMCP`.
     """
-    write_line = (
-        "This instance is READ-ONLY — write tools are not available."
+    mode_line = (
+        "This instance is READ-ONLY — image generation is disabled."
         if read_only
-        else "This instance is READ-WRITE — write tools are available."
+        else "This instance is READ-WRITE — image generation is available."
     )
     return (
-        "A FastMCP service. "
-        f"{write_line} "
-        f"Operators: set {_ENV_PREFIX}_INSTRUCTIONS to describe this "
-        "service's domain and capabilities."
+        "AI image generation server supporting multiple providers "
+        "(OpenAI gpt-image-1/dall-e-3, Stable Diffusion via A1111, "
+        "and a zero-cost placeholder). "
+        f"{mode_line} "
+        "Start by calling list_providers to see which providers are "
+        "configured, then use generate_image to create images."
     )
 
 
