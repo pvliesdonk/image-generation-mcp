@@ -399,3 +399,78 @@ class TestA1111DiscoverProviderLevelFlags:
         assert caps.degraded is False
         assert caps.models == ()
         assert caps.supports_negative_prompt is True
+
+
+# -- Response validation tests -----------------------------------------------
+
+
+class TestA1111DiscoverResponseValidation:
+    """Tests for defensive checks on unexpected API responses."""
+
+    async def test_non_list_response_returns_degraded(self) -> None:
+        """When /sdapi/v1/sd-models returns a dict instead of a list, mark degraded."""
+        provider = _make_provider()
+
+        async def _dispatch(url: str, **kwargs: Any) -> MagicMock:  # noqa: ARG001
+            response = MagicMock()
+            response.status_code = 200
+            if "sd-models" in url:
+                response.json.return_value = {"error": "unexpected"}
+            elif "options" in url:
+                response.json.return_value = _OPTIONS_RESPONSE
+            return response
+
+        provider._client.get = AsyncMock(side_effect=_dispatch)
+        caps = await provider.discover_capabilities()
+
+        assert caps.degraded is True
+        assert caps.models == ()
+
+    async def test_non_list_response_logs_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Non-list response logs a warning with the type name."""
+        provider = _make_provider()
+
+        async def _dispatch(url: str, **kwargs: Any) -> MagicMock:  # noqa: ARG001
+            response = MagicMock()
+            response.status_code = 200
+            if "sd-models" in url:
+                response.json.return_value = {"error": "unexpected"}
+            elif "options" in url:
+                response.json.return_value = _OPTIONS_RESPONSE
+            return response
+
+        provider._client.get = AsyncMock(side_effect=_dispatch)
+
+        with caplog.at_level(
+            logging.WARNING, logger="image_generation_mcp.providers.a1111"
+        ):
+            await provider.discover_capabilities()
+
+        assert any("unexpected type" in r.message.lower() for r in caplog.records)
+
+    async def test_empty_title_checkpoint_skipped(self) -> None:
+        """Checkpoints with empty titles are skipped."""
+        provider = _make_provider()
+        checkpoints = [
+            {"title": "", "model_name": "no-title"},
+            _CHECKPOINT_SD15,
+        ]
+        provider._client.get = _mock_get(checkpoints)
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1
+        assert caps.models[0].display_name == _CHECKPOINT_SD15["model_name"]
+
+    async def test_missing_title_checkpoint_skipped(self) -> None:
+        """Checkpoints with missing title key are skipped."""
+        provider = _make_provider()
+        checkpoints = [
+            {"model_name": "no-title-key"},
+            _CHECKPOINT_SD15,
+        ]
+        provider._client.get = _mock_get(checkpoints)
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1

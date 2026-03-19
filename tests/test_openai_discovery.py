@@ -86,6 +86,8 @@ class TestDiscoverCapabilitiesSuccess:
 
         assert caps.degraded is False
         assert caps.models == ()
+        assert caps.supports_background is False
+        assert caps.supports_negative_prompt is False
 
     async def test_openai_discover_capabilities_api_failure(
         self, provider: OpenAIImageProvider, caplog: pytest.LogCaptureFixture
@@ -178,7 +180,7 @@ class TestDiscoverProviderLevelFlags:
     async def test_openai_discover_provider_level_flags(
         self, provider: OpenAIImageProvider
     ) -> None:
-        """supports_background is True (gpt-image-1); supports_negative_prompt is True."""
+        """supports_background is True (gpt-image-1); supports_negative_prompt is False."""
         provider._client.models = MagicMock()
         provider._client.models.list = AsyncMock(
             return_value=_make_model("gpt-image-1", "dall-e-3")
@@ -187,7 +189,7 @@ class TestDiscoverProviderLevelFlags:
         caps = await provider.discover_capabilities()
 
         assert caps.supports_background is True
-        assert caps.supports_negative_prompt is True
+        assert caps.supports_negative_prompt is False
 
     async def test_supports_background_false_when_only_dalle3(
         self, provider: OpenAIImageProvider
@@ -199,7 +201,7 @@ class TestDiscoverProviderLevelFlags:
         caps = await provider.discover_capabilities()
 
         assert caps.supports_background is False
-        assert caps.supports_negative_prompt is True
+        assert caps.supports_negative_prompt is False
 
     async def test_discovered_at_is_set(self, provider: OpenAIImageProvider) -> None:
         """discovered_at is a positive unix timestamp."""

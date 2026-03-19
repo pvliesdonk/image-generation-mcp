@@ -12,6 +12,7 @@ image-generation-mcp supports multiple image generation providers. Each provider
 | **Speed** | 5-15s | 10-60s (depends on GPU) | Instant |
 | **Cost** | Per-image API pricing | Self-hosted (GPU cost) | Free |
 | **Negative prompt** | Appended as "Avoid:" clause | Native support | Ignored |
+| **Background control** | Supported (gpt-image-1 only) | Not supported (ignored) | Supported (RGBA PNG) |
 | **Requires** | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | Running A1111 WebUI + `IMAGE_GENERATION_MCP_A1111_HOST` | Nothing |
 
 ## Which provider should I use?
@@ -45,6 +46,8 @@ When `provider="auto"` (the default), the server analyzes your prompt using keyw
 | *(no match)* | openai -> a1111 -> placeholder |
 
 The first matching rule wins. Within a rule, the first available provider is selected. If no provider in the chain is available, any registered provider is returned as a fallback.
+
+When `background="transparent"` is requested, providers with transparent background support are preferred within each selection rule. This is a secondary filter -- keyword heuristics still determine the rule.
 
 ## Provider registration
 
