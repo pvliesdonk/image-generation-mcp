@@ -5,7 +5,7 @@
   "description": "Multi-provider image generation server supporting OpenAI (gpt-image-1, dall-e-3), Stable Diffusion (A1111 WebUI), and a zero-cost placeholder provider. Features keyword-based auto-selection, background tasks with progress reporting, and resource-based image transforms.",
   "version": "1.0.0",
   "websiteUrl": "https://pvliesdonk.github.io/image-generation-mcp/",
-  "runtimeHint": "always",
+  "runtimeHint": "auto",
   "repository": {
     "url": "https://github.com/pvliesdonk/image-generation-mcp",
     "source": "github"
@@ -74,6 +74,36 @@
     {
       "name": "IMAGE_GENERATION_MCP_LOG_LEVEL",
       "description": "Log level: DEBUG, INFO, WARNING, ERROR.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_AUDIENCE",
+      "description": "Expected JWT audience claim. Leave unset if your provider does not set one.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES",
+      "description": "Comma-separated required OIDC scopes.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN",
+      "description": "Set true to verify the upstream access token as JWT instead of the id token.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_SERVER_NAME",
+      "description": "Server name shown to MCP clients in the initialization response.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_INSTRUCTIONS",
+      "description": "System-level instructions injected into LLM context.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_HTTP_PATH",
+      "description": "HTTP endpoint mount path for streamable-HTTP transport.",
       "required": false
     }
   ],

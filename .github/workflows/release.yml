@@ -232,7 +232,7 @@ jobs:
           push-to-registry: true
 
   publish-registry:
-    needs: [release, publish-pypi]
+    needs: [release, publish-pypi, publish-docker]
     if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
 
@@ -246,7 +246,11 @@ jobs:
           ref: ${{ needs.release.outputs.tag }}
           fetch-depth: 1
 
-      - name: Publish to MCP Registry
-        uses: nicepkg/mcp-publisher@v1.5.0
-        with:
-          auth-method: github-oidc
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.5.0/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate and publish to MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
