@@ -75,6 +75,7 @@ class ImageProvider(Protocol):
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
+        background: str = "opaque",
     ) -> ImageResult:
         """Generate an image from a text prompt.
 
@@ -83,6 +84,8 @@ class ImageProvider(Protocol):
             negative_prompt: Things to avoid (provider support varies).
             aspect_ratio: Desired aspect ratio (e.g., ``16:9``, ``1:1``).
             quality: Quality level (``standard``, ``hd``).
+            background: Background transparency (``opaque``, ``transparent``).
+                Only supported by some providers.
 
         Returns:
             ImageResult with generated image data.
@@ -112,6 +115,9 @@ SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = ("1:1", "16:9", "9:16", "3:2", "2:3")
 
 SUPPORTED_QUALITY_LEVELS: tuple[str, ...] = ("standard", "hd")
 """Quality levels supported across providers."""
+
+SUPPORTED_BACKGROUNDS: tuple[str, ...] = ("opaque", "transparent")
+"""Background transparency modes supported across providers."""
 
 
 class ImageProviderError(Exception):

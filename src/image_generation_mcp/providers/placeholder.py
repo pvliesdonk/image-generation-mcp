@@ -40,7 +40,9 @@ _PALETTE: list[tuple[int, int, int]] = [
 ]
 
 
-def _make_png(width: int, height: int, r: int, g: int, b: int) -> bytes:
+def _make_png(
+    width: int, height: int, r: int, g: int, b: int, *, alpha: int = 255
+) -> bytes:
     """Generate a minimal solid-color PNG in pure Python.
 
     Args:
@@ -49,6 +51,7 @@ def _make_png(width: int, height: int, r: int, g: int, b: int) -> bytes:
         r: Red channel (0-255).
         g: Green channel (0-255).
         b: Blue channel (0-255).
+        alpha: Alpha channel (0-255). Values below 255 use RGBA color type 6.
 
     Returns:
         Raw PNG bytes.
@@ -60,10 +63,18 @@ def _make_png(width: int, height: int, r: int, g: int, b: int) -> bytes:
         return struct.pack(">I", len(data)) + payload + crc
 
     sig = b"\x89PNG\r\n\x1a\n"
-    ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    ihdr = _chunk(b"IHDR", ihdr_data)
 
-    row = bytes([0]) + bytes([r, g, b]) * width
+    if alpha < 255:
+        # Color type 6 = RGBA (4 bytes per pixel)
+        ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+        ihdr = _chunk(b"IHDR", ihdr_data)
+        row = bytes([0]) + bytes([r, g, b, alpha]) * width
+    else:
+        # Color type 2 = RGB (3 bytes per pixel)
+        ihdr_data = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+        ihdr = _chunk(b"IHDR", ihdr_data)
+        row = bytes([0]) + bytes([r, g, b]) * width
+
     raw_data = row * height
     compressed = zlib.compress(raw_data)
     idat = _chunk(b"IDAT", compressed)
@@ -86,6 +97,7 @@ class PlaceholderImageProvider:
         negative_prompt: str | None = None,  # noqa: ARG002
         aspect_ratio: str = "1:1",
         quality: str = "standard",  # noqa: ARG002
+        background: str = "opaque",
     ) -> ImageResult:
         """Generate a placeholder PNG.
 
@@ -94,6 +106,8 @@ class PlaceholderImageProvider:
             negative_prompt: Ignored.
             aspect_ratio: Determines image dimensions.
             quality: Ignored.
+            background: When ``"transparent"``, generates an RGBA PNG with
+                alpha=0. When ``"opaque"`` (default), generates an RGB PNG.
 
         Returns:
             ImageResult with a solid-color PNG.
@@ -107,7 +121,8 @@ class PlaceholderImageProvider:
         idx = int(hashlib.sha256(prompt.encode()).hexdigest(), 16) % len(_PALETTE)
         r, g, b = _PALETTE[idx]
 
-        image_data = _make_png(width, height, r, g, b)
+        alpha = 0 if background == "transparent" else 255
+        image_data = _make_png(width, height, r, g, b, alpha=alpha)
 
         return ImageResult(
             image_data=image_data,

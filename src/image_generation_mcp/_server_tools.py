@@ -21,6 +21,7 @@ from ._server_deps import get_service
 from .processing import generate_thumbnail
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
+    SUPPORTED_BACKGROUNDS,
     SUPPORTED_QUALITY_LEVELS,
     ImageContentPolicyError,
     ImageProviderConnectionError,
@@ -50,6 +51,7 @@ def register_tools(mcp: FastMCP) -> None:
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
+        background: str = "opaque",
         service: ImageService = Depends(get_service),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
@@ -75,6 +77,11 @@ def register_tools(mcp: FastMCP) -> None:
             quality: Quality level. ``"hd"`` vs ``"standard"`` only
                 affects OpenAI (gpt-image-1 maps both to its highest
                 tier). A1111 and placeholder ignore this parameter.
+            background: Background transparency. ``"opaque"`` (default)
+                generates a solid background. ``"transparent"`` requests
+                an image with a transparent background. Only supported
+                by some providers (OpenAI gpt-image-1, placeholder).
+                A1111 and dall-e-3 ignore this parameter.
 
         Returns:
             A thumbnail preview plus resource URIs for full-resolution
@@ -92,6 +99,12 @@ def register_tools(mcp: FastMCP) -> None:
                 f"Supported: {list(SUPPORTED_QUALITY_LEVELS)}"
             )
             raise ValueError(msg)
+        if background not in SUPPORTED_BACKGROUNDS:
+            msg = (
+                f"Unsupported background '{background}'. "
+                f"Supported: {', '.join(SUPPORTED_BACKGROUNDS)}"
+            )
+            raise ValueError(msg)
 
         await ctx.report_progress(0, 2, "Generating image")
         try:
@@ -101,6 +114,7 @@ def register_tools(mcp: FastMCP) -> None:
                 negative_prompt=negative_prompt,
                 aspect_ratio=aspect_ratio,
                 quality=quality,
+                background=background,
             )
         except ImageContentPolicyError as e:
             raise ImageContentPolicyError(
@@ -126,6 +140,7 @@ def register_tools(mcp: FastMCP) -> None:
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             quality=quality,
+            background=background,
         )
 
         # Generate thumbnail (blocking Pillow -> offload)
