@@ -69,6 +69,7 @@ plugins:
           - guides/prompt-writing.md: Provider-specific prompt writing tips
         Deployment:
           - deployment/docker.md: Docker Compose, Traefik, volumes
+          - deployment/systemd.md: Systemd service, .deb/.rpm packages, security hardening
           - deployment/oidc.md: OIDC authentication setup
   - mkdocstrings:
       handlers:
@@ -123,4 +124,5 @@ nav:
       - Image Assets: guides/image-assets.md
   - Deployment:
       - Docker: deployment/docker.md
+      - Systemd: deployment/systemd.md
       - OIDC Authentication: deployment/oidc.md

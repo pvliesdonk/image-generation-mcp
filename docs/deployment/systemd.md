@@ -1,0 +1,185 @@
+# Systemd Deployment
+
+Run image-generation-mcp as a native Linux service using the `.deb` or `.rpm` package.
+
+## Installation
+
+### Debian / Ubuntu
+
+```bash
+# Download the .deb from the latest release
+curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_amd64.deb
+sudo dpkg -i image-generation-mcp_amd64.deb
+```
+
+### RHEL / Fedora
+
+```bash
+curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_amd64.rpm
+sudo rpm -i image-generation-mcp_amd64.rpm
+```
+
+The package creates:
+
+| Path | Purpose |
+|------|---------|
+| `/etc/systemd/system/image-generation-mcp.service` | Systemd unit file |
+| `/etc/image-generation-mcp/env` | Environment configuration |
+| `/var/lib/image-generation-mcp/` | Data directory (generated images) |
+
+A dedicated `image-generation-mcp` system user and group are created automatically.
+
+## Configuration
+
+Edit `/etc/image-generation-mcp/env` to configure the server. All variables use the `IMAGE_GENERATION_MCP_` prefix. See [Configuration](../configuration.md) for the full reference.
+
+### OpenAI provider
+
+```bash
+IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
+IMAGE_GENERATION_MCP_SCRATCH_DIR=/var/lib/image-generation-mcp/images
+```
+
+### A1111 (Stable Diffusion WebUI)
+
+```bash
+IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_A1111_HOST=http://localhost:7860
+IMAGE_GENERATION_MCP_SCRATCH_DIR=/var/lib/image-generation-mcp/images
+```
+
+### Placeholder (testing)
+
+```bash
+IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_SCRATCH_DIR=/var/lib/image-generation-mcp/images
+```
+
+### With authentication
+
+```bash
+IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
+IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
+IMAGE_GENERATION_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
+IMAGE_GENERATION_MCP_OIDC_CLIENT_ID=image-generation-mcp
+IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET=your-client-secret
+IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=$(openssl rand -hex 32)
+```
+
+!!! warning
+    The env file contains secrets (API keys, OIDC credentials). The package sets permissions to `0640 root:image-generation-mcp` -- do not loosen these.
+
+## Service management
+
+```bash
+# Enable and start
+sudo systemctl enable --now image-generation-mcp
+
+# Check status
+sudo systemctl status image-generation-mcp
+
+# View logs (follow mode)
+sudo journalctl -u image-generation-mcp -f
+
+# Restart after config change
+sudo systemctl restart image-generation-mcp
+
+# Stop
+sudo systemctl stop image-generation-mcp
+```
+
+## Security hardening
+
+The systemd unit includes these security directives:
+
+| Directive | Effect |
+|-----------|--------|
+| `ProtectSystem=strict` | Mounts `/usr`, `/boot`, `/efi` read-only |
+| `ProtectHome=yes` | Hides `/home`, `/root`, `/run/user` |
+| `NoNewPrivileges=yes` | Prevents privilege escalation via setuid binaries |
+| `PrivateTmp=yes` | Isolates `/tmp` and `/var/tmp` |
+| `PrivateDevices=yes` | Hides physical devices |
+| `ProtectKernelTunables=yes` | Blocks writes to `/proc` and `/sys` |
+| `ProtectKernelModules=yes` | Prevents loading kernel modules |
+| `ProtectControlGroups=yes` | Mounts cgroup filesystem read-only |
+| `RestrictSUIDSGID=yes` | Blocks creating setuid/setgid files |
+| `MemoryDenyWriteExecute=yes` | Blocks `mmap(PROT_WRITE|PROT_EXEC)` |
+| `RestrictRealtime=yes` | Denies realtime scheduling |
+| `SystemCallArchitectures=native` | Blocks non-native syscalls |
+| `ReadWritePaths=/var/lib/image-generation-mcp` | Only writable path |
+
+The service runs as the unprivileged `image-generation-mcp` user. It can only write to `/var/lib/image-generation-mcp/`.
+
+## Manual setup (without package)
+
+If you prefer not to use the `.deb`/`.rpm` package:
+
+```bash
+# 1. Create system user
+sudo useradd --system --shell /usr/sbin/nologin \
+    --home-dir /var/lib/image-generation-mcp \
+    image-generation-mcp
+
+# 2. Create directories
+sudo install -d -o image-generation-mcp -g image-generation-mcp -m 0750 \
+    /var/lib/image-generation-mcp
+sudo install -d -m 0750 /etc/image-generation-mcp
+
+# 3. Copy service file and env
+sudo cp packaging/image-generation-mcp.service /etc/systemd/system/
+sudo cp packaging/env.example /etc/image-generation-mcp/env
+sudo chmod 0640 /etc/image-generation-mcp/env
+sudo chown root:image-generation-mcp /etc/image-generation-mcp/env
+
+# 4. Edit configuration
+sudo editor /etc/image-generation-mcp/env
+
+# 5. Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable --now image-generation-mcp
+```
+
+## Troubleshooting
+
+### Service fails to start
+
+Check logs for the specific error:
+
+```bash
+sudo journalctl -u image-generation-mcp --no-pager -n 50
+```
+
+Common causes:
+
+- **Missing API key**: OpenAI provider requires `IMAGE_GENERATION_MCP_OPENAI_API_KEY`
+- **A1111 not reachable**: Verify `IMAGE_GENERATION_MCP_A1111_HOST` is accessible from the service user
+- **Port conflict**: Default HTTP port is 8000. Check with `ss -tlnp | grep 8000`
+
+### Permission denied on images directory
+
+```bash
+# Verify ownership
+ls -la /var/lib/image-generation-mcp/
+
+# Fix if needed
+sudo chown -R image-generation-mcp:image-generation-mcp /var/lib/image-generation-mcp
+```
+
+### Uninstalling
+
+```bash
+# Debian / Ubuntu
+sudo dpkg -r image-generation-mcp
+
+# RHEL / Fedora
+sudo rpm -e image-generation-mcp
+```
+
+The package stops and disables the service automatically. It does **not** remove the system user or data directory -- delete those manually if desired:
+
+```bash
+sudo rm -rf /var/lib/image-generation-mcp /etc/image-generation-mcp
+sudo userdel image-generation-mcp
+```
