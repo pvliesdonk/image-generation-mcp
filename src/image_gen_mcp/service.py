@@ -134,6 +134,15 @@ class ImageService:
         Raises:
             ImageProviderError: If no matching provider is available.
         """
+        if not self._providers:
+            raise ImageProviderError(
+                provider,
+                "No providers are registered. Configure at least one: "
+                "set IMAGE_GEN_MCP_OPENAI_API_KEY for OpenAI, "
+                "IMAGE_GEN_MCP_A1111_HOST for Stable Diffusion, "
+                "or the placeholder provider is always available.",
+            )
+
         if provider == "auto":
             from image_gen_mcp.providers.selector import select_provider
 
@@ -142,14 +151,6 @@ class ImageService:
 
         if provider not in self._providers:
             available = ", ".join(self._providers)
-            if not available:
-                raise ImageProviderError(
-                    provider,
-                    "No providers are registered. Configure at least one: "
-                    "set IMAGE_GEN_MCP_OPENAI_API_KEY for OpenAI, "
-                    "IMAGE_GEN_MCP_A1111_HOST for Stable Diffusion, "
-                    "or the placeholder provider is always available.",
-                )
             raise ImageProviderError(
                 provider,
                 f"Provider '{provider}' not available. Available: {available}",

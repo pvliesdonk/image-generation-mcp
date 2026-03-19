@@ -102,15 +102,15 @@ def register_tools(mcp: FastMCP) -> None:
                 aspect_ratio=aspect_ratio,
                 quality=quality,
             )
-        except ImageContentPolicyError:
+        except ImageContentPolicyError as e:
             raise ImageContentPolicyError(
-                provider,
+                e.provider,
                 "Content policy rejected the prompt. "
                 "Try rephrasing or use a different provider.",
             ) from None
-        except ImageProviderConnectionError:
+        except ImageProviderConnectionError as e:
             raise ImageProviderConnectionError(
-                provider,
+                e.provider,
                 "Provider is unreachable. Check that it is running, "
                 "or try a different provider.",
             ) from None
