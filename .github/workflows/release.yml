@@ -254,3 +254,44 @@ jobs:
         run: |
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
+
+  publish-linux-packages:
+    needs: [release, publish-pypi]
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 1
+
+      - name: Create dist directory
+        run: mkdir -p dist
+
+      - name: Build .deb package
+        uses: burningalchemist/nfpm-action@eeac96f42da23d091eec0d0088bf05cac0ceb9f3
+        with:
+          packager: deb
+          config: packaging/nfpm.yaml
+          target: dist/
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+
+      - name: Build .rpm package
+        uses: burningalchemist/nfpm-action@eeac96f42da23d091eec0d0088bf05cac0ceb9f3
+        with:
+          packager: rpm
+          config: packaging/nfpm.yaml
+          target: dist/
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+
+      - name: Upload packages to GitHub Release
+        run: gh release upload ${{ needs.release.outputs.tag }} dist/*.deb dist/*.rpm --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

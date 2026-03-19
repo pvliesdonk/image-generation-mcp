@@ -1,0 +1,31 @@
+name: image-generation-mcp
+arch: amd64
+platform: linux
+version: ${VERSION}
+maintainer: pvliesdonk <pvliesdonk@users.noreply.github.com>
+description: Multi-provider image generation MCP server
+vendor: pvliesdonk
+homepage: https://github.com/pvliesdonk/image-generation-mcp
+license: MIT
+
+depends:
+  - python3 (>= 3.11)
+
+rpm:
+  depends:
+    - python3 >= 3.11
+
+contents:
+  - src: image-generation-mcp.service
+    dst: /etc/systemd/system/image-generation-mcp.service
+    type: config|noreplace
+
+  - src: env.example
+    dst: /etc/image-generation-mcp/env.example
+    type: config|noreplace
+
+scripts:
+  preinstall: scripts/preinstall.sh
+  postinstall: scripts/postinstall.sh
+  preremove: scripts/preremove.sh
+  postremove: scripts/postremove.sh
