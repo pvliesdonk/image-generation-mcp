@@ -138,9 +138,9 @@ not excluded. Keywords remain the primary selection mechanism.
 ### OpenAI Provider
 
 - **Models:** `gpt-image-1` (default), `dall-e-3`
-- **API:** OpenAI Images API with `response_format="b64_json"`
+- **API:** OpenAI Images API with `output_format` (gpt-image-1) or `response_format="b64_json"` (dall-e-3)
 - **Negative prompt:** Appended as `"\n\nAvoid: {negative_prompt}"` to the prompt
-- **Quality mapping:** `"standard"` -> `"medium"`, `"hd"` -> `"high"`, `"low"` -> `"low"`
+- **Quality mapping:** gpt-image-1: `"standard"` -> `"high"`, `"hd"` -> `"high"`; dall-e-3: passed through unchanged
 - **Size mapping:** Per-model aspect ratio -> pixel size tables
 - **Background:** `gpt-image-1` supports `background` parameter natively; ignored for `dall-e-3`
 - **Discovery:** Calls `client.models.list()`, filters to known image models, maps to `ModelCapabilities`
