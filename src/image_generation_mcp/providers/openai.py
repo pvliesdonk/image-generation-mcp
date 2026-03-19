@@ -19,6 +19,8 @@ from image_generation_mcp.providers.types import (
 if TYPE_CHECKING:
     from openai import AsyncOpenAI
 
+    from image_generation_mcp.providers.capabilities import ProviderCapabilities
+
 logger = logging.getLogger(__name__)
 
 _GPT_IMAGE_SIZES: dict[str, str] = {
@@ -220,3 +222,14 @@ class OpenAIImageProvider:
         raise ImageProviderError(
             "openai", f"Image generation failed: {error}"
         ) from error
+
+    async def discover_capabilities(self) -> ProviderCapabilities:
+        """Discover OpenAI image model capabilities via models.list().
+
+        Returns:
+            ProviderCapabilities with discovered image models.
+
+        Raises:
+            NotImplementedError: Pending implementation in issue #28.
+        """
+        raise NotImplementedError("OpenAI capability discovery not yet implemented")

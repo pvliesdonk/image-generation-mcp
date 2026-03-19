@@ -11,8 +11,13 @@ from __future__ import annotations
 import hashlib
 import logging
 import struct
+import time
 import zlib
 
+from image_generation_mcp.providers.capabilities import (
+    ModelCapabilities,
+    ProviderCapabilities,
+)
 from image_generation_mcp.providers.types import ImageResult
 
 logger = logging.getLogger(__name__)
@@ -112,4 +117,31 @@ class PlaceholderImageProvider:
                 "size": f"{width}x{height}",
                 "color": f"#{r:02x}{g:02x}{b:02x}",
             },
+        )
+
+    async def discover_capabilities(self) -> ProviderCapabilities:
+        """Return static capabilities for the placeholder provider.
+
+        Returns:
+            ProviderCapabilities with one model and fixed feature set.
+        """
+        model = ModelCapabilities(
+            model_id="placeholder",
+            display_name="Placeholder (solid-color PNG)",
+            can_generate=True,
+            can_edit=False,
+            supports_mask=False,
+            supported_aspect_ratios=tuple(_ASPECT_RATIO_TO_SIZE),
+            supported_qualities=("standard",),
+            supported_formats=("png",),
+            supports_negative_prompt=False,
+            supports_background=True,
+            max_resolution=640,
+        )
+        return ProviderCapabilities(
+            provider_name="placeholder",
+            models=(model,),
+            supports_background=True,
+            supports_negative_prompt=False,
+            discovered_at=time.time(),
         )

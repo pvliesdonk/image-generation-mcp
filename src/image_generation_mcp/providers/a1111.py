@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
@@ -21,6 +21,9 @@ from image_generation_mcp.providers.types import (
     ImageProviderError,
     ImageResult,
 )
+
+if TYPE_CHECKING:
+    from image_generation_mcp.providers.capabilities import ProviderCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -237,3 +240,14 @@ class A1111ImageProvider:
             content_type="image/png",
             **metadata,
         )
+
+    async def discover_capabilities(self) -> ProviderCapabilities:
+        """Discover A1111 checkpoint capabilities via sd-models API.
+
+        Returns:
+            ProviderCapabilities with discovered checkpoints.
+
+        Raises:
+            NotImplementedError: Pending implementation in issue #29.
+        """
+        raise NotImplementedError("A1111 capability discovery not yet implemented")
