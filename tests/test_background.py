@@ -225,7 +225,6 @@ class TestBackgroundInSidecar:
         sidecar_data = json.loads(sidecar_path.read_text())
 
         assert sidecar_data["background"] == "transparent"
-        assert sidecar_data["provider_metadata"]["background"] == "transparent"
 
     async def test_background_opaque_default_in_sidecar(
         self, service: ImageService, scratch_dir: Path
@@ -245,4 +244,3 @@ class TestBackgroundInSidecar:
         sidecar_data = json.loads(sidecar_path.read_text())
 
         assert sidecar_data["background"] == "opaque"
-        assert sidecar_data["provider_metadata"]["background"] == "opaque"

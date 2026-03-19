@@ -51,6 +51,8 @@ _FORMAT_TO_CONTENT_TYPE: dict[str, str] = {
 
 _DALLE3_FORMATS: frozenset[str] = frozenset({"png"})
 
+_KNOWN_IMAGE_MODELS: frozenset[str] = frozenset({"gpt-image-1", "dall-e-3", "dall-e-2"})
+
 
 def _is_gpt_image_model(model: str) -> bool:
     """Return True for gpt-image-* models (not dall-e)."""
@@ -244,19 +246,17 @@ class OpenAIImageProvider:
             If the API call fails, returns a degraded ProviderCapabilities with
             an empty model list and ``degraded=True``.
         """
-        _known_image_models: frozenset[str] = frozenset(
-            {"gpt-image-1", "dall-e-3", "dall-e-2"}
-        )
+        discovered_at = time.time()
 
         try:
             response = await self._client.models.list()
-            model_ids = {m.id for m in response.data if m.id in _known_image_models}
+            model_ids = {m.id for m in response.data if m.id in _KNOWN_IMAGE_MODELS}
         except Exception:
             logger.warning(
                 "OpenAI models.list() failed; returning degraded capabilities",
                 exc_info=True,
             )
-            return make_degraded("openai", time.time())
+            return make_degraded("openai", discovered_at)
 
         model_caps: list[ModelCapabilities] = []
 
@@ -317,6 +317,8 @@ class OpenAIImageProvider:
             provider_name="openai",
             models=tuple(model_caps),
             supports_background=supports_background,
-            supports_negative_prompt=True,
-            discovered_at=time.time(),
+            # OpenAI has no native negative prompt API parameter; the provider
+            # implements it by appending "Avoid: ..." to the prompt text.
+            supports_negative_prompt=False,
+            discovered_at=discovered_at,
         )

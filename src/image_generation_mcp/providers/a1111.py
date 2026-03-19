@@ -157,7 +157,7 @@ class A1111ImageProvider:
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",  # noqa: ARG002
-        background: str = "opaque",  # noqa: ARG002
+        background: str = "opaque",
     ) -> ImageResult:
         """Generate an image via A1111 txt2img API.
 
@@ -176,7 +176,10 @@ class A1111ImageProvider:
             ImageProviderConnectionError: If A1111 is unreachable.
             ImageProviderError: On API errors.
         """
-        logger.debug("A1111 does not support background transparency control")
+        if background != "opaque":
+            logger.debug(
+                "A1111 does not support background transparency control, ignoring"
+            )
         default_size = self._preset.sizes["1:1"]
         width, height = self._preset.sizes.get(aspect_ratio, default_size)
 
@@ -310,11 +313,21 @@ class A1111ImageProvider:
             )
             return make_degraded("a1111", discovered_at)
 
-        checkpoints: list[dict[str, Any]] = models_response.json()
+        raw = models_response.json()
+        if not isinstance(raw, list):
+            logger.warning(
+                "A1111 /sdapi/v1/sd-models returned unexpected type %s — marking degraded",
+                type(raw).__name__,
+            )
+            return make_degraded("a1111", discovered_at)
+        checkpoints: list[dict[str, Any]] = raw
         model_caps: list[ModelCapabilities] = []
 
         for checkpoint in checkpoints:
             title: str = checkpoint.get("title", "")
+            if not title:
+                logger.debug("Skipping checkpoint with empty title: %r", checkpoint)
+                continue
             model_name: str = checkpoint.get("model_name", title)
 
             arch = _detect_architecture(title)

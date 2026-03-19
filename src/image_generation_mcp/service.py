@@ -92,7 +92,7 @@ class ImageService:
 
     @property
     def capabilities(self) -> dict[str, ProviderCapabilities]:
-        """Discovered provider capabilities (read-only view)."""
+        """Discovered provider capabilities."""
         return self._capabilities
 
     def register_provider(self, name: str, provider: ImageProvider) -> None:
@@ -333,10 +333,6 @@ class ImageService:
 
         # Write sidecar JSON
         sidecar_path = self._scratch_dir / f"{image_id}.json"
-        provider_metadata_with_background = {
-            **record.provider_metadata,
-            "background": background,
-        }
         sidecar_data = {
             "id": record.id,
             "prompt": record.prompt,
@@ -349,7 +345,7 @@ class ImageService:
             "original_filename": original_filename,
             "original_size_bytes": result.size_bytes,
             "original_dimensions": list(record.original_dimensions),
-            "provider_metadata": provider_metadata_with_background,
+            "provider_metadata": record.provider_metadata,
             "created_at": datetime.fromtimestamp(record.created_at, tz=UTC).isoformat(),
         }
         sidecar_path.write_text(json.dumps(sidecar_data, indent=2))

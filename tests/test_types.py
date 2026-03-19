@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -13,6 +14,9 @@ from image_generation_mcp.providers.types import (
     ImageProviderError,
     ImageResult,
 )
+
+if TYPE_CHECKING:
+    from image_generation_mcp.providers.capabilities import ProviderCapabilities
 
 
 class TestImageResult:
@@ -85,7 +89,7 @@ class TestImageProvider:
             ) -> ImageResult:
                 return ImageResult(image_data=b"")
 
-            async def discover_capabilities(self) -> None:
+            async def discover_capabilities(self) -> ProviderCapabilities:
                 raise NotImplementedError
 
         assert isinstance(_Good(), ImageProvider)

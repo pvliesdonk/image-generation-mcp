@@ -139,7 +139,7 @@ JSON object with provider names, availability, and capability information:
         }
       ],
       "supports_background": true,
-      "supports_negative_prompt": true,
+      "supports_negative_prompt": false,
       "discovered_at": 1710777600.0,
       "degraded": false
     }
