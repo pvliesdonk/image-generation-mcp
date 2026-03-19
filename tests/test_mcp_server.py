@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from importlib.metadata import PackageNotFoundError
 
 import pytest
 
@@ -116,6 +117,35 @@ class TestAuthModeSelection:
 
         assert isinstance(server.auth, MultiAuth)
         assert server.auth.required_scopes == []
+
+
+class TestVersionLogging:
+    """Tests for server version logging at startup."""
+
+    def test_version_logged_on_startup(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Server config log line includes version."""
+        with caplog.at_level(logging.INFO):
+            create_server()
+        assert "Server config:" in caplog.text
+        assert "version=" in caplog.text
+
+    def test_version_fallback_when_not_installed(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Version falls back to 'dev' when package is not installed."""
+        from unittest.mock import patch
+
+        with (
+            patch(
+                "image_generation_mcp.mcp_server.version",
+                side_effect=PackageNotFoundError(),
+            ),
+            caplog.at_level(logging.INFO),
+        ):
+            create_server()
+        assert "version=dev" in caplog.text
 
 
 class TestReadOnlyMode:
