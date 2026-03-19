@@ -2,12 +2,111 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pvliesdonk/image-generation-mcp",
   "title": "Image Generation MCP Server",
-  "description": "FastMCP server template — replace this with your description",
+  "description": "Multi-provider image generation server supporting OpenAI (gpt-image-1, dall-e-3), Stable Diffusion (A1111 WebUI), and a zero-cost placeholder provider. Features keyword-based auto-selection, background tasks with progress reporting, and resource-based image transforms.",
   "version": "1.0.0",
+  "websiteUrl": "https://pvliesdonk.github.io/image-generation-mcp/",
+  "runtimeHint": "auto",
   "repository": {
     "url": "https://github.com/pvliesdonk/image-generation-mcp",
     "source": "github"
   },
+  "environmentVariables": [
+    {
+      "name": "IMAGE_GENERATION_MCP_READ_ONLY",
+      "description": "When true, write-tagged tools (generate_image) are hidden. Set to false to enable image generation.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_SCRATCH_DIR",
+      "description": "Directory for saved generated images. Created automatically on first use.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_DEFAULT_PROVIDER",
+      "description": "Default provider selection: auto (keyword-based), openai, a1111, or placeholder.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OPENAI_API_KEY",
+      "description": "OpenAI API key. Enables the OpenAI provider (gpt-image-1, dall-e-3) when set.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_A1111_HOST",
+      "description": "Automatic1111 WebUI base URL (e.g. http://localhost:7860). Enables the A1111 provider when set.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_A1111_MODEL",
+      "description": "A1111 checkpoint name for model-aware preset detection (SD 1.5 vs SDXL vs Lightning).",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_BEARER_TOKEN",
+      "description": "Static bearer token for HTTP authentication.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_BASE_URL",
+      "description": "Public base URL for OIDC redirects (e.g. https://mcp.example.com). Required for OIDC.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_CONFIG_URL",
+      "description": "OIDC discovery endpoint URL. Required for OIDC.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_CLIENT_ID",
+      "description": "OIDC client ID. Required for OIDC.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET",
+      "description": "OIDC client secret. Required for OIDC.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY",
+      "description": "JWT signing key for session tokens. Required on Linux/Docker to persist sessions across restarts.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_LOG_LEVEL",
+      "description": "Log level: DEBUG, INFO, WARNING, ERROR.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_AUDIENCE",
+      "description": "Expected JWT audience claim. Leave unset if your provider does not set one.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES",
+      "description": "Comma-separated required OIDC scopes.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN",
+      "description": "Set true to verify the upstream access token as JWT instead of the id token.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_SERVER_NAME",
+      "description": "Server name shown to MCP clients in the initialization response.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_INSTRUCTIONS",
+      "description": "System-level instructions injected into LLM context.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_HTTP_PATH",
+      "description": "HTTP endpoint mount path for streamable-HTTP transport.",
+      "required": false
+    }
+  ],
   "packages": [
     {
       "registryType": "pypi",

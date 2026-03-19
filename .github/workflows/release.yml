@@ -230,3 +230,27 @@ jobs:
           subject-digest: ${{ steps.build-push.outputs.digest }}
           sbom-path: sbom-docker.cdx.json
           push-to-registry: true
+
+  publish-registry:
+    needs: [release, publish-pypi, publish-docker]
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          fetch-depth: 1
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.5.0/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate and publish to MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

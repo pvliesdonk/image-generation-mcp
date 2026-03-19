@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.pvliesdonk/image-generation-mcp -->
 # image-generation-mcp
 
 [![CI](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml)
