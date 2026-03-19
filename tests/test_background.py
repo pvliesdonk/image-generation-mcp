@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -14,6 +14,9 @@ from image_generation_mcp.providers.openai import OpenAIImageProvider
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import SUPPORTED_BACKGROUNDS
 from image_generation_mcp.service import ImageService
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
