@@ -85,6 +85,9 @@ class TestImageProvider:
             ) -> ImageResult:
                 return ImageResult(image_data=b"")
 
+            async def discover_capabilities(self) -> None:
+                raise NotImplementedError
+
         assert isinstance(_Good(), ImageProvider)
 
     def test_non_provider_fails_isinstance(self) -> None:

@@ -1,0 +1,116 @@
+"""Provider capability model — frozen dataclasses for runtime discovery.
+
+Defines :class:`ModelCapabilities` and :class:`ProviderCapabilities` which
+represent what each provider and model can do.  Populated at startup via
+each provider's ``discover_capabilities()`` method.
+
+See ADR-0007 for the design rationale.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+
+@dataclass(frozen=True)
+class ModelCapabilities:
+    """Capabilities of a single model within a provider.
+
+    Attributes:
+        model_id: Model identifier (e.g., ``"gpt-image-1"``).
+        display_name: Human-readable display name.
+        can_generate: Supports text-to-image generation.
+        can_edit: Supports image editing (future).
+        supports_mask: Supports inpainting masks (future).
+        supported_aspect_ratios: Aspect ratio strings this model accepts.
+        supported_qualities: Quality level strings this model accepts.
+        supported_formats: Output format strings (e.g., ``"png"``, ``"webp"``).
+        supports_negative_prompt: Accepts negative prompt parameter.
+        supports_background: Supports background transparency control.
+        max_resolution: Maximum dimension in pixels, or ``None`` if unlimited.
+        default_steps: Default inference steps (A1111-specific), or ``None``.
+        default_cfg: Default CFG scale (A1111-specific), or ``None``.
+    """
+
+    model_id: str
+    display_name: str
+    can_generate: bool = True
+    can_edit: bool = False
+    supports_mask: bool = False
+    supported_aspect_ratios: tuple[str, ...] = ()
+    supported_qualities: tuple[str, ...] = ()
+    supported_formats: tuple[str, ...] = ()
+    supports_negative_prompt: bool = False
+    supports_background: bool = False
+    max_resolution: int | None = None
+    default_steps: int | None = None
+    default_cfg: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dictionary."""
+        return {
+            "model_id": self.model_id,
+            "display_name": self.display_name,
+            "can_generate": self.can_generate,
+            "can_edit": self.can_edit,
+            "supports_mask": self.supports_mask,
+            "supported_aspect_ratios": list(self.supported_aspect_ratios),
+            "supported_qualities": list(self.supported_qualities),
+            "supported_formats": list(self.supported_formats),
+            "supports_negative_prompt": self.supports_negative_prompt,
+            "supports_background": self.supports_background,
+            "max_resolution": self.max_resolution,
+            "default_steps": self.default_steps,
+            "default_cfg": self.default_cfg,
+        }
+
+
+@dataclass(frozen=True)
+class ProviderCapabilities:
+    """Aggregate capabilities for a provider (one or more models).
+
+    Attributes:
+        provider_name: Registry key (e.g., ``"openai"``).
+        models: Per-model capability details.
+        supports_background: ``True`` if any model supports background control.
+        supports_negative_prompt: ``True`` if any model supports negative prompts.
+        discovered_at: Unix timestamp when discovery completed.
+        degraded: ``True`` if discovery failed (empty model list).
+    """
+
+    provider_name: str
+    models: tuple[ModelCapabilities, ...] = ()
+    supports_background: bool = False
+    supports_negative_prompt: bool = False
+    discovered_at: float = 0.0
+    degraded: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dictionary."""
+        result: dict[str, Any] = {
+            "provider_name": self.provider_name,
+            "models": [m.to_dict() for m in self.models],
+            "supports_background": self.supports_background,
+            "supports_negative_prompt": self.supports_negative_prompt,
+            "discovered_at": self.discovered_at,
+            "degraded": self.degraded,
+        }
+        return result
+
+
+def make_degraded(provider_name: str, discovered_at: float) -> ProviderCapabilities:
+    """Create a degraded capabilities entry for a provider that failed discovery.
+
+    Args:
+        provider_name: Provider registry key.
+        discovered_at: Unix timestamp of the failed discovery attempt.
+
+    Returns:
+        A ``ProviderCapabilities`` with ``degraded=True`` and empty model list.
+    """
+    return ProviderCapabilities(
+        provider_name=provider_name,
+        degraded=True,
+        discovered_at=discovered_at,
+    )

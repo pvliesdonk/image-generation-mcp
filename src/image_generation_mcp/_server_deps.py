@@ -72,6 +72,9 @@ def make_service_lifespan(config: ServerConfig) -> Any:
                 A1111ImageProvider(host=config.a1111_host, model=config.a1111_model),
             )
 
+        # Discover capabilities for all registered providers
+        await service.discover_all_capabilities()
+
         try:
             yield {"service": service, "config": config}
         finally:

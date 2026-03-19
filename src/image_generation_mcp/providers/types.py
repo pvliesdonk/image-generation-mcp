@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from image_generation_mcp.providers.capabilities import ProviderCapabilities
 
 
 @dataclass(frozen=True)
@@ -86,6 +89,20 @@ class ImageProvider(Protocol):
 
         Raises:
             ImageProviderError: If generation fails.
+        """
+        ...
+
+    async def discover_capabilities(self) -> ProviderCapabilities:
+        """Discover this provider's capabilities at startup.
+
+        Called once during server lifespan after provider construction.
+        Results are cached for the server lifetime.
+
+        Returns:
+            ProviderCapabilities describing models and features.
+
+        Raises:
+            Exception: Any error during discovery (caller handles gracefully).
         """
         ...
 
