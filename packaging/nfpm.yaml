@@ -1,15 +1,18 @@
 name: image-generation-mcp
-arch: amd64
+arch: all
 platform: linux
 version: ${VERSION}
 maintainer: pvliesdonk <pvliesdonk@users.noreply.github.com>
-description: Multi-provider image generation MCP server
+description: Multi-provider image generation MCP server (requires uv — see postinstall instructions)
 vendor: pvliesdonk
 homepage: https://github.com/pvliesdonk/image-generation-mcp
 license: MIT
 
 depends:
   - python3 (>= 3.11)
+
+recommends:
+  - curl
 
 rpm:
   depends:
