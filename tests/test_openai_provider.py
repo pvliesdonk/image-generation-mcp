@@ -23,7 +23,9 @@ from image_generation_mcp.providers.types import (
 @pytest.fixture
 def _mock_openai():
     """Patch openai imports so tests don't need the real package."""
-    with patch("image_generation_mcp.providers.openai.OpenAIImageProvider._create_client"):
+    with patch(
+        "image_generation_mcp.providers.openai.OpenAIImageProvider._create_client"
+    ):
         yield
 
 
