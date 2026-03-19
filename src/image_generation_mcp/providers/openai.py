@@ -7,8 +7,14 @@ Ported from questfoundry — prompt distillation removed.
 from __future__ import annotations
 
 import logging
+import time
 from typing import TYPE_CHECKING, Any, NoReturn
 
+from image_generation_mcp.providers.capabilities import (
+    ModelCapabilities,
+    ProviderCapabilities,
+    make_degraded,
+)
 from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
     ImageProviderConnectionError,
@@ -18,8 +24,6 @@ from image_generation_mcp.providers.types import (
 
 if TYPE_CHECKING:
     from openai import AsyncOpenAI
-
-    from image_generation_mcp.providers.capabilities import ProviderCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -226,10 +230,88 @@ class OpenAIImageProvider:
     async def discover_capabilities(self) -> ProviderCapabilities:
         """Discover OpenAI image model capabilities via models.list().
 
-        Returns:
-            ProviderCapabilities with discovered image models.
+        Calls the OpenAI models API to enumerate available models, then filters
+        to known image models and maps them to :class:`ModelCapabilities` using
+        hardcoded knowledge about each model's feature set.
 
-        Raises:
-            NotImplementedError: Pending implementation in issue #28.
+        Returns:
+            ProviderCapabilities with one entry per discovered image model.
+            If the API call fails, returns a degraded ProviderCapabilities with
+            an empty model list and ``degraded=True``.
         """
-        raise NotImplementedError("OpenAI capability discovery not yet implemented")
+        _known_image_models: frozenset[str] = frozenset(
+            {"gpt-image-1", "dall-e-3", "dall-e-2"}
+        )
+
+        try:
+            response = await self._client.models.list()
+            model_ids = {m.id for m in response.data if m.id in _known_image_models}
+        except Exception:
+            logger.warning(
+                "OpenAI models.list() failed; returning degraded capabilities",
+                exc_info=True,
+            )
+            return make_degraded("openai", time.time())
+
+        model_caps: list[ModelCapabilities] = []
+
+        if "gpt-image-1" in model_ids:
+            model_caps.append(
+                ModelCapabilities(
+                    model_id="gpt-image-1",
+                    display_name="GPT Image 1",
+                    can_generate=True,
+                    can_edit=True,
+                    supports_mask=True,
+                    supports_background=True,
+                    supports_negative_prompt=False,
+                    supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
+                    supported_formats=("png", "jpeg", "webp"),
+                    supported_qualities=("standard", "hd"),
+                    max_resolution=1536,
+                )
+            )
+
+        if "dall-e-3" in model_ids:
+            model_caps.append(
+                ModelCapabilities(
+                    model_id="dall-e-3",
+                    display_name="DALL-E 3",
+                    can_generate=True,
+                    can_edit=False,
+                    supports_mask=False,
+                    supports_background=False,
+                    supports_negative_prompt=False,
+                    supported_aspect_ratios=tuple(_DALLE3_SIZES),
+                    supported_formats=("png",),
+                    supported_qualities=("standard", "hd"),
+                    max_resolution=1792,
+                )
+            )
+
+        if "dall-e-2" in model_ids:
+            model_caps.append(
+                ModelCapabilities(
+                    model_id="dall-e-2",
+                    display_name="DALL-E 2",
+                    can_generate=True,
+                    can_edit=True,
+                    supports_mask=True,
+                    supports_background=False,
+                    supports_negative_prompt=False,
+                    supported_aspect_ratios=("1:1",),
+                    supported_formats=("png",),
+                    supported_qualities=("standard",),
+                    max_resolution=1024,
+                )
+            )
+
+        supports_background = any(m.supports_background for m in model_caps)
+
+        return ProviderCapabilities(
+            provider_name="openai",
+            models=tuple(model_caps),
+            supports_background=supports_background,
+            supports_negative_prompt=True,
+            discovered_at=time.time(),
+        )
