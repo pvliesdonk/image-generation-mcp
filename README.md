@@ -64,6 +64,10 @@ uv sync --extra all --extra dev
 docker pull ghcr.io/pvliesdonk/image-generation-mcp:latest
 ```
 
+### Linux packages (.deb / .rpm)
+
+Native packages with a hardened systemd service are available from [GitHub Releases](https://github.com/pvliesdonk/image-generation-mcp/releases). See the [systemd deployment guide](https://pvliesdonk.github.io/image-generation-mcp/deployment/systemd/) for details.
+
 ## Quick start
 
 ### As MCP server (stdio)
