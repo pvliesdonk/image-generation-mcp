@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from fastmcp import FastMCP
@@ -241,9 +242,10 @@ def create_server() -> FastMCP:
         auth_mode = "none"
         logger.info("No auth configured — server accepts unauthenticated connections")
 
-    from importlib.metadata import version
-
-    server_version = version("image-generation-mcp")
+    try:
+        server_version = version("image-generation-mcp")
+    except PackageNotFoundError:
+        server_version = "dev"
     logger.info(
         "Server config: name=%s version=%s auth=%s mode=%s",
         server_name,

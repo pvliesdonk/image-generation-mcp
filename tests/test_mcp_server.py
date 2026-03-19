@@ -112,6 +112,9 @@ class TestAuthModeSelection:
         with patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls):
             server = create_server()
 
+        from fastmcp.server.auth import MultiAuth
+
+        assert isinstance(server.auth, MultiAuth)
         assert server.auth.required_scopes == []
 
 
