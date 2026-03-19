@@ -1,0 +1,41 @@
+[Unit]
+Description=Image Generation MCP Server
+Documentation=https://pvliesdonk.github.io/image-generation-mcp/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=image-generation-mcp
+Group=image-generation-mcp
+EnvironmentFile=-/etc/image-generation-mcp/env
+ExecStart=/usr/local/bin/uvx image-generation-mcp serve --transport http
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+
+# Directories
+StateDirectory=image-generation-mcp
+WorkingDirectory=/var/lib/image-generation-mcp
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=image-generation-mcp
+
+# Security hardening
+ProtectSystem=strict
+ProtectHome=yes
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+ReadWritePaths=/var/lib/image-generation-mcp
+
+[Install]
+WantedBy=multi-user.target
