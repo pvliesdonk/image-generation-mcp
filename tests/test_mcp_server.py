@@ -97,6 +97,23 @@ class TestAuthModeSelection:
         assert len(verifiers) == 1
         assert isinstance(verifiers[0], StaticTokenVerifier)
 
+    def test_multi_auth_no_required_scopes(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """MultiAuth must have required_scopes=[] so bearer tokens aren't rejected."""
+        from unittest.mock import MagicMock, patch
+
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_BEARER_TOKEN", "my-secret-token")
+        for var, val in _OIDC_REQUIRED.items():
+            monkeypatch.setenv(var, val)
+
+        mock_oidc = MagicMock()
+        mock_cls = MagicMock(return_value=mock_oidc)
+        with patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls):
+            server = create_server()
+
+        assert server.auth.required_scopes == []
+
 
 class TestReadOnlyMode:
     """Tests for read-only vs read-write tool visibility."""

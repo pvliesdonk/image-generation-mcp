@@ -223,7 +223,9 @@ def create_server() -> FastMCP:
     if bearer_auth and oidc_auth:
         from fastmcp.server.auth import MultiAuth
 
-        auth = MultiAuth(server=oidc_auth, verifiers=[bearer_auth])
+        auth = MultiAuth(
+            server=oidc_auth, verifiers=[bearer_auth], required_scopes=[]
+        )
         auth_mode = "multi"
         logger.info("Multi-auth enabled: bearer token + OIDC (either accepted)")
     elif bearer_auth:
@@ -239,9 +241,13 @@ def create_server() -> FastMCP:
         auth_mode = "none"
         logger.info("No auth configured — server accepts unauthenticated connections")
 
+    from importlib.metadata import version
+
+    server_version = version("image-generation-mcp")
     logger.info(
-        "Server config: name=%s auth=%s mode=%s",
+        "Server config: name=%s version=%s auth=%s mode=%s",
         server_name,
+        server_version,
         auth_mode,
         "read-only" if is_read_only else "read-write",
     )
