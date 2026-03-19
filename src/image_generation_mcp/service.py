@@ -20,6 +20,10 @@ from typing import Any, ClassVar
 
 from PIL import Image
 
+from image_generation_mcp.providers.capabilities import (
+    ProviderCapabilities,
+    make_degraded,
+)
 from image_generation_mcp.providers.types import (
     ImageProvider,
     ImageProviderError,
@@ -62,6 +66,7 @@ class ImageService:
         default_provider: str = "auto",
     ) -> None:
         self._providers: dict[str, ImageProvider] = {}
+        self._capabilities: dict[str, ProviderCapabilities] = {}
         self._scratch_dir = scratch_dir
         self._default_provider = default_provider
         self._images: dict[str, ImageRecord] = {}
@@ -85,6 +90,11 @@ class ImageService:
             if hasattr(provider, "aclose"):
                 await provider.aclose()
 
+    @property
+    def capabilities(self) -> dict[str, ProviderCapabilities]:
+        """Discovered provider capabilities (read-only view)."""
+        return self._capabilities
+
     def register_provider(self, name: str, provider: ImageProvider) -> None:
         """Register an image provider.
 
@@ -94,6 +104,32 @@ class ImageService:
         """
         self._providers[name] = provider
         logger.info("Registered image provider: %s", name)
+
+    async def discover_all_capabilities(self) -> None:
+        """Discover capabilities for all registered providers.
+
+        Calls ``discover_capabilities()`` on each provider. If a provider
+        raises an exception, it is registered with ``degraded=True`` and
+        an empty model list — server startup is not blocked.
+        """
+        for name, provider in self._providers.items():
+            try:
+                caps = await provider.discover_capabilities()
+                self._capabilities[name] = caps
+                model_count = len(caps.models)
+                logger.info(
+                    "Discovered capabilities for %s: %d model(s)%s",
+                    name,
+                    model_count,
+                    " (degraded)" if caps.degraded else "",
+                )
+            except Exception:
+                logger.warning(
+                    "Capability discovery failed for %s — marking degraded",
+                    name,
+                    exc_info=True,
+                )
+                self._capabilities[name] = make_degraded(name, time.time())
 
     _PROVIDER_DESCRIPTIONS: ClassVar[dict[str, str]] = {
         "openai": (
@@ -110,17 +146,21 @@ class ImageService:
     }
 
     def list_providers(self) -> dict[str, dict[str, Any]]:
-        """List registered providers with availability info.
+        """List registered providers with availability and capability info.
 
         Returns:
-            Dict of provider name -> ``{available: True, description: str}``.
+            Dict of provider name -> ``{available, description, capabilities}``.
+            The ``capabilities`` key is present only after discovery has run.
         """
         result: dict[str, dict[str, Any]] = {}
         for name in self._providers:
-            result[name] = {
+            entry: dict[str, Any] = {
                 "available": True,
                 "description": self._PROVIDER_DESCRIPTIONS.get(name, name),
             }
+            if name in self._capabilities:
+                entry["capabilities"] = self._capabilities[name].to_dict()
+            result[name] = entry
         return result
 
     def _resolve_provider(
