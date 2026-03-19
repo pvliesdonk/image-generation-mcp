@@ -34,7 +34,13 @@ def register_resources(mcp: FastMCP) -> None:
         mcp: The :class:`~fastmcp.FastMCP` instance to register resources on.
     """
 
-    @mcp.resource("info://providers")
+    @mcp.resource(
+        "info://providers",
+        description=(
+            "Read this to discover which image providers are configured "
+            "and what aspect ratios and quality levels are supported."
+        ),
+    )
     async def provider_capabilities(
         service: ImageService = Depends(get_service),
     ) -> str:
@@ -56,6 +62,11 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource(
         "image://{image_id}/view{?format,width,height,quality}",
         mime_type="application/octet-stream",
+        description=(
+            "Retrieve a generated image with optional transforms. "
+            "No query params returns the original. Add format, width, "
+            "height, or quality params to transform on the fly."
+        ),
     )
     async def image_view(
         image_id: str,
@@ -69,6 +80,10 @@ def register_resources(mcp: FastMCP) -> None:
 
         No parameters returns the original bytes unchanged. Set ``format``
         for conversion, ``width``/``height`` for resize or crop.
+
+        Both width and height → center-crop to exact dimensions.
+        Only width → proportional resize by width.
+        Only height → proportional resize by height.
 
         Args:
             image_id: Image registry ID.
@@ -111,6 +126,11 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource(
         "image://{image_id}/metadata",
         mime_type="application/json",
+        description=(
+            "Read generation provenance for an image — prompt, provider, "
+            "parameters, and timestamps. Use after generate_image to "
+            "inspect what was generated."
+        ),
     )
     async def image_metadata(
         image_id: str,
@@ -132,11 +152,20 @@ def register_resources(mcp: FastMCP) -> None:
             return sidecar_path.read_text()
         except FileNotFoundError:
             raise ImageProviderError(
-                "registry",
-                f"Metadata file missing for image '{image_id}'",
+                "server",
+                f"Metadata file missing for image '{image_id}'. "
+                "Verify the image_id via image://list.",
             ) from None
 
-    @mcp.resource("image://list", mime_type="application/json")
+    @mcp.resource(
+        "image://list",
+        mime_type="application/json",
+        description=(
+            "List all generated images with their IDs, resource URIs, "
+            "and prompts. Read this to find image_ids for use with "
+            "image://*/view and image://*/metadata resources."
+        ),
+    )
     async def image_list(
         service: ImageService = Depends(get_service),
     ) -> str:

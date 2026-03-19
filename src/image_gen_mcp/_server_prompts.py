@@ -134,6 +134,21 @@ masterpiece, best quality, sharp focus
 
 Supported aspect ratios: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`.
 The server maps these to optimal pixel dimensions for each SD model.
+
+## Workflow
+
+1. Draft your prompt using comma-separated tags (subject first)
+2. Add quality tags and a negative prompt
+3. Call `generate_image` with `provider="a1111"`:
+
+```
+generate_image(
+    prompt="1girl, long hair, school uniform, cherry blossoms, masterpiece, best quality",
+    negative_prompt="lowres, bad anatomy, bad hands, worst quality, low quality",
+    provider="a1111",
+    aspect_ratio="2:3"
+)
+```
 """
 
 
@@ -146,7 +161,10 @@ def register_prompts(mcp: FastMCP) -> None:
 
     @mcp.prompt(
         name="select_provider",
-        description="Guidelines for selecting the best image generation provider",
+        description=(
+            "Use when choosing a specific provider instead of auto-selection. "
+            "Not needed when provider='auto' (the default)."
+        ),
     )
     def select_provider() -> str:
         """Return provider selection guidance."""
