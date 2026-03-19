@@ -12,21 +12,21 @@ Run image-generation-mcp as a native Linux service using the `.deb` or `.rpm` pa
 ```bash
 # Download the .deb from the latest release
 curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_all.deb
-sudo dpkg -i image-generation-mcp_all.deb
+sudo apt install ./image-generation-mcp_all.deb
 ```
 
 ### RHEL / Fedora
 
 ```bash
 curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_all.rpm
-sudo rpm -i image-generation-mcp_all.rpm
+sudo dnf install image-generation-mcp_all.rpm
 ```
 
 The package creates:
 
 | Path | Purpose |
 |------|---------|
-| `/etc/systemd/system/image-generation-mcp.service` | Systemd unit file |
+| `/usr/lib/systemd/system/image-generation-mcp.service` | Systemd unit file |
 | `/etc/image-generation-mcp/env` | Environment configuration |
 | `/var/lib/image-generation-mcp/` | Data directory (writable state; images saved to `images/` subdirectory) |
 
@@ -140,7 +140,7 @@ sudo install -d -o image-generation-mcp -g image-generation-mcp -m 0750 \
 sudo install -d -m 0750 /etc/image-generation-mcp
 
 # 4. Download service file and env template
-sudo curl -o /etc/systemd/system/image-generation-mcp.service \
+sudo curl -o /usr/lib/systemd/system/image-generation-mcp.service \
     https://raw.githubusercontent.com/pvliesdonk/image-generation-mcp/main/packaging/image-generation-mcp.service
 sudo curl -o /etc/image-generation-mcp/env \
     https://raw.githubusercontent.com/pvliesdonk/image-generation-mcp/main/packaging/env.example
@@ -186,10 +186,10 @@ sudo chown -R image-generation-mcp:image-generation-mcp /var/lib/image-generatio
 
 ```bash
 # Debian / Ubuntu
-sudo dpkg -r image-generation-mcp
+sudo apt remove image-generation-mcp
 
 # RHEL / Fedora
-sudo rpm -e image-generation-mcp
+sudo dnf remove image-generation-mcp
 ```
 
 The package stops and disables the service automatically. It does **not** remove the system user or data directory -- delete those manually if desired:
@@ -197,4 +197,5 @@ The package stops and disables the service automatically. It does **not** remove
 ```bash
 sudo rm -rf /var/lib/image-generation-mcp /etc/image-generation-mcp
 sudo userdel image-generation-mcp
+sudo groupdel image-generation-mcp
 ```
