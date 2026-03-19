@@ -122,9 +122,7 @@ class TestAuthModeSelection:
 class TestVersionLogging:
     """Tests for server version logging at startup."""
 
-    def test_version_logged_on_startup(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_version_logged_on_startup(self, caplog: pytest.LogCaptureFixture) -> None:
         """Server config log line includes version."""
         with caplog.at_level(logging.INFO):
             create_server()
@@ -132,7 +130,7 @@ class TestVersionLogging:
         assert "version=" in caplog.text
 
     def test_version_fallback_when_not_installed(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+        self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Version falls back to 'dev' when package is not installed."""
         from unittest.mock import patch
