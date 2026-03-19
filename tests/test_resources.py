@@ -12,10 +12,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 from PIL import Image
 
-from mcp_imagegen.processing import convert_format
-from mcp_imagegen.providers.placeholder import PlaceholderImageProvider
-from mcp_imagegen.providers.types import ImageProviderError, ImageResult
-from mcp_imagegen.service import ImageService
+from image_generation_mcp.processing import convert_format
+from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
+from image_generation_mcp.providers.types import ImageProviderError, ImageResult
+from image_generation_mcp.service import ImageService
 
 
 @pytest.fixture
@@ -73,7 +73,7 @@ def test_image_view_resize(
     registered: tuple[ImageService, str],
 ) -> None:
     """Resize produces correct dimensions."""
-    from mcp_imagegen.processing import crop_to_dimensions
+    from image_generation_mcp.processing import crop_to_dimensions
 
     service, image_id = registered
     record = service.get_image(image_id)
@@ -89,7 +89,7 @@ def test_image_view_proportional_resize_width(
     registered: tuple[ImageService, str],
 ) -> None:
     """Width-only resize preserves aspect ratio."""
-    from mcp_imagegen.processing import resize_image
+    from image_generation_mcp.processing import resize_image
 
     service, image_id = registered
     record = service.get_image(image_id)
@@ -109,7 +109,7 @@ def test_image_view_combined_params(
     registered: tuple[ImageService, str],
 ) -> None:
     """Format conversion + crop together."""
-    from mcp_imagegen.processing import crop_to_dimensions
+    from image_generation_mcp.processing import crop_to_dimensions
 
     service, image_id = registered
     record = service.get_image(image_id)

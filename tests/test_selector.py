@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from mcp_imagegen.providers.selector import select_provider
-from mcp_imagegen.providers.types import ImageProviderError
+from image_generation_mcp.providers.selector import select_provider
+from image_generation_mcp.providers.types import ImageProviderError
 
 
 class TestSelectProvider:

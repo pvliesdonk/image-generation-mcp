@@ -16,14 +16,18 @@ from fastmcp.resources import ResourceContent, ResourceResult
 from mcp.types import Icon
 from PIL import Image as PILImage
 
-from mcp_imagegen._server_deps import get_service
-from mcp_imagegen.processing import convert_format, crop_to_dimensions, resize_image
-from mcp_imagegen.providers.types import (
+from image_generation_mcp._server_deps import get_service
+from image_generation_mcp.processing import (
+    convert_format,
+    crop_to_dimensions,
+    resize_image,
+)
+from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_QUALITY_LEVELS,
     ImageProviderError,
 )
-from mcp_imagegen.service import ImageService
+from image_generation_mcp.service import ImageService
 
 logger = logging.getLogger(__name__)
 

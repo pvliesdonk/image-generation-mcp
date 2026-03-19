@@ -1,6 +1,6 @@
 # Claude Code
 
-Connect mcp-imagegen to Claude Code as an MCP server.
+Connect image-generation-mcp to Claude Code as an MCP server.
 
 ## Configuration
 
@@ -12,10 +12,10 @@ Add a `.mcp.json` file to your project root:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "mcp-imagegen",
+      "command": "image-generation-mcp",
       "args": ["serve"],
       "env": {
-        "MCP_IMAGEGEN_READ_ONLY": "false"
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false"
       }
     }
   }
@@ -28,11 +28,11 @@ Add a `.mcp.json` file to your project root:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "mcp-imagegen",
+      "command": "image-generation-mcp",
       "args": ["serve"],
       "env": {
-        "MCP_IMAGEGEN_READ_ONLY": "false",
-        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-..."
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-..."
       }
     }
   }
@@ -45,12 +45,12 @@ Add a `.mcp.json` file to your project root:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "mcp-imagegen",
+      "command": "image-generation-mcp",
       "args": ["serve"],
       "env": {
-        "MCP_IMAGEGEN_READ_ONLY": "false",
-        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-...",
-        "MCP_IMAGEGEN_A1111_HOST": "http://localhost:7860"
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-...",
+        "IMAGE_GENERATION_MCP_A1111_HOST": "http://localhost:7860"
       }
     }
   }
@@ -69,4 +69,4 @@ After adding the configuration, restart Claude Code (or run `/mcp` to reload MCP
 - Use `provider="auto"` (the default) to let the server pick the best provider based on your prompt
 - The `select_provider` prompt gives Claude guidance on provider strengths
 - The `sd_prompt_guide` prompt helps Claude write effective Stable Diffusion prompts
-- Generated images are saved to `~/.mcp-imagegen/images/` by default (configurable via `MCP_IMAGEGEN_SCRATCH_DIR`)
+- Generated images are saved to `~/.image-generation-mcp/images/` by default (configurable via `IMAGE_GENERATION_MCP_SCRATCH_DIR`)

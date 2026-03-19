@@ -7,12 +7,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from mcp_imagegen.providers.openai import (
+from image_generation_mcp.providers.openai import (
     _DALLE3_SIZES,
     _GPT_IMAGE_SIZES,
     OpenAIImageProvider,
 )
-from mcp_imagegen.providers.types import (
+from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
     ImageProvider,
     ImageProviderConnectionError,
@@ -23,7 +23,9 @@ from mcp_imagegen.providers.types import (
 @pytest.fixture
 def _mock_openai():
     """Patch openai imports so tests don't need the real package."""
-    with patch("mcp_imagegen.providers.openai.OpenAIImageProvider._create_client"):
+    with patch(
+        "image_generation_mcp.providers.openai.OpenAIImageProvider._create_client"
+    ):
         yield
 
 

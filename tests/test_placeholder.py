@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from mcp_imagegen.providers.placeholder import PlaceholderImageProvider
-from mcp_imagegen.providers.types import ImageProvider
+from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
+from image_generation_mcp.providers.types import ImageProvider
 
 
 class TestPlaceholderProvider:

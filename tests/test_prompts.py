@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from mcp_imagegen._server_prompts import _SD_PROMPT_GUIDE, _SELECT_PROVIDER_PROMPT
+from image_generation_mcp._server_prompts import (
+    _SD_PROMPT_GUIDE,
+    _SELECT_PROVIDER_PROMPT,
+)
 
 
 class TestPromptContent:
