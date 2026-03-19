@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 from fastmcp.resources import ResourceContent, ResourceResult
+from mcp.types import Icon
 from PIL import Image as PILImage
 
 from image_gen_mcp._server_deps import get_service
@@ -25,6 +26,8 @@ from image_gen_mcp.providers.types import (
 from image_gen_mcp.service import ImageService
 
 logger = logging.getLogger(__name__)
+
+_LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 
 
 def register_resources(mcp: FastMCP) -> None:
@@ -40,6 +43,7 @@ def register_resources(mcp: FastMCP) -> None:
             "Read this to discover which image providers are configured "
             "and what aspect ratios and quality levels are supported."
         ),
+        icons=[Icon(src=_LUCIDE.format("info"), mimeType="image/svg+xml")],
     )
     async def provider_capabilities(
         service: ImageService = Depends(get_service),
@@ -67,6 +71,7 @@ def register_resources(mcp: FastMCP) -> None:
             "No query params returns the original. Add format, width, "
             "height, or quality params to transform on the fly."
         ),
+        icons=[Icon(src=_LUCIDE.format("scan-eye"), mimeType="image/svg+xml")],
     )
     async def image_view(
         image_id: str,
@@ -131,6 +136,7 @@ def register_resources(mcp: FastMCP) -> None:
             "parameters, and timestamps. Use after generate_image to "
             "inspect what was generated."
         ),
+        icons=[Icon(src=_LUCIDE.format("file-json"), mimeType="image/svg+xml")],
     )
     async def image_metadata(
         image_id: str,
@@ -165,6 +171,12 @@ def register_resources(mcp: FastMCP) -> None:
             "and prompts. Read this to find image_ids for use with "
             "image://*/view and image://*/metadata resources."
         ),
+        icons=[
+            Icon(
+                src=_LUCIDE.format("gallery-thumbnails"),
+                mimeType="image/svg+xml",
+            )
+        ],
     )
     async def image_list(
         service: ImageService = Depends(get_service),

@@ -10,6 +10,7 @@ See https://gofastmcp.com/servers/prompts for the full prompt API.
 from __future__ import annotations
 
 from fastmcp import FastMCP
+from mcp.types import Icon
 
 _SELECT_PROVIDER_PROMPT = """\
 You have access to an image generation MCP server with multiple providers.
@@ -152,6 +153,9 @@ generate_image(
 """
 
 
+_LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+
+
 def register_prompts(mcp: FastMCP) -> None:
     """Register all MCP prompts on *mcp*.
 
@@ -165,6 +169,7 @@ def register_prompts(mcp: FastMCP) -> None:
             "Use when choosing a specific provider instead of auto-selection. "
             "Not needed when provider='auto' (the default)."
         ),
+        icons=[Icon(src=_LUCIDE.format("route"), mimeType="image/svg+xml")],
     )
     def select_provider() -> str:
         """Return provider selection guidance."""
@@ -176,6 +181,7 @@ def register_prompts(mcp: FastMCP) -> None:
             "Guide for writing Stable Diffusion prompts "
             "(CLIP tag format, negative prompts, BREAK syntax)"
         ),
+        icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
     )
     def sd_prompt_guide() -> str:
         """Return Stable Diffusion prompt writing guide."""

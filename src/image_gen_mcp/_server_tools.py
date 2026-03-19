@@ -15,7 +15,7 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
-from mcp.types import ImageContent, TextContent
+from mcp.types import Icon, ImageContent, TextContent
 
 from ._server_deps import get_service
 from .processing import generate_thumbnail
@@ -29,6 +29,8 @@ from .service import ImageService
 
 logger = logging.getLogger(__name__)
 
+_LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+
 
 def register_tools(mcp: FastMCP) -> None:
     """Register all MCP tools on *mcp*.
@@ -37,7 +39,11 @@ def register_tools(mcp: FastMCP) -> None:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
     """
 
-    @mcp.tool(tags={"write"}, task=True)
+    @mcp.tool(
+        tags={"write"},
+        task=True,
+        icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
+    )
     async def generate_image(
         prompt: str,
         provider: str = "auto",
@@ -159,7 +165,9 @@ def register_tools(mcp: FastMCP) -> None:
             ]
         )
 
-    @mcp.tool()
+    @mcp.tool(
+        icons=[Icon(src=_LUCIDE.format("layers"), mimeType="image/svg+xml")],
+    )
     async def list_providers(
         service: ImageService = Depends(get_service),
     ) -> str:
