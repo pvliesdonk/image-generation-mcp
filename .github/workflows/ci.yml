@@ -121,7 +121,7 @@ jobs:
                 state: 'success',
                 context: 'codecov/patch',
                 description: 'Coverage not affected',
-                target_url: 'https://app.codecov.io/gh/pvliesdonk/mcp-imagegen',
+                target_url: 'https://app.codecov.io/gh/pvliesdonk/image-generation-mcp',
               });
             } else {
               core.info('Python source changes detected — Codecov will post patch status');

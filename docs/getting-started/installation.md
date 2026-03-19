@@ -11,20 +11,20 @@
 
     ```bash
     # Core + MCP server
-    pip install mcp-imagegen[mcp]
+    pip install image-generation-mcp[mcp]
 
     # With OpenAI provider
-    pip install mcp-imagegen[all]
+    pip install image-generation-mcp[all]
     ```
 
 === "uv"
 
     ```bash
     # Core + MCP server
-    uv pip install mcp-imagegen[mcp]
+    uv pip install image-generation-mcp[mcp]
 
     # With OpenAI provider
-    uv pip install mcp-imagegen[all]
+    uv pip install image-generation-mcp[all]
     ```
 
 ### Available extras
@@ -40,15 +40,15 @@
 ## From source
 
 ```bash
-git clone https://github.com/pvliesdonk/mcp-imagegen.git
-cd mcp-imagegen
+git clone https://github.com/pvliesdonk/image-generation-mcp.git
+cd image-generation-mcp
 uv sync --extra all --extra dev
 ```
 
 ## Docker
 
 ```bash
-docker pull ghcr.io/pvliesdonk/mcp-imagegen:latest
+docker pull ghcr.io/pvliesdonk/image-generation-mcp:latest
 ```
 
 See [Docker deployment](../deployment/docker.md) for Docker Compose setup.
@@ -57,10 +57,10 @@ See [Docker deployment](../deployment/docker.md) for Docker Compose setup.
 
 ```bash
 # Check the CLI is available
-mcp-imagegen --help
+image-generation-mcp --help
 
 # Start with placeholder provider (no API keys needed)
-MCP_IMAGEGEN_READ_ONLY=false mcp-imagegen serve
+IMAGE_GENERATION_MCP_READ_ONLY=false image-generation-mcp serve
 ```
 
 The server starts in stdio mode by default. Press Ctrl+C to stop.

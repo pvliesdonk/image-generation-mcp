@@ -13,7 +13,7 @@ import logging
 import struct
 import zlib
 
-from mcp_imagegen.providers.types import ImageResult
+from image_generation_mcp.providers.types import ImageResult
 
 logger = logging.getLogger(__name__)
 

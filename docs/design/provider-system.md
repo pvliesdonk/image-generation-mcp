@@ -105,7 +105,7 @@ All exceptions carry `provider: str` and `message: str` for clear error reportin
 - **Quality mapping:** `"standard"` -> `"medium"`, `"hd"` -> `"high"`, `"low"` -> `"low"`
 - **Size mapping:** Per-model aspect ratio -> pixel size tables
 - **Error handling:** Converts `APIConnectionError`, `APIStatusError` (with content policy detection)
-- **Registered when:** `MCP_IMAGEGEN_OPENAI_API_KEY` is set
+- **Registered when:** `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
 
 ### A1111 Provider (Stable Diffusion WebUI)
 
@@ -118,7 +118,7 @@ All exceptions carry `provider: str` and `message: str` for clear error reportin
 - **Negative prompt:** Native support via `negative_prompt` field in payload
 - **Metadata:** Extracts seed and active model name from response `info` JSON
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
-- **Registered when:** `MCP_IMAGEGEN_A1111_HOST` is set
+- **Registered when:** `IMAGE_GENERATION_MCP_A1111_HOST` is set
 
 ## Provider Selection
 
@@ -181,8 +181,8 @@ Registration happens in `_server_deps.py` during server startup:
 
 ### Scratch Directory
 
-Every generated image is saved to `MCP_IMAGEGEN_SCRATCH_DIR` (default
-`~/.mcp-imagegen/images/`) with the `{id}-original.{ext}` naming scheme.
+Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
+`~/.image-generation-mcp/images/`) with the `{id}-original.{ext}` naming scheme.
 
 ## MCP Interface
 
@@ -203,7 +203,7 @@ Progress is reported at 3 stages via `Context.report_progress()`.
   `original_size_bytes`, `thumbnail_size_bytes`, `provider`, `file_path`,
   plus provider-specific metadata
 
-In read-only mode (`MCP_IMAGEGEN_READ_ONLY=true`), `generate_image` is hidden.
+In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is hidden.
 
 ### Resources
 
@@ -230,15 +230,15 @@ The `image://{id}/view` resource template supports:
 
 ## Configuration
 
-All environment variables use the `MCP_IMAGEGEN_` prefix.
+All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `MCP_IMAGEGEN_SCRATCH_DIR` | Path | `~/.mcp-imagegen/images/` | Scratch directory for saved images |
-| `MCP_IMAGEGEN_OPENAI_API_KEY` | str | *(none)* | OpenAI API key; enables OpenAI provider |
-| `MCP_IMAGEGEN_A1111_HOST` | str | *(none)* | A1111 WebUI URL; enables A1111 provider |
-| `MCP_IMAGEGEN_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `openai`, `a1111`, `placeholder`) |
-| `MCP_IMAGEGEN_READ_ONLY` | bool | `true` | When true, hides write-tagged tools |
+| `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Scratch directory for saved images |
+| `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | *(none)* | OpenAI API key; enables OpenAI provider |
+| `IMAGE_GENERATION_MCP_A1111_HOST` | str | *(none)* | A1111 WebUI URL; enables A1111 provider |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `openai`, `a1111`, `placeholder`) |
+| `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When true, hides write-tagged tools |
 
 ## Future Work
 

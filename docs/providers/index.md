@@ -1,6 +1,6 @@
 # Providers
 
-mcp-imagegen supports multiple image generation providers. Each provider is registered at startup based on available configuration (API keys, service URLs).
+image-generation-mcp supports multiple image generation providers. Each provider is registered at startup based on available configuration (API keys, service URLs).
 
 ## Provider comparison
 
@@ -12,7 +12,7 @@ mcp-imagegen supports multiple image generation providers. Each provider is regi
 | **Speed** | 5-15s | 10-60s (depends on GPU) | Instant |
 | **Cost** | Per-image API pricing | Self-hosted (GPU cost) | Free |
 | **Negative prompt** | Appended as "Avoid:" clause | Native support | Ignored |
-| **Requires** | `MCP_IMAGEGEN_OPENAI_API_KEY` | Running A1111 WebUI + `MCP_IMAGEGEN_A1111_HOST` | Nothing |
+| **Requires** | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | Running A1111 WebUI + `IMAGE_GENERATION_MCP_A1111_HOST` | Nothing |
 
 ## Which provider should I use?
 
@@ -51,5 +51,5 @@ The first matching rule wins. Within a rule, the first available provider is sel
 Providers are registered automatically at startup based on environment variables:
 
 1. **Placeholder** -- always registered (zero cost, no configuration)
-2. **OpenAI** -- registered when `MCP_IMAGEGEN_OPENAI_API_KEY` is set
-3. **A1111** -- registered when `MCP_IMAGEGEN_A1111_HOST` is set
+2. **OpenAI** -- registered when `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
+3. **A1111** -- registered when `IMAGE_GENERATION_MCP_A1111_HOST` is set

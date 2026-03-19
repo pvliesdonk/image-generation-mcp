@@ -12,13 +12,13 @@ The server listens on port 8000 with HTTP transport by default.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MCP_IMAGEGEN_READ_ONLY` | `true` | Disable write tools |
-| `MCP_IMAGEGEN_OPENAI_API_KEY` | -- | OpenAI API key; enables OpenAI provider |
-| `MCP_IMAGEGEN_A1111_HOST` | -- | A1111 WebUI URL; enables A1111 provider |
-| `MCP_IMAGEGEN_SCRATCH_DIR` | `~/.mcp-imagegen/images/` | Image storage directory |
-| `MCP_IMAGEGEN_BEARER_TOKEN` | -- | Enable bearer token auth |
-| `MCP_IMAGEGEN_LOG_LEVEL` | `INFO` | Log level |
-| `MCP_IMAGEGEN_SERVER_NAME` | `mcp-imagegen` | Server name shown to clients |
+| `IMAGE_GENERATION_MCP_READ_ONLY` | `true` | Disable write tools |
+| `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | -- | OpenAI API key; enables OpenAI provider |
+| `IMAGE_GENERATION_MCP_A1111_HOST` | -- | A1111 WebUI URL; enables A1111 provider |
+| `IMAGE_GENERATION_MCP_SCRATCH_DIR` | `~/.image-generation-mcp/images/` | Image storage directory |
+| `IMAGE_GENERATION_MCP_BEARER_TOKEN` | -- | Enable bearer token auth |
+| `IMAGE_GENERATION_MCP_LOG_LEVEL` | `INFO` | Log level |
+| `IMAGE_GENERATION_MCP_SERVER_NAME` | `image-generation-mcp` | Server name shown to clients |
 
 See [Configuration](../configuration.md) for the full environment variable reference.
 

@@ -16,7 +16,7 @@ from typing import Any
 
 import httpx
 
-from mcp_imagegen.providers.types import (
+from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,

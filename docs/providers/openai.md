@@ -7,7 +7,7 @@ Image generation via OpenAI's Images API. Best for text rendering, logos, typogr
 Set your OpenAI API key:
 
 ```bash
-MCP_IMAGEGEN_OPENAI_API_KEY=sk-...
+IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
 ```
 
 The provider registers automatically when this variable is set.

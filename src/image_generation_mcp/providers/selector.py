@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import re
 
-from mcp_imagegen.providers.types import ImageProviderError
+from image_generation_mcp.providers.types import ImageProviderError
 
 logger = logging.getLogger(__name__)
 

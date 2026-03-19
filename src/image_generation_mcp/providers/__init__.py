@@ -3,7 +3,7 @@
 Re-exports core types for convenient access.
 """
 
-from mcp_imagegen.providers.types import (
+from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_QUALITY_LEVELS,
     ImageContentPolicyError,

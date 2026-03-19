@@ -1,6 +1,6 @@
 # Claude Desktop
 
-Connect mcp-imagegen to Claude Desktop as an MCP server.
+Connect image-generation-mcp to Claude Desktop as an MCP server.
 
 ## Configuration
 
@@ -15,10 +15,10 @@ Edit your Claude Desktop MCP configuration file:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "mcp-imagegen",
+      "command": "image-generation-mcp",
       "args": ["serve"],
       "env": {
-        "MCP_IMAGEGEN_READ_ONLY": "false"
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false"
       }
     }
   }
@@ -31,11 +31,11 @@ Edit your Claude Desktop MCP configuration file:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "mcp-imagegen",
+      "command": "image-generation-mcp",
       "args": ["serve"],
       "env": {
-        "MCP_IMAGEGEN_READ_ONLY": "false",
-        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-..."
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-..."
       }
     }
   }
@@ -48,12 +48,12 @@ Edit your Claude Desktop MCP configuration file:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "mcp-imagegen",
+      "command": "image-generation-mcp",
       "args": ["serve"],
       "env": {
-        "MCP_IMAGEGEN_READ_ONLY": "false",
-        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-...",
-        "MCP_IMAGEGEN_A1111_HOST": "http://localhost:7860"
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-...",
+        "IMAGE_GENERATION_MCP_A1111_HOST": "http://localhost:7860"
       }
     }
   }
@@ -77,9 +77,9 @@ For HTTP transport (required for authentication):
 Start the server separately:
 
 ```bash
-MCP_IMAGEGEN_READ_ONLY=false \
-MCP_IMAGEGEN_OPENAI_API_KEY=sk-... \
-mcp-imagegen serve --transport http --port 8000
+IMAGE_GENERATION_MCP_READ_ONLY=false \
+IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-... \
+image-generation-mcp serve --transport http --port 8000
 ```
 
 ## Verify
@@ -95,12 +95,12 @@ After restarting Claude Desktop:
 ### Server not showing in Claude Desktop
 
 - Verify the JSON syntax is valid (no trailing commas)
-- Ensure `mcp-imagegen` is on your PATH (try running it in a terminal first)
+- Ensure `image-generation-mcp` is on your PATH (try running it in a terminal first)
 - Restart Claude Desktop completely (quit and reopen)
 
 ### Tools not visible
 
-- Check that `MCP_IMAGEGEN_READ_ONLY` is set to `"false"` -- the `generate_image` tool is hidden in read-only mode (the default)
+- Check that `IMAGE_GENERATION_MCP_READ_ONLY` is set to `"false"` -- the `generate_image` tool is hidden in read-only mode (the default)
 - `list_providers` is always visible regardless of read-only mode
 
 ### Generation fails
