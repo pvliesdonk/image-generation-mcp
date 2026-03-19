@@ -113,6 +113,7 @@ class OpenAIImageProvider:
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
+        background: str = "opaque",
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
 
@@ -121,6 +122,8 @@ class OpenAIImageProvider:
             negative_prompt: Appended as ``"Avoid: ..."`` clause.
             aspect_ratio: Maps to OpenAI size parameter.
             quality: Quality level.
+            background: Background transparency (``opaque``, ``transparent``).
+                Only supported for gpt-image-1; ignored for dall-e-3.
 
         Returns:
             ImageResult with generated image.
@@ -163,8 +166,10 @@ class OpenAIImageProvider:
             }
             if self._is_gpt_image:
                 api_kwargs["output_format"] = self._output_format
+                api_kwargs["background"] = background
             else:
                 api_kwargs["response_format"] = "b64_json"
+                logger.debug("dall-e-3 does not support background parameter, ignoring")
             response = await self._client.images.generate(**api_kwargs)
         except ImageProviderError:
             raise

@@ -209,6 +209,7 @@ class ImageService:
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
+        background: str = "opaque",
     ) -> tuple[str, ImageResult]:
         """Generate an image using a provider.
 
@@ -218,6 +219,8 @@ class ImageService:
             negative_prompt: Things to avoid in the image.
             aspect_ratio: Desired aspect ratio.
             quality: Quality level.
+            background: Background transparency (``opaque``, ``transparent``).
+                Provider support varies.
 
         Returns:
             Tuple of (provider_name, ImageResult).
@@ -240,6 +243,7 @@ class ImageService:
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             quality=quality,
+            background=background,
         )
 
         return resolved_name, result
@@ -257,6 +261,7 @@ class ImageService:
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
+        background: str = "opaque",
     ) -> ImageRecord:
         """Register a generated image in the scratch directory.
 
@@ -270,6 +275,7 @@ class ImageService:
             negative_prompt: Things to avoid (if any).
             aspect_ratio: Requested aspect ratio.
             quality: Requested quality level.
+            background: Requested background transparency.
 
         Returns:
             The created ImageRecord.
@@ -306,6 +312,10 @@ class ImageService:
 
         # Write sidecar JSON
         sidecar_path = self._scratch_dir / f"{image_id}.json"
+        provider_metadata_with_background = {
+            **record.provider_metadata,
+            "background": background,
+        }
         sidecar_data = {
             "id": record.id,
             "prompt": record.prompt,
@@ -313,11 +323,12 @@ class ImageService:
             "provider": record.provider,
             "aspect_ratio": record.aspect_ratio,
             "quality": record.quality,
+            "background": background,
             "content_type": record.content_type,
             "original_filename": original_filename,
             "original_size_bytes": result.size_bytes,
             "original_dimensions": list(record.original_dimensions),
-            "provider_metadata": record.provider_metadata,
+            "provider_metadata": provider_metadata_with_background,
             "created_at": datetime.fromtimestamp(record.created_at, tz=UTC).isoformat(),
         }
         sidecar_path.write_text(json.dumps(sidecar_data, indent=2))

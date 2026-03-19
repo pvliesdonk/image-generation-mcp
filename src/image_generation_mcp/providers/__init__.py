@@ -9,6 +9,7 @@ from image_generation_mcp.providers.capabilities import (
 )
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
+    SUPPORTED_BACKGROUNDS,
     SUPPORTED_QUALITY_LEVELS,
     ImageContentPolicyError,
     ImageProvider,
@@ -19,6 +20,7 @@ from image_generation_mcp.providers.types import (
 
 __all__ = [
     "SUPPORTED_ASPECT_RATIOS",
+    "SUPPORTED_BACKGROUNDS",
     "SUPPORTED_QUALITY_LEVELS",
     "ImageContentPolicyError",
     "ImageProvider",
