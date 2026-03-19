@@ -12,7 +12,7 @@ from image_generation_mcp.mcp_server import create_server
 _OIDC_REQUIRED = {
     "IMAGE_GENERATION_MCP_BASE_URL": "https://mcp.example.com",
     "IMAGE_GENERATION_MCP_OIDC_CONFIG_URL": "https://auth.example.com/.well-known/openid-configuration",
-    "IMAGE_GENERATION_MCP_OIDC_CLIENT_ID": "mcp-client",
+    "IMAGE_GENERATION_MCP_OIDC_CLIENT_ID": "image-generation-mcp",
     "IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET": "test-secret",
 }
 
