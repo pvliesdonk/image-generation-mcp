@@ -60,8 +60,16 @@ class ImageProvider(Protocol):
         negative_prompt: str | None = None,
         aspect_ratio: str = "1:1",
         quality: str = "standard",
+        background: str = "opaque",
     ) -> ImageResult: ...
+
+    async def discover_capabilities(self) -> ProviderCapabilities: ...
 ```
+
+The `discover_capabilities()` method is called once during server lifespan
+after provider construction. Results are cached for the server lifetime
+(frozen dataclasses). See [ADR-0007](../decisions/0007-provider-capability-model.md)
+for the full design.
 
 ### ImageResult
 
@@ -87,6 +95,35 @@ ImageProviderError(Exception)
 
 All exceptions carry `provider: str` and `message: str` for clear error reporting.
 
+## Capability Discovery
+
+At startup, after all providers are registered, the server calls
+`discover_capabilities()` on each provider. Results are stored in
+`ImageService._capabilities` as frozen `ProviderCapabilities` dataclasses.
+
+### Per-Provider Strategy
+
+| Provider | Discovery method | Notes |
+|----------|-----------------|-------|
+| **Placeholder** | Static return | Hardcoded capabilities, always succeeds |
+| **OpenAI** | `client.models.list()` | Filters to known image models (gpt-image-1, dall-e-3, dall-e-2) |
+| **A1111** | `GET /sdapi/v1/sd-models` + `/sdapi/v1/options` | Maps checkpoints to architecture-specific capabilities |
+
+### Degraded Mode
+
+If `discover_capabilities()` raises an exception, the provider is marked
+`degraded=True` with an empty model list. Server startup is **not blocked** --
+degraded providers can still generate images, but a warning is logged on each
+generation request. This prevents a slow or unreachable A1111 instance from
+blocking the entire server.
+
+### Capability-Aware Selection
+
+When `provider="auto"`, the selector uses capabilities as a **secondary filter**
+alongside keyword heuristics. For example, when `background="transparent"` is
+requested, providers without `supports_background=True` are deprioritized but
+not excluded. Keywords remain the primary selection mechanism.
+
 ## Providers
 
 ### Placeholder Provider
@@ -95,6 +132,7 @@ All exceptions carry `provider: str` and `message: str` for clear error reportin
 - **No dependencies:** Pure Python PNG encoder (zlib + struct)
 - **Color:** Selected from 6-color palette via SHA-256 hash of prompt
 - **Aspect ratios:** Maps to pixel sizes (256x256, 640x360, etc.)
+- **Background:** Supports transparent (RGBA PNG with alpha=0)
 - **Always registered** -- no API key or service needed
 
 ### OpenAI Provider
@@ -104,6 +142,8 @@ All exceptions carry `provider: str` and `message: str` for clear error reportin
 - **Negative prompt:** Appended as `"\n\nAvoid: {negative_prompt}"` to the prompt
 - **Quality mapping:** `"standard"` -> `"medium"`, `"hd"` -> `"high"`, `"low"` -> `"low"`
 - **Size mapping:** Per-model aspect ratio -> pixel size tables
+- **Background:** `gpt-image-1` supports `background` parameter natively; ignored for `dall-e-3`
+- **Discovery:** Calls `client.models.list()`, filters to known image models, maps to `ModelCapabilities`
 - **Error handling:** Converts `APIConnectionError`, `APIStatusError` (with content policy detection)
 - **Registered when:** `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
 
@@ -116,6 +156,8 @@ All exceptions carry `provider: str` and `message: str` for clear error reportin
   - **SDXL Lightning/Turbo**: 1024px base, 6 steps, CFG 2.0, DPM++ SDE Karras
 - **Checkpoint override:** When `model` is specified, sends `override_settings.sd_model_checkpoint`
 - **Negative prompt:** Native support via `negative_prompt` field in payload
+- **Background:** Ignored (SD does not support native transparent backgrounds); debug log emitted
+- **Discovery:** Calls `/sdapi/v1/sd-models` + `/sdapi/v1/options`, maps checkpoints to architecture-specific `ModelCapabilities`
 - **Metadata:** Extracts seed and active model name from response `info` JSON
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
 - **Registered when:** `IMAGE_GENERATION_MCP_A1111_HOST` is set
@@ -138,6 +180,11 @@ First matching rule wins. Within a rule, the first available provider is selecte
 If no rule matches, the default fallback chain is used. If no provider in the
 chain is available, any registered provider is returned as last resort.
 
+When capabilities are available and `background="transparent"` is requested,
+providers with `supports_background=True` are tried first within each candidate
+set. This is a secondary filter -- keyword heuristics still determine the rule,
+but capable providers are preferred within that rule.
+
 ## ImageService
 
 The `ImageService` is the central orchestrator, created during server lifespan
@@ -146,12 +193,13 @@ and injected via FastMCP's `Depends()` system.
 ### Responsibilities
 
 1. **Provider registry** -- `register_provider(name, provider)` at startup
-2. **Generation dispatch** -- `generate(prompt, *, provider, ...)` resolves provider and delegates
-3. **Image registry** -- `register_image()` saves original + sidecar JSON, indexes in memory
-4. **Image retrieval** -- `get_image(id)` and `list_images()` for registered images
-5. **Startup rebuild** -- `_load_registry()` reconstructs in-memory registry from sidecar files
-6. **Base64 encoding** -- `get_image_base64(result)` for MCP `ImageContent`
-7. **Provider listing** -- `list_providers()` returns availability info
+2. **Capability discovery** -- `discover_all_capabilities()` introspects each provider (graceful degradation)
+3. **Generation dispatch** -- `generate(prompt, *, provider, ...)` resolves provider and delegates
+4. **Image registry** -- `register_image()` saves original + sidecar JSON, indexes in memory
+5. **Image retrieval** -- `get_image(id)` and `list_images()` for registered images
+6. **Startup rebuild** -- `_load_registry()` reconstructs in-memory registry from sidecar files
+7. **Base64 encoding** -- `get_image_base64(result)` for MCP `ImageContent`
+8. **Provider listing** -- `list_providers()` returns availability + capability info
 
 ### Image Asset Model
 
@@ -178,6 +226,11 @@ Registration happens in `_server_deps.py` during server startup:
 1. **Placeholder** -- always registered (zero cost, no API key)
 2. **OpenAI** -- registered if `config.openai_api_key` is set
 3. **A1111** -- registered if `config.a1111_host` is set
+
+After all providers are registered, `discover_all_capabilities()` is called.
+This introspects each provider and caches the results for the server lifetime.
+Failures are handled gracefully -- the provider is marked degraded but remains
+available for generation.
 
 ### Scratch Directory
 
@@ -209,7 +262,7 @@ In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is h
 
 | URI | Description |
 |-----|-------------|
-| `info://providers` | JSON of provider capabilities |
+| `info://providers` | JSON of provider capabilities, models, supported features |
 | `image://{id}/view{?format,width,height,quality}` | Image with optional transforms (CDN-style) |
 | `image://{id}/metadata` | Sidecar JSON with generation provenance |
 | `image://list` | JSON array of all registered images |

@@ -33,10 +33,11 @@ The placeholder provider is **always registered** -- it requires no configuratio
 - **negative_prompt** -- ignored
 - **quality** -- ignored
 - **aspect_ratio** -- maps to pixel sizes above
+- **background** -- `"opaque"` (default) produces RGB PNG; `"transparent"` produces RGBA PNG with alpha channel set to 0
 
 ## Output
 
-- **Format:** PNG
-- **Content:** Solid color fill
+- **Format:** PNG (RGB for opaque, RGBA for transparent)
+- **Content:** Solid color fill (fully transparent when `background="transparent"`)
 - **Size:** ~1-2 KB per image
 - **Generation time:** Instant (< 1ms)

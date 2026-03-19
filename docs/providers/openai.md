@@ -58,6 +58,17 @@ OpenAI does not have native negative prompt support. When a `negative_prompt` is
 Avoid: {negative_prompt}
 ```
 
+## Background transparency
+
+The `background` parameter controls whether the generated image has a transparent or opaque background.
+
+| Model | `background` support |
+|-------|---------------------|
+| `gpt-image-1` | Supported -- passed to the API as-is (`"opaque"` or `"transparent"`) |
+| `dall-e-3` | Not supported -- parameter is ignored |
+
+When `background="transparent"` is used with `gpt-image-1`, the output PNG includes an alpha channel.
+
 ## Revised prompt
 
 `dall-e-3` may rewrite your prompt for better results. The rewritten prompt is included in the response metadata as `revised_prompt`. `gpt-image-1` does not rewrite prompts.
@@ -77,6 +88,12 @@ For text rendering:
 A minimalist logo for "Acme Corp" with clean sans-serif typography,
 blue and white color scheme, modern design
 ```
+
+## Capability discovery
+
+At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-1`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).
+
+If the API call fails (network error, invalid key), the provider is marked as **degraded** -- it remains available for generation but with an empty model list in the capabilities response.
 
 ## Cost
 
