@@ -4,7 +4,7 @@ Zero-cost solid-color PNG generation for testing, drafts, and CI pipelines.
 
 ## Overview
 
-The placeholder provider generates simple solid-color PNG images without any external dependencies or API keys. The color is deterministically derived from the MD5 hash of the prompt, so the same prompt always produces the same color.
+The placeholder provider generates simple solid-color PNG images without any external dependencies or API keys. The color is selected from a palette of 6 predefined colors using a SHA-256 hash of the prompt as an index, so the same prompt always produces the same color.
 
 ## When to use
 
@@ -21,7 +21,7 @@ The placeholder provider is **always registered** -- it requires no configuratio
 
 | Aspect ratio | Size |
 |-------------|------|
-| `1:1` | 480x480 |
+| `1:1` | 256x256 |
 | `16:9` | 640x360 |
 | `9:16` | 360x640 |
 | `3:2` | 480x320 |
@@ -29,7 +29,7 @@ The placeholder provider is **always registered** -- it requires no configuratio
 
 ## Parameters
 
-- **prompt** -- used to determine the output color (via MD5 hash)
+- **prompt** -- used to determine the output color (via SHA-256 hash index into a 6-color palette)
 - **negative_prompt** -- ignored
 - **quality** -- ignored
 - **aspect_ratio** -- maps to pixel sizes above
