@@ -21,7 +21,7 @@ Provider capabilities and supported features.
         "models": [
           {
             "model_id": "placeholder",
-            "display_name": "Placeholder",
+            "display_name": "Placeholder (solid-color PNG)",
             "can_generate": true,
             "can_edit": false,
             "supports_mask": false,
@@ -52,8 +52,15 @@ Provider capabilities and supported features.
             "display_name": "GPT Image 1",
             "can_generate": true,
             "can_edit": true,
+            "supports_mask": true,
+            "supported_aspect_ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"],
+            "supported_qualities": ["standard", "hd"],
+            "supported_formats": ["png", "jpeg", "webp"],
+            "supports_negative_prompt": false,
             "supports_background": true,
-            "supported_formats": ["png", "jpeg", "webp"]
+            "max_resolution": 1536,
+            "default_steps": null,
+            "default_cfg": null
           }
         ],
         "supports_background": true,
