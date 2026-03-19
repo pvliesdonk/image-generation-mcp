@@ -9,14 +9,14 @@ from typing import Any
 import httpx
 import pytest
 
-from image_gen_mcp.providers.a1111 import (
+from mcp_imagegen.providers.a1111 import (
     _SD15_PRESET,
     _SDXL_LIGHTNING_PRESET,
     _SDXL_PRESET,
     A1111ImageProvider,
     _resolve_preset,
 )
-from image_gen_mcp.providers.types import (
+from mcp_imagegen.providers.types import (
     ImageProvider,
     ImageProviderConnectionError,
     ImageProviderError,

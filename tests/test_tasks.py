@@ -6,7 +6,7 @@ import inspect
 
 from fastmcp import FastMCP
 
-from image_gen_mcp._server_tools import register_tools
+from mcp_imagegen._server_tools import register_tools
 
 
 async def test_task_decorator_present() -> None:

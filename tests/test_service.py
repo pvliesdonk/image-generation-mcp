@@ -9,9 +9,9 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
-from image_gen_mcp.providers.types import ImageProviderError
-from image_gen_mcp.service import ImageService
+from mcp_imagegen.providers.placeholder import PlaceholderImageProvider
+from mcp_imagegen.providers.types import ImageProviderError
+from mcp_imagegen.service import ImageService
 
 
 @pytest.fixture

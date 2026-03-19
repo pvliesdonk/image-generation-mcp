@@ -1,6 +1,6 @@
 # MCP Tools
 
-image-gen-mcp exposes two tools to MCP clients.
+mcp-imagegen exposes two tools to MCP clients.
 
 ## generate_image
 
@@ -36,7 +36,7 @@ Returns a `ToolResult` with two content items:
   "original_size_bytes": 1048576,
   "thumbnail_size_bytes": 12345,
   "provider": "openai",
-  "file_path": "/home/user/.image-gen-mcp/images/a1b2c3d4e5f6-original.png",
+  "file_path": "/home/user/.mcp-imagegen/images/a1b2c3d4e5f6-original.png",
   "model": "gpt-image-1",
   "size": "1024x1024"
 }

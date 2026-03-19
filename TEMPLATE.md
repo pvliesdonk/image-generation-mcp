@@ -4,7 +4,7 @@ This is a production-ready FastMCP server scaffold. Follow these steps to turn i
 
 ## Step 1: Create your repo
 
-Click **"Use this template"** on GitHub (or `gh repo create --template pvliesdonk/image-gen-mcp`).
+Click **"Use this template"** on GitHub (or `gh repo create --template pvliesdonk/mcp-imagegen`).
 
 ## Step 2: Rename everything
 
@@ -18,10 +18,10 @@ Run the bootstrap script to replace all template identifiers in one pass:
 ```
 
 This replaces:
-- `image-gen-mcp` → your repo name (also used as CLI command)
-- `image_gen_mcp` → your Python module name
-- `IMAGE_GEN_MCP` → your env var prefix
-- `Image Gen MCP Server` → your human-readable name
+- `mcp-imagegen` → your repo name (also used as CLI command)
+- `mcp_imagegen` → your Python module name
+- `MCP_IMAGEGEN` → your env var prefix
+- `MCP Imagegen Server` → your human-readable name
 
 Review with `git diff`, then commit.
 

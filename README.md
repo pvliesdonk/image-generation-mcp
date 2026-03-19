@@ -1,17 +1,17 @@
-# image-gen-mcp
+# mcp-imagegen
 
-[![CI](https://github.com/pvliesdonk/image-gen-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/image-gen-mcp/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/pvliesdonk/image-gen-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/image-gen-mcp)
-[![PyPI](https://img.shields.io/pypi/v/image-gen-mcp)](https://pypi.org/project/image-gen-mcp/)
-[![Python](https://img.shields.io/pypi/pyversions/image-gen-mcp)](https://pypi.org/project/image-gen-mcp/)
+[![CI](https://github.com/pvliesdonk/mcp-imagegen/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/mcp-imagegen/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/pvliesdonk/mcp-imagegen/branch/main/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/mcp-imagegen)
+[![PyPI](https://img.shields.io/pypi/v/mcp-imagegen)](https://pypi.org/project/mcp-imagegen/)
+[![Python](https://img.shields.io/pypi/pyversions/mcp-imagegen)](https://pypi.org/project/mcp-imagegen/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/pvliesdonk/image-gen-mcp/pkgs/container/image-gen-mcp)
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/image-gen-mcp/)
-[![llms.txt](https://img.shields.io/badge/llms-llms.txt-blue)](https://pvliesdonk.github.io/image-gen-mcp/llms.txt)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/pvliesdonk/mcp-imagegen/pkgs/container/mcp-imagegen)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/mcp-imagegen/)
+[![llms.txt](https://img.shields.io/badge/llms-llms.txt-blue)](https://pvliesdonk.github.io/mcp-imagegen/llms.txt)
 
 Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (A1111 WebUI), or a zero-cost placeholder provider.
 
-[Documentation](https://pvliesdonk.github.io/image-gen-mcp/) | [PyPI](https://pypi.org/project/image-gen-mcp/) | [Docker](https://github.com/pvliesdonk/image-gen-mcp/pkgs/container/image-gen-mcp)
+[Documentation](https://pvliesdonk.github.io/mcp-imagegen/) | [PyPI](https://pypi.org/project/mcp-imagegen/) | [Docker](https://github.com/pvliesdonk/mcp-imagegen/pkgs/container/mcp-imagegen)
 
 ## Features
 
@@ -33,10 +33,10 @@ Multi-provider image generation [MCP](https://modelcontextprotocol.io) server bu
 
 ```bash
 # Core + MCP server
-pip install image-gen-mcp[mcp]
+pip install mcp-imagegen[mcp]
 
 # With OpenAI provider
-pip install image-gen-mcp[all]
+pip install mcp-imagegen[all]
 ```
 
 Available extras:
@@ -52,15 +52,15 @@ Available extras:
 ### From source
 
 ```bash
-git clone https://github.com/pvliesdonk/image-gen-mcp.git
-cd image-gen-mcp
+git clone https://github.com/pvliesdonk/mcp-imagegen.git
+cd mcp-imagegen
 uv sync --extra all --extra dev
 ```
 
 ### Docker
 
 ```bash
-docker pull ghcr.io/pvliesdonk/image-gen-mcp:latest
+docker pull ghcr.io/pvliesdonk/mcp-imagegen:latest
 ```
 
 ## Quick start
@@ -69,22 +69,22 @@ docker pull ghcr.io/pvliesdonk/image-gen-mcp:latest
 
 ```bash
 # Placeholder only -- no API keys needed
-IMAGE_GEN_MCP_READ_ONLY=false image-gen-mcp serve
+MCP_IMAGEGEN_READ_ONLY=false mcp-imagegen serve
 
 # Generate your first image -- ask Claude or call via MCP client:
 #   generate_image(prompt="a sunset over the ocean", provider="placeholder")
 
 # With OpenAI
-IMAGE_GEN_MCP_READ_ONLY=false \
-IMAGE_GEN_MCP_OPENAI_API_KEY=sk-... \
-image-gen-mcp serve
+MCP_IMAGEGEN_READ_ONLY=false \
+MCP_IMAGEGEN_OPENAI_API_KEY=sk-... \
+mcp-imagegen serve
 ```
 
 ### As MCP server (HTTP)
 
 ```bash
-IMAGE_GEN_MCP_READ_ONLY=false \
-image-gen-mcp serve --transport http --port 8000
+MCP_IMAGEGEN_READ_ONLY=false \
+mcp-imagegen serve --transport http --port 8000
 ```
 
 ### With Docker Compose
@@ -93,7 +93,7 @@ image-gen-mcp serve --transport http --port 8000
 docker compose up -d
 ```
 
-See [Docker deployment](https://pvliesdonk.github.io/image-gen-mcp/deployment/docker/) for volumes, UID/GID, and Traefik setup.
+See [Docker deployment](https://pvliesdonk.github.io/mcp-imagegen/deployment/docker/) for volumes, UID/GID, and Traefik setup.
 
 ### Claude Desktop
 
@@ -103,11 +103,11 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "image-gen-mcp",
+      "command": "mcp-imagegen",
       "args": ["serve"],
       "env": {
-        "IMAGE_GEN_MCP_READ_ONLY": "false",
-        "IMAGE_GEN_MCP_OPENAI_API_KEY": "sk-..."
+        "MCP_IMAGEGEN_READ_ONLY": "false",
+        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-..."
       }
     }
   }
@@ -122,10 +122,10 @@ Add to your project's `.mcp.json`:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "image-gen-mcp",
+      "command": "mcp-imagegen",
       "args": ["serve"],
       "env": {
-        "IMAGE_GEN_MCP_READ_ONLY": "false"
+        "MCP_IMAGEGEN_READ_ONLY": "false"
       }
     }
   }
@@ -134,51 +134,51 @@ Add to your project's `.mcp.json`:
 
 ## Configuration
 
-All environment variables use the `IMAGE_GEN_MCP_` prefix.
+All environment variables use the `MCP_IMAGEGEN_` prefix.
 
 ### Core
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GEN_MCP_SCRATCH_DIR` | Path | `~/.image-gen-mcp/images/` | Directory for saved generated images |
-| `IMAGE_GEN_MCP_READ_ONLY` | bool | `true` | Hide write-tagged tools (`generate_image`) |
-| `IMAGE_GEN_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider: `auto`, `openai`, `a1111`, `placeholder` |
+| `MCP_IMAGEGEN_SCRATCH_DIR` | Path | `~/.mcp-imagegen/images/` | Directory for saved generated images |
+| `MCP_IMAGEGEN_READ_ONLY` | bool | `true` | Hide write-tagged tools (`generate_image`) |
+| `MCP_IMAGEGEN_DEFAULT_PROVIDER` | str | `auto` | Default provider: `auto`, `openai`, `a1111`, `placeholder` |
 
 ### Providers
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GEN_MCP_OPENAI_API_KEY` | str | -- | OpenAI API key; enables OpenAI provider when set |
-| `IMAGE_GEN_MCP_A1111_HOST` | str | -- | A1111 WebUI URL (e.g. `http://localhost:7860`); enables A1111 provider when set |
-| `IMAGE_GEN_MCP_A1111_MODEL` | str | -- | A1111 checkpoint name for preset detection and override |
+| `MCP_IMAGEGEN_OPENAI_API_KEY` | str | -- | OpenAI API key; enables OpenAI provider when set |
+| `MCP_IMAGEGEN_A1111_HOST` | str | -- | A1111 WebUI URL (e.g. `http://localhost:7860`); enables A1111 provider when set |
+| `MCP_IMAGEGEN_A1111_MODEL` | str | -- | A1111 checkpoint name for preset detection and override |
 
 ### Authentication
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GEN_MCP_BEARER_TOKEN` | str | -- | Static bearer token; enables bearer auth when set |
-| `IMAGE_GEN_MCP_BASE_URL` | str | -- | Public base URL for OIDC (e.g. `https://mcp.example.com`) |
-| `IMAGE_GEN_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL |
-| `IMAGE_GEN_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID |
-| `IMAGE_GEN_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret |
-| `IMAGE_GEN_MCP_OIDC_JWT_SIGNING_KEY` | str | ephemeral | JWT signing key; **required on Linux/Docker** |
-| `IMAGE_GEN_MCP_OIDC_AUDIENCE` | str | -- | Expected JWT audience claim |
-| `IMAGE_GEN_MCP_OIDC_REQUIRED_SCOPES` | str | `openid` | Comma-separated required scopes |
-| `IMAGE_GEN_MCP_OIDC_VERIFY_ACCESS_TOKEN` | bool | `false` | Verify access token as JWT instead of id token |
+| `MCP_IMAGEGEN_BEARER_TOKEN` | str | -- | Static bearer token; enables bearer auth when set |
+| `MCP_IMAGEGEN_BASE_URL` | str | -- | Public base URL for OIDC (e.g. `https://mcp.example.com`) |
+| `MCP_IMAGEGEN_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL |
+| `MCP_IMAGEGEN_OIDC_CLIENT_ID` | str | -- | OIDC client ID |
+| `MCP_IMAGEGEN_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret |
+| `MCP_IMAGEGEN_OIDC_JWT_SIGNING_KEY` | str | ephemeral | JWT signing key; **required on Linux/Docker** |
+| `MCP_IMAGEGEN_OIDC_AUDIENCE` | str | -- | Expected JWT audience claim |
+| `MCP_IMAGEGEN_OIDC_REQUIRED_SCOPES` | str | `openid` | Comma-separated required scopes |
+| `MCP_IMAGEGEN_OIDC_VERIFY_ACCESS_TOKEN` | bool | `false` | Verify access token as JWT instead of id token |
 
 ### Server
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GEN_MCP_SERVER_NAME` | str | `image-gen-mcp` | Server name shown to MCP clients |
-| `IMAGE_GEN_MCP_INSTRUCTIONS` | str | (dynamic) | System instructions for LLM context |
-| `IMAGE_GEN_MCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
-| `IMAGE_GEN_MCP_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path |
+| `MCP_IMAGEGEN_SERVER_NAME` | str | `mcp-imagegen` | Server name shown to MCP clients |
+| `MCP_IMAGEGEN_INSTRUCTIONS` | str | (dynamic) | System instructions for LLM context |
+| `MCP_IMAGEGEN_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `MCP_IMAGEGEN_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path |
 
 ## CLI reference
 
 ```
-image-gen-mcp serve [OPTIONS]
+mcp-imagegen serve [OPTIONS]
 ```
 
 | Flag | Default | Description |
@@ -229,8 +229,8 @@ The `image://{id}/view` resource template supports CDN-style transforms:
 
 | Provider | Best for | Requires |
 |----------|----------|----------|
-| **OpenAI** | Text, logos, typography, general-purpose | `IMAGE_GEN_MCP_OPENAI_API_KEY` |
-| **A1111** | Photorealism, portraits, anime, artistic styles | Running A1111 WebUI + `IMAGE_GEN_MCP_A1111_HOST` |
+| **OpenAI** | Text, logos, typography, general-purpose | `MCP_IMAGEGEN_OPENAI_API_KEY` |
+| **A1111** | Photorealism, portraits, anime, artistic styles | Running A1111 WebUI + `MCP_IMAGEGEN_A1111_HOST` |
 | **Placeholder** | Testing, drafts, CI | Nothing (always available) |
 
 ### OpenAI
@@ -241,7 +241,7 @@ Best for text rendering, logos, typography, and general-purpose generation.
 - **Formats:** PNG (all models), JPEG and WebP (`gpt-image-1` only)
 - **Quality levels:** `standard` (mapped to `high` for gpt-image-1), `hd` (mapped to `high`)
 - **Negative prompt:** Appended as `"Avoid: {negative_prompt}"` to the prompt
-- **Requires:** `IMAGE_GEN_MCP_OPENAI_API_KEY`
+- **Requires:** `MCP_IMAGEGEN_OPENAI_API_KEY`
 
 ### A1111 (Stable Diffusion WebUI)
 
@@ -255,7 +255,7 @@ Best for photorealism, portraits, anime, and artistic styles.
 - **Negative prompt:** Native support via `negative_prompt` field
 - **Checkpoint override:** Specify `model` to override `sd_model_checkpoint`
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
-- **Requires:** `IMAGE_GEN_MCP_A1111_HOST`
+- **Requires:** `MCP_IMAGEGEN_A1111_HOST`
 
 ### Placeholder
 
@@ -270,19 +270,19 @@ Zero-cost solid-color PNG generation for testing and drafts.
 The server supports four auth modes:
 
 1. **Multi-auth** -- both bearer token and OIDC configured; either credential accepted
-2. **Bearer token** -- set `IMAGE_GEN_MCP_BEARER_TOKEN`
+2. **Bearer token** -- set `MCP_IMAGEGEN_BEARER_TOKEN`
 3. **OIDC** -- full OAuth 2.1 flow via OIDC environment variables
 4. **No auth** -- default; server accepts all connections
 
 Auth requires `--transport http` (or `sse`). It has no effect with `--transport stdio`.
 
-See [Authentication guide](https://pvliesdonk.github.io/image-gen-mcp/guides/authentication/) for setup details.
+See [Authentication guide](https://pvliesdonk.github.io/mcp-imagegen/guides/authentication/) for setup details.
 
 ## Development
 
 ```bash
-git clone https://github.com/pvliesdonk/image-gen-mcp.git
-cd image-gen-mcp
+git clone https://github.com/pvliesdonk/mcp-imagegen.git
+cd mcp-imagegen
 uv sync --extra all --extra dev
 uv run pytest
 uv run ruff check src/ tests/

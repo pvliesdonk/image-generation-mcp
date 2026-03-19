@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, NoReturn
 
-from image_gen_mcp.providers.types import (
+from mcp_imagegen.providers.types import (
     ImageContentPolicyError,
     ImageProviderConnectionError,
     ImageProviderError,

@@ -1,12 +1,12 @@
 [project]
-name = "image-gen-mcp"
+name = "mcp-imagegen"
 version = "0.1.0"
 description = "FastMCP server template — replace this with your description"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "Your Name" }]
-keywords = ["mcp", "image-gen-mcp", "model-context-protocol", "fastmcp"]
+keywords = ["mcp", "mcp-imagegen", "model-context-protocol", "fastmcp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
@@ -23,7 +23,7 @@ mcp = ["fastmcp[tasks]>=3.0,<4"]
 openai = ["openai>=1.0"]
 all = ["fastmcp[tasks]>=3.0,<4", "openai>=1.0"]
 dev = [
-    "image-gen-mcp[all]",
+    "mcp-imagegen[all]",
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
@@ -38,19 +38,19 @@ docs = [
 ]
 
 [project.scripts]
-image-gen-mcp = "image_gen_mcp.cli:main"
+mcp-imagegen = "mcp_imagegen.cli:main"
 
 [project.urls]
-Repository = "https://github.com/pvliesdonk/image-gen-mcp"
-Documentation = "https://pvliesdonk.github.io/image-gen-mcp/"
-Issues = "https://github.com/pvliesdonk/image-gen-mcp/issues"
+Repository = "https://github.com/pvliesdonk/mcp-imagegen"
+Documentation = "https://pvliesdonk.github.io/mcp-imagegen/"
+Issues = "https://github.com/pvliesdonk/mcp-imagegen/issues"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/image_gen_mcp"]
+packages = ["src/mcp_imagegen"]
 
 [tool.ruff]
 target-version = "py311"
@@ -67,19 +67,19 @@ ignore = ["E501"]
 # Depends() and CurrentContext() calls in argument defaults are the standard
 # FastMCP dependency injection pattern — B008 is a false positive here.
 # Context/FastMCP imports must stay runtime (not TYPE_CHECKING) for DI.
-"src/image_gen_mcp/mcp_server.py" = ["B008", "TCH002"]
-"src/image_gen_mcp/_server_deps.py" = ["B008", "TCH002"]
-"src/image_gen_mcp/_server_tools.py" = ["B008", "TCH001", "TCH002"]
-"src/image_gen_mcp/_server_resources.py" = ["B008", "TCH001", "TCH002"]
-"src/image_gen_mcp/_server_prompts.py" = ["B008", "TCH002"]
+"src/mcp_imagegen/mcp_server.py" = ["B008", "TCH002"]
+"src/mcp_imagegen/_server_deps.py" = ["B008", "TCH002"]
+"src/mcp_imagegen/_server_tools.py" = ["B008", "TCH001", "TCH002"]
+"src/mcp_imagegen/_server_resources.py" = ["B008", "TCH001", "TCH002"]
+"src/mcp_imagegen/_server_prompts.py" = ["B008", "TCH002"]
 # Path is used at runtime in ImageRecord dataclass.
-"src/image_gen_mcp/service.py" = ["TCH003"]
-"src/image_gen_mcp/providers/*.py" = ["TCH002"]
+"src/mcp_imagegen/service.py" = ["TCH003"]
+"src/mcp_imagegen/providers/*.py" = ["TCH002"]
 # pytest fixtures need runtime imports.
 "tests/*.py" = ["TCH002"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["image_gen_mcp"]
+known-first-party = ["mcp_imagegen"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -91,7 +91,7 @@ addopts = ["--strict-markers", "-ra"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]
-source = ["src/image_gen_mcp"]
+source = ["src/mcp_imagegen"]
 branch = true
 
 [tool.coverage.report]

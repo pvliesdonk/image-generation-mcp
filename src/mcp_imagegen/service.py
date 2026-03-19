@@ -20,7 +20,7 @@ from typing import Any, ClassVar
 
 from PIL import Image
 
-from image_gen_mcp.providers.types import ImageProvider, ImageProviderError, ImageResult
+from mcp_imagegen.providers.types import ImageProvider, ImageProviderError, ImageResult
 
 logger = logging.getLogger(__name__)
 
@@ -138,13 +138,13 @@ class ImageService:
             raise ImageProviderError(
                 provider,
                 "No providers are registered. Configure at least one: "
-                "set IMAGE_GEN_MCP_OPENAI_API_KEY for OpenAI, "
-                "IMAGE_GEN_MCP_A1111_HOST for Stable Diffusion, "
+                "set MCP_IMAGEGEN_OPENAI_API_KEY for OpenAI, "
+                "MCP_IMAGEGEN_A1111_HOST for Stable Diffusion, "
                 "or the placeholder provider is always available.",
             )
 
         if provider == "auto":
-            from image_gen_mcp.providers.selector import select_provider
+            from mcp_imagegen.providers.selector import select_provider
 
             selected = select_provider(prompt, set(self._providers))
             return selected, self._providers[selected]

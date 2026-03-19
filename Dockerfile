@@ -41,4 +41,4 @@ EXPOSE 8000
 VOLUME ["/data/service", "/data/state"]
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["image-gen-mcp", "serve", "--transport", "http"]
+CMD ["mcp-imagegen", "serve", "--transport", "http"]

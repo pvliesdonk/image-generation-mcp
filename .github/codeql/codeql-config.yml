@@ -4,4 +4,4 @@ query-filters:
   - exclude:
       id: py/clear-text-storage-of-sensitive-information
       paths:
-        - src/markdown_vault_mcp/git.py
+        - src/mcp_imagegen/git.py

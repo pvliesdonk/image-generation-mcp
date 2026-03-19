@@ -1,6 +1,6 @@
 # Claude Code
 
-Connect image-gen-mcp to Claude Code as an MCP server.
+Connect mcp-imagegen to Claude Code as an MCP server.
 
 ## Configuration
 
@@ -12,10 +12,10 @@ Add a `.mcp.json` file to your project root:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "image-gen-mcp",
+      "command": "mcp-imagegen",
       "args": ["serve"],
       "env": {
-        "IMAGE_GEN_MCP_READ_ONLY": "false"
+        "MCP_IMAGEGEN_READ_ONLY": "false"
       }
     }
   }
@@ -28,11 +28,11 @@ Add a `.mcp.json` file to your project root:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "image-gen-mcp",
+      "command": "mcp-imagegen",
       "args": ["serve"],
       "env": {
-        "IMAGE_GEN_MCP_READ_ONLY": "false",
-        "IMAGE_GEN_MCP_OPENAI_API_KEY": "sk-..."
+        "MCP_IMAGEGEN_READ_ONLY": "false",
+        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-..."
       }
     }
   }
@@ -45,12 +45,12 @@ Add a `.mcp.json` file to your project root:
 {
   "mcpServers": {
     "image-gen": {
-      "command": "image-gen-mcp",
+      "command": "mcp-imagegen",
       "args": ["serve"],
       "env": {
-        "IMAGE_GEN_MCP_READ_ONLY": "false",
-        "IMAGE_GEN_MCP_OPENAI_API_KEY": "sk-...",
-        "IMAGE_GEN_MCP_A1111_HOST": "http://localhost:7860"
+        "MCP_IMAGEGEN_READ_ONLY": "false",
+        "MCP_IMAGEGEN_OPENAI_API_KEY": "sk-...",
+        "MCP_IMAGEGEN_A1111_HOST": "http://localhost:7860"
       }
     }
   }
@@ -69,4 +69,4 @@ After adding the configuration, restart Claude Code (or run `/mcp` to reload MCP
 - Use `provider="auto"` (the default) to let the server pick the best provider based on your prompt
 - The `select_provider` prompt gives Claude guidance on provider strengths
 - The `sd_prompt_guide` prompt helps Claude write effective Stable Diffusion prompts
-- Generated images are saved to `~/.image-gen-mcp/images/` by default (configurable via `IMAGE_GEN_MCP_SCRATCH_DIR`)
+- Generated images are saved to `~/.mcp-imagegen/images/` by default (configurable via `MCP_IMAGEGEN_SCRATCH_DIR`)
