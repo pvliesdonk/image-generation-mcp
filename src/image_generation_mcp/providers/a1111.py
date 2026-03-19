@@ -11,19 +11,22 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import httpx
 
+from image_generation_mcp.providers.capabilities import (
+    ModelCapabilities,
+    ProviderCapabilities,
+    make_degraded,
+)
 from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
 )
-
-if TYPE_CHECKING:
-    from image_generation_mcp.providers.capabilities import ProviderCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +85,30 @@ _XL_TAGS = ("sdxl", "xl_", "_xl", "-xl")
 _LIGHTNING_TAGS = ("lightning", "turbo")
 
 
+def _detect_architecture(model_name: str) -> str:
+    """Detect SD architecture from a checkpoint name.
+
+    Detection order:
+    1. Lightning/Turbo SDXL — returns ``"sdxl_lightning"``
+    2. Standard SDXL — returns ``"sdxl"``
+    3. SD 1.5 fallback — returns ``"sd15"``
+
+    Args:
+        model_name: Checkpoint name or title string (case-insensitive).
+
+    Returns:
+        One of ``"sd15"``, ``"sdxl"``, or ``"sdxl_lightning"``.
+    """
+    lower = model_name.lower()
+    is_xl = any(tag in lower for tag in _XL_TAGS)
+    is_lightning = any(tag in lower for tag in _LIGHTNING_TAGS)
+    if is_xl and is_lightning:
+        return "sdxl_lightning"
+    if is_xl:
+        return "sdxl"
+    return "sd15"
+
+
 def _resolve_preset(model: str | None) -> _A1111Preset:
     """Choose generation preset based on checkpoint name.
 
@@ -92,12 +119,10 @@ def _resolve_preset(model: str | None) -> _A1111Preset:
     """
     if not model:
         return _SD15_PRESET
-    lower = model.lower()
-    is_xl = any(tag in lower for tag in _XL_TAGS)
-    is_lightning = any(tag in lower for tag in _LIGHTNING_TAGS)
-    if is_xl and is_lightning:
+    arch = _detect_architecture(model)
+    if arch == "sdxl_lightning":
         return _SDXL_LIGHTNING_PRESET
-    if is_xl:
+    if arch == "sdxl":
         return _SDXL_PRESET
     return _SD15_PRESET
 
@@ -244,10 +269,83 @@ class A1111ImageProvider:
     async def discover_capabilities(self) -> ProviderCapabilities:
         """Discover A1111 checkpoint capabilities via sd-models API.
 
-        Returns:
-            ProviderCapabilities with discovered checkpoints.
+        Calls ``GET /sdapi/v1/sd-models`` to enumerate installed checkpoints
+        and ``GET /sdapi/v1/options`` to identify the currently active model.
+        Architecture (SD1.5, SDXL, Lightning) is auto-detected from each
+        checkpoint name to populate correct resolution and step defaults.
 
-        Raises:
-            NotImplementedError: Pending implementation in issue #29.
+        Returns:
+            ProviderCapabilities with one ModelCapabilities entry per
+            checkpoint.  Returns a degraded ProviderCapabilities (empty
+            model list, ``degraded=True``) if A1111 is unreachable.
         """
-        raise NotImplementedError("A1111 capability discovery not yet implemented")
+        discovered_at = time.time()
+
+        try:
+            models_response = await self._client.get(f"{self._host}/sdapi/v1/sd-models")
+            options_response = await self._client.get(f"{self._host}/sdapi/v1/options")
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            logger.warning(
+                "A1111 unreachable during capability discovery at %s: %s",
+                self._host,
+                e,
+            )
+            return make_degraded("a1111", discovered_at)
+
+        # Log the active checkpoint from /options
+        if options_response.status_code == 200:
+            options_data = options_response.json()
+            active_checkpoint = options_data.get("sd_model_checkpoint")
+            if active_checkpoint:
+                logger.info("A1111 active checkpoint: %s", active_checkpoint)
+
+        if models_response.status_code != 200:
+            logger.warning(
+                "A1111 /sdapi/v1/sd-models returned HTTP %d — marking degraded",
+                models_response.status_code,
+            )
+            return make_degraded("a1111", discovered_at)
+
+        checkpoints: list[dict[str, Any]] = models_response.json()
+        model_caps: list[ModelCapabilities] = []
+
+        for checkpoint in checkpoints:
+            title: str = checkpoint.get("title", "")
+            model_name: str = checkpoint.get("model_name", title)
+
+            arch = _detect_architecture(title)
+            preset = _resolve_preset(title)
+
+            max_resolution = 1024 if arch in ("sdxl", "sdxl_lightning") else 768
+
+            model_caps.append(
+                ModelCapabilities(
+                    model_id=title,
+                    display_name=model_name,
+                    can_generate=True,
+                    can_edit=False,
+                    supports_mask=False,
+                    supported_aspect_ratios=tuple(preset.sizes.keys()),
+                    supported_qualities=("standard",),
+                    supported_formats=("png",),
+                    supports_negative_prompt=True,
+                    supports_background=False,
+                    max_resolution=max_resolution,
+                    default_steps=preset.steps,
+                    default_cfg=preset.cfg_scale,
+                )
+            )
+
+        logger.info(
+            "A1111 capability discovery complete: %d checkpoints found at %s",
+            len(model_caps),
+            self._host,
+        )
+
+        return ProviderCapabilities(
+            provider_name="a1111",
+            models=tuple(model_caps),
+            supports_negative_prompt=True,
+            supports_background=False,
+            discovered_at=discovered_at,
+        )
