@@ -14,13 +14,13 @@ from fastmcp.dependencies import CurrentContext
 from fastmcp.server.context import Context
 from fastmcp.server.lifespan import lifespan
 
-from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
-from image_gen_mcp.service import ImageService
+from mcp_imagegen.providers.placeholder import PlaceholderImageProvider
+from mcp_imagegen.service import ImageService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from image_gen_mcp.config import ServerConfig
+    from mcp_imagegen.config import ServerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ def make_service_lifespan(config: ServerConfig) -> Any:
     """Create a lifespan function that closes over a pre-loaded config.
 
     Args:
-        config: A fully-loaded :class:`~image_gen_mcp.config.ServerConfig`
+        config: A fully-loaded :class:`~mcp_imagegen.config.ServerConfig`
             instance produced by a single :func:`load_config` call in
-            :func:`~image_gen_mcp.mcp_server.create_server`.
+            :func:`~mcp_imagegen.mcp_server.create_server`.
 
     Returns:
         A FastMCP lifespan coroutine that initialises the service object and
@@ -56,7 +56,7 @@ def make_service_lifespan(config: ServerConfig) -> Any:
 
         # Register OpenAI if API key is configured
         if config.openai_api_key:
-            from image_gen_mcp.providers.openai import OpenAIImageProvider
+            from mcp_imagegen.providers.openai import OpenAIImageProvider
 
             service.register_provider(
                 "openai",
@@ -65,7 +65,7 @@ def make_service_lifespan(config: ServerConfig) -> Any:
 
         # Register A1111 if host is configured
         if config.a1111_host:
-            from image_gen_mcp.providers.a1111 import A1111ImageProvider
+            from mcp_imagegen.providers.a1111 import A1111ImageProvider
 
             service.register_provider(
                 "a1111",

@@ -1,7 +1,7 @@
-"""Command-line interface for image-gen-mcp.
+"""Command-line interface for mcp-imagegen.
 
 Provides a ``serve`` subcommand.  The entry point is :func:`main`,
-registered as ``image-gen-mcp`` in ``pyproject.toml``.
+registered as ``mcp-imagegen`` in ``pyproject.toml``.
 """
 
 from __future__ import annotations
@@ -11,11 +11,11 @@ import logging
 import os
 import sys
 
-from image_gen_mcp.config import _ENV_PREFIX, get_log_level
+from mcp_imagegen.config import _ENV_PREFIX, get_log_level
 
 logger = logging.getLogger(__name__)
 
-_PROG = "image-gen-mcp"
+_PROG = "mcp-imagegen"
 _DEFAULT_HTTP_PATH = "/mcp"
 
 
@@ -40,10 +40,10 @@ def _normalise_http_path(path: str | None) -> str:
 def _cmd_serve(args: argparse.Namespace) -> None:
     """Run the MCP server."""
     try:
-        from image_gen_mcp.mcp_server import create_server
+        from mcp_imagegen.mcp_server import create_server
     except ImportError:
         logger.error(
-            "FastMCP is not installed. Install with: pip install image-gen-mcp[mcp]"
+            "FastMCP is not installed. Install with: pip install mcp-imagegen[mcp]"
         )
         sys.exit(1)
 

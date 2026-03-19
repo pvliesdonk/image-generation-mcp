@@ -5,12 +5,12 @@
 
 ## Overview
 
-image-gen-mcp uses a content-addressed image registry to manage generated images. Each image is assigned a unique ID based on the SHA-256 hash of its content.
+mcp-imagegen uses a content-addressed image registry to manage generated images. Each image is assigned a unique ID based on the SHA-256 hash of its content.
 
 ## Key concepts
 
 - **Image ID** -- content-addressed identifier (`SHA-256[:12]`) for each generated image
-- **Scratch directory** -- local storage at `IMAGE_GEN_MCP_SCRATCH_DIR` (default `~/.image-gen-mcp/images/`)
+- **Scratch directory** -- local storage at `MCP_IMAGEGEN_SCRATCH_DIR` (default `~/.mcp-imagegen/images/`)
 - **Sidecar metadata** -- JSON file alongside each image with generation provenance (prompt, provider, dimensions, timestamps)
 - **Resource URIs** -- access images and transforms via `image://{id}/view{?format,width,height,quality}`
 - **Transform-on-read** -- format conversion, resize, and crop happen at resource access time, not generation time

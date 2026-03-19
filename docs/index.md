@@ -1,4 +1,4 @@
-# image-gen-mcp
+# mcp-imagegen
 
 Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (A1111 WebUI), or a zero-cost placeholder provider.
 
@@ -49,15 +49,15 @@ MCP Client (Claude Desktop / Claude Code)
 
 ```bash
 # Install
-pip install image-gen-mcp[all]
+pip install mcp-imagegen[all]
 
 # Run with placeholder (no API keys needed)
-IMAGE_GEN_MCP_READ_ONLY=false image-gen-mcp serve
+MCP_IMAGEGEN_READ_ONLY=false mcp-imagegen serve
 
 # Run with OpenAI
-IMAGE_GEN_MCP_READ_ONLY=false \
-IMAGE_GEN_MCP_OPENAI_API_KEY=sk-... \
-image-gen-mcp serve
+MCP_IMAGEGEN_READ_ONLY=false \
+MCP_IMAGEGEN_OPENAI_API_KEY=sk-... \
+mcp-imagegen serve
 ```
 
 ## Navigation

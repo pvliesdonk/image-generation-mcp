@@ -1,6 +1,6 @@
 services:
-  image-gen-mcp:
-    image: ghcr.io/pvliesdonk/image-gen-mcp:latest
+  mcp-imagegen:
+    image: ghcr.io/pvliesdonk/mcp-imagegen:latest
     build: .
     # Named volume permissions are fixed automatically by the entrypoint.
     # For bind-mount UID/GID mismatch, set PUID/PGID in your .env file:
@@ -15,8 +15,8 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.image-gen-mcp.rule=Host(`${IMAGE_GEN_MCP_HOST:-image-gen-mcp.local}`)"
-      - "traefik.http.services.image-gen-mcp.loadbalancer.server.port=8000"
+      - "traefik.http.routers.mcp-imagegen.rule=Host(`${MCP_IMAGEGEN_HOST:-mcp-imagegen.local}`)"
+      - "traefik.http.services.mcp-imagegen.loadbalancer.server.port=8000"
 
 volumes:
   service-data:

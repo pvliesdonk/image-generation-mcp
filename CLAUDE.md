@@ -1,11 +1,11 @@
-# image-gen-mcp
+# mcp-imagegen
 
 FastMCP server scaffold. See [TEMPLATE.md](TEMPLATE.md) for customisation guide.
 
 ## Project Structure
 
 ```
-src/image_gen_mcp/
+src/mcp_imagegen/
   mcp_server.py        -- FastMCP server factory + auth wiring (don't modify)
   config.py            -- env var loading; add domain config fields here
   cli.py               -- CLI entry point (serve command)

@@ -6,7 +6,7 @@ import base64
 
 import pytest
 
-from image_gen_mcp.providers.types import (
+from mcp_imagegen.providers.types import (
     ImageContentPolicyError,
     ImageProvider,
     ImageProviderConnectionError,

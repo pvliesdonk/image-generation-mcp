@@ -1,8 +1,8 @@
-site_name: Image Gen MCP Server
-site_url: https://pvliesdonk.github.io/image-gen-mcp/
+site_name: MCP Imagegen Server
+site_url: https://pvliesdonk.github.io/mcp-imagegen/
 site_description: Multi-provider image generation MCP server built on FastMCP
-repo_url: https://github.com/pvliesdonk/image-gen-mcp
-repo_name: pvliesdonk/image-gen-mcp
+repo_url: https://github.com/pvliesdonk/mcp-imagegen
+repo_name: pvliesdonk/mcp-imagegen
 edit_uri: edit/main/docs/
 
 theme:
@@ -43,7 +43,7 @@ plugins:
   - llmstxt:
       full_output: llms-full.txt
       markdown_description: >
-        image-gen-mcp is a multi-provider image generation MCP server
+        mcp-imagegen is a multi-provider image generation MCP server
         supporting OpenAI (gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI),
         and a zero-cost placeholder provider. Features keyword-based auto-selection,
         background tasks with progress reporting, and resource-based image transforms.

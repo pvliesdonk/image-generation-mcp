@@ -1,6 +1,6 @@
 # MCP Resources
 
-image-gen-mcp exposes resources for provider information and image access.
+mcp-imagegen exposes resources for provider information and image access.
 
 ## info://providers
 

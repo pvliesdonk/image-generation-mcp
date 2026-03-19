@@ -7,14 +7,14 @@ import io
 import pytest
 from PIL import Image
 
-from image_gen_mcp.processing import (
+from mcp_imagegen.processing import (
     convert_format,
     crop_to_dimensions,
     generate_thumbnail,
     optimize_png,
     resize_image,
 )
-from image_gen_mcp.providers.placeholder import PlaceholderImageProvider
+from mcp_imagegen.providers.placeholder import PlaceholderImageProvider
 
 
 @pytest.fixture

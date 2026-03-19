@@ -5,7 +5,7 @@ submodules.  Uses a lifespan hook to build the service object once at
 startup and tear it down on shutdown.
 
 The server is configured entirely via environment variables (see
-:mod:`image_gen_mcp.config`).  Call :func:`create_server` to
+:mod:`mcp_imagegen.config`).  Call :func:`create_server` to
 build a configured :class:`~fastmcp.FastMCP` instance.
 """
 
@@ -18,7 +18,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 
-from image_gen_mcp.config import _ENV_PREFIX, load_config
+from mcp_imagegen.config import _ENV_PREFIX, load_config
 
 from ._server_deps import make_service_lifespan
 from ._server_prompts import register_prompts
@@ -59,7 +59,7 @@ def _build_default_instructions(*, read_only: bool) -> str:
 
 
 def _build_bearer_auth() -> Any:
-    """Build a StaticTokenVerifier from ``IMAGE_GEN_MCP_BEARER_TOKEN``.
+    """Build a StaticTokenVerifier from ``MCP_IMAGEGEN_BEARER_TOKEN``.
 
     When the env var is set (non-empty), returns a
     :class:`~fastmcp.server.auth.StaticTokenVerifier` that
@@ -92,7 +92,7 @@ def _build_oidc_auth() -> Any:
     By default the proxy verifies the upstream ``id_token`` (a standard JWT
     per OIDC Core) instead of the ``access_token``.  This works with every
     OIDC provider — including those that issue opaque access tokens (e.g.
-    Authelia).  Set ``IMAGE_GEN_MCP_OIDC_VERIFY_ACCESS_TOKEN=true`` to revert to
+    Authelia).  Set ``MCP_IMAGEGEN_OIDC_VERIFY_ACCESS_TOKEN=true`` to revert to
     access-token verification when you know the provider issues JWT access
     tokens and you need audience-claim validation on that token.
 
@@ -159,14 +159,14 @@ def _build_oidc_auth() -> Any:
     if verify_id_token and "openid" not in required_scopes:
         logger.warning(
             "OIDC: verify_id_token=True requires the 'openid' scope but it is "
-            "not in IMAGE_GEN_MCP_OIDC_REQUIRED_SCOPES — the id_token may "
+            "not in MCP_IMAGEGEN_OIDC_REQUIRED_SCOPES — the id_token may "
             "be absent from the token response; add 'openid' to the scope list "
-            "or set IMAGE_GEN_MCP_OIDC_VERIFY_ACCESS_TOKEN=true"
+            "or set MCP_IMAGEGEN_OIDC_VERIFY_ACCESS_TOKEN=true"
         )
 
     if jwt_signing_key is None and sys.platform.startswith("linux"):
         logger.warning(
-            "OIDC: IMAGE_GEN_MCP_OIDC_JWT_SIGNING_KEY is not set — "
+            "OIDC: MCP_IMAGEGEN_OIDC_JWT_SIGNING_KEY is not set — "
             "the JWT signing key is ephemeral on Linux; all clients must "
             "re-authenticate after every server restart"
         )
@@ -178,7 +178,7 @@ def _build_oidc_auth() -> Any:
     else:
         logger.info(
             "OIDC: verifying upstream access_token as JWT "
-            "(IMAGE_GEN_MCP_OIDC_VERIFY_ACCESS_TOKEN=true)"
+            "(MCP_IMAGEGEN_OIDC_VERIFY_ACCESS_TOKEN=true)"
         )
 
     return OIDCProxy(
@@ -202,9 +202,9 @@ def create_server() -> FastMCP:
 
     Server identity is configurable via:
 
-    - ``IMAGE_GEN_MCP_SERVER_NAME``: MCP server name shown to clients
-      (default ``"image-gen-mcp"``).
-    - ``IMAGE_GEN_MCP_INSTRUCTIONS``: system-level instructions injected
+    - ``MCP_IMAGEGEN_SERVER_NAME``: MCP server name shown to clients
+      (default ``"mcp-imagegen"``).
+    - ``MCP_IMAGEGEN_INSTRUCTIONS``: system-level instructions injected
       into LLM context (default: dynamic description reflecting read-only state).
 
     Returns:
@@ -213,7 +213,7 @@ def create_server() -> FastMCP:
     config = load_config()
     is_read_only = config.read_only
 
-    server_name = os.environ.get(f"{_ENV_PREFIX}_SERVER_NAME", "image-gen-mcp")
+    server_name = os.environ.get(f"{_ENV_PREFIX}_SERVER_NAME", "mcp-imagegen")
     default_instructions = _build_default_instructions(read_only=is_read_only)
     instructions = os.environ.get(f"{_ENV_PREFIX}_INSTRUCTIONS", default_instructions)
 

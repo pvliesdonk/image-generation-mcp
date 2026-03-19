@@ -8,11 +8,11 @@
 #   ./scripts/rename.sh my-weather-service my_weather_service WEATHER_MCP "Weather MCP Server"
 #
 # What it replaces (case-sensitive, across all text files):
-#   image-gen-mcp  → <repo-name>
-#   image_gen_mcp  → <python_module>
-#   IMAGE_GEN_MCP               → <ENV_PREFIX>
-#   Image Gen MCP Server  → <Human Name>
-#   image-gen-mcp               → <repo-name>  (CLI command)
+#   mcp-imagegen  → <repo-name>
+#   mcp_imagegen  → <python_module>
+#   MCP_IMAGEGEN               → <ENV_PREFIX>
+#   MCP Imagegen Server  → <Human Name>
+#   (CLI command uses the same repo-name value)
 #
 # Safe to run multiple times (idempotent after first run).
 
@@ -28,14 +28,11 @@ REPO_NAME="$1"
 PYTHON_MODULE="$2"
 ENV_PREFIX="$3"
 HUMAN_NAME="$4"
-CLI_CMD="$REPO_NAME"
-
 echo "Renaming template:"
-echo "  repo name    : image-gen-mcp → $REPO_NAME"
-echo "  python module: image_gen_mcp → $PYTHON_MODULE"
-echo "  env prefix   : IMAGE_GEN_MCP → $ENV_PREFIX"
-echo "  human name   : Image Gen MCP Server → $HUMAN_NAME"
-echo "  CLI command  : image-gen-mcp → $CLI_CMD"
+echo "  repo name    : mcp-imagegen → $REPO_NAME"
+echo "  python module: mcp_imagegen → $PYTHON_MODULE"
+echo "  env prefix   : MCP_IMAGEGEN → $ENV_PREFIX"
+echo "  human name   : MCP Imagegen Server → $HUMAN_NAME"
 echo
 
 # Text files to update (exclude binary, .git, __pycache__, site, uv.lock)
@@ -44,19 +41,18 @@ FILES=$(git ls-files | grep -v -E '\.(png|jpg|gif|ico|woff|woff2|eot|ttf|svg)$' 
 for f in $FILES; do
     if [ -f "$f" ]; then
         sed -i \
-            -e "s|image-gen-mcp|$REPO_NAME|g" \
-            -e "s|image_gen_mcp|$PYTHON_MODULE|g" \
-            -e "s|IMAGE_GEN_MCP|$ENV_PREFIX|g" \
-            -e "s|Image Gen MCP Server|$HUMAN_NAME|g" \
-            -e "s|image-gen-mcp|$CLI_CMD|g" \
+            -e "s|mcp-imagegen|$REPO_NAME|g" \
+            -e "s|mcp_imagegen|$PYTHON_MODULE|g" \
+            -e "s|MCP_IMAGEGEN|$ENV_PREFIX|g" \
+            -e "s|MCP Imagegen Server|$HUMAN_NAME|g" \
             "$f"
     fi
 done
 
 # Rename the source directory
-if [ -d "src/image_gen_mcp" ] && [ ! -d "src/$PYTHON_MODULE" ]; then
-    mv "src/image_gen_mcp" "src/$PYTHON_MODULE"
-    echo "Renamed src/image_gen_mcp → src/$PYTHON_MODULE"
+if [ -d "src/mcp_imagegen" ] && [ ! -d "src/$PYTHON_MODULE" ]; then
+    mv "src/mcp_imagegen" "src/$PYTHON_MODULE"
+    echo "Renamed src/mcp_imagegen → src/$PYTHON_MODULE"
 fi
 
 echo
