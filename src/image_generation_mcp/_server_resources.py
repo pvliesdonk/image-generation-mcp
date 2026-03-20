@@ -300,7 +300,7 @@ def register_resources(mcp: FastMCP) -> None:
         _IMAGE_VIEWER_URI,
         description="Interactive image viewer for generate_image results.",
         app=AppConfig(
-            csp=ResourceCSP(resource_domains=["https://unpkg.com"]),
+            csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
         ),
     )
     def image_viewer() -> str:

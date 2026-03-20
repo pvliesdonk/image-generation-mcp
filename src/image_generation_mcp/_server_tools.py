@@ -45,7 +45,7 @@ def register_tools(mcp: FastMCP) -> None:
         tags={"write"},
         task=True,
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
-        app=AppConfig(resource_uri="ui://image-viewer/view.html"),
+        app=AppConfig(resourceUri="ui://image-viewer/view.html"),
     )
     async def generate_image(
         prompt: str,
