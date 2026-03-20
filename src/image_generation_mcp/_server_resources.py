@@ -6,7 +6,6 @@ image viewer as MCP resources.
 
 from __future__ import annotations
 
-import io
 import json
 import logging
 from datetime import UTC, datetime
@@ -16,14 +15,8 @@ from fastmcp.dependencies import Depends
 from fastmcp.resources import ResourceContent, ResourceResult
 from fastmcp.server.apps import AppConfig, ResourceCSP
 from mcp.types import Icon
-from PIL import Image as PILImage
 
 from image_generation_mcp._server_deps import get_service
-from image_generation_mcp.processing import (
-    convert_format,
-    crop_to_dimensions,
-    resize_image,
-)
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
@@ -191,31 +184,9 @@ def register_resources(mcp: FastMCP) -> None:
         Returns:
             Image bytes with appropriate MIME type.
         """
-        record = service.get_image(image_id)
-        data = record.original_path.read_bytes()
-        content_type = record.content_type
-
-        # Apply resize/crop first (always from original to prevent quality
-        # degradation — see ADR-0006)
-        if width > 0 and height > 0:
-            data = crop_to_dimensions(data, width, height)
-        elif width > 0:
-            # Proportional resize by width
-            img = PILImage.open(io.BytesIO(data))
-            ratio = width / img.width
-            new_height = round(img.height * ratio)
-            data = resize_image(data, width, new_height)
-        elif height > 0:
-            # Proportional resize by height
-            img = PILImage.open(io.BytesIO(data))
-            ratio = height / img.height
-            new_width = round(img.width * ratio)
-            data = resize_image(data, new_width, height)
-
-        # Apply format conversion last (one encode from spatial result)
-        if format:
-            data, content_type = convert_format(data, format, quality=quality)
-
+        data, content_type = service.get_transformed_image(
+            image_id, format=format, width=width, height=height, quality=quality
+        )
         return ResourceResult([ResourceContent(content=data, mime_type=content_type)])
 
     @mcp.resource(

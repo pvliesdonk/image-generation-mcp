@@ -38,6 +38,12 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 !!! warning
     Authentication only works with HTTP transport (`--transport http` or `sse`). It has no effect with stdio transport.
 
+## Performance
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | int | `64` | Maximum number of transformed image results (resize/crop/convert) to keep in memory. Repeated requests for the same transform parameters are served from cache. Set to `0` to disable caching. |
+
 ## Server
 
 | Variable | Type | Default | Description |

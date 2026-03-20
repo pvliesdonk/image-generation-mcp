@@ -13,13 +13,19 @@ import io
 import json
 import logging
 import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar
 
-from PIL import Image
+from PIL import Image as PILImage
 
+from image_generation_mcp.processing import (
+    convert_format,
+    crop_to_dimensions,
+    resize_image,
+)
 from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
     make_degraded,
@@ -58,18 +64,23 @@ class ImageService:
     Args:
         scratch_dir: Directory for saving generated images.
         default_provider: Provider name to use when none specified.
+        transform_cache_size: Maximum number of transform results to keep
+            in the in-memory LRU cache. Set to 0 to disable caching.
     """
 
     def __init__(
         self,
         scratch_dir: Path,
         default_provider: str = "auto",
+        transform_cache_size: int = 64,
     ) -> None:
         self._providers: dict[str, ImageProvider] = {}
         self._capabilities: dict[str, ProviderCapabilities] = {}
         self._scratch_dir = scratch_dir
         self._default_provider = default_provider
         self._images: dict[str, ImageRecord] = {}
+        self._transform_cache: OrderedDict[tuple, tuple[bytes, str]] = OrderedDict()
+        self._transform_cache_size = transform_cache_size
 
         # Rebuild registry from existing sidecar files
         self._load_registry()
@@ -89,6 +100,7 @@ class ImageService:
         for provider in self._providers.values():
             if hasattr(provider, "aclose"):
                 await provider.aclose()
+        self._transform_cache.clear()
 
     @property
     def capabilities(self) -> dict[str, ProviderCapabilities]:
@@ -307,7 +319,7 @@ class ImageService:
         image_id = hashlib.sha256(result.image_data).hexdigest()[:12]
 
         # Extract original dimensions via Pillow
-        img = Image.open(io.BytesIO(result.image_data))
+        img = PILImage.open(io.BytesIO(result.image_data))
         original_dimensions = img.size  # (width, height)
 
         # Save original
@@ -380,6 +392,77 @@ class ImageService:
                 "Read image://list to see available IDs.",
             )
         return self._images[image_id]
+
+    def get_transformed_image(
+        self,
+        image_id: str,
+        format: str = "",
+        width: int = 0,
+        height: int = 0,
+        quality: int = 90,
+    ) -> tuple[bytes, str]:
+        """Return image bytes with optional transforms, using an LRU cache.
+
+        Requests with no transform parameters (``format`` empty and both
+        ``width`` and ``height`` zero) bypass the cache entirely and return
+        the original file bytes directly.
+
+        Args:
+            image_id: Image registry ID.
+            format: Target format (``"png"``, ``"webp"``, ``"jpeg"``), or
+                empty string to keep the original format.
+            width: Target width in pixels, or ``0`` for original.
+            height: Target height in pixels, or ``0`` for original.
+            quality: Compression quality for lossy formats (1-100).
+
+        Returns:
+            Tuple of ``(image_bytes, content_type)``.
+
+        Raises:
+            ImageProviderError: If *image_id* is not registered.
+        """
+        record = self.get_image(image_id)
+
+        # No-transform bypass: skip cache for plain original reads
+        if not format and width == 0 and height == 0:
+            return record.original_path.read_bytes(), record.content_type
+
+        key = (image_id, format or "", width or 0, height or 0, quality or 90)
+
+        # Cache hit: move to end (most-recently-used) and return
+        if key in self._transform_cache:
+            self._transform_cache.move_to_end(key)
+            return self._transform_cache[key]
+
+        # Cache miss: compute transform
+        data = record.original_path.read_bytes()
+        content_type = record.content_type
+
+        # Apply resize/crop first (always from original to prevent quality
+        # degradation — see ADR-0006)
+        if width > 0 and height > 0:
+            data = crop_to_dimensions(data, width, height)
+        elif width > 0:
+            img = PILImage.open(io.BytesIO(data))
+            ratio = width / img.width
+            new_height = round(img.height * ratio)
+            data = resize_image(data, width, new_height)
+        elif height > 0:
+            img = PILImage.open(io.BytesIO(data))
+            ratio = height / img.height
+            new_width = round(img.width * ratio)
+            data = resize_image(data, new_width, height)
+
+        # Apply format conversion last (one encode from spatial result)
+        if format:
+            data, content_type = convert_format(data, format, quality=quality)
+
+        # Store in cache, evict oldest if over size limit
+        self._transform_cache[key] = (data, content_type)
+        if len(self._transform_cache) > self._transform_cache_size:
+            self._transform_cache.popitem(last=False)
+
+        return data, content_type
 
     def list_images(self) -> list[ImageRecord]:
         """Return all registered images.

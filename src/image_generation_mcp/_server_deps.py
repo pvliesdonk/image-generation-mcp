@@ -49,6 +49,7 @@ def make_service_lifespan(config: ServerConfig) -> Any:
         service = ImageService(
             scratch_dir=config.scratch_dir,
             default_provider=config.default_provider,
+            transform_cache_size=config.transform_cache_size,
         )
 
         # Always register placeholder (zero-cost, no API key needed)
