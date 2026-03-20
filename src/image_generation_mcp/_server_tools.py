@@ -13,6 +13,8 @@ import json
 import logging
 from urllib.parse import parse_qs, urlparse
 
+from pydantic import AnyUrl
+
 from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.apps import AppConfig
@@ -180,7 +182,7 @@ def register_tools(mcp: FastMCP) -> None:
                 ),
                 ResourceLink(
                     type="resource_link",
-                    uri=f"image://{record.id}/view",
+                    uri=AnyUrl(f"image://{record.id}/view"),
                     name="Generated image",
                 ),
             ]
