@@ -89,6 +89,18 @@ A minimalist logo for "Acme Corp" with clean sans-serif typography,
 blue and white color scheme, modern design
 ```
 
+## Per-call model selection
+
+The `model` parameter on `generate_image` overrides the provider's default model for a single request. Size table and format selection adjust automatically:
+
+```
+generate_image(prompt="...", provider="openai", model="dall-e-3")
+```
+
+When switching to `dall-e-3`, the larger DALL-E 3 size table is used and output format is forced to PNG (the only format DALL-E 3 supports). When switching to `gpt-image-1`, the standard size table and configured output format are used.
+
+Use `list_providers` to discover available models.
+
 ## Capability discovery
 
 At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-1`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).

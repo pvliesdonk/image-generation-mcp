@@ -76,3 +76,16 @@ class TestGenerate:
         )
         assert name == "placeholder"
         assert result.provider_metadata["size"] == "640x360"
+
+    async def test_generate_passes_model_to_provider(
+        self, service: ImageService
+    ) -> None:
+        """Service passes model= through to the provider (placeholder ignores it)."""
+        name, result = await service.generate(
+            "test",
+            provider="placeholder",
+            model="some-checkpoint",
+        )
+        assert name == "placeholder"
+        # Placeholder ignores model, result is still valid
+        assert result.image_data

@@ -61,10 +61,16 @@ class ImageProvider(Protocol):
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         background: str = "opaque",
+        model: str | None = None,
     ) -> ImageResult: ...
 
     async def discover_capabilities(self) -> ProviderCapabilities: ...
 ```
+
+The optional `model` parameter allows per-call model selection. When set, it
+overrides the provider's constructor default. A1111 uses it for both preset
+detection and `override_settings.sd_model_checkpoint`. OpenAI uses it as the
+API `model` parameter with automatic size table switching.
 
 The `discover_capabilities()` method is called once during server lifespan
 after provider construction. Results are cached for the server lifetime

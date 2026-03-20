@@ -165,6 +165,7 @@ class A1111ImageProvider:
         aspect_ratio: str = "1:1",
         quality: str = "standard",  # noqa: ARG002
         background: str = "opaque",
+        model: str | None = None,
     ) -> ImageResult:
         """Generate an image via A1111 txt2img API.
 
@@ -175,6 +176,9 @@ class A1111ImageProvider:
             quality: Ignored — SD quality is controlled by steps/cfg.
             background: Ignored — A1111 does not support background
                 transparency control.
+            model: Specific checkpoint name to use for this call. Overrides
+                the constructor model for preset detection and
+                ``override_settings``.
 
         Returns:
             ImageResult with PNG data and provider metadata.
@@ -183,33 +187,36 @@ class A1111ImageProvider:
             ImageProviderConnectionError: If A1111 is unreachable.
             ImageProviderError: On API errors.
         """
+        effective_model = model or self._model
+        effective_preset = _resolve_preset(effective_model)
+
         if background != "opaque":
             logger.debug(
                 "A1111 does not support background transparency control, ignoring"
             )
-        default_size = self._preset.sizes["1:1"]
-        width, height = self._preset.sizes.get(aspect_ratio, default_size)
+        default_size = effective_preset.sizes["1:1"]
+        width, height = effective_preset.sizes.get(aspect_ratio, default_size)
 
         payload: dict[str, Any] = {
             "prompt": prompt,
             "negative_prompt": negative_prompt or "",
             "width": width,
             "height": height,
-            "steps": self._preset.steps,
-            "cfg_scale": self._preset.cfg_scale,
-            "sampler_name": self._preset.sampler,
-            "scheduler": self._preset.scheduler,
+            "steps": effective_preset.steps,
+            "cfg_scale": effective_preset.cfg_scale,
+            "sampler_name": effective_preset.sampler,
+            "scheduler": effective_preset.scheduler,
         }
 
-        if self._model:
-            payload["override_settings"] = {"sd_model_checkpoint": self._model}
+        if effective_model:
+            payload["override_settings"] = {"sd_model_checkpoint": effective_model}
 
         url = f"{self._host}/sdapi/v1/txt2img"
 
         logger.debug(
             "A1111 generate: host=%s model=%s size=%dx%d",
             self._host,
-            self._model,
+            effective_model,
             width,
             height,
         )
@@ -243,13 +250,13 @@ class A1111ImageProvider:
 
         # Extract seed and model name from response info
         seed = None
-        active_model = self._model
+        active_model = effective_model
         info_str = data.get("info")
         if info_str:
             try:
                 info = json.loads(info_str) if isinstance(info_str, str) else info_str
                 seed = info.get("seed")
-                if not self._model:
+                if not effective_model:
                     active_model = info.get("sd_model_name")
             except (json.JSONDecodeError, TypeError, AttributeError) as e:
                 logger.warning(
@@ -259,10 +266,10 @@ class A1111ImageProvider:
                 )
 
         metadata: dict[str, Any] = {
-            "quality": self._preset.quality_tier,
+            "quality": effective_preset.quality_tier,
             "model": active_model,
             "size": f"{width}x{height}",
-            "steps": self._preset.steps,
+            "steps": effective_preset.steps,
         }
         if seed is not None:
             metadata["seed"] = seed

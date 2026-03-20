@@ -22,6 +22,7 @@ Generate an image from a text prompt. Returns a thumbnail preview and resource U
 | `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3` |
 | `quality` | str | `"standard"` | Quality level: `standard` or `hd` |
 | `background` | str | `"opaque"` | Background mode: `opaque` or `transparent`. Supported by OpenAI (gpt-image-1) and Placeholder. A1111 ignores this parameter. |
+| `model` | str | `null` | Specific model to use (e.g., an A1111 checkpoint name or `"dall-e-3"` for OpenAI). Overrides the provider's default. Use `list_providers` to see available model IDs. |
 
 ### Return value
 

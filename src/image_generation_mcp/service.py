@@ -220,6 +220,7 @@ class ImageService:
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         background: str = "opaque",
+        model: str | None = None,
     ) -> tuple[str, ImageResult]:
         """Generate an image using a provider.
 
@@ -231,6 +232,8 @@ class ImageService:
             quality: Quality level.
             background: Background transparency (``opaque``, ``transparent``).
                 Provider support varies.
+            model: Specific model to use (e.g., a checkpoint name for A1111,
+                or ``"dall-e-3"`` for OpenAI). Passed through to the provider.
 
         Returns:
             Tuple of (provider_name, ImageResult).
@@ -265,6 +268,7 @@ class ImageService:
             aspect_ratio=aspect_ratio,
             quality=quality,
             background=background,
+            model=model,
         )
 
         return resolved_name, result

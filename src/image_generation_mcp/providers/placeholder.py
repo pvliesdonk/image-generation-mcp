@@ -98,6 +98,7 @@ class PlaceholderImageProvider:
         aspect_ratio: str = "1:1",
         quality: str = "standard",  # noqa: ARG002
         background: str = "opaque",
+        model: str | None = None,
     ) -> ImageResult:
         """Generate a placeholder PNG.
 
@@ -108,10 +109,13 @@ class PlaceholderImageProvider:
             quality: Ignored.
             background: When ``"transparent"``, generates an RGBA PNG with
                 alpha=0. When ``"opaque"`` (default), generates an RGB PNG.
+            model: Ignored by the placeholder provider.
 
         Returns:
             ImageResult with a solid-color PNG.
         """
+        if model is not None:
+            logger.debug("Placeholder provider ignores model parameter: %r", model)
         if aspect_ratio not in _ASPECT_RATIO_TO_SIZE:
             logger.warning("Unknown aspect_ratio %r, falling back to 1:1", aspect_ratio)
         width, height = _ASPECT_RATIO_TO_SIZE.get(

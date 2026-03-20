@@ -55,13 +55,14 @@ def register_tools(mcp: FastMCP) -> None:
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         background: str = "opaque",
+        model: str | None = None,
         service: ImageService = Depends(get_service),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
         """Generate an image and return a thumbnail preview with resource URIs.
 
-        Call list_providers first to see available providers. Returns an
-        inline thumbnail plus URIs for full-resolution access and
+        Call list_providers first to see available providers and model IDs.
+        Returns an inline thumbnail plus URIs for full-resolution access and
         on-demand transforms (resize, crop, format conversion).
 
         Args:
@@ -85,6 +86,10 @@ def register_tools(mcp: FastMCP) -> None:
                 an image with a transparent background. Only supported
                 by some providers (OpenAI gpt-image-1, placeholder).
                 A1111 and dall-e-3 ignore this parameter.
+            model: Specific model to use (e.g., a checkpoint name for
+                A1111, or ``"dall-e-3"`` for OpenAI). Use
+                ``list_providers`` to see available model IDs. Defaults
+                to the provider's configured model.
 
         Returns:
             A thumbnail preview plus resource URIs for full-resolution
@@ -118,6 +123,7 @@ def register_tools(mcp: FastMCP) -> None:
                 aspect_ratio=aspect_ratio,
                 quality=quality,
                 background=background,
+                model=model,
             )
         except ImageContentPolicyError as e:
             raise ImageContentPolicyError(
