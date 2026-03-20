@@ -7,14 +7,12 @@ serves image bytes once and then invalidates the token.
 from __future__ import annotations
 
 import asyncio
-import io
 import logging
 import time
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from PIL import Image as PILImage
 from starlette.responses import Response
 
 from image_generation_mcp.processing import (
@@ -187,13 +185,22 @@ def make_artifact_handler() -> object:
 
         # Parse the resource URI to extract image_id and transform params
         parsed = urlparse(record.uri)
-        image_id = parsed.hostname or parsed.netloc
+        image_id = parsed.netloc or ""
         qs = parse_qs(parsed.query)
 
         fmt = qs.get("format", [""])[0]
-        width = int(qs.get("width", [0])[0])
-        height = int(qs.get("height", [0])[0])
-        quality = int(qs.get("quality", [90])[0])
+        try:
+            width = int(qs.get("width", ["0"])[0])
+        except (ValueError, TypeError):
+            width = 0
+        try:
+            height = int(qs.get("height", ["0"])[0])
+        except (ValueError, TypeError):
+            height = 0
+        try:
+            quality = int(qs.get("quality", ["90"])[0])
+        except (ValueError, TypeError):
+            quality = 90
 
         # Get service via module-level getter
         from image_generation_mcp._server_deps import _get_service_from_store
@@ -206,21 +213,29 @@ def make_artifact_handler() -> object:
             logger.warning("Artifact: image not found for id=%r", image_id)
             return Response(content="Not Found", status_code=404)
 
-        data = await asyncio.to_thread(img_record.original_path.read_bytes)
+        try:
+            data = await asyncio.to_thread(img_record.original_path.read_bytes)
+        except OSError:
+            logger.warning(
+                "Artifact: image file missing for id=%r path=%s",
+                image_id,
+                img_record.original_path,
+            )
+            return Response(content="Not Found", status_code=404)
         content_type = img_record.content_type
 
         # Apply resize/crop first (same logic as show_image and image_view)
         if width > 0 and height > 0:
             data = await asyncio.to_thread(crop_to_dimensions, data, width, height)
         elif width > 0:
-            img = PILImage.open(io.BytesIO(data))
-            ratio = width / img.width
-            new_height = round(img.height * ratio)
+            orig_w, orig_h = img_record.original_dimensions
+            ratio = width / orig_w
+            new_height = round(orig_h * ratio)
             data = await asyncio.to_thread(resize_image, data, width, new_height)
         elif height > 0:
-            img = PILImage.open(io.BytesIO(data))
-            ratio = height / img.height
-            new_width = round(img.width * ratio)
+            orig_w, orig_h = img_record.original_dimensions
+            ratio = height / orig_h
+            new_width = round(orig_w * ratio)
             data = await asyncio.to_thread(resize_image, data, new_width, height)
 
         # Apply format conversion last

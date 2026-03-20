@@ -22,9 +22,8 @@ from mcp.types import Icon, ImageContent, ResourceLink, TextContent
 from PIL import Image as PILImage
 from pydantic import AnyUrl
 
-from ._server_deps import get_service
+from ._server_deps import get_config, get_service
 from ._server_resources import _IMAGE_VIEWER_URI
-from .config import _ENV_PREFIX
 from .processing import convert_format, crop_to_dimensions, resize_image
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
@@ -332,7 +331,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register the tool on.
     """
-    import os
+    from .config import ServerConfig
 
     @mcp.tool(
         icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],
@@ -341,6 +340,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
         uri: str,
         ttl_seconds: int = 300,
         service: ImageService = Depends(get_service),
+        config: ServerConfig = Depends(get_config),
     ) -> str:
         """Create a one-time download URL for an image.
 
@@ -371,7 +371,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
         from urllib.parse import urlparse
 
         # Validate BASE_URL is configured
-        base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").rstrip("/")
+        base_url = (config.base_url or "").rstrip("/")
         if not base_url:
             msg = (
                 "IMAGE_GENERATION_MCP_BASE_URL is required for download links. "

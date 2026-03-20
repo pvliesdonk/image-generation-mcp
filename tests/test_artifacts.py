@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import json
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import pytest
 from fastmcp import FastMCP
@@ -49,7 +48,7 @@ def service(tmp_path: Path) -> ImageService:
 @pytest.fixture
 def registered_image(service: ImageService) -> tuple[ImageService, str]:
     """Register a placeholder image and return (service, image_id)."""
-    result = asyncio.get_event_loop().run_until_complete(
+    result = asyncio.run(
         PlaceholderImageProvider().generate("artifact test", aspect_ratio="1:1")
     )
     record = service.register_image(result, "placeholder", prompt="artifact test")
@@ -188,6 +187,7 @@ class TestCreateDownloadLinkTool:
         base_url: str = "https://mcp.example.com",
     ) -> str:
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
+        from image_generation_mcp.config import ServerConfig
 
         set_artifact_store(ArtifactStore())
 
@@ -196,15 +196,13 @@ class TestCreateDownloadLinkTool:
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-        with patch.dict(
-            "os.environ",
-            {"IMAGE_GENERATION_MCP_BASE_URL": base_url},
-        ):
-            return await tool.fn(
-                uri=f"image://{image_id}/view{uri_suffix}",
-                ttl_seconds=ttl_seconds,
-                service=service,
-            )
+        config = ServerConfig(base_url=base_url)
+        return await tool.fn(
+            uri=f"image://{image_id}/view{uri_suffix}",
+            ttl_seconds=ttl_seconds,
+            service=service,
+            config=config,
+        )
 
     async def test_returns_json_with_download_url(
         self, registered_image: tuple[ImageService, str]
@@ -247,6 +245,7 @@ class TestCreateDownloadLinkTool:
         self, registered_image: tuple[ImageService, str]
     ) -> None:
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
+        from image_generation_mcp.config import ServerConfig
 
         set_artifact_store(ArtifactStore())
         service, image_id = registered_image
@@ -255,22 +254,18 @@ class TestCreateDownloadLinkTool:
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-        import os
-
-        saved = os.environ.pop("IMAGE_GENERATION_MCP_BASE_URL", None)
-        try:
-            with pytest.raises(ValueError, match="IMAGE_GENERATION_MCP_BASE_URL"):
-                await tool.fn(
-                    uri=f"image://{image_id}/view",
-                    service=service,
-                )
-        finally:
-            if saved is not None:
-                os.environ["IMAGE_GENERATION_MCP_BASE_URL"] = saved
+        config = ServerConfig(base_url=None)
+        with pytest.raises(ValueError, match="IMAGE_GENERATION_MCP_BASE_URL"):
+            await tool.fn(
+                uri=f"image://{image_id}/view",
+                service=service,
+                config=config,
+            )
 
     async def test_raises_on_unknown_image_id(self, service: ImageService) -> None:
         """Tool must raise when the image_id is not in the registry."""
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
+        from image_generation_mcp.config import ServerConfig
 
         set_artifact_store(ArtifactStore())
         mcp = FastMCP("test")
@@ -280,21 +275,18 @@ class TestCreateDownloadLinkTool:
 
         from image_generation_mcp.providers.types import ImageProviderError
 
-        with (
-            patch.dict(
-                "os.environ",
-                {"IMAGE_GENERATION_MCP_BASE_URL": "https://mcp.example.com"},
-            ),
-            pytest.raises(ImageProviderError),
-        ):
+        config = ServerConfig(base_url="https://mcp.example.com")
+        with pytest.raises(ImageProviderError):
             await tool.fn(
                 uri="image://nonexistent123/view",
                 service=service,
+                config=config,
             )
 
     async def test_raises_on_invalid_uri(self, service: ImageService) -> None:
         """Tool raises on a URI with no image_id."""
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
+        from image_generation_mcp.config import ServerConfig
 
         set_artifact_store(ArtifactStore())
         mcp = FastMCP("test")
@@ -302,16 +294,12 @@ class TestCreateDownloadLinkTool:
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-        with (
-            patch.dict(
-                "os.environ",
-                {"IMAGE_GENERATION_MCP_BASE_URL": "https://mcp.example.com"},
-            ),
-            pytest.raises(ValueError, match="Invalid image URI"),
-        ):
+        config = ServerConfig(base_url="https://mcp.example.com")
+        with pytest.raises(ValueError, match="Invalid image URI"):
             await tool.fn(
                 uri="notanuri",
                 service=service,
+                config=config,
             )
 
 

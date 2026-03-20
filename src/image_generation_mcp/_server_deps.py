@@ -134,3 +134,20 @@ def get_service(ctx: Context = CurrentContext()) -> ImageService:
         msg = "Service not initialised — server lifespan has not run"
         raise RuntimeError(msg)
     return service
+
+
+def get_config(ctx: Context = CurrentContext()) -> ServerConfig:
+    """Resolve the ServerConfig from lifespan context.
+
+    Used as a ``Depends()`` default in tool/resource/prompt signatures.
+
+    Raises:
+        RuntimeError: If the server lifespan has not run.
+    """
+    from image_generation_mcp.config import ServerConfig
+
+    config = ctx.lifespan_context.get("config")
+    if not isinstance(config, ServerConfig):
+        msg = "Config not initialised — server lifespan has not run"
+        raise RuntimeError(msg)
+    return config
