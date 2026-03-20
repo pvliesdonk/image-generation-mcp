@@ -266,7 +266,10 @@ def register_tools(mcp: FastMCP) -> None:
 
         metadata = {
             "image_id": record.id,
+            "prompt": record.prompt,
+            "provider": record.provider,
             "dimensions": [final_w, final_h],
+            "original_size_bytes": record.original_path.stat().st_size,
             "format": content_type,
             "transforms_applied": transform_params,
         }

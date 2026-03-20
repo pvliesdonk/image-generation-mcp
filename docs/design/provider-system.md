@@ -249,7 +249,8 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 
 | Tool | Tags | Task | Description |
 |------|------|------|-------------|
-| `generate_image` | `write` | `task=True` | Generate image, return thumbnail + resource URIs |
+| `generate_image` | `write` | `task=True` | Generate image, return metadata + `ResourceLink` |
+| `show_image` | *(none)* | -- | Display a registered image with optional transforms |
 | `list_providers` | *(none)* | -- | List available providers with availability info |
 
 `generate_image` supports both foreground and background execution via
@@ -257,10 +258,18 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 Progress is reported at 3 stages via `Context.report_progress()`.
 
 `generate_image` returns a `ToolResult` with:
-- `ImageContent` -- thumbnail (~256px WebP, ~10-50KB) for immediate visual feedback
 - `TextContent` -- JSON metadata with `image_id`, `original_uri`, `resource_template`,
-  `original_size_bytes`, `thumbnail_size_bytes`, `provider`, `file_path`,
-  plus provider-specific metadata
+  `original_size_bytes`, `provider`, plus provider-specific metadata
+- `ResourceLink` -- URI reference to `image://{id}/view`
+
+`show_image` accepts a full `image://` resource URI (transforms encoded in
+query string) and returns:
+- `ImageContent` -- the image (original or transformed) as base64
+- `TextContent` -- JSON metadata with `image_id`, `prompt`, `provider`,
+  `dimensions`, `original_size_bytes`, `format`, `transforms_applied`
+
+`show_image` is wired to the MCP Apps image viewer via
+`AppConfig(resourceUri="ui://image-viewer/view.html")`.
 
 In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is hidden.
 
