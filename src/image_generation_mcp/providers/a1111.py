@@ -38,11 +38,16 @@ _DEFAULT_TIMEOUT = 180.0  # SDXL at high res can be slow on consumer GPUs
 
 @dataclass(frozen=True)
 class _A1111Preset:
-    """Generation parameters tuned for a specific SD architecture."""
+    """Generation parameters tuned for a specific SD architecture.
+
+    A1111 >=1.6 split the sampler and scheduler into separate API fields.
+    Older versions used combined names like ``"DPM++ 2M Karras"``.
+    """
 
     sizes: dict[str, tuple[int, int]] = field(repr=False)
     steps: int = 30
-    sampler: str = "DPM++ 2M Karras"
+    sampler: str = "DPM++ 2M"
+    scheduler: str = "Karras"
     cfg_scale: float = 7.0
     quality_tier: str = "medium"
 
@@ -68,7 +73,8 @@ _SDXL_SIZES: dict[str, tuple[int, int]] = {
 _SDXL_PRESET = _A1111Preset(
     sizes=_SDXL_SIZES,
     steps=35,
-    sampler="DPM++ 2M Karras",
+    sampler="DPM++ 2M",
+    scheduler="Karras",
     cfg_scale=7.5,
     quality_tier="high",
 )
@@ -76,7 +82,8 @@ _SDXL_PRESET = _A1111Preset(
 _SDXL_LIGHTNING_PRESET = _A1111Preset(
     sizes=_SDXL_SIZES,
     steps=6,
-    sampler="DPM++ SDE Karras",
+    sampler="DPM++ SDE",
+    scheduler="Karras",
     cfg_scale=2.0,
     quality_tier="high",
 )
@@ -191,6 +198,7 @@ class A1111ImageProvider:
             "steps": self._preset.steps,
             "cfg_scale": self._preset.cfg_scale,
             "sampler_name": self._preset.sampler,
+            "scheduler": self._preset.scheduler,
         }
 
         if self._model:
