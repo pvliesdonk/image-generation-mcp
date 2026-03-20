@@ -65,6 +65,8 @@ def register_tools(mcp: FastMCP) -> None:
         """Generate an image and return metadata with resource URIs.
 
         Call list_providers first to see available providers and model IDs.
+        Read info://prompt-guide for provider-specific prompt writing tips
+        (especially important for A1111/Stable Diffusion CLIP tag format).
         Returns metadata including the image_id and resource URIs. Call
         show_image with the image URI (e.g. ``image://{image_id}/view``) to
         display the image.
