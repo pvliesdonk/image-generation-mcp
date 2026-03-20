@@ -215,13 +215,17 @@ def register_tools(mcp: FastMCP) -> None:
             transforms).
         """
         parsed = urlparse(uri)
+        if parsed.scheme != "image":
+            msg = f"Expected an image:// URI, got scheme '{parsed.scheme}'"
+            raise ValueError(msg)
         image_id = parsed.hostname or parsed.netloc
         qs = parse_qs(parsed.query)
 
         fmt = qs.get("format", [""])[0]
-        width = int(qs.get("width", [0])[0])
-        height = int(qs.get("height", [0])[0])
-        quality = int(qs.get("quality", [90])[0])
+        width = int(qs.get("width", ["0"])[0])
+        height = int(qs.get("height", ["0"])[0])
+        quality = int(qs.get("quality", ["90"])[0])
+        quality = max(1, min(100, quality))
 
         record = await asyncio.to_thread(service.get_image, image_id)
         data = await asyncio.to_thread(record.original_path.read_bytes)
@@ -232,14 +236,14 @@ def register_tools(mcp: FastMCP) -> None:
         if width > 0 and height > 0:
             data = await asyncio.to_thread(crop_to_dimensions, data, width, height)
         elif width > 0:
-            img = PILImage.open(io.BytesIO(data))
-            ratio = width / img.width
-            new_height = round(img.height * ratio)
+            orig_w, orig_h = record.original_dimensions
+            ratio = width / orig_w
+            new_height = round(orig_h * ratio)
             data = await asyncio.to_thread(resize_image, data, width, new_height)
         elif height > 0:
-            img = PILImage.open(io.BytesIO(data))
-            ratio = height / img.height
-            new_width = round(img.width * ratio)
+            orig_w, orig_h = record.original_dimensions
+            ratio = height / orig_h
+            new_width = round(orig_w * ratio)
             data = await asyncio.to_thread(resize_image, data, new_width, height)
 
         # Apply format conversion last (one encode from spatial result)
@@ -250,9 +254,14 @@ def register_tools(mcp: FastMCP) -> None:
 
         img_b64 = base64.b64encode(data).decode("ascii")
 
-        # Determine final dimensions
-        final_img = PILImage.open(io.BytesIO(data))
-        final_w, final_h = final_img.size
+        # Determine final dimensions — use stored metadata when no spatial
+        # transform was applied to avoid an extra Pillow decode.
+        transforms_changed_size = width > 0 or height > 0
+        if transforms_changed_size:
+            final_img = await asyncio.to_thread(lambda: PILImage.open(io.BytesIO(data)))
+            final_w, final_h = final_img.size
+        else:
+            final_w, final_h = record.original_dimensions
 
         transform_params: dict[str, int | str] = {}
         if fmt:
@@ -264,12 +273,13 @@ def register_tools(mcp: FastMCP) -> None:
         if fmt and quality != 90:
             transform_params["quality"] = quality
 
+        original_stat = await asyncio.to_thread(record.original_path.stat)
         metadata = {
             "image_id": record.id,
             "prompt": record.prompt,
             "provider": record.provider,
             "dimensions": [final_w, final_h],
-            "original_size_bytes": record.original_path.stat().st_size,
+            "original_size_bytes": original_stat.st_size,
             "format": content_type,
             "transforms_applied": transform_params,
         }
