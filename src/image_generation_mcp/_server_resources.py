@@ -301,13 +301,13 @@ def register_resources(mcp: FastMCP) -> None:
 
     @mcp.resource(
         _IMAGE_VIEWER_URI,
-        description="Interactive image viewer for generate_image results.",
+        description="Interactive image viewer for show_image results.",
         app=AppConfig(
             csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
         ),
     )
     def image_viewer() -> str:
-        """HTML viewer that renders images from generate_image tool results.
+        """HTML viewer that renders images from show_image tool results.
 
         Loaded by MCP Apps-capable clients (Claude Desktop, claude.ai) in a
         sandboxed iframe.  Listens for tool results via the ext-apps SDK and
