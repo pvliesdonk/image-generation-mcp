@@ -33,8 +33,10 @@ Returns a `ToolResult` with two content items:
 ```json
 {
   "image_id": "a1b2c3d4e5f6",
+  "prompt": "watercolor painting of a mountain landscape at sunset",
   "original_uri": "image://a1b2c3d4e5f6/view",
   "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality}",
+  "dimensions": [1024, 1024],
   "original_size_bytes": 1048576,
   "thumbnail_size_bytes": 12345,
   "provider": "openai",
@@ -199,7 +201,7 @@ Clients that support [MCP Apps](https://modelcontextprotocol.io/specification/20
 The viewer is a custom HTML resource at `ui://image-viewer/view.html` that:
 
 - Listens for `generate_image` tool results via the `@modelcontextprotocol/ext-apps` SDK
-- Displays the generated image with metadata (provider, ID, file size)
+- Displays the generated image with metadata (prompt, provider, dimensions, file size)
 - Supports light and dark color schemes
 
 No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. Clients without Apps support see the standard thumbnail + metadata response.

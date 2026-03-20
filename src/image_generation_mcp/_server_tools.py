@@ -154,11 +154,13 @@ def register_tools(mcp: FastMCP) -> None:
         # Build metadata with resource URIs
         metadata = {
             "image_id": record.id,
+            "prompt": prompt,
             "original_uri": f"image://{record.id}/view",
             "metadata_uri": f"image://{record.id}/metadata",
             "resource_template": (
                 f"image://{record.id}/view{{?format,width,height,quality}}"
             ),
+            "dimensions": list(record.original_dimensions),
             "original_size_bytes": result.size_bytes,
             "thumbnail_size_bytes": len(thumb_data),
             "provider": provider_name,

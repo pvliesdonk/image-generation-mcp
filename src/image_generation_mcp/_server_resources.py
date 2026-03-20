@@ -96,12 +96,14 @@ _IMAGE_VIEWER_HTML = """\
           const meta = JSON.parse(text.text);
           const parts = [];
           if (meta.provider) parts.push(`Provider: ${meta.provider}`);
-          if (meta.image_id) parts.push(`ID: ${meta.image_id}`);
+          if (meta.dimensions) parts.push(`${meta.dimensions[0]}\u00d7${meta.dimensions[1]}`);
           if (meta.original_size_bytes) {
             const kb = (meta.original_size_bytes / 1024).toFixed(1);
-            parts.push(`Size: ${kb} KB`);
+            parts.push(`${kb} KB`);
           }
-          document.getElementById("meta").textContent = parts.join(" \\u00b7 ");
+          document.getElementById("meta").textContent =
+            (meta.prompt ? `"${meta.prompt}"\\n` : "") +
+            parts.join(" \\u00b7 ");
         } catch (e) { /* ignore parse errors */ }
       }
     };
