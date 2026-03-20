@@ -13,11 +13,13 @@ import logging
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
+from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
 from mcp.types import Icon, ImageContent, TextContent
 
 from ._server_deps import get_service
+from ._server_resources import _IMAGE_VIEWER_URI
 from .processing import generate_thumbnail
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
@@ -44,6 +46,7 @@ def register_tools(mcp: FastMCP) -> None:
         tags={"write"},
         task=True,
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
+        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
     )
     async def generate_image(
         prompt: str,
@@ -152,15 +155,16 @@ def register_tools(mcp: FastMCP) -> None:
         # Build metadata with resource URIs
         metadata = {
             "image_id": record.id,
+            "prompt": prompt,
             "original_uri": f"image://{record.id}/view",
             "metadata_uri": f"image://{record.id}/metadata",
             "resource_template": (
                 f"image://{record.id}/view{{?format,width,height,quality}}"
             ),
+            "dimensions": list(record.original_dimensions),
             "original_size_bytes": result.size_bytes,
             "thumbnail_size_bytes": len(thumb_data),
             "provider": provider_name,
-            "file_path": str(record.original_path),
             **result.provider_metadata,
         }
 

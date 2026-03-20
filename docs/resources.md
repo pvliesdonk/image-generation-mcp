@@ -185,3 +185,15 @@ List all registered images.
   }
 ]
 ```
+
+---
+
+## ui://image-viewer/view.html
+
+Interactive image viewer rendered by MCP Apps-capable clients (Claude Desktop, claude.ai).
+
+**MIME type:** `text/html`
+
+This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) — a custom HTML page loaded in a sandboxed iframe. It listens for `generate_image` tool results and displays the image with metadata. The `generate_image` tool is wired to this resource via `AppConfig(resource_uri=...)`.
+
+Clients without MCP Apps support ignore this resource entirely.
