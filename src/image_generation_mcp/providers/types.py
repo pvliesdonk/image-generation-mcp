@@ -76,6 +76,7 @@ class ImageProvider(Protocol):
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         background: str = "opaque",
+        model: str | None = None,
     ) -> ImageResult:
         """Generate an image from a text prompt.
 
@@ -86,6 +87,9 @@ class ImageProvider(Protocol):
             quality: Quality level (``standard``, ``hd``).
             background: Background transparency (``opaque``, ``transparent``).
                 Only supported by some providers.
+            model: Specific model to use (e.g., a checkpoint name for A1111,
+                or ``"dall-e-3"`` for OpenAI). Overrides the provider's
+                configured default for this call.
 
         Returns:
             ImageResult with generated image data.

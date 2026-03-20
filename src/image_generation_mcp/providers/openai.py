@@ -116,6 +116,7 @@ class OpenAIImageProvider:
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         background: str = "opaque",
+        model: str | None = None,
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
 
@@ -126,6 +127,9 @@ class OpenAIImageProvider:
             quality: Quality level.
             background: Background transparency (``opaque``, ``transparent``).
                 Only supported for gpt-image-1; ignored for dall-e-3.
+            model: Specific model to use for this call (e.g., ``"dall-e-3"``).
+                Overrides the constructor model. Size table selection adjusts
+                automatically.
 
         Returns:
             ImageResult with generated image.
@@ -135,17 +139,21 @@ class OpenAIImageProvider:
             ImageContentPolicyError: On content policy rejection.
             ImageProviderConnectionError: On network errors.
         """
+        effective_model = model or self._model
+        is_gpt_image = _is_gpt_image_model(effective_model)
+        sizes = _GPT_IMAGE_SIZES if is_gpt_image else _DALLE3_SIZES
+
         effective_prompt = prompt
         if negative_prompt:
             effective_prompt = f"{prompt}\n\nAvoid: {negative_prompt}"
 
         api_quality = quality
-        if self._is_gpt_image:
+        if is_gpt_image:
             api_quality = {"standard": "high", "hd": "high"}.get(quality, quality)
 
-        size = self._sizes.get(aspect_ratio)
+        size = sizes.get(aspect_ratio)
         if size is None:
-            supported = ", ".join(sorted(self._sizes))
+            supported = ", ".join(sorted(sizes))
             raise ImageProviderError(
                 "openai",
                 f"Unsupported aspect_ratio '{aspect_ratio}'. Supported: {supported}",
@@ -153,20 +161,20 @@ class OpenAIImageProvider:
 
         logger.debug(
             "OpenAI image generation: model=%s size=%s quality=%s",
-            self._model,
+            effective_model,
             size,
             api_quality,
         )
 
         try:
             api_kwargs: dict[str, Any] = {
-                "model": self._model,
+                "model": effective_model,
                 "prompt": effective_prompt,
                 "n": 1,
                 "size": size,
                 "quality": api_quality,
             }
-            if self._is_gpt_image:
+            if is_gpt_image:
                 api_kwargs["output_format"] = self._output_format
                 api_kwargs["background"] = background
             else:
@@ -187,7 +195,7 @@ class OpenAIImageProvider:
             raise ImageProviderError("openai", "No image data in response")
 
         metadata: dict[str, Any] = {
-            "model": self._model,
+            "model": effective_model,
             "size": size,
             "quality": quality,
             "api_quality": api_quality,
@@ -196,7 +204,7 @@ class OpenAIImageProvider:
         if revised_prompt:
             metadata["revised_prompt"] = revised_prompt
 
-        logger.info("OpenAI image generated: model=%s size=%s", self._model, size)
+        logger.info("OpenAI image generated: model=%s size=%s", effective_model, size)
 
         return ImageResult.from_base64(
             b64_data,
