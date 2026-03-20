@@ -19,6 +19,7 @@ MCP Client (Claude)
 |  _server_tools.py    generate_image          |
 |                      show_image              |
 |                      list_providers          |
+|                      create_download_link    |
 |  _server_prompts.py  select_provider         |
 |                      sd_prompt_guide         |
 |  _server_resources.py                        |

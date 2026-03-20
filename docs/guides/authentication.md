@@ -85,7 +85,7 @@ Client → image-generation-mcp (OIDCProxy) → OIDC Provider
 
 | Variable | Description |
 |----------|-------------|
-| `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL (e.g. `https://mcp.example.com`) |
+| `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL for OIDC and artifact download links (e.g. `https://mcp.example.com`) |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | Client ID registered with your provider |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | Client secret |
