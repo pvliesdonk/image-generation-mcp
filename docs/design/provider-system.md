@@ -279,6 +279,7 @@ In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is h
 | URI | Description |
 |-----|-------------|
 | `info://providers` | JSON of provider capabilities, models, supported features |
+| `info://prompt-guide` | Markdown prompt writing guide for each provider |
 | `image://{id}/view{?format,width,height,quality}` | Image with optional transforms (CDN-style) |
 | `image://{id}/metadata` | Sidecar JSON with generation provenance |
 | `image://list` | JSON array of all registered images |
