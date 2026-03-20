@@ -33,6 +33,22 @@ _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
 _PROMPT_GUIDE = """\
 # Image Generation Prompt Guide
 
+## General Tips
+
+**Aspect ratio:** Choose based on content — `16:9` for landscapes and banners,
+`9:16` for portraits and mobile, `3:2` for photos, `1:1` for icons and avatars.
+
+**Quality levels:** Use `standard` for drafts and iteration. Use `hd` for final
+output (only affects OpenAI — A1111 and placeholder ignore this parameter).
+
+**Negative prompts:** Use them when you want to explicitly exclude unwanted
+elements. Most effective on A1111 (native CLIP support). On OpenAI, they are
+appended as an "Avoid:" clause with weaker effect. Placeholder ignores them.
+
+**Background:** Set `background="transparent"` when generating assets for
+compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
+placeholder. A1111 ignores this parameter.
+
 ## OpenAI (gpt-image-1 / dall-e-3)
 
 Natural language descriptions work well — write prompts as you would describe a
@@ -44,6 +60,14 @@ native negative prompt support.
 
 **Strengths:** Text rendering, logos, typography, posters, banners, signs.
 Also strong at general-purpose generation and following complex instructions.
+
+**Style keywords:** Include style direction in natural language — "photorealistic",
+"cinematic", "watercolor", "digital art", "minimalist", "flat design", "isometric",
+"pixel art". These steer the aesthetic without needing CLIP tags.
+
+**Text rendering tips:** Enclose exact text in quotes within the prompt, e.g.
+`'a coffee shop sign that says "OPEN"'`. Specify font style if needed:
+"bold sans-serif", "handwritten", "neon sign lettering".
 
 **Quality levels:** `standard` and `hd` are both supported. `gpt-image-1`
 maps both to its highest quality tier.
@@ -106,11 +130,21 @@ masterpiece, best quality, sharp focus
 - SD 1.5: 77 tokens per chunk. Front-load the most important tags.
 - SDXL: 77 tokens per chunk, two CLIP encoders (ViT-L + ViT-bigG).
 
+**Model-specific advice:**
+- **SD 1.5** — Best at 768px base resolution, 30 steps, CFG 7.0. Good for anime,
+  illustration, and stylized content. Smaller model, faster generation.
+- **SDXL** — Best at 1024px base resolution, 35 steps, CFG 7.5. Better for
+  photorealism and high-detail scenes. Use for final-quality output.
+- **SDXL Lightning/Turbo** — Distilled models, only 6 steps needed, CFG 2.0.
+  Very fast but less controllable. Good for rapid iteration.
+
 ## Placeholder
 
-No special prompt guidance needed — the placeholder provider produces
-solid-color PNG images regardless of prompt content. Use it for quick
-testing, mock-ups, and zero-cost drafts.
+Use for quick testing, mock-ups, and zero-cost drafts. The placeholder
+provider produces solid-color PNG images — the color is selected from a
+6-color palette via SHA-256 hash of the prompt text, so the same prompt
+always produces the same color. Supports `background="transparent"` for
+RGBA output with alpha=0.
 
 ## Provider Selection
 

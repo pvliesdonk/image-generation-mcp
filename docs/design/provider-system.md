@@ -23,6 +23,7 @@ MCP Client (Claude)
 |                      sd_prompt_guide         |
 |  _server_resources.py                        |
 |    info://providers                          |
+|    info://prompt-guide                       |
 |    image://{id}/view{?format,w,h,quality}    |
 |    image://{id}/metadata                     |
 |    image://list                              |
