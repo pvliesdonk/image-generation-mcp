@@ -254,9 +254,9 @@ Best for photorealism, portraits, anime, and artistic styles.
 
 - **API:** HTTP POST to `/sdapi/v1/txt2img`
 - **Model presets:** Auto-detected from checkpoint name:
-  - **SD 1.5** (default): 768px base, 30 steps, CFG 7.0, DPM++ 2M Karras
-  - **SDXL**: 1024px base, 35 steps, CFG 7.5, DPM++ 2M Karras
-  - **SDXL Lightning/Turbo**: 1024px base, 6 steps, CFG 2.0, DPM++ SDE Karras
+  - **SD 1.5** (default): 768px base, 30 steps, CFG 7.0, DPM++ 2M sampler, Karras scheduler
+  - **SDXL**: 1024px base, 35 steps, CFG 7.5, DPM++ 2M sampler, Karras scheduler
+  - **SDXL Lightning/Turbo**: 1024px base, 6 steps, CFG 2.0, DPM++ SDE sampler, Karras scheduler
 - **Negative prompt:** Native support via `negative_prompt` field
 - **Checkpoint override:** Specify `model` to override `sd_model_checkpoint`
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
