@@ -18,6 +18,7 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.server.transforms import ResourcesAsTools
 
 from image_generation_mcp.config import _ENV_PREFIX, load_config
 
@@ -262,6 +263,10 @@ def create_server() -> FastMCP:
     register_tools(mcp)
     register_resources(mcp)
     register_prompts(mcp)
+
+    # Expose resources as tools for clients that lack resource support
+    # (e.g. Claude webchat via MCP). Generates list_resources/read_resource.
+    mcp.add_transform(ResourcesAsTools(mcp))
 
     # --- Visibility: hide write-tagged components in read-only mode ---
 
