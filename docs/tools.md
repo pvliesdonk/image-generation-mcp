@@ -247,6 +247,53 @@ These tools provide access to the same resources documented in [Resources](resou
 
 ---
 
+## create_download_link
+
+Create a one-time-use HTTP download URL for an image. Enables server-to-server image transfer between MCP servers (e.g., saving an image to a vault, attaching to email).
+
+| Property | Value |
+|----------|-------|
+| **Tags** | *(none)* |
+| **Task** | No |
+| **Transport** | HTTP/SSE only (hidden on stdio — no HTTP server available) |
+| **Requires** | `IMAGE_GENERATION_MCP_BASE_URL` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `uri` | str | *(required)* | Full `image://` resource URI (e.g., `image://a1b2c3/view?format=webp&width=512`) |
+| `ttl_seconds` | int | `300` | Link lifetime in seconds (default 5 minutes) |
+
+### Return value
+
+```json
+{
+  "download_url": "https://mcp.example.com/artifacts/7f3a...e9b1",
+  "expires_in_seconds": 300,
+  "uri": "image://a1b2c3d4e5f6/view?format=webp&width=512"
+}
+```
+
+The download URL:
+- Serves the image once with correct `Content-Type`, then **invalidates the link**
+- Returns HTTP 404 after first download or after TTL expires
+- Does not require bearer token or OIDC auth (the random token is the auth)
+- The artifact endpoint bypasses MCP authentication
+
+### Example workflow
+
+```
+User: Generate a photo and save it to my vault
+
+1. generate_image(prompt="sunset photo") → image_id: "a1b2c3..."
+2. create_download_link(uri="image://a1b2c3/view?format=jpeg")
+   → download_url: "https://mcp.example.com/artifacts/7f3a..."
+3. vault-mcp: save_artifact_from_url(url="https://...", path="photos/sunset.jpg")
+```
+
+---
+
 ## MCP Apps: Image Viewer
 
 Clients that support [MCP Apps](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) (Claude Desktop, claude.ai) render an interactive image viewer alongside `show_image` results.
