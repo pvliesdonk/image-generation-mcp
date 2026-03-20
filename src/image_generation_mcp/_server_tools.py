@@ -1,26 +1,29 @@
 """MCP tool registrations for image generation.
 
-Exposes ``generate_image`` and ``list_providers`` tools to MCP clients.
-``generate_image`` is tagged ``write`` (hidden in read-only mode).
+Exposes ``generate_image``, ``show_image``, and ``list_providers`` tools to
+MCP clients.  ``generate_image`` is tagged ``write`` (hidden in read-only mode).
 """
 
 from __future__ import annotations
 
 import asyncio
 import base64
+import io
 import json
 import logging
+from urllib.parse import parse_qs, urlparse
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
-from mcp.types import Icon, ImageContent, TextContent
+from mcp.types import Icon, ImageContent, ResourceLink, TextContent
+from PIL import Image as PILImage
 
 from ._server_deps import get_service
 from ._server_resources import _IMAGE_VIEWER_URI
-from .processing import generate_thumbnail
+from .processing import convert_format, crop_to_dimensions, resize_image
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
@@ -46,7 +49,6 @@ def register_tools(mcp: FastMCP) -> None:
         tags={"write"},
         task=True,
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
-        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
     )
     async def generate_image(
         prompt: str,
@@ -59,11 +61,12 @@ def register_tools(mcp: FastMCP) -> None:
         service: ImageService = Depends(get_service),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
-        """Generate an image and return a thumbnail preview with resource URIs.
+        """Generate an image and return metadata with resource URIs.
 
         Call list_providers first to see available providers and model IDs.
-        Returns an inline thumbnail plus URIs for full-resolution access and
-        on-demand transforms (resize, crop, format conversion).
+        Returns metadata including the image_id and resource URIs. Call
+        show_image with the image URI (e.g. ``image://{image_id}/view``) to
+        display the image.
 
         Args:
             prompt: Text description of the desired image.
@@ -92,8 +95,8 @@ def register_tools(mcp: FastMCP) -> None:
                 to the provider's configured model.
 
         Returns:
-            A thumbnail preview plus resource URIs for full-resolution
-            access and on-demand transforms.
+            JSON metadata with image_id and resource URIs. Call
+            show_image with the image URI to display the result.
         """
         if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
             msg = (
@@ -152,12 +155,6 @@ def register_tools(mcp: FastMCP) -> None:
             background=background,
         )
 
-        # Generate thumbnail (blocking Pillow -> offload)
-        thumb_data, thumb_mime = await asyncio.to_thread(
-            generate_thumbnail, result.image_data
-        )
-        thumb_b64 = base64.b64encode(thumb_data).decode("ascii")
-
         # Build metadata with resource URIs
         metadata = {
             "image_id": record.id,
@@ -169,7 +166,6 @@ def register_tools(mcp: FastMCP) -> None:
             ),
             "dimensions": list(record.original_dimensions),
             "original_size_bytes": result.size_bytes,
-            "thumbnail_size_bytes": len(thumb_data),
             "provider": provider_name,
             **result.provider_metadata,
         }
@@ -178,10 +174,109 @@ def register_tools(mcp: FastMCP) -> None:
 
         return ToolResult(
             content=[
+                TextContent(
+                    type="text",
+                    text=json.dumps(metadata, indent=2),
+                ),
+                ResourceLink(
+                    type="resource_link",
+                    uri=f"image://{record.id}/view",
+                    name="Generated image",
+                ),
+            ]
+        )
+
+    @mcp.tool(
+        icons=[Icon(src=_LUCIDE.format("eye"), mimeType="image/svg+xml")],
+        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
+    )
+    async def show_image(
+        uri: str,
+        service: ImageService = Depends(get_service),
+    ) -> ToolResult:
+        """Display a registered image with optional on-demand transforms.
+
+        Accepts a full ``image://`` resource URI (e.g.
+        ``image://abc123/view`` or
+        ``image://abc123/view?format=webp&width=512``).  Transforms are
+        encoded in the URI query string — no separate parameters needed.
+
+        Read the ``image://list`` resource to browse available image IDs.
+
+        Args:
+            uri: A full ``image://`` resource URI, optionally with query
+                params: ``format`` (``png``, ``webp``, ``jpeg``),
+                ``width`` (pixels), ``height`` (pixels),
+                ``quality`` (1-100, for lossy formats).
+
+        Returns:
+            The requested image as base64-encoded ``ImageContent`` plus
+            JSON metadata (image_id, dimensions, format, applied
+            transforms).
+        """
+        parsed = urlparse(uri)
+        image_id = parsed.hostname or parsed.netloc
+        qs = parse_qs(parsed.query)
+
+        fmt = qs.get("format", [""])[0]
+        width = int(qs.get("width", [0])[0])
+        height = int(qs.get("height", [0])[0])
+        quality = int(qs.get("quality", [90])[0])
+
+        record = await asyncio.to_thread(service.get_image, image_id)
+        data = await asyncio.to_thread(record.original_path.read_bytes)
+        content_type = record.content_type
+
+        # Apply resize/crop first (always from original to prevent quality
+        # degradation — see ADR-0006)
+        if width > 0 and height > 0:
+            data = await asyncio.to_thread(crop_to_dimensions, data, width, height)
+        elif width > 0:
+            img = PILImage.open(io.BytesIO(data))
+            ratio = width / img.width
+            new_height = round(img.height * ratio)
+            data = await asyncio.to_thread(resize_image, data, width, new_height)
+        elif height > 0:
+            img = PILImage.open(io.BytesIO(data))
+            ratio = height / img.height
+            new_width = round(img.width * ratio)
+            data = await asyncio.to_thread(resize_image, data, new_width, height)
+
+        # Apply format conversion last (one encode from spatial result)
+        if fmt:
+            data, content_type = await asyncio.to_thread(
+                convert_format, data, fmt, quality
+            )
+
+        img_b64 = base64.b64encode(data).decode("ascii")
+
+        # Determine final dimensions
+        final_img = PILImage.open(io.BytesIO(data))
+        final_w, final_h = final_img.size
+
+        transform_params: dict[str, int | str] = {}
+        if fmt:
+            transform_params["format"] = fmt
+        if width:
+            transform_params["width"] = width
+        if height:
+            transform_params["height"] = height
+        if fmt and quality != 90:
+            transform_params["quality"] = quality
+
+        metadata = {
+            "image_id": record.id,
+            "dimensions": [final_w, final_h],
+            "format": content_type,
+            "transforms_applied": transform_params,
+        }
+
+        return ToolResult(
+            content=[
                 ImageContent(
                     type="image",
-                    data=thumb_b64,
-                    mimeType=thumb_mime,
+                    data=img_b64,
+                    mimeType=content_type,
                 ),
                 TextContent(
                     type="text",
