@@ -85,6 +85,8 @@ class ServerConfig:
             selects based on prompt analysis).
         transform_cache_size: Maximum number of transformed image results
             to keep in the in-memory LRU cache.
+        base_url: Public base URL of the server.  Required for OIDC and
+            for constructing artifact download links.
     """
 
     read_only: bool = True
@@ -94,6 +96,7 @@ class ServerConfig:
     a1111_model: str | None = None
     default_provider: str = "auto"
     transform_cache_size: int = 64
+    base_url: str | None = None
 
 
 def load_config() -> ServerConfig:
@@ -108,6 +111,8 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GENERATION_MCP_A1111_MODEL``: A1111 checkpoint name for preset detection.
     - ``IMAGE_GENERATION_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
     - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
+    - ``IMAGE_GENERATION_MCP_BASE_URL``: public base URL, required for OIDC and
+      artifact download links.
 
     Returns:
         A populated :class:`ServerConfig` instance.
@@ -143,6 +148,9 @@ def load_config() -> ServerConfig:
             logger.warning(
                 "Invalid TRANSFORM_CACHE_SIZE=%r — using default 64", raw_cache_size
             )
+
+    if base_url := _env("BASE_URL"):
+        kwargs["base_url"] = base_url.rstrip("/")
 
     config = ServerConfig(**kwargs)
     logger.debug("load_config: read_only=%s (raw=%r)", config.read_only, raw_read_only)

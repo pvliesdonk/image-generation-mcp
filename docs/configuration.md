@@ -23,7 +23,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | -- | Static bearer token for HTTP authentication. Enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server for OIDC redirects (e.g. `https://mcp.example.com`). Include subpath prefix if applicable. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC redirects and for constructing artifact download links via `create_download_link`. Include subpath prefix if applicable. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL (e.g. `https://auth.example.com/.well-known/openid-configuration`). |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID registered with your identity provider. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret. |

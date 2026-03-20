@@ -24,6 +24,7 @@ from pydantic import AnyUrl
 
 from ._server_deps import get_service
 from ._server_resources import _IMAGE_VIEWER_URI
+from .config import _ENV_PREFIX
 from .processing import convert_format, crop_to_dimensions, resize_image
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
@@ -39,11 +40,14 @@ logger = logging.getLogger(__name__)
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 
 
-def register_tools(mcp: FastMCP) -> None:
+def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     """Register all MCP tools on *mcp*.
 
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
+        transport: The MCP transport in use.  ``create_download_link`` is
+            only registered for non-stdio transports (``"sse"`` or
+            ``"http"``), because stdio has no HTTP server.
     """
 
     @mcp.tool(
@@ -312,3 +316,95 @@ def register_tools(mcp: FastMCP) -> None:
         """
         providers = service.list_providers()
         return json.dumps(providers, indent=2)
+
+    # create_download_link is only available on HTTP transports —
+    # stdio has no HTTP server to host the artifact endpoint.
+    if transport != "stdio":
+        _register_download_link_tool(mcp)
+
+
+def _register_download_link_tool(mcp: FastMCP) -> None:
+    """Register the ``create_download_link`` tool on *mcp*.
+
+    Separated from :func:`register_tools` so it can be conditionally
+    called only when an HTTP transport is active.
+
+    Args:
+        mcp: The :class:`~fastmcp.FastMCP` instance to register the tool on.
+    """
+    import os
+
+    @mcp.tool(
+        icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],
+    )
+    async def create_download_link(
+        uri: str,
+        ttl_seconds: int = 300,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Create a one-time download URL for an image.
+
+        Creates a temporary HTTP endpoint that serves the image once,
+        then invalidates the link. Use this to pass images to other
+        MCP servers (e.g., save to a vault, attach to email).
+
+        The URI should be an ``image://`` resource URI, optionally with
+        transform parameters (``format``, ``width``, ``height``,
+        ``quality``).
+
+        Requires ``IMAGE_GENERATION_MCP_BASE_URL`` to be configured.
+        Only available on HTTP transport (not stdio).
+
+        Args:
+            uri: A full ``image://`` resource URI, e.g.
+                ``image://abc123/view`` or
+                ``image://abc123/view?format=webp&width=512``.
+            ttl_seconds: Link lifetime in seconds (default 300 / 5 minutes).
+
+        Returns:
+            JSON with ``download_url``, ``expires_in_seconds``, and ``uri``.
+
+        Raises:
+            ValueError: If ``IMAGE_GENERATION_MCP_BASE_URL`` is not
+                configured or the URI references an unknown image.
+        """
+        from urllib.parse import urlparse
+
+        # Validate BASE_URL is configured
+        base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").rstrip("/")
+        if not base_url:
+            msg = (
+                "IMAGE_GENERATION_MCP_BASE_URL is required for download links. "
+                "Set it to the public base URL of this server "
+                "(e.g. https://mcp.example.com)."
+            )
+            raise ValueError(msg)
+
+        # Validate the URI references a registered image
+        parsed = urlparse(uri)
+        image_id = parsed.hostname or parsed.netloc
+        if not image_id:
+            msg = f"Invalid image URI: {uri!r}. Expected format: image://{{image_id}}/view"
+            raise ValueError(msg)
+
+        # Raises ImageProviderError if the image is not found
+        await asyncio.to_thread(service.get_image, image_id)
+
+        from image_generation_mcp.artifacts import get_artifact_store
+
+        store = get_artifact_store()
+        token = store.create_token(uri, ttl_seconds=ttl_seconds)
+
+        download_url = f"{base_url}/artifacts/{token}"
+        result = {
+            "download_url": download_url,
+            "expires_in_seconds": ttl_seconds,
+            "uri": uri,
+        }
+        logger.info(
+            "Created download link for image_id=%r ttl=%ds url=%s",
+            image_id,
+            ttl_seconds,
+            download_url,
+        )
+        return json.dumps(result, indent=2)

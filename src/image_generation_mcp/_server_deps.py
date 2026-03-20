@@ -2,6 +2,9 @@
 
 Provides :func:`get_service` and :func:`make_service_lifespan` which are
 imported by the tool, resource, and prompt registration modules.
+
+Also exposes :func:`_get_service_from_store`, a module-level accessor used
+by the artifact HTTP handler (which runs outside FastMCP request context).
 """
 
 from __future__ import annotations
@@ -24,6 +27,27 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Module-level reference for non-MCP-context callers (e.g. artifact handler).
+_service_store: ImageService | None = None
+
+
+def _get_service_from_store() -> ImageService:
+    """Return the module-level ImageService reference.
+
+    Used by the artifact HTTP handler, which runs outside FastMCP's
+    request-context dependency injection.
+
+    Returns:
+        The active :class:`~image_generation_mcp.service.ImageService`.
+
+    Raises:
+        RuntimeError: If the server lifespan has not yet run.
+    """
+    if _service_store is None:
+        msg = "Service not initialised — server lifespan has not run"
+        raise RuntimeError(msg)
+    return _service_store
+
 
 def make_service_lifespan(config: ServerConfig) -> Any:
     """Create a lifespan function that closes over a pre-loaded config.
@@ -44,6 +68,8 @@ def make_service_lifespan(config: ServerConfig) -> Any:
         server: FastMCP,  # noqa: ARG001
     ) -> AsyncIterator[dict[str, Any]]:
         """Initialise the ImageService at server startup."""
+        global _service_store
+
         logger.info("Service starting up (read_only=%s)", config.read_only)
 
         service = ImageService(
@@ -76,9 +102,19 @@ def make_service_lifespan(config: ServerConfig) -> Any:
         # Discover capabilities for all registered providers
         await service.discover_all_capabilities()
 
+        # Populate module-level store for artifact handler access
+        _service_store = service
+
+        # Initialise artifact store
+        from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
+
+        artifact_store = ArtifactStore()
+        set_artifact_store(artifact_store)
+
         try:
             yield {"service": service, "config": config}
         finally:
+            _service_store = None
             await service.aclose()
             logger.info("Service shut down")
 
