@@ -13,6 +13,7 @@ import logging
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
+from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
 from mcp.types import Icon, ImageContent, TextContent
@@ -44,6 +45,7 @@ def register_tools(mcp: FastMCP) -> None:
         tags={"write"},
         task=True,
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
+        app=AppConfig(resource_uri="ui://image-viewer/view.html"),
     )
     async def generate_image(
         prompt: str,

@@ -10,6 +10,7 @@ Generate an image from a text prompt. Returns a thumbnail preview and resource U
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
 | **Task** | `task=True` (supports foreground and background execution) |
+| **MCP App** | `ui://image-viewer/view.html` (interactive viewer in supported clients) |
 
 ### Parameters
 
@@ -188,3 +189,17 @@ Tool call: read_resource
 ```
 
 These tools provide access to the same resources documented in [Resources](resources.md), including on-the-fly image transforms via URI template parameters.
+
+---
+
+## MCP Apps: Image Viewer
+
+Clients that support [MCP Apps](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) (Claude Desktop, claude.ai) render an interactive image viewer alongside `generate_image` results.
+
+The viewer is a custom HTML resource at `ui://image-viewer/view.html` that:
+
+- Listens for `generate_image` tool results via the `@modelcontextprotocol/ext-apps` SDK
+- Displays the generated image with metadata (provider, ID, file size)
+- Supports light and dark color schemes
+
+No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. Clients without Apps support see the standard thumbnail + metadata response.

@@ -1,6 +1,7 @@
 """MCP resource registrations.
 
-Exposes provider capabilities, image assets, and metadata as MCP resources.
+Exposes provider capabilities, image assets, metadata, and the MCP Apps
+image viewer as MCP resources.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from datetime import UTC, datetime
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 from fastmcp.resources import ResourceContent, ResourceResult
+from fastmcp.server.apps import AppConfig, ResourceCSP
 from mcp.types import Icon
 from PIL import Image as PILImage
 
@@ -33,6 +35,81 @@ from image_generation_mcp.service import ImageService
 logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+
+_IMAGE_VIEWER_HTML = """\
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 16px; background: transparent;
+    }
+    #placeholder {
+      color: #888; font-size: 14px; padding: 40px;
+      text-align: center;
+    }
+    #viewer { display: none; width: 100%; max-width: 640px; }
+    #viewer img {
+      width: 100%; height: auto; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    #meta {
+      margin-top: 12px; font-size: 12px; color: #666;
+      line-height: 1.6; width: 100%;
+    }
+    @media (prefers-color-scheme: dark) {
+      #meta { color: #aaa; }
+      #placeholder { color: #777; }
+    }
+  </style>
+</head>
+<body>
+  <div id="placeholder">Waiting for image generation&hellip;</div>
+  <div id="viewer">
+    <img id="image" alt="Generated image">
+    <div id="meta"></div>
+  </div>
+  <script type="module">
+    import { App } from
+      "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+
+    const app = new App({ name: "Image Viewer", version: "1.0.0" });
+
+    app.ontoolresult = ({ content }) => {
+      const img = content?.find(c => c.type === "image");
+      const text = content?.find(c => c.type === "text");
+
+      if (img) {
+        document.getElementById("image").src =
+          `data:${img.mimeType};base64,${img.data}`;
+        document.getElementById("placeholder").style.display = "none";
+        document.getElementById("viewer").style.display = "block";
+      }
+
+      if (text) {
+        try {
+          const meta = JSON.parse(text.text);
+          const parts = [];
+          if (meta.provider) parts.push(`Provider: ${meta.provider}`);
+          if (meta.image_id) parts.push(`ID: ${meta.image_id}`);
+          if (meta.original_size_bytes) {
+            const kb = (meta.original_size_bytes / 1024).toFixed(1);
+            parts.push(`Size: ${kb} KB`);
+          }
+          document.getElementById("meta").textContent = parts.join(" \\u00b7 ");
+        } catch (e) { /* ignore parse errors */ }
+      }
+    };
+
+    await app.connect();
+  </script>
+</body>
+</html>"""
 
 
 def register_resources(mcp: FastMCP) -> None:
@@ -212,3 +289,23 @@ def register_resources(mcp: FastMCP) -> None:
             for img in images
         ]
         return json.dumps(result, indent=2)
+
+    # -- MCP Apps: image viewer -------------------------------------------------
+
+    _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
+
+    @mcp.resource(
+        _IMAGE_VIEWER_URI,
+        description="Interactive image viewer for generate_image results.",
+        app=AppConfig(
+            csp=ResourceCSP(resource_domains=["https://unpkg.com"]),
+        ),
+    )
+    def image_viewer() -> str:
+        """HTML viewer that renders images from generate_image tool results.
+
+        Loaded by MCP Apps-capable clients (Claude Desktop, claude.ai) in a
+        sandboxed iframe.  Listens for tool results via the ext-apps SDK and
+        displays the image with metadata.
+        """
+        return _IMAGE_VIEWER_HTML
