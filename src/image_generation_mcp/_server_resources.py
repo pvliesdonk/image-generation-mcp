@@ -30,6 +30,100 @@ logger = logging.getLogger(__name__)
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
 
+_PROMPT_GUIDE = """\
+# Image Generation Prompt Guide
+
+## OpenAI (gpt-image-1 / dall-e-3)
+
+Natural language descriptions work well — write prompts as you would describe a
+scene to a person. No need for comma-separated tags.
+
+**Negative prompts:** Use an `"Avoid:"` clause appended to the prompt text,
+e.g. `"Avoid: blurry, low resolution, watermark"`. The effect is weaker than
+native negative prompt support.
+
+**Strengths:** Text rendering, logos, typography, posters, banners, signs.
+Also strong at general-purpose generation and following complex instructions.
+
+**Quality levels:** `standard` and `hd` are both supported. `gpt-image-1`
+maps both to its highest quality tier.
+
+## A1111 / Stable Diffusion
+
+Use comma-separated CLIP tags for best results. Order tags by importance —
+tokens near the front of the prompt have the most influence.
+
+**Tag order:** `subject, medium, style, lighting, camera, quality tags`
+
+**Example prompts:**
+
+Portrait:
+```
+1girl, long hair, blue eyes, school uniform, standing, cherry blossoms,
+soft lighting, detailed face, masterpiece, best quality
+```
+
+Landscape:
+```
+mountain landscape, sunset, dramatic clouds, lake reflection,
+cinematic lighting, wide angle, 8k, highly detailed
+```
+
+Product shot:
+```
+white sneakers, product photography, studio lighting, white background,
+sharp focus, commercial photography, high resolution
+```
+
+**Quality tags:** Add these to improve output quality:
+- `masterpiece, best quality` — general quality boost
+- `highly detailed, sharp focus` — detail enhancement
+- `8k, ultra high res` — resolution boost (use sparingly)
+- `professional, award winning` — style refinement
+
+**Negative prompt template:**
+
+General-purpose:
+```
+lowres, bad anatomy, bad hands, text, error, missing fingers,
+extra digit, fewer digits, cropped, worst quality, low quality,
+normal quality, jpeg artifacts, signature, watermark, blurry
+```
+
+For photorealism, add: `cartoon, anime, illustration, painting, drawing, art, sketch`
+
+For anime/illustration, add: `photo, realistic, 3d render`
+
+**BREAK syntax:** Use `BREAK` to split long prompts into separate CLIP chunks,
+giving each concept its own 77-token budget:
+```
+1girl, detailed face, blue eyes BREAK
+forest background, sunlight through trees BREAK
+masterpiece, best quality, sharp focus
+```
+
+**CLIP token limits:**
+- SD 1.5: 77 tokens per chunk. Front-load the most important tags.
+- SDXL: 77 tokens per chunk, two CLIP encoders (ViT-L + ViT-bigG).
+
+## Placeholder
+
+No special prompt guidance needed — the placeholder provider produces
+solid-color PNG images regardless of prompt content. Use it for quick
+testing, mock-ups, and zero-cost drafts.
+
+## Provider Selection
+
+1. **Text, logos, typography** → `openai`
+2. **Photorealism, portraits, product shots** → prefer `a1111`, fall back to `openai`
+3. **Anime, illustration, painting, art** → prefer `a1111`, fall back to `openai`
+4. **Quick test or placeholder** → `placeholder`
+5. **General requests** → `openai` (most versatile, default)
+
+Use `provider="auto"` for automatic selection, or specify a provider directly.
+Call `list_providers` to see which providers are currently available.
+"""
+
 _IMAGE_VIEWER_HTML = """\
 <!DOCTYPE html>
 <html>
@@ -118,6 +212,25 @@ def register_resources(mcp: FastMCP) -> None:
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register resources on.
     """
+
+    @mcp.resource(
+        "info://prompt-guide",
+        description=(
+            "Provider-specific prompt writing tips. Read before using "
+            "A1111/Stable Diffusion to learn CLIP tag format, quality "
+            "tags, and negative prompt templates. Also covers OpenAI "
+            "prompt style and provider selection guidance."
+        ),
+        mime_type="text/markdown",
+        icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
+    )
+    def prompt_guide() -> str:
+        """Return per-provider prompt writing guidance as Markdown.
+
+        Returns:
+            Markdown text with per-provider prompt writing tips.
+        """
+        return _PROMPT_GUIDE
 
     @mcp.resource(
         "info://providers",
