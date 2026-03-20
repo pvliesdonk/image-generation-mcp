@@ -149,6 +149,26 @@ def test_cache_hit_moves_to_end_preventing_eviction(
 # ---------------------------------------------------------------------------
 
 
+async def test_cache_disabled_when_size_zero(tmp_path: "Path") -> None:
+    """Setting transform_cache_size=0 disables caching entirely."""
+    provider = PlaceholderImageProvider()
+    result = await provider.generate("zero cache test", aspect_ratio="1:1")
+
+    svc = ImageService(scratch_dir=tmp_path, transform_cache_size=0)
+    record = svc.register_image(result, "placeholder", prompt="zero cache test")
+
+    # A transform request should return data but not grow the cache
+    data, ct = svc.get_transformed_image(record.id, format="webp")
+    assert data  # non-empty bytes
+    assert ct == "image/webp"
+    assert len(svc._transform_cache) == 0
+
+    # Second call also returns data, cache still empty
+    data2, _ = svc.get_transformed_image(record.id, format="webp")
+    assert data2 == data
+    assert len(svc._transform_cache) == 0
+
+
 async def test_cache_cleared_on_aclose(image_id: tuple[ImageService, str]) -> None:
     """aclose() empties the transform cache."""
     service, img_id = image_id

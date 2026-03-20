@@ -171,6 +171,12 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | str | `openid` | Comma-separated required scopes |
 | `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | bool | `false` | Verify access token as JWT instead of id token |
 
+### Performance
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | int | `64` | Max cached transforms. Set to `0` to disable caching. |
+
 ### Server
 
 | Variable | Type | Default | Description |

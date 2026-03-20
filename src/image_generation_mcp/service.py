@@ -458,9 +458,10 @@ class ImageService:
             data, content_type = convert_format(data, format, quality=quality)
 
         # Store in cache, evict oldest if over size limit
-        self._transform_cache[key] = (data, content_type)
-        if len(self._transform_cache) > self._transform_cache_size:
-            self._transform_cache.popitem(last=False)
+        if self._transform_cache_size > 0:
+            self._transform_cache[key] = (data, content_type)
+            if len(self._transform_cache) > self._transform_cache_size:
+                self._transform_cache.popitem(last=False)
 
         return data, content_type
 
