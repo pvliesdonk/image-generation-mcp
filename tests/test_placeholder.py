@@ -73,3 +73,17 @@ class TestPlaceholderProvider:
     ) -> None:
         result = await provider.generate("test", aspect_ratio="7:3")
         assert result.provider_metadata["size"] == "256x256"
+
+    async def test_model_param_ignored(
+        self, provider: PlaceholderImageProvider
+    ) -> None:
+        """Passing model= should have no effect on the result."""
+        result_default = await provider.generate("test")
+        result_with_model = await provider.generate("test", model="some-model")
+        assert result_default.provider_metadata == result_with_model.provider_metadata
+
+    async def test_model_param_none_accepted(
+        self, provider: PlaceholderImageProvider
+    ) -> None:
+        result = await provider.generate("test", model=None)
+        assert result.image_data

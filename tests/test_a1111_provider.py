@@ -166,6 +166,80 @@ class TestA1111Provider:
         with pytest.raises(ImageProviderConnectionError, match="Cannot connect"):
             await provider.generate("test")
 
+    async def test_generate_per_call_model_overrides_constructor(
+        self, httpx_mock
+    ) -> None:
+        """Per-call model= overrides the constructor model in override_settings."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        # Constructor uses SD 1.5, per-call uses SDXL
+        provider = A1111ImageProvider(
+            host="http://localhost:7860", model="dreamshaper_8"
+        )
+        await provider.generate("test", model="sdxl_base_1.0")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        # override_settings should use the per-call model
+        assert payload["override_settings"]["sd_model_checkpoint"] == "sdxl_base_1.0"
+        # Steps should reflect the SDXL preset (35), not SD 1.5 (30)
+        assert payload["steps"] == 35
+
+    async def test_generate_per_call_model_preset_detection(self, httpx_mock) -> None:
+        """Per-call model uses correct preset for size selection."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        # Constructor has no model (SD 1.5), but per-call is SDXL Lightning
+        provider = A1111ImageProvider(host="http://localhost:7860")
+        await provider.generate("test", model="sdxl_lightning_4step")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        # SDXL Lightning uses 6 steps at 1:1 SDXL sizes
+        assert payload["steps"] == 6
+        assert payload["width"] == 1024
+        assert payload["height"] == 1024
+
+    async def test_generate_per_call_model_metadata(self, httpx_mock) -> None:
+        """Metadata 'model' field reflects the per-call model, not constructor."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = A1111ImageProvider(
+            host="http://localhost:7860", model="dreamshaper_8"
+        )
+        result = await provider.generate("test", model="juggernaut_xl")
+
+        assert result.provider_metadata["model"] == "juggernaut_xl"
+
+    async def test_generate_no_constructor_model_with_per_call_model(
+        self, httpx_mock
+    ) -> None:
+        """Per-call model works when constructor has no model."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = A1111ImageProvider(host="http://localhost:7860")
+        await provider.generate("test", model="sdxl_base_1.0")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert payload["override_settings"]["sd_model_checkpoint"] == "sdxl_base_1.0"
+
 
 # -- httpx mock fixture -------------------------------------------------------
 

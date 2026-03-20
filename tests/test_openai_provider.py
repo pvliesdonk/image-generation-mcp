@@ -174,6 +174,111 @@ class TestOpenAIProvider:
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["quality"] == "high"
 
+    async def test_per_call_model_overrides_constructor(self) -> None:
+        """Per-call model= overrides the constructor model in the API call."""
+        # Constructor uses gpt-image-1, per-call uses dall-e-3
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", model="dall-e-3")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["model"] == "dall-e-3"
+
+    async def test_per_call_model_switches_size_table_to_dalle3(self) -> None:
+        """Switching to dall-e-3 per-call uses the DALL-E 3 size table."""
+        # Constructor is gpt-image-1 (1536x1024 for 16:9)
+        # dall-e-3 uses 1792x1024 for 16:9
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", aspect_ratio="16:9", model="dall-e-3")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["size"] == "1792x1024"
+
+    async def test_per_call_model_switches_size_table_to_gpt_image(self) -> None:
+        """Switching to gpt-image-1 per-call uses the GPT image size table."""
+        # Constructor is dall-e-3 (1792x1024 for 16:9)
+        # gpt-image-1 uses 1536x1024 for 16:9
+        provider = OpenAIImageProvider(api_key="sk-test", model="dall-e-3")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", aspect_ratio="16:9", model="gpt-image-1")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["size"] == "1536x1024"
+
+    async def test_per_call_model_metadata_reflects_effective_model(self) -> None:
+        """Result metadata shows the per-call model, not the constructor model."""
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        result = await provider.generate("test", model="dall-e-3")
+
+        assert result.provider_metadata["model"] == "dall-e-3"
+
+    async def test_per_call_dalle3_uses_response_format(self) -> None:
+        """Switching to dall-e-3 per-call sets response_format, not output_format."""
+        provider = OpenAIImageProvider(api_key="sk-test")  # default gpt-image-1
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", model="dall-e-3")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs.get("response_format") == "b64_json"
+        assert "output_format" not in call_kwargs
+
 
 class TestErrorHandling:
     """Tests for OpenAI error conversion."""
