@@ -74,17 +74,24 @@ class TestImageViewerResource:
 # -- Tool wiring -------------------------------------------------------------
 
 
-class TestGenerateImageAppConfig:
-    """Verify generate_image tool carries AppConfig metadata."""
+class TestShowImageAppConfig:
+    """Verify show_image tool carries AppConfig metadata (viewer wired here)."""
 
-    async def test_generate_image_has_app_metadata(self, server) -> None:
+    async def test_show_image_has_app_metadata(self, server) -> None:
         tools = await server.list_tools()
-        gen_tool = next(t for t in tools if t.name == "generate_image")
+        show_tool = next(t for t in tools if t.name == "show_image")
         # AppConfig is serialized into tool.meta under the 'ui' key
-        assert gen_tool.meta is not None
-        app_data = gen_tool.meta.get("ui")
+        assert show_tool.meta is not None
+        app_data = show_tool.meta.get("ui")
         assert app_data is not None
         assert app_data["resourceUri"] == "ui://image-viewer/view.html"
+
+    async def test_generate_image_has_no_app_metadata(self, server) -> None:
+        tools = await server.list_tools()
+        gen_tool = next(t for t in tools if t.name == "generate_image")
+        # generate_image no longer owns the viewer — show_image does
+        if gen_tool.meta is not None:
+            assert gen_tool.meta.get("ui") is None
 
 
 # -- Metadata shape ----------------------------------------------------------
