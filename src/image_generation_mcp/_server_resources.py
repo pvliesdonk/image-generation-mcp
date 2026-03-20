@@ -35,6 +35,7 @@ from image_generation_mcp.service import ImageService
 logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+_IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
 
 _IMAGE_VIEWER_HTML = """\
 <!DOCTYPE html>
@@ -60,7 +61,7 @@ _IMAGE_VIEWER_HTML = """\
     }
     #meta {
       margin-top: 12px; font-size: 12px; color: #666;
-      line-height: 1.6; width: 100%;
+      line-height: 1.6; width: 100%; white-space: pre-wrap;
     }
     @media (prefers-color-scheme: dark) {
       #meta { color: #aaa; }
@@ -85,8 +86,8 @@ _IMAGE_VIEWER_HTML = """\
       const text = content?.find(c => c.type === "text");
 
       if (img) {
-        document.getElementById("image").src =
-          `data:${img.mimeType};base64,${img.data}`;
+        const imgEl = document.getElementById("image");
+        imgEl.src = `data:${img.mimeType};base64,${img.data}`;
         document.getElementById("placeholder").style.display = "none";
         document.getElementById("viewer").style.display = "block";
       }
@@ -94,6 +95,9 @@ _IMAGE_VIEWER_HTML = """\
       if (text) {
         try {
           const meta = JSON.parse(text.text);
+          if (meta.prompt) {
+            imgEl.alt = meta.prompt;
+          }
           const parts = [];
           if (meta.provider) parts.push(`Provider: ${meta.provider}`);
           if (meta.dimensions) parts.push(`${meta.dimensions[0]}\u00d7${meta.dimensions[1]}`);
@@ -104,7 +108,7 @@ _IMAGE_VIEWER_HTML = """\
           document.getElementById("meta").textContent =
             (meta.prompt ? `"${meta.prompt}"\\n` : "") +
             parts.join(" \\u00b7 ");
-        } catch (e) { /* ignore parse errors */ }
+        } catch (e) { console.warn("Image viewer: failed to parse metadata", e); }
       }
     };
 
@@ -293,8 +297,6 @@ def register_resources(mcp: FastMCP) -> None:
         return json.dumps(result, indent=2)
 
     # -- MCP Apps: image viewer -------------------------------------------------
-
-    _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
 
     @mcp.resource(
         _IMAGE_VIEWER_URI,

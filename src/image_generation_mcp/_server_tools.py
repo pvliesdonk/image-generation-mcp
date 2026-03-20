@@ -164,7 +164,6 @@ def register_tools(mcp: FastMCP) -> None:
             "original_size_bytes": result.size_bytes,
             "thumbnail_size_bytes": len(thumb_data),
             "provider": provider_name,
-            "file_path": str(record.original_path),
             **result.provider_metadata,
         }
 

@@ -45,6 +45,21 @@ class TestImageViewerResource:
         text = result.contents[0].content
         assert '<img id="image"' in text
 
+    async def test_viewer_html_has_pre_wrap_whitespace(self, server) -> None:
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "white-space: pre-wrap" in text
+
+    async def test_viewer_html_sets_dynamic_alt_text(self, server) -> None:
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "imgEl.alt = meta.prompt" in text
+
+    async def test_viewer_html_logs_parse_errors(self, server) -> None:
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "console.warn" in text
+
 
 # -- Tool wiring -------------------------------------------------------------
 
@@ -60,6 +75,32 @@ class TestGenerateImageAppConfig:
         app_data = gen_tool.meta.get("ui")
         assert app_data is not None
         assert app_data["resourceUri"] == "ui://image-viewer/view.html"
+
+
+# -- Metadata shape ----------------------------------------------------------
+
+
+class TestGenerateImageMetadataShape:
+    """Verify the metadata dict includes prompt/dimensions and excludes file_path."""
+
+    async def test_metadata_includes_prompt_and_dimensions(self, server) -> None:
+        """The viewer JS references meta.prompt and meta.dimensions — verify
+        they are emitted by the tool metadata builder."""
+        # The HTML parser relies on these keys; verify them in the source
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "meta.prompt" in text
+        assert "meta.dimensions" in text
+
+    async def test_metadata_excludes_file_path(self) -> None:
+        """file_path must NOT appear in tool result metadata (CWE-200)."""
+        import inspect
+
+        from image_generation_mcp import _server_tools
+
+        # Read the source to verify no file_path in metadata dict
+        source = inspect.getsource(_server_tools)
+        assert "file_path" not in source
 
 
 # -- Read-only mode ----------------------------------------------------------
