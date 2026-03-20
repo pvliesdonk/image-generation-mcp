@@ -193,4 +193,3 @@ def register_tools(mcp: FastMCP) -> None:
         """
         providers = service.list_providers()
         return json.dumps(providers, indent=2)
-
