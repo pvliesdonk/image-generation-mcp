@@ -165,6 +165,71 @@ class TestResolvePresetStillWorks:
     def test_lightning_cfg(self) -> None:
         assert _SDXL_LIGHTNING_PRESET.cfg_scale == 2.0
 
+    def test_sd15_sampler(self) -> None:
+        assert _SD15_PRESET.sampler == "DPM++ 2M"
+
+    def test_sd15_scheduler(self) -> None:
+        assert _SD15_PRESET.scheduler == "Karras"
+
+    def test_sdxl_sampler(self) -> None:
+        assert _SDXL_PRESET.sampler == "DPM++ 2M"
+
+    def test_sdxl_scheduler(self) -> None:
+        assert _SDXL_PRESET.scheduler == "Karras"
+
+    def test_lightning_sampler(self) -> None:
+        assert _SDXL_LIGHTNING_PRESET.sampler == "DPM++ SDE"
+
+    def test_lightning_scheduler(self) -> None:
+        assert _SDXL_LIGHTNING_PRESET.scheduler == "Karras"
+
+
+# -- txt2img payload includes scheduler field --------------------------------
+
+
+def _make_txt2img_mock_response() -> MagicMock:
+    """Build a minimal successful txt2img mock response."""
+    import base64
+
+    b64_image = base64.b64encode(b"fake-png").decode()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "images": [b64_image],
+        "info": '{"seed": 42, "sd_model_name": "test-model"}',
+    }
+    return mock_response
+
+
+class TestA1111PayloadScheduler:
+    """Verify the txt2img payload sends separate sampler and scheduler fields."""
+
+    async def test_payload_has_scheduler_field(self) -> None:
+        """The POST payload must include both sampler_name and scheduler."""
+        provider = _make_provider()
+        provider._client.post = AsyncMock(return_value=_make_txt2img_mock_response())
+
+        await provider.generate("test prompt")
+
+        payload = provider._client.post.call_args.kwargs["json"]
+        assert "sampler_name" in payload
+        assert "scheduler" in payload
+        assert payload["sampler_name"] == "DPM++ 2M"
+        assert payload["scheduler"] == "Karras"
+
+    async def test_lightning_payload_scheduler(self) -> None:
+        """Lightning preset sends DPM++ SDE sampler with Karras scheduler."""
+        provider = A1111ImageProvider(
+            host="http://localhost:7860", model="sdxl_lightning_4step"
+        )
+        provider._client.post = AsyncMock(return_value=_make_txt2img_mock_response())
+
+        await provider.generate("test prompt")
+
+        payload = provider._client.post.call_args.kwargs["json"]
+        assert payload["sampler_name"] == "DPM++ SDE"
+        assert payload["scheduler"] == "Karras"
+
 
 # -- discover_capabilities() success path ------------------------------------
 

@@ -32,11 +32,11 @@ Each preset is a frozen dataclass (`_A1111Preset`) containing:
 
 ### Preset Values
 
-| Preset | Base Size | Steps | CFG | Sampler |
-|--------|-----------|-------|-----|---------|
-| SD 1.5 | 768px | 30 | 7.0 | DPM++ 2M Karras |
-| SDXL | 1024px | 35 | 7.5 | DPM++ 2M Karras |
-| SDXL Lightning | 1024px | 6 | 2.0 | DPM++ SDE Karras |
+| Preset | Base Size | Steps | CFG | Sampler | Scheduler |
+|--------|-----------|-------|-----|---------|-----------|
+| SD 1.5 | 768px | 30 | 7.0 | DPM++ 2M | Karras |
+| SDXL | 1024px | 35 | 7.5 | DPM++ 2M | Karras |
+| SDXL Lightning | 1024px | 6 | 2.0 | DPM++ SDE | Karras |
 
 ## Consequences
 

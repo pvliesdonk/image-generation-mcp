@@ -151,9 +151,9 @@ not excluded. Keywords remain the primary selection mechanism.
 
 - **API:** HTTP POST to `/sdapi/v1/txt2img`
 - **Model-aware presets:** Auto-detects SD architecture from checkpoint name:
-  - **SD 1.5** (default): 768px base, 30 steps, CFG 7.0, DPM++ 2M Karras
-  - **SDXL**: 1024px base, 35 steps, CFG 7.5, DPM++ 2M Karras
-  - **SDXL Lightning/Turbo**: 1024px base, 6 steps, CFG 2.0, DPM++ SDE Karras
+  - **SD 1.5** (default): 768px base, 30 steps, CFG 7.0, DPM++ 2M sampler, Karras scheduler
+  - **SDXL**: 1024px base, 35 steps, CFG 7.5, DPM++ 2M sampler, Karras scheduler
+  - **SDXL Lightning/Turbo**: 1024px base, 6 steps, CFG 2.0, DPM++ SDE sampler, Karras scheduler
 - **Checkpoint override:** When `model` is specified, sends `override_settings.sd_model_checkpoint`
 - **Negative prompt:** Native support via `negative_prompt` field in payload
 - **Background:** Ignored (SD does not support native transparent backgrounds); debug log emitted
