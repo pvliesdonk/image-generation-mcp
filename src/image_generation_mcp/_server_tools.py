@@ -19,6 +19,7 @@ from fastmcp.tools import ToolResult
 from mcp.types import Icon, ImageContent, TextContent
 
 from ._server_deps import get_service
+from ._server_resources import _IMAGE_VIEWER_URI
 from .processing import generate_thumbnail
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
@@ -45,7 +46,7 @@ def register_tools(mcp: FastMCP) -> None:
         tags={"write"},
         task=True,
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
-        app=AppConfig(resourceUri="ui://image-viewer/view.html"),
+        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
     )
     async def generate_image(
         prompt: str,

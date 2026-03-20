@@ -85,8 +85,9 @@ _IMAGE_VIEWER_HTML = """\
       const img = content?.find(c => c.type === "image");
       const text = content?.find(c => c.type === "text");
 
+      const imgEl = document.getElementById("image");
+
       if (img) {
-        const imgEl = document.getElementById("image");
         imgEl.src = `data:${img.mimeType};base64,${img.data}`;
         document.getElementById("placeholder").style.display = "none";
         document.getElementById("viewer").style.display = "block";

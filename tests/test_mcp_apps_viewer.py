@@ -60,6 +60,16 @@ class TestImageViewerResource:
         text = result.contents[0].content
         assert "console.warn" in text
 
+    async def test_viewer_imgel_declared_before_if_blocks(self, server) -> None:
+        """imgEl must be declared before both if(img) and if(text) blocks
+        so it is accessible in both scopes."""
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        imgel_decl = text.index('const imgEl = document.getElementById("image")')
+        if_img = text.index("if (img)")
+        if_text = text.index("if (text)")
+        assert imgel_decl < if_img < if_text
+
 
 # -- Tool wiring -------------------------------------------------------------
 
