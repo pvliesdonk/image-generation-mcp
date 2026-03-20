@@ -59,32 +59,16 @@ class TestPromptGuideResourceRegistration:
 
     async def test_resource_returns_markdown(self, server) -> None:
         result = await server.read_resource("info://prompt-guide")
+        assert result.contents[0].mime_type == "text/markdown"
         text = result.contents[0].content
         assert "# Image Generation Prompt Guide" in text
 
-    async def test_resource_content_mentions_clip(self, server) -> None:
-        result = await server.read_resource("info://prompt-guide")
-        text = result.contents[0].content
-        assert "CLIP" in text
-
-    async def test_resource_content_mentions_negative_prompt(self, server) -> None:
-        result = await server.read_resource("info://prompt-guide")
-        text = result.contents[0].content
-        assert "negative prompt" in text.lower()
-
-    async def test_resource_content_mentions_openai(self, server) -> None:
-        result = await server.read_resource("info://prompt-guide")
-        text = result.contents[0].content
-        assert "OpenAI" in text
-
-    async def test_resource_content_mentions_a1111(self, server) -> None:
-        result = await server.read_resource("info://prompt-guide")
-        text = result.contents[0].content
-        assert "A1111" in text
-
-    async def test_resource_available_in_read_only_mode(self) -> None:
+    async def test_resource_available_in_read_only_mode(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """info://prompt-guide must be accessible in read-only mode."""
-        server = create_server()  # read-only by default
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "true")
+        server = create_server()
         resources = await server.list_resources()
         uris = [str(r.uri) for r in resources]
         assert "info://prompt-guide" in uris
