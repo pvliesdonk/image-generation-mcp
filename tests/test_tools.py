@@ -23,6 +23,7 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 from fastmcp import FastMCP
+from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, ResourceLink, TextContent
 from PIL import Image
 
@@ -46,7 +47,7 @@ def service(tmp_path: Path) -> ImageService:
 @pytest.fixture
 def registered_image(service: ImageService) -> tuple[ImageService, str]:
     """Register a placeholder image and return (service, image_id)."""
-    result = asyncio.get_event_loop().run_until_complete(
+    result = asyncio.run(
         PlaceholderImageProvider().generate("show test", aspect_ratio="1:1")
     )
     record = service.register_image(result, "placeholder", prompt="show test")
@@ -61,7 +62,7 @@ def registered_image(service: ImageService) -> tuple[ImageService, str]:
 class TestGenerateImageReturnShape:
     """generate_image must return TextContent + ResourceLink, no ImageContent."""
 
-    async def _call_generate(self, service: ImageService) -> object:
+    async def _call_generate(self, service: ImageService) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("generate_image")
@@ -193,7 +194,7 @@ class TestShowImageBasic:
 
     async def _call_show(
         self, service: ImageService, image_id: str, uri_suffix: str = ""
-    ) -> object:
+    ) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
@@ -240,7 +241,7 @@ class TestShowImageFormatConversion:
 
     async def _call_show(
         self, service: ImageService, image_id: str, query: str
-    ) -> object:
+    ) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
@@ -284,7 +285,7 @@ class TestShowImageResize:
 
     async def _call_show(
         self, service: ImageService, image_id: str, query: str
-    ) -> object:
+    ) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
