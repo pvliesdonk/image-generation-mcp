@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
+from fastmcp import Client
 
 from image_generation_mcp.mcp_server import create_server
 
@@ -60,3 +63,26 @@ class TestResourcesAsToolsReadOnly:
         assert "generate_image" in tool_names
         assert "list_resources" in tool_names
         assert "read_resource" in tool_names
+
+
+class TestResourcesAsToolsEndToEnd:
+    """End-to-end wiring: read_resource executes the underlying resource."""
+
+    async def test_read_resource_tool_returns_image_list(self) -> None:
+        """Calling read_resource with image://list returns valid JSON.
+
+        Exercises the full wiring: ResourcesAsTools tool -> server lifespan ->
+        image_list resource -> ImageService.list_images(). No images have been
+        generated, so the result is an empty JSON array.
+        """
+        server = create_server()
+        async with Client(server) as client:
+            result = await client.call_tool("read_resource", {"uri": "image://list"})
+
+        assert result is not None
+        assert not result.is_error
+        # Result contains one TextContent item with JSON text
+        assert len(result.content) == 1
+        parsed = json.loads(result.content[0].text)
+        assert isinstance(parsed, list)
+        assert parsed == []  # no images generated in this session
