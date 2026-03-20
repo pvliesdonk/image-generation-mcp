@@ -266,6 +266,9 @@ def create_server() -> FastMCP:
 
     # Expose resources as tools for clients that lack resource support
     # (e.g. Claude webchat via MCP). Generates list_resources/read_resource.
+    # NOTE: ResourcesAsTools exposes ALL resources. If a future resource is
+    # write-tagged (hidden in read-only mode), it would still be reachable
+    # via read_resource unless the transform is updated with a filter.
     mcp.add_transform(ResourcesAsTools(mcp))
 
     # --- Visibility: hide write-tagged components in read-only mode ---

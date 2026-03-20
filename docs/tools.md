@@ -115,6 +115,34 @@ JSON object with provider names, availability, and capability information:
       "discovered_at": 1710777600.0,
       "degraded": false
     }
+  },
+  "openai": {
+    "available": true,
+    "description": "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, and general-purpose generation",
+    "capabilities": {
+      "provider_name": "openai",
+      "models": [
+        {
+          "model_id": "gpt-image-1",
+          "display_name": "GPT Image 1",
+          "can_generate": true,
+          "can_edit": true,
+          "supports_mask": true,
+          "supported_aspect_ratios": ["1:1", "16:9", "9:16", "3:2", "2:3"],
+          "supported_qualities": ["standard", "hd"],
+          "supported_formats": ["png", "jpeg", "webp"],
+          "supports_negative_prompt": false,
+          "supports_background": true,
+          "max_resolution": 1536,
+          "default_steps": null,
+          "default_cfg": null
+        }
+      ],
+      "supports_background": true,
+      "supports_negative_prompt": false,
+      "discovered_at": 1710777600.0,
+      "degraded": false
+    }
   }
 }
 ```
