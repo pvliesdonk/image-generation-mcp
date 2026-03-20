@@ -45,17 +45,15 @@ class TestOpenAIProvider:
     def test_dalle3_model(self) -> None:
         provider = OpenAIImageProvider(api_key="sk-test", model="dall-e-3")
         assert provider._is_gpt_image is False
-        assert provider._sizes is _DALLE3_SIZES
 
     def test_gpt_image_sizes(self) -> None:
-        provider = OpenAIImageProvider(api_key="sk-test")
-        assert provider._sizes is _GPT_IMAGE_SIZES
-        assert provider._sizes["1:1"] == "1024x1024"
-        assert provider._sizes["16:9"] == "1536x1024"
+        # Sizes are computed per-call; verify the module-level table is correct.
+        assert _GPT_IMAGE_SIZES["1:1"] == "1024x1024"
+        assert _GPT_IMAGE_SIZES["16:9"] == "1536x1024"
 
     def test_dalle3_sizes(self) -> None:
-        provider = OpenAIImageProvider(api_key="sk-test", model="dall-e-3")
-        assert provider._sizes["16:9"] == "1792x1024"
+        # Sizes are computed per-call; verify the module-level table is correct.
+        assert _DALLE3_SIZES["16:9"] == "1792x1024"
 
     def test_unsupported_format_raises(self) -> None:
         with pytest.raises(ImageProviderError, match="Unsupported output_format"):
@@ -273,11 +271,12 @@ class TestOpenAIProvider:
         provider._client.images = MagicMock()
         provider._client.images.generate = AsyncMock(return_value=mock_response)
 
-        await provider.generate("test", model="dall-e-3")
+        result = await provider.generate("test", model="dall-e-3")
 
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs.get("response_format") == "b64_json"
         assert "output_format" not in call_kwargs
+        assert result.content_type == "image/png"  # dall-e-3 always produces PNG
 
 
 class TestErrorHandling:

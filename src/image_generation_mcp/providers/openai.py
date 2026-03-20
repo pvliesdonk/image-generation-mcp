@@ -94,8 +94,6 @@ class OpenAIImageProvider:
                 f"Supported: {supported_dalle3}",
             )
 
-        self._content_type = _FORMAT_TO_CONTENT_TYPE[output_format]
-        self._sizes = _GPT_IMAGE_SIZES if self._is_gpt_image else _DALLE3_SIZES
         self._client: AsyncOpenAI = self._create_client(api_key)
 
     def _create_client(self, api_key: str) -> AsyncOpenAI:
@@ -140,6 +138,8 @@ class OpenAIImageProvider:
             ImageProviderConnectionError: On network errors.
         """
         effective_model = model or self._model
+        # NOTE: any model not matching 'gpt-image*' (e.g. dall-e-2) falls back to
+        # DALL-E 3 sizes/format. Unknown models will fail at the API level.
         is_gpt_image = _is_gpt_image_model(effective_model)
         sizes = _GPT_IMAGE_SIZES if is_gpt_image else _DALLE3_SIZES
         # dall-e-3 only produces PNG; gpt-image-* uses configured format
