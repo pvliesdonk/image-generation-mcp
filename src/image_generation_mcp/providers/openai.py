@@ -142,6 +142,9 @@ class OpenAIImageProvider:
         effective_model = model or self._model
         is_gpt_image = _is_gpt_image_model(effective_model)
         sizes = _GPT_IMAGE_SIZES if is_gpt_image else _DALLE3_SIZES
+        # dall-e-3 only produces PNG; gpt-image-* uses configured format
+        effective_format = self._output_format if is_gpt_image else "png"
+        content_type = _FORMAT_TO_CONTENT_TYPE[effective_format]
 
         effective_prompt = prompt
         if negative_prompt:
@@ -175,7 +178,7 @@ class OpenAIImageProvider:
                 "quality": api_quality,
             }
             if is_gpt_image:
-                api_kwargs["output_format"] = self._output_format
+                api_kwargs["output_format"] = effective_format
                 api_kwargs["background"] = background
             else:
                 api_kwargs["response_format"] = "b64_json"
@@ -208,7 +211,7 @@ class OpenAIImageProvider:
 
         return ImageResult.from_base64(
             b64_data,
-            content_type=self._content_type,
+            content_type=content_type,
             **metadata,
         )
 
