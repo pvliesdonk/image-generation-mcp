@@ -13,8 +13,6 @@ import json
 import logging
 from urllib.parse import parse_qs, urlparse
 
-from pydantic import AnyUrl
-
 from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.apps import AppConfig
@@ -22,6 +20,7 @@ from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
 from mcp.types import Icon, ImageContent, ResourceLink, TextContent
 from PIL import Image as PILImage
+from pydantic import AnyUrl
 
 from ._server_deps import get_service
 from ._server_resources import _IMAGE_VIEWER_URI
