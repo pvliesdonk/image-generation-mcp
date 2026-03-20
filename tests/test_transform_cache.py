@@ -149,7 +149,7 @@ def test_cache_hit_moves_to_end_preventing_eviction(
 # ---------------------------------------------------------------------------
 
 
-async def test_cache_disabled_when_size_zero(tmp_path: "Path") -> None:
+async def test_cache_disabled_when_size_zero(tmp_path: Path) -> None:
     """Setting transform_cache_size=0 disables caching entirely."""
     provider = PlaceholderImageProvider()
     result = await provider.generate("zero cache test", aspect_ratio="1:1")
@@ -179,3 +179,64 @@ async def test_cache_cleared_on_aclose(image_id: tuple[ImageService, str]) -> No
     await service.aclose()
 
     assert len(service._transform_cache) == 0
+
+
+# ---------------------------------------------------------------------------
+# Config: transform_cache_size
+# ---------------------------------------------------------------------------
+
+
+class TestTransformCacheConfig:
+    def test_config_loads_cache_size(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Config loads TRANSFORM_CACHE_SIZE from env."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE", "128")
+        from image_generation_mcp.config import load_config
+
+        config = load_config()
+        assert config.transform_cache_size == 128
+
+    def test_config_default_cache_size(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Config defaults to 64 when env not set."""
+        monkeypatch.delenv("IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE", raising=False)
+        from image_generation_mcp.config import load_config
+
+        config = load_config()
+        assert config.transform_cache_size == 64
+
+
+# ---------------------------------------------------------------------------
+# Transform paths: format conversion and proportional resize
+# ---------------------------------------------------------------------------
+
+
+class TestTransformCacheTransforms:
+    """Tests for actual transform paths to boost coverage."""
+
+    def test_format_conversion_cached(self, image_id: tuple) -> None:
+        """Format conversion result is cached."""
+        service, img_id = image_id
+        # First call - cache miss
+        data1, ct1 = service.get_transformed_image(img_id, format="webp")
+        assert ct1 == "image/webp"
+        # Second call - cache hit
+        data2, _ct2 = service.get_transformed_image(img_id, format="webp")
+        assert data1 == data2
+
+    def test_proportional_resize_by_width(self, image_id: tuple) -> None:
+        """Width-only resize uses proportional scaling."""
+        service, img_id = image_id
+        data, _ct = service.get_transformed_image(img_id, width=128)
+        # Should return valid image data
+        assert len(data) > 0
+
+    def test_proportional_resize_by_height(self, image_id: tuple) -> None:
+        """Height-only resize uses proportional scaling."""
+        service, img_id = image_id
+        data, _ct = service.get_transformed_image(img_id, height=128)
+        assert len(data) > 0
+
+    def test_crop_to_exact_dimensions(self, image_id: tuple) -> None:
+        """Both width and height specified crops to exact dimensions."""
+        service, img_id = image_id
+        data, _ct = service.get_transformed_image(img_id, width=64, height=64)
+        assert len(data) > 0

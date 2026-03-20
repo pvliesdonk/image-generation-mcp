@@ -79,7 +79,11 @@ class ImageService:
         self._scratch_dir = scratch_dir
         self._default_provider = default_provider
         self._images: dict[str, ImageRecord] = {}
-        self._transform_cache: OrderedDict[tuple, tuple[bytes, str]] = OrderedDict()
+        # NOTE: OrderedDict is not thread-safe. This cache assumes single-threaded
+        # access from the asyncio event loop (no to_thread dispatch).
+        self._transform_cache: OrderedDict[
+            tuple[str, str, int, int, int], tuple[bytes, str]
+        ] = OrderedDict()
         self._transform_cache_size = transform_cache_size
 
         # Rebuild registry from existing sidecar files
@@ -427,7 +431,7 @@ class ImageService:
         if not format and width == 0 and height == 0:
             return record.original_path.read_bytes(), record.content_type
 
-        key = (image_id, format or "", width or 0, height or 0, quality or 90)
+        key = (image_id, format, width, height, quality)
 
         # Cache hit: move to end (most-recently-used) and return
         if key in self._transform_cache:
@@ -443,14 +447,14 @@ class ImageService:
         if width > 0 and height > 0:
             data = crop_to_dimensions(data, width, height)
         elif width > 0:
-            img = PILImage.open(io.BytesIO(data))
-            ratio = width / img.width
-            new_height = round(img.height * ratio)
+            orig_w, orig_h = record.original_dimensions
+            ratio = width / orig_w
+            new_height = round(orig_h * ratio)
             data = resize_image(data, width, new_height)
         elif height > 0:
-            img = PILImage.open(io.BytesIO(data))
-            ratio = height / img.height
-            new_width = round(img.width * ratio)
+            orig_w, orig_h = record.original_dimensions
+            ratio = height / orig_h
+            new_width = round(orig_w * ratio)
             data = resize_image(data, new_width, height)
 
         # Apply format conversion last (one encode from spatial result)
