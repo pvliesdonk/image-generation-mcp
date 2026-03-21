@@ -180,7 +180,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                         ]
                     )
 
-        await progress.set_total(3)
+        await progress.set_total(2)
         await progress.set_message("Generating image")
 
         async def _keepalive() -> None:
@@ -194,9 +194,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             while True:
                 await asyncio.sleep(_KEEPALIVE_INTERVAL_S)
                 elapsed += _KEEPALIVE_INTERVAL_S
-                await ctx.info(
-                    f"Image generation in progress ({elapsed}s elapsed)"
-                )
+                try:
+                    await ctx.info(f"Image generation in progress ({elapsed}s elapsed)")
+                except Exception:
+                    logger.warning("keepalive ctx.info failed", exc_info=True)
 
         keepalive_task = asyncio.create_task(_keepalive())
         try:
@@ -223,6 +224,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             ) from None
         finally:
             keepalive_task.cancel()
+            await asyncio.gather(keepalive_task, return_exceptions=True)
 
         await progress.increment()
         await progress.set_message("Saving to scratch")

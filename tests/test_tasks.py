@@ -58,3 +58,4 @@ async def test_keepalive_present() -> None:
     source = inspect.getsource(tool.fn)
     assert "_keepalive" in source
     assert "ctx.info" in source
+    assert "_KEEPALIVE_INTERVAL_S" in source
