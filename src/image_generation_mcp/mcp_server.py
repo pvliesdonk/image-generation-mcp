@@ -275,9 +275,12 @@ def create_server(transport: str = "stdio") -> FastMCP:
 
         artifact_handler = make_artifact_handler()
 
+        from starlette.requests import Request
+        from starlette.responses import Response
+
         @mcp.custom_route("/artifacts/{token}", methods=["GET"])
-        async def _artifact_route(request: object) -> object:
-            return await artifact_handler(request)  # type: ignore[arg-type]
+        async def _artifact_route(request: Request) -> Response:
+            return await artifact_handler(request)
 
     # Expose resources as tools for clients that lack resource support
     # (e.g. Claude webchat via MCP). Generates list_resources/read_resource.

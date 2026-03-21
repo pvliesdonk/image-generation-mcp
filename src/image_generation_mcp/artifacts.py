@@ -22,6 +22,8 @@ from image_generation_mcp.processing import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from starlette.requests import Request
 
     from image_generation_mcp.service import ImageService
@@ -154,7 +156,7 @@ def get_artifact_store() -> ArtifactStore:
 # ---------------------------------------------------------------------------
 
 
-def make_artifact_handler() -> object:
+def make_artifact_handler() -> Callable[[Request], Awaitable[Response]]:
     """Build the Starlette route handler for ``GET /artifacts/{token}``.
 
     The returned handler accesses the :class:`ImageService` via the
