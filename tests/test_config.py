@@ -1,41 +1,162 @@
-"""Tests for ServerConfig — env var loading and defaults."""
+"""Tests for config.py — env var loading edge cases.
+
+Covers:
+- load_config() with various env var combinations
+- scratch dir default and custom path
+- openai_api_key, a1111_host, a1111_model, default_provider branches
+- TRANSFORM_CACHE_SIZE invalid value logs warning and uses default
+- paid_providers comma-separated parsing
+- get_log_level (via read_only env var)
+"""
 
 from __future__ import annotations
 
+import logging
+from typing import TYPE_CHECKING
+
 import pytest
 
-from image_generation_mcp.config import load_config
+if TYPE_CHECKING:
+    from pathlib import Path
+
+from image_generation_mcp.config import (
+    _DEFAULT_SCRATCH_DIR,
+    _parse_bool,
+    load_config,
+)
 
 
-class TestServerConfig:
-    def test_config_loads_cache_size(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Config loads TRANSFORM_CACHE_SIZE from env."""
+class TestParseBool:
+    """Tests for _parse_bool helper."""
+
+    @pytest.mark.parametrize("value", ["true", "True", "TRUE", "1", "yes", "YES"])
+    def test_truthy_values(self, value: str) -> None:
+        assert _parse_bool(value) is True
+
+    @pytest.mark.parametrize("value", ["false", "False", "0", "no", "", "anything"])
+    def test_falsy_values(self, value: str) -> None:
+        assert _parse_bool(value) is False
+
+
+class TestLoadConfigDefaults:
+    """load_config() with no env vars uses ServerConfig defaults."""
+
+    def test_read_only_default(self) -> None:
+        config = load_config()
+        assert config.read_only is True
+
+    def test_scratch_dir_default(self) -> None:
+        config = load_config()
+        assert config.scratch_dir == _DEFAULT_SCRATCH_DIR
+
+    def test_openai_api_key_default_none(self) -> None:
+        config = load_config()
+        assert config.openai_api_key is None
+
+    def test_a1111_host_default_none(self) -> None:
+        config = load_config()
+        assert config.a1111_host is None
+
+    def test_default_provider_default_auto(self) -> None:
+        config = load_config()
+        assert config.default_provider == "auto"
+
+    def test_transform_cache_size_default(self) -> None:
+        config = load_config()
+        assert config.transform_cache_size == 64
+
+    def test_paid_providers_default(self) -> None:
+        config = load_config()
+        assert config.paid_providers == frozenset({"openai"})
+
+
+class TestLoadConfigEnvVars:
+    """load_config() reads env vars correctly."""
+
+    def test_read_only_false(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
+        config = load_config()
+        assert config.read_only is False
+
+    def test_scratch_dir_custom(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
+        config = load_config()
+        assert config.scratch_dir == tmp_path
+
+    def test_openai_api_key_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_OPENAI_API_KEY", "sk-test-key")
+        config = load_config()
+        assert config.openai_api_key == "sk-test-key"
+
+    def test_a1111_host_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_HOST", "http://localhost:7860")
+        config = load_config()
+        assert config.a1111_host == "http://localhost:7860"
+
+    def test_a1111_model_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_MODEL", "dreamshaper_xl")
+        config = load_config()
+        assert config.a1111_model == "dreamshaper_xl"
+
+    def test_default_provider_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_DEFAULT_PROVIDER", "placeholder")
+        config = load_config()
+        assert config.default_provider == "placeholder"
+
+    def test_transform_cache_size_valid(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE", "128")
         config = load_config()
         assert config.transform_cache_size == 128
 
-    def test_config_default_cache_size(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Config defaults to 64 when env not set."""
-        monkeypatch.delenv("IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE", raising=False)
-        config = load_config()
+    def test_transform_cache_size_invalid_uses_default(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE", "not-a-number")
+        with caplog.at_level(logging.WARNING):
+            config = load_config()
         assert config.transform_cache_size == 64
+        assert "Invalid TRANSFORM_CACHE_SIZE" in caplog.text
 
-    def test_paid_providers_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Default paid_providers includes openai."""
-        monkeypatch.delenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", raising=False)
+    def test_base_url_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://mcp.example.com/")
         config = load_config()
-        assert config.paid_providers == frozenset({"openai"})
+        # trailing slash is stripped
+        assert config.base_url == "https://mcp.example.com"
 
-    def test_paid_providers_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """PAID_PROVIDERS env var overrides default."""
+    def test_paid_providers_custom(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "openai,a1111")
         config = load_config()
         assert config.paid_providers == frozenset({"openai", "a1111"})
 
-    def test_paid_providers_empty_disables(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Empty PAID_PROVIDERS disables confirmation."""
+    def test_paid_providers_empty_clears(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "")
         config = load_config()
         assert config.paid_providers == frozenset()
+
+    def test_paid_providers_with_spaces(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", " openai , a1111 ")
+        config = load_config()
+        assert "openai" in config.paid_providers
+        assert "a1111" in config.paid_providers
+
+    def test_all_vars_together(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """All env vars set together produce correct config."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_OPENAI_API_KEY", "sk-key")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_HOST", "http://a1111:7860")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_MODEL", "checkpoint_v1")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_DEFAULT_PROVIDER", "openai")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE", "32")
+        config = load_config()
+        assert config.read_only is False
+        assert config.scratch_dir == tmp_path
+        assert config.openai_api_key == "sk-key"
+        assert config.a1111_host == "http://a1111:7860"
+        assert config.a1111_model == "checkpoint_v1"
+        assert config.default_provider == "openai"
+        assert config.transform_cache_size == 32
