@@ -206,12 +206,13 @@ def make_artifact_handler() -> Callable[[Request], Awaitable[Response]]:
 
         # Get service via module-level getter
         from image_generation_mcp._server_deps import _get_service_from_store
+        from image_generation_mcp.providers.types import ImageProviderError
 
         service: ImageService = _get_service_from_store()
 
         try:
             img_record = await asyncio.to_thread(service.get_image, image_id)
-        except Exception:
+        except ImageProviderError:
             logger.warning("Artifact: image not found for id=%r", image_id)
             return Response(content="Not Found", status_code=404)
 

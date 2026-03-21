@@ -411,6 +411,35 @@ class TestArtifactHandler:
         assert response.status_code == 200
         assert "image/png" in response.headers["content-type"]
 
+    def test_image_not_in_registry_returns_404(
+        self, service: ImageService
+    ) -> None:
+        """Token for a non-existent image_id returns 404 via ImageProviderError."""
+        client = self._make_app_with_service(service)
+        store: ArtifactStore = client._artifact_store  # type: ignore[attr-defined]
+
+        token = store.create_token("image://nonexistent999/view")
+        response = client.get(f"/artifacts/{token}")
+
+        assert response.status_code == 404
+
+    def test_missing_image_file_returns_404(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Token valid but original file deleted from disk returns 404."""
+        service, image_id = registered_image
+        client = self._make_app_with_service(service)
+        store: ArtifactStore = client._artifact_store  # type: ignore[attr-defined]
+
+        # Delete the actual image file to trigger OSError
+        record = service.get_image(image_id)
+        record.original_path.unlink()
+
+        token = store.create_token(f"image://{image_id}/view")
+        response = client.get(f"/artifacts/{token}")
+
+        assert response.status_code == 404
+
 
 # ---------------------------------------------------------------------------
 # create_server: artifact route mounted on HTTP but not stdio

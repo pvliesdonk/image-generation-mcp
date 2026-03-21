@@ -222,7 +222,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if parsed.scheme != "image":
             msg = f"Expected an image:// URI, got scheme '{parsed.scheme}'"
             raise ValueError(msg)
-        image_id = parsed.hostname or parsed.netloc
+        image_id = parsed.netloc or ""
         qs = parse_qs(parsed.query)
 
         fmt = qs.get("format", [""])[0]
@@ -382,7 +382,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
 
         # Validate the URI references a registered image
         parsed = urlparse(uri)
-        image_id = parsed.hostname or parsed.netloc
+        image_id = parsed.netloc or ""
         if not image_id:
             msg = f"Invalid image URI: {uri!r}. Expected format: image://{{image_id}}/view"
             raise ValueError(msg)
