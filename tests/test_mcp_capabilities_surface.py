@@ -47,8 +47,6 @@ def _make_caps(
     return ProviderCapabilities(
         provider_name=name,
         models=models,
-        supports_background=supports_background,
-        supports_negative_prompt=supports_negative_prompt,
         discovered_at=1000.0,
         degraded=degraded,
     )
