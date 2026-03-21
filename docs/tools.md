@@ -1,16 +1,15 @@
 # MCP Tools
 
-image-generation-mcp exposes two domain tools plus two auto-generated resource-bridge tools to MCP clients.
+image-generation-mcp exposes three domain tools plus two auto-generated resource-bridge tools to MCP clients.
 
 ## generate_image
 
-Generate an image from a text prompt. Returns a thumbnail preview and resource URIs for full-resolution access and on-demand transforms.
+Generate an image from a text prompt. Returns metadata with resource URIs and a `ResourceLink` to the image. Call `show_image` with the image URI to display it.
 
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
 | **Task** | `task=True` (supports foreground and background execution) |
-| **MCP App** | `ui://image-viewer/view.html` (interactive viewer in supported clients) |
 
 ### Parameters
 
@@ -26,25 +25,27 @@ Generate an image from a text prompt. Returns a thumbnail preview and resource U
 
 ### Return value
 
-Returns a `ToolResult` with two content items:
+Returns a `ToolResult` with:
 
-1. **ImageContent** -- thumbnail preview (~256px WebP, typically 10-50 KB) for immediate visual feedback in the chat
-2. **TextContent** -- JSON metadata:
+1. **TextContent** -- JSON metadata:
+2. **ResourceLink** -- URI reference to `image://{id}/view` for the generated image
 
 ```json
 {
   "image_id": "a1b2c3d4e5f6",
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "original_uri": "image://a1b2c3d4e5f6/view",
+  "metadata_uri": "image://a1b2c3d4e5f6/metadata",
   "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality}",
   "dimensions": [1024, 1024],
   "original_size_bytes": 1048576,
-  "thumbnail_size_bytes": 12345,
   "provider": "openai",
   "model": "gpt-image-1",
   "size": "1024x1024"
 }
 ```
+
+Call `show_image` with the `original_uri` (or the `resource_template` with transform params) to display the image.
 
 ### Progress reporting
 
@@ -68,6 +69,58 @@ Tool call: generate_image
            warm colors, dramatic sky"
   aspect_ratio: "16:9"
   quality: "hd"
+```
+
+---
+
+## show_image
+
+Display a registered image with optional on-demand transforms. Accepts a full `image://` resource URI with transforms encoded in the query string.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | *(none)* -- always visible (read-only operation) |
+| **Task** | No |
+| **MCP App** | `ui://image-viewer/view.html` (interactive viewer in supported clients) |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `uri` | str | *(required)* | Full `image://` resource URI (e.g., `image://a1b2c3/view?format=webp&width=512`) |
+
+Transforms are encoded in the URI query string using the same parameters as the `image://{id}/view` resource template: `format`, `width`, `height`, `quality`.
+
+### Return value
+
+Returns a `ToolResult` with:
+
+1. **ImageContent** -- the requested image (original or transformed) as base64
+2. **TextContent** -- JSON metadata:
+
+```json
+{
+  "image_id": "a1b2c3d4e5f6",
+  "prompt": "watercolor painting of a mountain landscape at sunset",
+  "provider": "openai",
+  "dimensions": [512, 342],
+  "original_size_bytes": 1048576,
+  "format": "image/webp",
+  "transforms_applied": {"format": "webp", "width": 512}
+}
+```
+
+### Examples
+
+```
+# Show the original image
+show_image(uri="image://a1b2c3d4e5f6/view")
+
+# Show resized to 512px wide as WebP
+show_image(uri="image://a1b2c3d4e5f6/view?format=webp&width=512")
+
+# Show center-cropped to 256x256
+show_image(uri="image://a1b2c3d4e5f6/view?width=256&height=256")
 ```
 
 ---
@@ -196,12 +249,12 @@ These tools provide access to the same resources documented in [Resources](resou
 
 ## MCP Apps: Image Viewer
 
-Clients that support [MCP Apps](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) (Claude Desktop, claude.ai) render an interactive image viewer alongside `generate_image` results.
+Clients that support [MCP Apps](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) (Claude Desktop, claude.ai) render an interactive image viewer alongside `show_image` results.
 
 The viewer is a custom HTML resource at `ui://image-viewer/view.html` that:
 
-- Listens for `generate_image` tool results via the `@modelcontextprotocol/ext-apps` SDK
-- Displays the generated image with metadata (prompt, provider, dimensions, file size)
+- Listens for `show_image` tool results via the `@modelcontextprotocol/ext-apps` SDK
+- Displays the image with metadata (prompt, provider, dimensions, file size)
 - Supports light and dark color schemes
 
-No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. Clients without Apps support see the standard thumbnail + metadata response.
+No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. Clients without Apps support see the standard base64 image + metadata response.
