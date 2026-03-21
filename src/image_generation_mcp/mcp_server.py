@@ -195,7 +195,7 @@ def _build_oidc_auth() -> Any:
     )
 
 
-def create_server() -> FastMCP:
+def create_server(transport: str = "stdio") -> FastMCP:
     """Create and configure the FastMCP server.
 
     Reads configuration from environment variables via :func:`load_config`.
@@ -208,6 +208,11 @@ def create_server() -> FastMCP:
       (default ``"image-generation-mcp"``).
     - ``IMAGE_GENERATION_MCP_INSTRUCTIONS``: system-level instructions injected
       into LLM context (default: dynamic description reflecting read-only state).
+
+    Args:
+        transport: The MCP transport in use (``"stdio"``, ``"sse"``, or
+            ``"http"``).  Certain tools (e.g. ``create_download_link``) are
+            only registered for HTTP-capable transports.
 
     Returns:
         A fully configured :class:`~fastmcp.FastMCP` instance ready to run.
@@ -260,9 +265,22 @@ def create_server() -> FastMCP:
         auth=auth,
     )
 
-    register_tools(mcp)
+    register_tools(mcp, transport=transport)
     register_resources(mcp)
     register_prompts(mcp)
+
+    # Mount artifact download endpoint for HTTP transports
+    if transport != "stdio":
+        from image_generation_mcp.artifacts import make_artifact_handler
+
+        artifact_handler = make_artifact_handler()
+
+        from starlette.requests import Request
+        from starlette.responses import Response
+
+        @mcp.custom_route("/artifacts/{token}", methods=["GET"])
+        async def _artifact_route(request: Request) -> Response:
+            return await artifact_handler(request)
 
     # Expose resources as tools for clients that lack resource support
     # (e.g. Claude webchat via MCP). Generates list_resources/read_resource.

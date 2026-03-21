@@ -19,6 +19,7 @@ MCP Client (Claude)
 |  _server_tools.py    generate_image          |
 |                      show_image              |
 |                      list_providers          |
+|                      create_download_link    |
 |  _server_prompts.py  select_provider         |
 |                      sd_prompt_guide         |
 |  _server_resources.py                        |
@@ -254,6 +255,7 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 | `generate_image` | `write` | `task=True` | Generate image, return metadata + `ResourceLink` |
 | `show_image` | *(none)* | -- | Display a registered image with optional transforms |
 | `list_providers` | *(none)* | -- | List available providers with availability info |
+| `create_download_link` | *(none)* | -- | Create one-time HTTP download URL (HTTP transport only) |
 
 `generate_image` supports both foreground and background execution via
 `task=True` (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)).
@@ -272,6 +274,11 @@ query string) and returns:
 
 `show_image` is wired to the MCP Apps image viewer via
 `AppConfig(resourceUri="ui://image-viewer/view.html")`.
+
+`create_download_link` creates a one-time-use HTTP download URL for an image.
+It is only registered on non-stdio transports (SSE/HTTP) where a web server is
+available. Requires `IMAGE_GENERATION_MCP_BASE_URL` to be set. Tokens are stored
+in an in-memory `ArtifactStore` with configurable TTL and lazy expiry cleanup.
 
 In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is hidden.
 

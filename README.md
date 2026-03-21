@@ -162,7 +162,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | -- | Static bearer token; enables bearer auth when set |
-| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL for OIDC (e.g. `https://mcp.example.com`) |
+| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL for OIDC and artifact download links (e.g. `https://mcp.example.com`) |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret |

@@ -47,8 +47,8 @@ def _cmd_serve(args: argparse.Namespace) -> None:
         )
         sys.exit(1)
 
-    server = create_server()
     transport = args.transport
+    server = create_server(transport=transport)
     env_http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH")
     http_path = _normalise_http_path(args.path or env_http_path)
     if transport != "http" and (
