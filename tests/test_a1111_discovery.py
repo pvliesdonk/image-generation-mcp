@@ -439,6 +439,36 @@ class TestA1111DiscoverUnreachable:
         )
 
 
+# -- Asymmetric failure tests -------------------------------------------------
+
+
+class TestA1111DiscoverAsymmetricFailure:
+    """Verify degraded result when only one of the parallel requests fails."""
+
+    async def test_sd_models_succeeds_options_connect_error_returns_degraded(
+        self,
+    ) -> None:
+        """When /sd-models succeeds but /options raises ConnectError, return degraded."""
+        import httpx
+
+        provider = _make_provider()
+
+        async def _dispatch(url: str, **kwargs: Any) -> MagicMock:  # noqa: ARG001
+            if "sd-models" in url:
+                response = MagicMock()
+                response.status_code = 200
+                response.json.return_value = [_CHECKPOINT_SD15]
+                return response
+            raise httpx.ConnectError("Connection refused on options")
+
+        provider._client.get = AsyncMock(side_effect=_dispatch)
+        caps = await provider.discover_capabilities()
+
+        assert caps.degraded is True
+        assert caps.models == ()
+        assert caps.provider_name == "a1111"
+
+
 # -- Provider-level capability flags -----------------------------------------
 
 

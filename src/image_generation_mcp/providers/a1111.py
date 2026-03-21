@@ -310,16 +310,22 @@ class A1111ImageProvider:
             return_exceptions=True,
         )
 
+        # Prioritize unexpected exceptions over connection/timeout errors
+        connect_error = None
         for result in results:
             if isinstance(result, (httpx.ConnectError, httpx.TimeoutException)):
-                logger.warning(
-                    "A1111 unreachable during capability discovery at %s: %s",
-                    self._host,
-                    result,
-                )
-                return make_degraded("a1111", discovered_at)
-            if isinstance(result, BaseException):
+                if connect_error is None:
+                    connect_error = result
+            elif isinstance(result, BaseException):
                 raise result
+
+        if connect_error is not None:
+            logger.warning(
+                "A1111 unreachable during capability discovery at %s: %s",
+                self._host,
+                connect_error,
+            )
+            return make_degraded("a1111", discovered_at)
 
         models_response, options_response = results
 
