@@ -5,7 +5,7 @@ Run image-generation-mcp as a native Linux service using the `.deb` or `.rpm` pa
 ## Installation
 
 !!! note
-    Packages are architecture-independent (pure Python). The package installs [uv](https://docs.astral.sh/uv/) automatically if not already present.
+    Packages are built for x86_64/amd64 (pure Python, but packaged per-architecture). The package installs [uv](https://docs.astral.sh/uv/) automatically if not already present.
 
 ### Debian / Ubuntu
 
