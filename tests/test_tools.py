@@ -441,3 +441,24 @@ class TestShowImageThumbnailCap:
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
         # base64 string length < 1 MB
         assert len(image_items[0].data) < 1_000_000
+
+    async def test_large_image_with_resize_still_capped(
+        self, large_registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Resize to width=800 on a 1024x768 image: dimensions=800x600, thumbnail capped to 512."""
+        service, image_id = large_registered_image
+        result = await self._call_show(service, image_id, "?width=800")
+
+        # Thumbnail is still capped at 512px
+        image_items = [c for c in result.content if isinstance(c, ImageContent)]
+        assert image_items[0].mimeType == "image/webp"
+        raw = base64.b64decode(image_items[0].data)
+        img = Image.open(io.BytesIO(raw))
+        assert max(img.size) == 512
+
+        # Metadata reports the transform result, not the thumbnail
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert meta["dimensions"] == [800, 600]
+        assert meta["thumbnail_dimensions"][0] <= 512
+        assert meta["transforms_applied"]["width"] == 800
