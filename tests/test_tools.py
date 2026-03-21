@@ -7,6 +7,8 @@ Covers:
 - show_image with format conversion
 - show_image with resize (width-only, height-only)
 - show_image with crop (width+height)
+- show_image metadata includes model field from provider_metadata
+- show_image auto-generates download_url when base_url configured
 """
 
 from __future__ import annotations
@@ -220,9 +222,12 @@ class TestShowImageBasic:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         assert tool is not None
+        cfg = MagicMock()
+        cfg.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             service=service,
+            config=cfg,
         )
 
     async def test_returns_image_content(
@@ -272,9 +277,12 @@ class TestShowImageFormatConversion:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
+        cfg = MagicMock()
+        cfg.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view?{query}",
             service=service,
+            config=cfg,
         )
 
     async def test_format_webp(
@@ -324,9 +332,12 @@ class TestShowImageResize:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
+        cfg = MagicMock()
+        cfg.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view?{query}",
             service=service,
+            config=cfg,
         )
 
     async def test_width_only_resize(
@@ -399,9 +410,12 @@ class TestShowImageThumbnailCap:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
+        cfg = MagicMock()
+        cfg.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             service=service,
+            config=cfg,
         )
 
     async def test_large_image_downscaled_to_512(
@@ -467,7 +481,6 @@ class TestShowImageThumbnailCap:
         assert meta["transforms_applied"]["width"] == 800
 
 
-# ---------------------------------------------------------------------------
 # generate_image — elicitation confirmation for paid providers
 # ---------------------------------------------------------------------------
 
@@ -590,3 +603,139 @@ class TestElicitationPaidProviders:
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         assert len(text_items) == 1
         assert "cancelled" in text_items[0].text.lower()
+
+
+# ---------------------------------------------------------------------------
+# show_image — model field in metadata
+# ---------------------------------------------------------------------------
+
+
+class TestShowImageModelField:
+    """show_image metadata includes model from provider_metadata."""
+
+    @pytest.fixture
+    def image_with_model(self, service: ImageService) -> tuple[ImageService, str]:
+        """Register an image whose provider_metadata includes a model."""
+        result = asyncio.run(
+            PlaceholderImageProvider().generate("model test", aspect_ratio="1:1")
+        )
+        # Inject a model key to simulate a real provider (e.g. OpenAI)
+        result.provider_metadata["model"] = "dreamshaper_xl"
+        record = service.register_image(result, "test-provider", prompt="model test")
+        return service, record.id
+
+    async def _call_show(self, service: ImageService, image_id: str) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("show_image")
+        cfg = MagicMock()
+        cfg.base_url = None
+        return await tool.fn(
+            uri=f"image://{image_id}/view",
+            service=service,
+            config=cfg,
+        )
+
+    async def test_model_present_in_metadata(
+        self, image_with_model: tuple[ImageService, str]
+    ) -> None:
+        service, image_id = image_with_model
+        result = await self._call_show(service, image_id)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert meta["model"] == "dreamshaper_xl"
+
+    async def test_model_none_when_absent(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Placeholder provider has no model key — field should be None."""
+        service, image_id = registered_image
+        result = await self._call_show(service, image_id)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert meta["model"] is None
+
+
+# ---------------------------------------------------------------------------
+# show_image — download_url auto-generation
+# ---------------------------------------------------------------------------
+
+
+class TestShowImageDownloadUrl:
+    """show_image auto-generates download_url when base_url is configured."""
+
+    @pytest.fixture
+    def _registered(self, service: ImageService) -> tuple[ImageService, str]:
+        result = asyncio.run(
+            PlaceholderImageProvider().generate("dl test", aspect_ratio="1:1")
+        )
+        record = service.register_image(result, "placeholder", prompt="dl test")
+        return service, record.id
+
+    async def _call_show(
+        self,
+        service: ImageService,
+        image_id: str,
+        *,
+        base_url: str | None = None,
+        with_link: bool = True,
+    ) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("show_image")
+        cfg = MagicMock()
+        cfg.base_url = base_url
+        return await tool.fn(
+            uri=f"image://{image_id}/view",
+            with_link=with_link,
+            service=service,
+            config=cfg,
+        )
+
+    async def test_no_download_url_without_base_url(
+        self, _registered: tuple[ImageService, str]
+    ) -> None:
+        """No download_url when base_url is not configured (stdio)."""
+        service, image_id = _registered
+        result = await self._call_show(service, image_id, base_url=None)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "download_url" not in meta
+
+    async def test_download_url_with_base_url(
+        self, _registered: tuple[ImageService, str]
+    ) -> None:
+        """download_url present when base_url is configured."""
+        from image_generation_mcp.artifacts import (
+            ArtifactStore,
+            set_artifact_store,
+        )
+
+        store = ArtifactStore()
+        set_artifact_store(store)
+        try:
+            service, image_id = _registered
+            result = await self._call_show(
+                service, image_id, base_url="https://mcp.example.com"
+            )
+            text_items = [c for c in result.content if isinstance(c, TextContent)]
+            meta = json.loads(text_items[0].text)
+            assert "download_url" in meta
+            assert meta["download_url"].startswith("https://mcp.example.com/artifacts/")
+        finally:
+            set_artifact_store(None)  # type: ignore[arg-type]
+
+    async def test_no_download_url_when_with_link_false(
+        self, _registered: tuple[ImageService, str]
+    ) -> None:
+        """download_url suppressed when with_link=False."""
+        service, image_id = _registered
+        result = await self._call_show(
+            service,
+            image_id,
+            base_url="https://mcp.example.com",
+            with_link=False,
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "download_url" not in meta

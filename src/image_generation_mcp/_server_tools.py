@@ -253,7 +253,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     )
     async def show_image(
         uri: str,
+        with_link: bool = True,
         service: ImageService = Depends(get_service),
+        config: ServerConfig = Depends(get_config),
     ) -> ToolResult:
         """Display a registered image with optional on-demand transforms.
 
@@ -269,13 +271,16 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 params: ``format`` (``png``, ``webp``, ``jpeg``),
                 ``width`` (pixels), ``height`` (pixels),
                 ``quality`` (1-100, for lossy formats).
+            with_link: When ``True`` (default), include a one-time
+                ``download_url`` in the metadata if the server is
+                running on HTTP transport with ``BASE_URL`` configured.
 
         Returns:
             A WebP thumbnail preview (max 512px, under 1 MB) as
             ``ImageContent`` plus JSON metadata (image_id, dimensions,
-            thumbnail_dimensions, format, applied transforms).  For
-            full-resolution access, use the ``image://`` resource URI
-            from the metadata.
+            thumbnail_dimensions, format, applied transforms, model,
+            and optionally download_url).  For full-resolution access,
+            use the ``image://`` resource URI or the download URL.
         """
         parsed = urlparse(uri)
         if parsed.scheme != "image":
@@ -347,16 +352,31 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             transform_params["quality"] = quality
 
         original_stat = await asyncio.to_thread(record.original_path.stat)
-        metadata = {
+        metadata: dict[str, object] = {
             "image_id": record.id,
             "prompt": record.prompt,
             "provider": record.provider,
+            "model": record.provider_metadata.get("model"),
             "dimensions": [final_w, final_h],
             "thumbnail_dimensions": list(thumb_dims),
             "original_size_bytes": original_stat.st_size,
             "format": content_type,
             "transforms_applied": transform_params,
         }
+
+        # Auto-generate a download link when on HTTP transport with
+        # BASE_URL configured and with_link is True.
+        if with_link:
+            base_url = (config.base_url or "").rstrip("/")
+            if base_url:
+                try:
+                    from .artifacts import get_artifact_store
+
+                    store = get_artifact_store()
+                    token = store.create_token(uri, ttl_seconds=300)
+                    metadata["download_url"] = f"{base_url}/artifacts/{token}"
+                except Exception:
+                    pass  # stdio transport or artifact store not available
 
         return ToolResult(
             content=[

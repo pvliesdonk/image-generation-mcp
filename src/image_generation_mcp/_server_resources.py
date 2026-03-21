@@ -184,6 +184,16 @@ _IMAGE_VIEWER_HTML = """\
       margin-top: 12px; font-size: 12px; color: #666;
       line-height: 1.6; width: 100%; white-space: pre-wrap;
     }
+    #download {
+      display: inline-block; margin-top: 10px; padding: 6px 14px;
+      font-size: 12px; font-weight: 500; text-decoration: none;
+      color: #fff; background: #2563eb; border-radius: 6px;
+    }
+    #download:hover { background: #1d4ed8; }
+    @media (prefers-color-scheme: dark) {
+      #download { background: #3b82f6; }
+      #download:hover { background: #2563eb; }
+    }
     @media (prefers-color-scheme: dark) {
       #meta { color: #aaa; }
       #placeholder { color: #777; }
@@ -195,6 +205,7 @@ _IMAGE_VIEWER_HTML = """\
   <div id="viewer">
     <img id="image" alt="Generated image">
     <div id="meta"></div>
+    <a id="download" style="display:none" target="_blank" rel="noopener">Download full resolution</a>
   </div>
   <script type="module">
     import { App } from
@@ -268,7 +279,11 @@ _IMAGE_VIEWER_HTML = """\
             imgEl.alt = meta.prompt;
           }
           const parts = [];
-          if (meta.provider) parts.push(`Provider: ${meta.provider}`);
+          if (meta.provider) {
+            let providerStr = `Provider: ${meta.provider}`;
+            if (meta.model) providerStr += ` (${meta.model})`;
+            parts.push(providerStr);
+          }
           if (meta.dimensions) parts.push(`${meta.dimensions[0]}\u00d7${meta.dimensions[1]}`);
           if (meta.original_size_bytes) {
             const kb = (meta.original_size_bytes / 1024).toFixed(1);
@@ -277,6 +292,13 @@ _IMAGE_VIEWER_HTML = """\
           document.getElementById("meta").textContent =
             (meta.prompt ? `"${meta.prompt}"\\n` : "") +
             parts.join(" \\u00b7 ");
+          const dlEl = document.getElementById("download");
+          if (meta.download_url) {
+            dlEl.href = meta.download_url;
+            dlEl.style.display = "inline-block";
+          } else {
+            dlEl.style.display = "none";
+          }
         } catch (e) { console.warn("Image viewer: failed to parse metadata", e); }
       }
 
