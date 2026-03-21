@@ -1,34 +1,71 @@
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
+#
+# nfpm configuration for image-generation-mcp .deb and .rpm packages.
+# Build: VERSION=1.1.0 nfpm package --packager deb --target dist/
+#        VERSION=1.1.0 nfpm package --packager rpm --target dist/
+
 name: image-generation-mcp
-arch: all
+arch: "${ARCH:-amd64}"
 platform: linux
-version: ${VERSION}
-maintainer: pvliesdonk <pvliesdonk@users.noreply.github.com>
-description: Multi-provider image generation MCP server (requires uv — see postinstall instructions)
-vendor: pvliesdonk
-homepage: https://github.com/pvliesdonk/image-generation-mcp
-license: MIT
+# VERSION env var is required (e.g. VERSION=1.1.0 nfpm package ...)
+# Note: nfpm does not support bash :? guards — use simple ${VAR} only.
+version: "${VERSION}"
+version_schema: semver
+section: utils
+priority: optional
+maintainer: "pvliesdonk <pvliesdonk@users.noreply.github.com>"
+description: |
+  Multi-provider image generation MCP server supporting OpenAI
+  (gpt-image-1, dall-e-3), Stable Diffusion (A1111 WebUI), and a
+  zero-cost placeholder provider. Requires uv — see postinstall instructions.
+homepage: "https://pvliesdonk.github.io/image-generation-mcp/"
+license: "MIT"
 
-depends:
-  - python3 (>= 3.11)
-
-recommends:
-  - curl
-
-rpm:
-  depends:
-    - python3 >= 3.11
+# --- Package contents ---
 
 contents:
-  - src: image-generation-mcp.service
+  # systemd unit file
+  - src: packaging/image-generation-mcp.service
     dst: /usr/lib/systemd/system/image-generation-mcp.service
-    type: config|noreplace
 
-  - src: env.example
+  # Example environment file (preserved on upgrade, never overwritten)
+  - src: packaging/env.example
     dst: /etc/image-generation-mcp/env.example
     type: config|noreplace
 
+  # State directory (auto-created with correct ownership)
+  - dst: /var/lib/image-generation-mcp
+    type: dir
+    file_info:
+      mode: 0750
+      owner: image-generation-mcp
+      group: image-generation-mcp
+
+  # Install directory for venv
+  - dst: /opt/image-generation-mcp
+    type: dir
+    file_info:
+      mode: 0755
+      owner: root
+      group: root
+
+# --- Lifecycle scripts ---
+
 scripts:
-  preinstall: scripts/preinstall.sh
-  postinstall: scripts/postinstall.sh
-  preremove: scripts/preremove.sh
-  postremove: scripts/postremove.sh
+  preinstall: packaging/scripts/preinstall.sh
+  postinstall: packaging/scripts/postinstall.sh
+  preremove: packaging/scripts/preremove.sh
+  postremove: packaging/scripts/postremove.sh
+
+# --- Packager-specific overrides ---
+# Dependencies are defined per-packager (nfpm overrides replace, not extend).
+
+overrides:
+  deb:
+    depends:
+      - python3 (>= 3.11)
+    recommends:
+      - curl
+  rpm:
+    depends:
+      - python3 >= 3.11
