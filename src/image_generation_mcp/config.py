@@ -67,6 +67,9 @@ class ServerConfig:
             to keep in the in-memory LRU cache.
         base_url: Public base URL of the server.  Required for OIDC and
             for constructing artifact download links.
+        paid_providers: Set of provider names that cost money.  When
+            elicitation is supported, ``generate_image`` asks for
+            confirmation before using these providers.
     """
 
     read_only: bool = True
@@ -77,6 +80,7 @@ class ServerConfig:
     default_provider: str = "auto"
     transform_cache_size: int = 64
     base_url: str | None = None
+    paid_providers: frozenset[str] = frozenset({"openai"})
 
 
 def load_config() -> ServerConfig:
@@ -93,6 +97,8 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
     - ``IMAGE_GENERATION_MCP_BASE_URL``: public base URL, required for OIDC and
       artifact download links.
+    - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list of provider
+      names that cost money; default ``"openai"``.
 
     Returns:
         A populated :class:`ServerConfig` instance.
@@ -131,6 +137,12 @@ def load_config() -> ServerConfig:
 
     if base_url := _env("BASE_URL"):
         kwargs["base_url"] = base_url.rstrip("/")
+
+    raw_paid = _env("PAID_PROVIDERS")
+    if raw_paid is not None:
+        kwargs["paid_providers"] = frozenset(
+            p.strip().lower() for p in raw_paid.split(",") if p.strip()
+        )
 
     config = ServerConfig(**kwargs)
     logger.debug("load_config: read_only=%s (raw=%r)", config.read_only, raw_read_only)

@@ -59,6 +59,18 @@ The tool reports progress at 3 stages:
 
 In foreground mode (default), clients receive these as streaming progress notifications. In background mode (`task=True`), clients poll for progress updates.
 
+### Cost confirmation (elicitation)
+
+When all of these conditions are met, `generate_image` asks the user to confirm before calling the provider:
+
+1. The resolved provider is in `IMAGE_GENERATION_MCP_PAID_PROVIDERS` (default: `"openai"`)
+2. The MCP client supports [elicitation](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/elicitation) (advertised via `ClientCapabilities.elicitation`)
+
+If the user declines or cancels, the tool returns a cancellation message without making the API call. If the client does not support elicitation, generation proceeds without confirmation (current behavior preserved).
+
+!!! note "Elicitation client support"
+    Elicitation was added in the MCP spec 2025-06-18 revision. As of this writing, few clients support it. The confirmation is a progressive enhancement — it activates automatically on capable clients and is invisible on others.
+
 ### Example
 
 ```
