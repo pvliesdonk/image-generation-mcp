@@ -304,5 +304,5 @@ async def test_image_metadata_resource_missing_sidecar(tmp_path: Path) -> None:
     from fastmcp.exceptions import McpError, ResourceError
 
     async with Client(mcp) as client:
-        with pytest.raises((ResourceError, McpError, Exception)):
+        with pytest.raises((ResourceError, McpError)):
             await client.read_resource(f"image://{image_id}/metadata")

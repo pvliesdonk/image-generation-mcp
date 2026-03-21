@@ -243,17 +243,10 @@ class TestCmdServe:
 
     def test_cmd_serve_import_error_exits(self) -> None:
         """ImportError from create_server triggers sys.exit(1)."""
-        import builtins
-
-        real_import = builtins.__import__
-
-        def mock_import(name: str, *args: object, **kwargs: object) -> object:
-            if name == "image_generation_mcp.mcp_server":
-                raise ImportError("FastMCP not found")
-            return real_import(name, *args, **kwargs)
+        import sys
 
         with (
-            patch("builtins.__import__", side_effect=mock_import),
+            patch.dict(sys.modules, {"image_generation_mcp.mcp_server": None}),
             pytest.raises(SystemExit) as exc_info,
         ):
             args = argparse.Namespace(
@@ -294,17 +287,19 @@ class TestMain:
         """main without --verbose sets INFO log level."""
         import logging
 
-        mock_server = MagicMock()
-        mock_create = MagicMock(return_value=mock_server)
-
-        with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
-            patch("sys.argv", ["image-generation-mcp", "serve"]),
-        ):
-            main()
-
         root = logging.getLogger()
-        assert root.level == logging.INFO
+        original_level = root.level
+        try:
+            mock_server = MagicMock()
+            mock_create = MagicMock(return_value=mock_server)
+            with (
+                patch("image_generation_mcp.mcp_server.create_server", mock_create),
+                patch("sys.argv", ["image-generation-mcp", "serve"]),
+            ):
+                main()
+            assert root.level == logging.INFO
+        finally:
+            root.setLevel(original_level)
 
     def test_main_value_error_exits(self) -> None:
         """main calls sys.exit(1) when command raises ValueError."""

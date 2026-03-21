@@ -6,7 +6,7 @@ Covers:
 - openai_api_key, a1111_host, a1111_model, default_provider branches
 - TRANSFORM_CACHE_SIZE invalid value logs warning and uses default
 - paid_providers comma-separated parsing
-- get_log_level (via read_only env var)
+- read_only env var branch
 """
 
 from __future__ import annotations
