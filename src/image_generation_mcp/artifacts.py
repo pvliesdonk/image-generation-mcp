@@ -126,11 +126,11 @@ class ArtifactStore:
 _artifact_store: ArtifactStore | None = None
 
 
-def set_artifact_store(store: ArtifactStore) -> None:
+def set_artifact_store(store: ArtifactStore | None) -> None:
     """Set the module-level artifact store (called from lifespan).
 
     Args:
-        store: The :class:`ArtifactStore` instance to use.
+        store: The :class:`ArtifactStore` instance to use, or ``None`` to clear.
     """
     global _artifact_store
     _artifact_store = store

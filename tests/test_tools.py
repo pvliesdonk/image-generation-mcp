@@ -723,7 +723,19 @@ class TestShowImageDownloadUrl:
             assert "download_url" in meta
             assert meta["download_url"].startswith("https://mcp.example.com/artifacts/")
         finally:
-            set_artifact_store(None)  # type: ignore[arg-type]
+            set_artifact_store(None)
+
+    async def test_no_download_url_when_artifact_store_not_initialized(
+        self, _registered: tuple[ImageService, str]
+    ) -> None:
+        """download_url absent when artifact store not initialized (RuntimeError)."""
+        service, image_id = _registered
+        result = await self._call_show(
+            service, image_id, base_url="https://mcp.example.com"
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "download_url" not in meta
 
     async def test_no_download_url_when_with_link_false(
         self, _registered: tuple[ImageService, str]
