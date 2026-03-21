@@ -114,6 +114,8 @@ class TestMakeDegraded:
         assert caps.degraded is True
         assert caps.models == ()
         assert caps.discovered_at == 12345.0
+        assert caps.supports_background is False
+        assert caps.supports_negative_prompt is False
 
 
 class TestPlaceholderDiscoverCapabilities:
