@@ -284,9 +284,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             tw, th = PILImage.open(io.BytesIO(td)).size
             return td, tm, (tw, th)
 
-        thumb_data, thumb_mime, thumb_dims = await asyncio.to_thread(
-            _make_thumb, data
-        )
+        thumb_data, thumb_mime, thumb_dims = await asyncio.to_thread(_make_thumb, data)
         thumb_b64 = base64.b64encode(thumb_data).decode("ascii")
 
         transform_params: dict[str, int | str] = {}
