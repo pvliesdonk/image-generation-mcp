@@ -212,6 +212,11 @@ class TestShowImageBasic:
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
         assert len(image_items) == 1
         assert image_items[0].data  # non-empty base64
+        # ImageContent is always a WebP thumbnail capped at 512px
+        assert image_items[0].mimeType == "image/webp"
+        raw = base64.b64decode(image_items[0].data)
+        img = Image.open(io.BytesIO(raw))
+        assert max(img.size) <= 512
 
     async def test_returns_text_metadata(
         self, registered_image: tuple[ImageService, str]
@@ -223,6 +228,7 @@ class TestShowImageBasic:
         meta = json.loads(text_items[0].text)
         assert meta["image_id"] == image_id
         assert "dimensions" in meta
+        assert "thumbnail_dimensions" in meta
         assert "format" in meta
         assert "transforms_applied" in meta
 
@@ -255,29 +261,37 @@ class TestShowImageFormatConversion:
     ) -> None:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "format=webp")
+
+        # ImageContent is always a WebP thumbnail (capped at 512px)
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
         assert image_items[0].mimeType == "image/webp"
-
-        # Verify the bytes are actually WebP
         raw = base64.b64decode(image_items[0].data)
         img = Image.open(io.BytesIO(raw))
         assert img.format == "WEBP"
+        assert max(img.size) <= 512
 
+        # Metadata records the requested transform
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
         assert meta["transforms_applied"]["format"] == "webp"
+        assert "thumbnail_dimensions" in meta
 
-    async def test_format_jpeg(
+    async def test_format_jpeg_metadata(
         self, registered_image: tuple[ImageService, str]
     ) -> None:
+        """Format conversion is recorded in metadata; thumbnail is still WebP."""
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "format=jpeg")
-        image_items = [c for c in result.content if isinstance(c, ImageContent)]
-        assert image_items[0].mimeType == "image/jpeg"
 
-        raw = base64.b64decode(image_items[0].data)
-        img = Image.open(io.BytesIO(raw))
-        assert img.format == "JPEG"
+        # ImageContent is always WebP thumbnail regardless of requested format
+        image_items = [c for c in result.content if isinstance(c, ImageContent)]
+        assert image_items[0].mimeType == "image/webp"
+
+        # Metadata records the requested jpeg conversion
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert meta["transforms_applied"]["format"] == "jpeg"
+        assert meta["format"] == "image/jpeg"
 
 
 class TestShowImageResize:
@@ -300,14 +314,19 @@ class TestShowImageResize:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "width=100")
 
+        # ImageContent is a WebP thumbnail capped at 512px
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
+        assert image_items[0].mimeType == "image/webp"
         raw = base64.b64decode(image_items[0].data)
         img = Image.open(io.BytesIO(raw))
-        assert img.width == 100
+        assert max(img.size) <= 512
 
+        # Metadata records the requested width transform
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
         assert meta["transforms_applied"]["width"] == 100
+        assert meta["dimensions"][0] == 100
+        assert "thumbnail_dimensions" in meta
 
     async def test_height_only_resize(
         self, registered_image: tuple[ImageService, str]
@@ -315,14 +334,19 @@ class TestShowImageResize:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "height=60")
 
+        # ImageContent is a WebP thumbnail capped at 512px
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
+        assert image_items[0].mimeType == "image/webp"
         raw = base64.b64decode(image_items[0].data)
         img = Image.open(io.BytesIO(raw))
-        assert img.height == 60
+        assert max(img.size) <= 512
 
+        # Metadata records the requested height transform
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
         assert meta["transforms_applied"]["height"] == 60
+        assert meta["dimensions"][1] == 60
+        assert "thumbnail_dimensions" in meta
 
     async def test_crop_width_and_height(
         self, registered_image: tuple[ImageService, str]
@@ -330,12 +354,13 @@ class TestShowImageResize:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "width=80&height=80")
 
+        # ImageContent is a WebP thumbnail capped at 512px
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
-        raw = base64.b64decode(image_items[0].data)
-        img = Image.open(io.BytesIO(raw))
-        assert img.size == (80, 80)
+        assert image_items[0].mimeType == "image/webp"
 
+        # Metadata records the requested crop
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
         assert meta["transforms_applied"]["width"] == 80
         assert meta["transforms_applied"]["height"] == 80
+        assert meta["dimensions"] == [80, 80]
