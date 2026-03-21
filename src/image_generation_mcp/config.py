@@ -83,6 +83,8 @@ class ServerConfig:
         a1111_host: Automatic1111 WebUI base URL.
         default_provider: Default provider for generation (``"auto"``
             selects based on prompt analysis).
+        transform_cache_size: Maximum number of transformed image results
+            to keep in the in-memory LRU cache.
     """
 
     read_only: bool = True
@@ -91,6 +93,7 @@ class ServerConfig:
     a1111_host: str | None = None
     a1111_model: str | None = None
     default_provider: str = "auto"
+    transform_cache_size: int = 64
 
 
 def load_config() -> ServerConfig:
@@ -104,6 +107,7 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GENERATION_MCP_A1111_HOST``: A1111 WebUI URL.
     - ``IMAGE_GENERATION_MCP_A1111_MODEL``: A1111 checkpoint name for preset detection.
     - ``IMAGE_GENERATION_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
+    - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
 
     Returns:
         A populated :class:`ServerConfig` instance.
@@ -131,6 +135,14 @@ def load_config() -> ServerConfig:
 
     if provider := _env("DEFAULT_PROVIDER"):
         kwargs["default_provider"] = provider
+
+    if raw_cache_size := _env("TRANSFORM_CACHE_SIZE"):
+        try:
+            kwargs["transform_cache_size"] = int(raw_cache_size)
+        except ValueError:
+            logger.warning(
+                "Invalid TRANSFORM_CACHE_SIZE=%r — using default 64", raw_cache_size
+            )
 
     config = ServerConfig(**kwargs)
     logger.debug("load_config: read_only=%s (raw=%r)", config.read_only, raw_read_only)
