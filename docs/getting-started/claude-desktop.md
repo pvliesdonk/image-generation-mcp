@@ -108,3 +108,7 @@ After restarting Claude Desktop:
 - Check the provider is available: ask Claude to run `list_providers`
 - For OpenAI: verify your API key is valid and has image generation access
 - For A1111: verify the WebUI is running and accessible at the configured host
+
+### Mobile app limitations
+
+The Claude mobile app has a known bug with MCP Apps (interactive viewer). Image generation works, but the viewer iframe fails with "Failed to fetch app content." Use `create_download_link` to get a browser-accessible URL instead. See [Client Compatibility](../guides/client-compatibility.md) for details.

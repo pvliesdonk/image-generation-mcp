@@ -29,6 +29,7 @@ from PIL import Image
 
 from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
+from image_generation_mcp.providers.types import ImageResult
 from image_generation_mcp.service import ImageService
 
 # ---------------------------------------------------------------------------
@@ -51,6 +52,23 @@ def registered_image(service: ImageService) -> tuple[ImageService, str]:
         PlaceholderImageProvider().generate("show test", aspect_ratio="1:1")
     )
     record = service.register_image(result, "placeholder", prompt="show test")
+    return service, record.id
+
+
+def _make_large_png(width: int = 1024, height: int = 768) -> bytes:
+    """Create a synthetic PNG larger than 512px for thumbnail cap tests."""
+    img = Image.new("RGB", (width, height), color=(100, 150, 200))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.fixture
+def large_registered_image(service: ImageService) -> tuple[ImageService, str]:
+    """Register a 1024x768 synthetic image and return (service, image_id)."""
+    png_data = _make_large_png(1024, 768)
+    result = ImageResult(image_data=png_data, content_type="image/png")
+    record = service.register_image(result, "test", prompt="large test")
     return service, record.id
 
 
@@ -364,3 +382,59 @@ class TestShowImageResize:
         assert meta["transforms_applied"]["width"] == 80
         assert meta["transforms_applied"]["height"] == 80
         assert meta["dimensions"] == [80, 80]
+
+
+class TestShowImageThumbnailCap:
+    """show_image caps ImageContent to a 512px WebP thumbnail for large images."""
+
+    async def _call_show(
+        self, service: ImageService, image_id: str, uri_suffix: str = ""
+    ) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("show_image")
+        return await tool.fn(
+            uri=f"image://{image_id}/view{uri_suffix}",
+            service=service,
+        )
+
+    async def test_large_image_downscaled_to_512(
+        self, large_registered_image: tuple[ImageService, str]
+    ) -> None:
+        """A 1024x768 image is downscaled so longest edge is 512px."""
+        service, image_id = large_registered_image
+        result = await self._call_show(service, image_id)
+
+        image_items = [c for c in result.content if isinstance(c, ImageContent)]
+        assert image_items[0].mimeType == "image/webp"
+        raw = base64.b64decode(image_items[0].data)
+        img = Image.open(io.BytesIO(raw))
+        # Longest edge must be exactly 512 (downscaled from 1024)
+        assert max(img.size) == 512
+        # Aspect ratio preserved: 1024:768 = 512:384
+        assert img.size == (512, 384)
+
+    async def test_large_image_metadata_reports_original_dimensions(
+        self, large_registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Metadata dimensions reflect original size, not thumbnail."""
+        service, image_id = large_registered_image
+        result = await self._call_show(service, image_id)
+
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        # dimensions = original (no transforms requested)
+        assert meta["dimensions"] == [1024, 768]
+        # thumbnail_dimensions = downscaled
+        assert meta["thumbnail_dimensions"] == [512, 384]
+
+    async def test_large_image_under_1mb(
+        self, large_registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Thumbnail base64 stays well under the 1 MB client limit."""
+        service, image_id = large_registered_image
+        result = await self._call_show(service, image_id)
+
+        image_items = [c for c in result.content if isinstance(c, ImageContent)]
+        # base64 string length < 1 MB
+        assert len(image_items[0].data) < 1_000_000
