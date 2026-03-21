@@ -9,6 +9,7 @@ Ported from questfoundry — prompt distillation removed entirely.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -303,16 +304,24 @@ class A1111ImageProvider:
         """
         discovered_at = time.time()
 
-        try:
-            models_response = await self._client.get(f"{self._host}/sdapi/v1/sd-models")
-            options_response = await self._client.get(f"{self._host}/sdapi/v1/options")
-        except (httpx.ConnectError, httpx.TimeoutException) as e:
-            logger.warning(
-                "A1111 unreachable during capability discovery at %s: %s",
-                self._host,
-                e,
-            )
-            return make_degraded("a1111", discovered_at)
+        results = await asyncio.gather(
+            self._client.get(f"{self._host}/sdapi/v1/sd-models"),
+            self._client.get(f"{self._host}/sdapi/v1/options"),
+            return_exceptions=True,
+        )
+
+        for result in results:
+            if isinstance(result, (httpx.ConnectError, httpx.TimeoutException)):
+                logger.warning(
+                    "A1111 unreachable during capability discovery at %s: %s",
+                    self._host,
+                    result,
+                )
+                return make_degraded("a1111", discovered_at)
+            if isinstance(result, BaseException):
+                raise result
+
+        models_response, options_response = results
 
         # Log the active checkpoint from /options
         if options_response.status_code == 200:
