@@ -14,7 +14,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -327,7 +327,10 @@ class A1111ImageProvider:
             )
             return make_degraded("a1111", discovered_at)
 
-        models_response, options_response = results
+        models_response, options_response = cast(
+            "tuple[httpx.Response, httpx.Response]",
+            tuple(results),
+        )
 
         # Log the active checkpoint from /options
         if options_response.status_code == 200:
