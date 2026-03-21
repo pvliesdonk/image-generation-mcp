@@ -411,9 +411,7 @@ class TestArtifactHandler:
         assert response.status_code == 200
         assert "image/png" in response.headers["content-type"]
 
-    def test_image_not_in_registry_returns_404(
-        self, service: ImageService
-    ) -> None:
+    def test_image_not_in_registry_returns_404(self, service: ImageService) -> None:
         """Token for a non-existent image_id returns 404 via ImageProviderError."""
         client = self._make_app_with_service(service)
         store: ArtifactStore = client._artifact_store  # type: ignore[attr-defined]
