@@ -193,8 +193,6 @@ _IMAGE_VIEWER_HTML = """\
     @media (prefers-color-scheme: dark) {
       #download { background: #3b82f6; }
       #download:hover { background: #2563eb; }
-    }
-    @media (prefers-color-scheme: dark) {
       #meta { color: #aaa; }
       #placeholder { color: #777; }
     }
@@ -322,7 +320,16 @@ _IMAGE_VIEWER_HTML = """\
       if (!key && text) {
         try { key = JSON.parse(text.text).image_id; } catch (e) { console.warn("Image viewer: failed to get image_id from tool result", e); }
       }
-      if (key) saveState(key, img, text);
+      // Strip download_url before persisting — tokens expire after 5 min
+      let persistText = text;
+      if (text && text.text) {
+        try {
+          const parsed = JSON.parse(text.text);
+          delete parsed.download_url;
+          persistText = Object.assign({}, text, { text: JSON.stringify(parsed, null, 2) });
+        } catch (e) { /* keep original */ }
+      }
+      if (key) saveState(key, img, persistText);
     };
 
     await app.connect();

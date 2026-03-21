@@ -375,8 +375,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     store = get_artifact_store()
                     token = store.create_token(uri, ttl_seconds=300)
                     metadata["download_url"] = f"{base_url}/artifacts/{token}"
-                except Exception:
-                    pass  # stdio transport or artifact store not available
+                except RuntimeError:
+                    pass  # stdio transport — artifact store not initialised
 
         return ToolResult(
             content=[
