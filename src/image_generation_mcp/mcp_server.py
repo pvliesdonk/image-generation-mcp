@@ -192,6 +192,7 @@ def _build_oidc_auth() -> Any:
         required_scopes=required_scopes,
         jwt_signing_key=jwt_signing_key,
         verify_id_token=verify_id_token,
+        require_authorization_consent=False,
     )
 
 
