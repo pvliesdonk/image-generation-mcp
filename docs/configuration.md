@@ -50,7 +50,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SERVER_NAME` | str | `image-generation-mcp` | Server name shown to MCP clients in the initialization response. |
 | `IMAGE_GENERATION_MCP_INSTRUCTIONS` | str | (dynamic) | System-level instructions injected into LLM context. Defaults to a description reflecting the read-only/read-write state. |
-| `IMAGE_GENERATION_MCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
+| `FASTMCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. Controls FastMCP internals (auth, transport) directly; app loggers use `INFO` unless overridden by `--verbose`. |
 | `IMAGE_GENERATION_MCP_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path for streamable-HTTP transport. |
 
 ## Example configurations
