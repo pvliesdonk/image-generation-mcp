@@ -327,7 +327,7 @@ _IMAGE_VIEWER_HTML = """\
           const parsed = JSON.parse(text.text);
           delete parsed.download_url;
           persistText = Object.assign({}, text, { text: JSON.stringify(parsed, null, 2) });
-        } catch (e) { /* keep original */ }
+        } catch (e) { console.warn("Image viewer: failed to strip download_url before persisting", e); }
       }
       if (key) saveState(key, img, persistText);
     };

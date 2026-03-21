@@ -369,9 +369,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if with_link:
             base_url = (config.base_url or "").rstrip("/")
             if base_url:
-                try:
-                    from .artifacts import get_artifact_store
+                from .artifacts import get_artifact_store
 
+                try:
                     store = get_artifact_store()
                     token = store.create_token(uri, ttl_seconds=300)
                     metadata["download_url"] = f"{base_url}/artifacts/{token}"
