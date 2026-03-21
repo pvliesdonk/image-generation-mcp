@@ -19,6 +19,7 @@ Acceptance criteria verified:
 
 from __future__ import annotations
 
+import base64
 import io
 import json
 
@@ -51,6 +52,7 @@ def ro_server(monkeypatch: pytest.MonkeyPatch, tmp_path):
 
     Uses a unique tmp_path scratch directory to isolate image state between tests.
     """
+    monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "true")
     monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
     return create_server()
 
@@ -151,14 +153,10 @@ class TestImageViewResource:
 
         assert len(contents) == 1
         content = contents[0]
-        # BlobResourceContents has blob attribute (base64-encoded bytes)
-        assert hasattr(content, "blob") or hasattr(content, "text")
-        if hasattr(content, "blob"):
-            raw = content.blob
-            assert len(raw) > 0
-        else:
-            # text content — should be non-empty
-            assert len(content.text) > 0
+        assert hasattr(content, "blob"), (
+            "image_view resource should return BlobResourceContents"
+        )
+        assert len(content.blob) > 0
 
     async def test_no_params_returns_valid_image(self, rw_server) -> None:
         """No params: returned blob is a parseable image."""
@@ -167,13 +165,10 @@ class TestImageViewResource:
             contents = await client.read_resource(f"image://{image_id}/view")
 
         content = contents[0]
-        if hasattr(content, "blob"):
-            import base64
-
-            raw = base64.b64decode(content.blob)
-        else:
-            # fallback: treat text as raw bytes (shouldn't happen for images)
-            raw = content.text.encode("latin-1")
+        assert hasattr(content, "blob"), (
+            "image_view resource should return BlobResourceContents"
+        )
+        raw = base64.b64decode(content.blob)
 
         img = PILImage.open(io.BytesIO(raw))
         assert img.size[0] > 0
@@ -188,16 +183,17 @@ class TestImageViewResource:
             )
 
         content = contents[0]
-        mime = getattr(content, "mimeType", None)
-        if mime is not None:
-            assert mime == "image/webp"
+        assert hasattr(content, "mimeType"), (
+            "image_view resource should include mimeType"
+        )
+        assert content.mimeType == "image/webp"
 
-        if hasattr(content, "blob"):
-            import base64
-
-            raw = base64.b64decode(content.blob)
-            img = PILImage.open(io.BytesIO(raw))
-            assert img.format == "WEBP"
+        assert hasattr(content, "blob"), (
+            "image_view resource should return BlobResourceContents"
+        )
+        raw = base64.b64decode(content.blob)
+        img = PILImage.open(io.BytesIO(raw))
+        assert img.format == "WEBP"
 
     async def test_width_param_resizes_image(self, rw_server) -> None:
         """width=100 resizes the image to 100px wide."""
@@ -206,12 +202,12 @@ class TestImageViewResource:
             contents = await client.read_resource(f"image://{image_id}/view?width=100")
 
         content = contents[0]
-        if hasattr(content, "blob"):
-            import base64
-
-            raw = base64.b64decode(content.blob)
-            img = PILImage.open(io.BytesIO(raw))
-            assert img.width == 100
+        assert hasattr(content, "blob"), (
+            "image_view resource should return BlobResourceContents"
+        )
+        raw = base64.b64decode(content.blob)
+        img = PILImage.open(io.BytesIO(raw))
+        assert img.width == 100
 
     async def test_height_param_resizes_image(self, rw_server) -> None:
         """height=80 resizes the image proportionally to 80px tall."""
@@ -220,12 +216,12 @@ class TestImageViewResource:
             contents = await client.read_resource(f"image://{image_id}/view?height=80")
 
         content = contents[0]
-        if hasattr(content, "blob"):
-            import base64
-
-            raw = base64.b64decode(content.blob)
-            img = PILImage.open(io.BytesIO(raw))
-            assert img.height == 80
+        assert hasattr(content, "blob"), (
+            "image_view resource should return BlobResourceContents"
+        )
+        raw = base64.b64decode(content.blob)
+        img = PILImage.open(io.BytesIO(raw))
+        assert img.height == 80
 
     async def test_width_and_height_params_crop_image(self, rw_server) -> None:
         """width=64&height=64 crops the image to exact dimensions."""
@@ -236,12 +232,12 @@ class TestImageViewResource:
             )
 
         content = contents[0]
-        if hasattr(content, "blob"):
-            import base64
-
-            raw = base64.b64decode(content.blob)
-            img = PILImage.open(io.BytesIO(raw))
-            assert img.size == (64, 64)
+        assert hasattr(content, "blob"), (
+            "image_view resource should return BlobResourceContents"
+        )
+        raw = base64.b64decode(content.blob)
+        img = PILImage.open(io.BytesIO(raw))
+        assert img.size == (64, 64)
 
 
 # ---------------------------------------------------------------------------
