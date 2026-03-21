@@ -100,6 +100,7 @@ Display a registered image with optional on-demand transforms. Accepts a full `i
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `uri` | str | *(required)* | Full `image://` resource URI (e.g., `image://a1b2c3/view?format=webp&width=512`) |
+| `with_link` | bool | `true` | When `true`, include a one-time `download_url` in the metadata if the server is running on HTTP transport with `BASE_URL` configured. |
 
 Transforms are encoded in the URI query string using the same parameters as the `image://{id}/view` resource template: `format`, `width`, `height`, `quality`.
 
@@ -115,13 +116,19 @@ Returns a `ToolResult` with:
   "image_id": "a1b2c3d4e5f6",
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "provider": "openai",
+  "model": "gpt-image-1",
   "dimensions": [1024, 683],
   "thumbnail_dimensions": [512, 342],
   "original_size_bytes": 3145728,
   "format": "image/png",
-  "transforms_applied": {}
+  "transforms_applied": {},
+  "download_url": "https://mcp.example.com/artifacts/7f3a...e9b1"
 }
 ```
+
+The `model` field contains the specific model used by the provider (e.g., `"gpt-image-1"`, `"dreamshaper_xl"`), or `null` if the provider does not report a model name.
+
+The `download_url` field is only present when `with_link` is `true` (default) and the server is running on HTTP transport with `IMAGE_GENERATION_MCP_BASE_URL` configured. The link is a one-time download URL (5-minute TTL) — see `create_download_link` for details.
 
 The `dimensions` field reports the actual image size (or the transformed size if transforms were requested). The `thumbnail_dimensions` field reports the size of the inline preview, which is capped at 512px. When `dimensions` and `thumbnail_dimensions` differ, the inline preview is a downscaled version — use the `image://` resource URI or `create_download_link` for full resolution.
 
@@ -316,7 +323,8 @@ Clients that support [MCP Apps](https://modelcontextprotocol.io/specification/20
 The viewer is a custom HTML resource at `ui://image-viewer/view.html` that:
 
 - Listens for `show_image` tool results via the `@modelcontextprotocol/ext-apps` SDK
-- Displays the image with metadata (prompt, provider, dimensions, file size)
+- Displays the image with metadata (prompt, provider, model name, dimensions, file size)
+- Shows a "Download full resolution" button when `download_url` is available
 - Supports light and dark color schemes
 
 No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. Clients without Apps support see the standard base64 image + metadata response.
