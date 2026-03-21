@@ -69,7 +69,7 @@ When all of these conditions are met, `generate_image` asks the user to confirm 
 If the user declines or cancels, the tool returns a cancellation message without making the API call. If the client does not support elicitation, generation proceeds without confirmation (current behavior preserved).
 
 !!! note "Elicitation client support"
-    Elicitation was added in the MCP spec 2025-06-18 revision. As of March 2026, few clients support it. The confirmation is a progressive enhancement — it activates automatically on capable clients and is invisible on others.
+    Elicitation was added in the MCP spec 2025-06-18 revision. As of this writing, few clients support it. The confirmation is a progressive enhancement — it activates automatically on capable clients and is invisible on others.
 
 ### Example
 

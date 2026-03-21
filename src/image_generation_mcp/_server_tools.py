@@ -17,6 +17,7 @@ from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
+from fastmcp.server.elicitation import AcceptedElicitation
 from fastmcp.tools import ToolResult
 from mcp.types import (
     ClientCapabilities,
@@ -154,11 +155,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     ClientCapabilities(elicitation=ElicitationCapability())
                 )
             except Exception:
+                logger.debug(
+                    "check_client_capability failed; assuming no elicitation support",
+                    exc_info=True,
+                )
                 supports_elicit = False
 
             if supports_elicit:
-                from fastmcp.server.elicitation import AcceptedElicitation
-
                 elicit_result = await ctx.elicit(
                     f"This will use {resolved_name}"
                     f"{f' ({model})' if model else ''}"
@@ -179,7 +182,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         try:
             provider_name, result = await service.generate(
                 prompt,
-                provider=provider,
+                provider=resolved_name,
                 negative_prompt=negative_prompt,
                 aspect_ratio=aspect_ratio,
                 quality=quality,
