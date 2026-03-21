@@ -11,7 +11,9 @@ import logging
 import os
 import sys
 
-from image_generation_mcp.config import _ENV_PREFIX, get_log_level
+from fastmcp.utilities.logging import configure_logging
+
+from image_generation_mcp.config import _ENV_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -120,14 +122,19 @@ def main() -> None:
     parser = _build_parser()
     args = parser.parse_args()
 
-    # -v flag overrides LOG_LEVEL env var; env var overrides default INFO.
-    level = logging.DEBUG if args.verbose else get_log_level()
-    logging.basicConfig(
-        level=level,
-        format="%(levelname)s %(name)s: %(message)s",
-    )
-    # httpx is noisy at DEBUG — keep it at WARNING unless explicitly targeted.
-    if level == logging.DEBUG:
+    # App loggers (image_generation_mcp.*) propagate to root; FastMCP
+    # loggers (fastmcp.*) have propagate=False and are configured via
+    # FASTMCP_LOG_LEVEL at import time.  -v overrides both to DEBUG.
+    level = logging.DEBUG if args.verbose else logging.INFO
+    root = logging.getLogger()
+    root.setLevel(level)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    root.addHandler(handler)
+
+    if args.verbose:
+        configure_logging("DEBUG")
+        # httpx is noisy at DEBUG — keep it at WARNING.
         logging.getLogger("httpx").setLevel(logging.WARNING)
         logging.getLogger("httpcore").setLevel(logging.WARNING)
 

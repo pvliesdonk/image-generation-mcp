@@ -183,7 +183,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SERVER_NAME` | str | `image-generation-mcp` | Server name shown to MCP clients |
 | `IMAGE_GENERATION_MCP_INSTRUCTIONS` | str | (dynamic) | System instructions for LLM context |
-| `IMAGE_GENERATION_MCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` |
+| `FASTMCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` (controls both FastMCP and app loggers) |
 | `IMAGE_GENERATION_MCP_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path |
 
 ## CLI reference
