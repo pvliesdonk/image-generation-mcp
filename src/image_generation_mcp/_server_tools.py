@@ -42,6 +42,7 @@ from .service import ImageService
 logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+_THUMBNAIL_MAX_PX = 512
 
 
 def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
@@ -278,14 +279,15 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # quality 80) to stay under the ~1 MB tool-result size limit
         # imposed by Claude Desktop and other MCP clients.  The full-
         # resolution image remains available via the image:// resource URI.
-        _THUMB_MAX = 512
-        thumb_data, thumb_mime = await asyncio.to_thread(
-            generate_thumbnail, data, _THUMB_MAX, "webp", 80
+        def _make_thumb(src: bytes) -> tuple[bytes, str, tuple[int, int]]:
+            td, tm = generate_thumbnail(src, _THUMBNAIL_MAX_PX, "webp", 80)
+            tw, th = PILImage.open(io.BytesIO(td)).size
+            return td, tm, (tw, th)
+
+        thumb_data, thumb_mime, thumb_dims = await asyncio.to_thread(
+            _make_thumb, data
         )
         thumb_b64 = base64.b64encode(thumb_data).decode("ascii")
-        thumb_img = await asyncio.to_thread(
-            lambda: PILImage.open(io.BytesIO(thumb_data)).size
-        )
 
         transform_params: dict[str, int | str] = {}
         if fmt:
@@ -303,7 +305,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "prompt": record.prompt,
             "provider": record.provider,
             "dimensions": [final_w, final_h],
-            "thumbnail_dimensions": list(thumb_img),
+            "thumbnail_dimensions": list(thumb_dims),
             "original_size_bytes": original_stat.st_size,
             "format": content_type,
             "transforms_applied": transform_params,

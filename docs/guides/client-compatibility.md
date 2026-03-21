@@ -28,7 +28,7 @@ The server provides multiple ways to deliver images, in order of richness:
 | **MCP Inspector** | Yes | No | Yes | Yes |
 
 !!! note "ImageContent is not widely supported"
-    As of March 2026, Claude Desktop and claude.ai are the only major MCP clients
+    Currently, Claude Desktop and claude.ai are the only major MCP clients
     that reliably render `ImageContent` (base64 images) from tool results. Other
     clients either ignore the image data, show raw base64 text, or return empty
     objects.

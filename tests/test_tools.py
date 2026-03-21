@@ -332,12 +332,12 @@ class TestShowImageResize:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "width=100")
 
-        # ImageContent is a WebP thumbnail capped at 512px
+        # ImageContent is a WebP thumbnail; 100px < 512px cap so resize preserved
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
         assert image_items[0].mimeType == "image/webp"
         raw = base64.b64decode(image_items[0].data)
         img = Image.open(io.BytesIO(raw))
-        assert max(img.size) <= 512
+        assert img.width == 100  # resize applied; still under 512px cap
 
         # Metadata records the requested width transform
         text_items = [c for c in result.content if isinstance(c, TextContent)]
@@ -352,12 +352,12 @@ class TestShowImageResize:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "height=60")
 
-        # ImageContent is a WebP thumbnail capped at 512px
+        # ImageContent is a WebP thumbnail; 60px < 512px cap so resize preserved
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
         assert image_items[0].mimeType == "image/webp"
         raw = base64.b64decode(image_items[0].data)
         img = Image.open(io.BytesIO(raw))
-        assert max(img.size) <= 512
+        assert img.height == 60  # resize applied; still under 512px cap
 
         # Metadata records the requested height transform
         text_items = [c for c in result.content if isinstance(c, TextContent)]
@@ -372,9 +372,12 @@ class TestShowImageResize:
         service, image_id = registered_image
         result = await self._call_show(service, image_id, "width=80&height=80")
 
-        # ImageContent is a WebP thumbnail capped at 512px
+        # ImageContent is a WebP thumbnail; 80px < 512px cap so crop preserved
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
         assert image_items[0].mimeType == "image/webp"
+        raw = base64.b64decode(image_items[0].data)
+        img = Image.open(io.BytesIO(raw))
+        assert img.size == (80, 80)  # crop applied; still under 512px cap
 
         # Metadata records the requested crop
         text_items = [c for c in result.content if isinstance(c, TextContent)]
