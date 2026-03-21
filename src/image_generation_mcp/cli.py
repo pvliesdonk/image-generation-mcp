@@ -138,9 +138,9 @@ def main() -> None:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-    handler = _COMMANDS[args.command]
+    cmd = _COMMANDS[args.command]
     try:
-        handler(args)
+        cmd(args)
     except ValueError as exc:
         logger.error("%s", exc)
         sys.exit(1)

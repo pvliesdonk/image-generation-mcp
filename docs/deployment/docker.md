@@ -17,7 +17,7 @@ The server listens on port 8000 with HTTP transport by default.
 | `IMAGE_GENERATION_MCP_A1111_HOST` | -- | A1111 WebUI URL; enables A1111 provider |
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | `~/.image-generation-mcp/images/` | Image storage directory |
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | -- | Enable bearer token auth |
-| `FASTMCP_LOG_LEVEL` | `INFO` | Log level (FastMCP + app loggers) |
+| `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals; app loggers use `INFO` unless `-v` is used |
 | `IMAGE_GENERATION_MCP_SERVER_NAME` | `image-generation-mcp` | Server name shown to clients |
 
 See [Configuration](../configuration.md) for the full environment variable reference.
