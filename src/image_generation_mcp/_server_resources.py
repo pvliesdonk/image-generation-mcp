@@ -202,10 +202,32 @@ _IMAGE_VIEWER_HTML = """\
 
     const app = new App({ name: "Image Viewer", version: "1.0.0" });
 
-    app.ontoolresult = ({ content }) => {
-      const img = content?.find(c => c.type === "image");
-      const text = content?.find(c => c.type === "text");
+    let rendered = false;
+    let imageKey = null;
+    const STORE = "imgview:";
 
+    function extractImageKey(uri) {
+      if (!uri) return null;
+      const m = uri.match(/^image:\\/\\/([^/?]+)/);
+      return m ? m[1] : null;
+    }
+
+    function saveState(key, img, text) {
+      if (!key) return;
+      try {
+        localStorage.setItem(STORE + key, JSON.stringify({ img, text }));
+      } catch (e) { /* quota exceeded or unavailable */ }
+    }
+
+    function loadState(key) {
+      if (!key) return null;
+      try {
+        const raw = localStorage.getItem(STORE + key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+
+    function render(img, text) {
       const imgEl = document.getElementById("image");
 
       if (img) {
@@ -232,6 +254,27 @@ _IMAGE_VIEWER_HTML = """\
             parts.join(" \\u00b7 ");
         } catch (e) { console.warn("Image viewer: failed to parse metadata", e); }
       }
+
+      rendered = true;
+    }
+
+    app.ontoolinput = (params) => {
+      imageKey = extractImageKey(params?.arguments?.uri);
+      if (imageKey && !rendered) {
+        const saved = loadState(imageKey);
+        if (saved) render(saved.img, saved.text);
+      }
+    };
+
+    app.ontoolresult = ({ content }) => {
+      const img = content?.find(c => c.type === "image");
+      const text = content?.find(c => c.type === "text");
+      render(img, text);
+      let key = imageKey;
+      if (!key && text) {
+        try { key = JSON.parse(text.text).image_id; } catch (e) {}
+      }
+      if (key) saveState(key, img, text);
     };
 
     await app.connect();

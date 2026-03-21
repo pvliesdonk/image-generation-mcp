@@ -40,6 +40,18 @@ class TestImageViewerResource:
         text = result.contents[0].content
         assert "ontoolresult" in text
 
+    async def test_viewer_html_has_ontoolinput_handler(self, server) -> None:
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "ontoolinput" in text
+
+    async def test_viewer_html_has_localstorage_persistence(self, server) -> None:
+        """Viewer must save/load state via localStorage for restore."""
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "localStorage.setItem" in text
+        assert "localStorage.getItem" in text
+
     async def test_viewer_html_has_image_element(self, server) -> None:
         result = await server.read_resource("ui://image-viewer/view.html")
         text = result.contents[0].content
