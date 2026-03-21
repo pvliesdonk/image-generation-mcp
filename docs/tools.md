@@ -4,7 +4,7 @@ image-generation-mcp exposes three domain tools plus two auto-generated resource
 
 ## generate_image
 
-Generate an image from a text prompt. Returns metadata with resource URIs and a `ResourceLink` to the image. Call `show_image` with the image URI to display it.
+Generate an image from a text prompt. Returns metadata with resource URIs and a `ResourceLink` to the image. Call `show_image` with the image URI to display it. Read `info://prompt-guide` for provider-specific prompt writing tips.
 
 | Property | Value |
 |----------|-------|

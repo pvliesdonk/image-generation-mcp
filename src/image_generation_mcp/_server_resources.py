@@ -30,6 +30,134 @@ logger = logging.getLogger(__name__)
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
 
+_PROMPT_GUIDE = """\
+# Image Generation Prompt Guide
+
+## General Tips
+
+**Aspect ratio:** Choose based on content — `16:9` for landscapes and banners,
+`9:16` for portraits and mobile, `3:2` for photos, `1:1` for icons and avatars.
+
+**Quality levels:** Use `standard` for drafts and iteration. Use `hd` for final
+output (only affects OpenAI — A1111 and placeholder ignore this parameter).
+
+**Negative prompts:** Use them when you want to explicitly exclude unwanted
+elements. Most effective on A1111 (native CLIP support). On OpenAI, they are
+appended as an "Avoid:" clause with weaker effect. Placeholder ignores them.
+
+**Background:** Set `background="transparent"` when generating assets for
+compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
+placeholder. A1111 ignores this parameter.
+
+## OpenAI (gpt-image-1 / dall-e-3)
+
+Natural language descriptions work well — write prompts as you would describe a
+scene to a person. No need for comma-separated tags.
+
+**Negative prompts:** Use an `"Avoid:"` clause appended to the prompt text,
+e.g. `"Avoid: blurry, low resolution, watermark"`. The effect is weaker than
+native negative prompt support.
+
+**Strengths:** Text rendering, logos, typography, posters, banners, signs.
+Also strong at general-purpose generation and following complex instructions.
+
+**Style keywords:** Include style direction in natural language — "photorealistic",
+"cinematic", "watercolor", "digital art", "minimalist", "flat design", "isometric",
+"pixel art". These steer the aesthetic without needing CLIP tags.
+
+**Text rendering tips:** Enclose exact text in quotes within the prompt, e.g.
+`'a coffee shop sign that says "OPEN"'`. Specify font style if needed:
+"bold sans-serif", "handwritten", "neon sign lettering".
+
+**Quality levels:** `standard` and `hd` are both supported. `gpt-image-1`
+maps both to its highest quality tier.
+
+## A1111 / Stable Diffusion
+
+Use comma-separated CLIP tags for best results. Order tags by importance —
+tokens near the front of the prompt have the most influence.
+
+**Tag order:** `subject, medium, style, lighting, camera, quality tags`
+
+**Example prompts:**
+
+Portrait:
+```
+1girl, long hair, blue eyes, school uniform, standing, cherry blossoms,
+soft lighting, detailed face, masterpiece, best quality
+```
+
+Landscape:
+```
+mountain landscape, sunset, dramatic clouds, lake reflection,
+cinematic lighting, wide angle, 8k, highly detailed
+```
+
+Product shot:
+```
+white sneakers, product photography, studio lighting, white background,
+sharp focus, commercial photography, high resolution
+```
+
+**Quality tags:** Add these to improve output quality:
+- `masterpiece, best quality` — general quality boost
+- `highly detailed, sharp focus` — detail enhancement
+- `8k, ultra high res` — resolution boost (use sparingly)
+- `professional, award winning` — style refinement
+
+**Negative prompt template:**
+
+General-purpose:
+```
+lowres, bad anatomy, bad hands, text, error, missing fingers,
+extra digit, fewer digits, cropped, worst quality, low quality,
+normal quality, jpeg artifacts, signature, watermark, blurry
+```
+
+For photorealism, add: `cartoon, anime, illustration, painting, drawing, art, sketch`
+
+For anime/illustration, add: `photo, realistic, 3d render`
+
+**BREAK syntax:** Use `BREAK` to split long prompts into separate CLIP chunks,
+giving each concept its own 77-token budget:
+```
+1girl, detailed face, blue eyes BREAK
+forest background, sunlight through trees BREAK
+masterpiece, best quality, sharp focus
+```
+
+**CLIP token limits:**
+- SD 1.5: 77 tokens per chunk. Front-load the most important tags.
+- SDXL: 77 tokens per chunk, two CLIP encoders (ViT-L + ViT-bigG).
+
+**Model-specific advice:**
+- **SD 1.5** — Best at 768px base resolution, 30 steps, CFG 7.0. Good for anime,
+  illustration, and stylized content. Smaller model, faster generation.
+- **SDXL** — Best at 1024px base resolution, 35 steps, CFG 7.5. Better for
+  photorealism and high-detail scenes. Use for final-quality output.
+- **SDXL Lightning/Turbo** — Distilled models, only 6 steps needed, CFG 2.0.
+  Very fast but less controllable. Good for rapid iteration.
+
+## Placeholder
+
+Use for quick testing, mock-ups, and zero-cost drafts. The placeholder
+provider produces solid-color PNG images — the color is selected from a
+6-color palette via SHA-256 hash of the prompt text, so the same prompt
+always produces the same color. Supports `background="transparent"` for
+RGBA output with alpha=0.
+
+## Provider Selection
+
+1. **Text, logos, typography** → `openai`
+2. **Photorealism, portraits, product shots** → prefer `a1111`, fall back to `openai`
+3. **Anime, illustration, painting, art** → prefer `a1111`, fall back to `openai`
+4. **Quick test or placeholder** → `placeholder`
+5. **General requests** → `openai` (most versatile, default)
+
+Use `provider="auto"` for automatic selection, or specify a provider directly.
+Call `list_providers` to see which providers are currently available.
+"""
+
 _IMAGE_VIEWER_HTML = """\
 <!DOCTYPE html>
 <html>
@@ -118,6 +246,25 @@ def register_resources(mcp: FastMCP) -> None:
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register resources on.
     """
+
+    @mcp.resource(
+        "info://prompt-guide",
+        description=(
+            "Provider-specific prompt writing tips. Read before using "
+            "A1111/Stable Diffusion to learn CLIP tag format, quality "
+            "tags, and negative prompt templates. Also covers OpenAI "
+            "prompt style and provider selection guidance."
+        ),
+        mime_type="text/markdown",
+        icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
+    )
+    def prompt_guide() -> str:
+        """Return per-provider prompt writing guidance as Markdown.
+
+        Returns:
+            Markdown text with per-provider prompt writing tips.
+        """
+        return _PROMPT_GUIDE
 
     @mcp.resource(
         "info://providers",
