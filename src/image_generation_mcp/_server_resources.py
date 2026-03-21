@@ -202,10 +202,57 @@ _IMAGE_VIEWER_HTML = """\
 
     const app = new App({ name: "Image Viewer", version: "1.0.0" });
 
-    app.ontoolresult = ({ content }) => {
-      const img = content?.find(c => c.type === "image");
-      const text = content?.find(c => c.type === "text");
+    let rendered = false;
+    let imageKey = null;
+    const STORE = "imgview:";
+    const MAX_ENTRIES = 5;
 
+    function extractImageKey(uri) {
+      if (!uri) return null;
+      const m = uri.match(/^image:\\/\\/([^/?]+)/);
+      return m ? m[1] : null;
+    }
+
+    function storeKeys() {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(STORE)) keys.push(k);
+      }
+      return keys;
+    }
+
+    function saveState(key, img, text) {
+      if (!key) return;
+      const fullKey = STORE + key;
+      const value = JSON.stringify({ img, text });
+      try {
+        localStorage.setItem(fullKey, value);
+      } catch (e) {
+        // Quota exceeded — evict oldest entries and retry
+        const keys = storeKeys().filter(k => k !== fullKey);
+        while (keys.length > 0) {
+          localStorage.removeItem(keys.shift());
+          try { localStorage.setItem(fullKey, value); return; } catch (_) {}
+        }
+        console.warn("Image viewer: localStorage quota exceeded", e);
+      }
+      // Enforce LRU cap
+      const all = storeKeys().filter(k => k !== fullKey);
+      while (all.length >= MAX_ENTRIES) {
+        localStorage.removeItem(all.shift());
+      }
+    }
+
+    function loadState(key) {
+      if (!key) return null;
+      try {
+        const raw = localStorage.getItem(STORE + key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { console.warn("Image viewer: failed to load cached state", e); return null; }
+    }
+
+    function render(img, text) {
       const imgEl = document.getElementById("image");
 
       if (img) {
@@ -232,6 +279,28 @@ _IMAGE_VIEWER_HTML = """\
             parts.join(" \\u00b7 ");
         } catch (e) { console.warn("Image viewer: failed to parse metadata", e); }
       }
+
+      rendered = true;
+    }
+
+    app.ontoolinput = (params) => {
+      imageKey = extractImageKey(params?.arguments?.uri);
+      if (imageKey && !rendered) {
+        const saved = loadState(imageKey);
+        if (saved) render(saved.img, saved.text);
+      }
+    };
+
+    app.ontoolresult = ({ content }) => {
+      const img = content?.find(c => c.type === "image");
+      const text = content?.find(c => c.type === "text");
+      // Always render live result — it takes precedence over cached state
+      render(img, text);
+      let key = imageKey;
+      if (!key && text) {
+        try { key = JSON.parse(text.text).image_id; } catch (e) { console.warn("Image viewer: failed to get image_id from tool result", e); }
+      }
+      if (key) saveState(key, img, text);
     };
 
     await app.connect();
