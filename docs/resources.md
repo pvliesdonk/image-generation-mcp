@@ -215,4 +215,6 @@ Interactive image viewer rendered by MCP Apps-capable clients (Claude Desktop, c
 
 This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) — a custom HTML page loaded in a sandboxed iframe. It listens for `show_image` tool results and displays the image with metadata. The `show_image` tool is wired to this resource via `AppConfig(resourceUri=...)`.
 
+The viewer persists rendered images in `localStorage` (keyed by image ID, LRU-capped at 5 entries). When a new widget instance loads, the `ontoolinput` handler restores cached state immediately so the image is visible before the tool result arrives. The live `ontoolresult` always takes precedence over the cached version.
+
 Clients without MCP Apps support ignore this resource entirely.

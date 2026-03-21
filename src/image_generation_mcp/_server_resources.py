@@ -205,6 +205,7 @@ _IMAGE_VIEWER_HTML = """\
     let rendered = false;
     let imageKey = null;
     const STORE = "imgview:";
+    const MAX_ENTRIES = 5;
 
     function extractImageKey(uri) {
       if (!uri) return null;
@@ -212,11 +213,35 @@ _IMAGE_VIEWER_HTML = """\
       return m ? m[1] : null;
     }
 
+    function storeKeys() {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(STORE)) keys.push(k);
+      }
+      return keys;
+    }
+
     function saveState(key, img, text) {
       if (!key) return;
+      const fullKey = STORE + key;
+      const value = JSON.stringify({ img, text });
       try {
-        localStorage.setItem(STORE + key, JSON.stringify({ img, text }));
-      } catch (e) { /* quota exceeded or unavailable */ }
+        localStorage.setItem(fullKey, value);
+      } catch (e) {
+        // Quota exceeded — evict oldest entries and retry
+        const keys = storeKeys().filter(k => k !== fullKey);
+        while (keys.length > 0) {
+          localStorage.removeItem(keys.shift());
+          try { localStorage.setItem(fullKey, value); return; } catch (_) {}
+        }
+        console.warn("Image viewer: localStorage quota exceeded", e);
+      }
+      // Enforce LRU cap
+      const all = storeKeys().filter(k => k !== fullKey);
+      while (all.length >= MAX_ENTRIES) {
+        localStorage.removeItem(all.shift());
+      }
     }
 
     function loadState(key) {
@@ -269,10 +294,11 @@ _IMAGE_VIEWER_HTML = """\
     app.ontoolresult = ({ content }) => {
       const img = content?.find(c => c.type === "image");
       const text = content?.find(c => c.type === "text");
+      // Always render live result — it takes precedence over cached state
       render(img, text);
       let key = imageKey;
       if (!key && text) {
-        try { key = JSON.parse(text.text).image_id; } catch (e) {}
+        try { key = JSON.parse(text.text).image_id; } catch (e) { console.warn("Image viewer: failed to get image_id from tool result", e); }
       }
       if (key) saveState(key, img, text);
     };
