@@ -95,20 +95,23 @@ Transforms are encoded in the URI query string using the same parameters as the 
 
 Returns a `ToolResult` with:
 
-1. **ImageContent** -- the requested image (original or transformed) as base64
-2. **TextContent** -- JSON metadata:
+1. **ImageContent** -- a WebP thumbnail preview (max 512px, always under 1 MB) for inline display in MCP clients. This is always WebP regardless of the requested format.
+2. **TextContent** -- JSON metadata with the full-resolution details:
 
 ```json
 {
   "image_id": "a1b2c3d4e5f6",
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "provider": "openai",
-  "dimensions": [512, 342],
-  "original_size_bytes": 1048576,
-  "format": "image/webp",
-  "transforms_applied": {"format": "webp", "width": 512}
+  "dimensions": [1024, 683],
+  "thumbnail_dimensions": [512, 342],
+  "original_size_bytes": 3145728,
+  "format": "image/png",
+  "transforms_applied": {}
 }
 ```
+
+The `dimensions` field reports the actual image size (or the transformed size if transforms were requested). The `thumbnail_dimensions` field reports the size of the inline preview, which is capped at 512px. When `dimensions` and `thumbnail_dimensions` differ, the inline preview is a downscaled version — use the `image://` resource URI or `create_download_link` for full resolution.
 
 ### Examples
 

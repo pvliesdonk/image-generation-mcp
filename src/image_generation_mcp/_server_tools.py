@@ -24,7 +24,12 @@ from pydantic import AnyUrl
 
 from ._server_deps import get_config, get_service
 from ._server_resources import _IMAGE_VIEWER_URI
-from .processing import convert_format, crop_to_dimensions, resize_image
+from .processing import (
+    convert_format,
+    crop_to_dimensions,
+    generate_thumbnail,
+    resize_image,
+)
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
@@ -37,6 +42,7 @@ from .service import ImageService
 logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+_THUMBNAIL_MAX_PX = 512
 
 
 def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
@@ -216,9 +222,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ``quality`` (1-100, for lossy formats).
 
         Returns:
-            The requested image as base64-encoded ``ImageContent`` plus
-            JSON metadata (image_id, dimensions, format, applied
-            transforms).
+            A WebP thumbnail preview (max 512px, under 1 MB) as
+            ``ImageContent`` plus JSON metadata (image_id, dimensions,
+            thumbnail_dimensions, format, applied transforms).  For
+            full-resolution access, use the ``image://`` resource URI
+            from the metadata.
         """
         parsed = urlparse(uri)
         if parsed.scheme != "image":
@@ -258,8 +266,6 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 convert_format, data, fmt, quality
             )
 
-        img_b64 = base64.b64encode(data).decode("ascii")
-
         # Determine final dimensions — use stored metadata when no spatial
         # transform was applied to avoid an extra Pillow decode.
         transforms_changed_size = width > 0 or height > 0
@@ -268,6 +274,18 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             final_w, final_h = final_img.size
         else:
             final_w, final_h = record.original_dimensions
+
+        # Always cap the ImageContent to a thumbnail (max 512px, WebP,
+        # quality 80) to stay under the ~1 MB tool-result size limit
+        # imposed by Claude Desktop and other MCP clients.  The full-
+        # resolution image remains available via the image:// resource URI.
+        def _make_thumb(src: bytes) -> tuple[bytes, str, tuple[int, int]]:
+            td, tm = generate_thumbnail(src, _THUMBNAIL_MAX_PX, "webp", 80)
+            tw, th = PILImage.open(io.BytesIO(td)).size
+            return td, tm, (tw, th)
+
+        thumb_data, thumb_mime, thumb_dims = await asyncio.to_thread(_make_thumb, data)
+        thumb_b64 = base64.b64encode(thumb_data).decode("ascii")
 
         transform_params: dict[str, int | str] = {}
         if fmt:
@@ -285,6 +303,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "prompt": record.prompt,
             "provider": record.provider,
             "dimensions": [final_w, final_h],
+            "thumbnail_dimensions": list(thumb_dims),
             "original_size_bytes": original_stat.st_size,
             "format": content_type,
             "transforms_applied": transform_params,
@@ -294,8 +313,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             content=[
                 ImageContent(
                     type="image",
-                    data=img_b64,
-                    mimeType=content_type,
+                    data=thumb_b64,
+                    mimeType=thumb_mime,
                 ),
                 TextContent(
                     type="text",

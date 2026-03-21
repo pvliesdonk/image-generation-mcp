@@ -204,10 +204,13 @@ image-generation-mcp serve [OPTIONS]
 
 | Tool | Tags | Task | Parameters | Description |
 |------|------|------|------------|-------------|
-| `generate_image` | `write` | `task=True` | `prompt` (str), `provider` (str, default `"auto"`), `negative_prompt` (str, optional), `aspect_ratio` (str, default `"1:1"`), `quality` (str, default `"standard"`) | Generate an image, returns thumbnail preview + resource URIs |
+| `generate_image` | `write` | `task=True` | `prompt` (str), `provider` (str, default `"auto"`), `negative_prompt` (str, optional), `aspect_ratio` (str, default `"1:1"`), `quality` (str, default `"standard"`) | Generate an image, returns metadata + resource URIs |
+| `show_image` | -- | -- | `uri` (str) | Display an image as inline thumbnail preview with metadata |
 | `list_providers` | -- | -- | *(none)* | List available providers with availability info |
 
-`generate_image` returns a thumbnail (~256px WebP) as `ImageContent` plus JSON metadata as `TextContent` with `image_id`, `original_uri`, `resource_template`, sizes, provider, and file path.
+`generate_image` returns JSON metadata as `TextContent` with `image_id`, `original_uri`, `resource_template`, sizes, and provider, plus a `ResourceLink` to the image. Call `show_image` with the image URI to display it.
+
+`show_image` returns a WebP thumbnail (max 512px, always under 1 MB) as `ImageContent` for inline display, plus JSON metadata. Full-resolution images are available via `image://` resource URIs or `create_download_link`.
 
 Supported aspect ratios: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`.
 Supported quality levels: `standard`, `hd`.

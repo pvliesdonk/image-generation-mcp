@@ -120,6 +120,7 @@ nav:
       - Prompts: prompts.md
   - Guides:
       - Authentication: guides/authentication.md
+      - Client Compatibility: guides/client-compatibility.md
       - Prompt Writing: guides/prompt-writing.md
       - Image Assets: guides/image-assets.md
   - Deployment:
