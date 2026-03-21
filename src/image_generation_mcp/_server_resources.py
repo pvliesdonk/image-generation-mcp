@@ -249,7 +249,7 @@ _IMAGE_VIEWER_HTML = """\
       try {
         const raw = localStorage.getItem(STORE + key);
         return raw ? JSON.parse(raw) : null;
-      } catch (e) { return null; }
+      } catch (e) { console.warn("Image viewer: failed to load cached state", e); return null; }
     }
 
     function render(img, text) {
