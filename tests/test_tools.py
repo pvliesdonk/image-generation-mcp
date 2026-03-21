@@ -88,11 +88,14 @@ class TestGenerateImageReturnShape:
 
         ctx = MagicMock()
         ctx.report_progress = AsyncMock()
+        cfg = MagicMock()
+        cfg.paid_providers = frozenset()
 
         return await tool.fn(
             prompt="test image",
             provider="placeholder",
             service=service,
+            config=cfg,
             ctx=ctx,
         )
 
@@ -462,3 +465,128 @@ class TestShowImageThumbnailCap:
         assert meta["dimensions"] == [800, 600]
         assert meta["thumbnail_dimensions"][0] <= 512
         assert meta["transforms_applied"]["width"] == 800
+
+
+# ---------------------------------------------------------------------------
+# generate_image — elicitation confirmation for paid providers
+# ---------------------------------------------------------------------------
+
+
+class TestElicitationPaidProviders:
+    """generate_image asks for confirmation before using paid providers."""
+
+    async def _call_generate(
+        self,
+        service: ImageService,
+        *,
+        provider: str = "placeholder",
+        paid_providers: frozenset[str] = frozenset(),
+        elicitation_supported: bool = False,
+        elicitation_accepted: bool = True,
+        elicit_response: object | None = None,
+    ) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("generate_image")
+        assert tool is not None
+
+        ctx = MagicMock()
+        ctx.report_progress = AsyncMock()
+        ctx.session.check_client_capability.return_value = elicitation_supported
+
+        if elicitation_supported:
+            from fastmcp.server.elicitation import AcceptedElicitation
+
+            if elicitation_accepted:
+                ctx.elicit = AsyncMock(return_value=AcceptedElicitation(data={}))
+            elif elicit_response is not None:
+                ctx.elicit = AsyncMock(return_value=elicit_response)
+            else:
+                from fastmcp.server.elicitation import CancelledElicitation
+
+                ctx.elicit = AsyncMock(return_value=CancelledElicitation())
+
+        cfg = MagicMock()
+        cfg.paid_providers = paid_providers
+
+        return await tool.fn(
+            prompt="test image",
+            provider=provider,
+            service=service,
+            config=cfg,
+            ctx=ctx,
+        )
+
+    async def test_free_provider_no_elicitation(self, service: ImageService) -> None:
+        """Free provider proceeds without elicitation regardless of support."""
+        result = await self._call_generate(
+            service,
+            provider="placeholder",
+            paid_providers=frozenset({"openai"}),
+            elicitation_supported=True,
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "image_id" in meta
+
+    async def test_paid_provider_no_elicitation_support(
+        self, service: ImageService
+    ) -> None:
+        """Paid provider proceeds silently when client lacks elicitation."""
+        result = await self._call_generate(
+            service,
+            provider="placeholder",
+            paid_providers=frozenset({"placeholder"}),
+            elicitation_supported=False,
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "image_id" in meta
+
+    async def test_paid_provider_elicitation_accepted(
+        self, service: ImageService
+    ) -> None:
+        """Paid provider proceeds after user accepts elicitation."""
+        result = await self._call_generate(
+            service,
+            provider="placeholder",
+            paid_providers=frozenset({"placeholder"}),
+            elicitation_supported=True,
+            elicitation_accepted=True,
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "image_id" in meta
+
+    async def test_paid_provider_elicitation_cancelled(
+        self, service: ImageService
+    ) -> None:
+        """Paid provider returns cancellation when user cancels."""
+        result = await self._call_generate(
+            service,
+            provider="placeholder",
+            paid_providers=frozenset({"placeholder"}),
+            elicitation_supported=True,
+            elicitation_accepted=False,
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        assert len(text_items) == 1
+        assert "cancelled" in text_items[0].text.lower()
+
+    async def test_paid_provider_elicitation_declined(
+        self, service: ImageService
+    ) -> None:
+        """Paid provider returns cancellation when user declines."""
+        from fastmcp.server.elicitation import DeclinedElicitation
+
+        result = await self._call_generate(
+            service,
+            provider="placeholder",
+            paid_providers=frozenset({"placeholder"}),
+            elicitation_supported=True,
+            elicitation_accepted=False,
+            elicit_response=DeclinedElicitation(),
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        assert len(text_items) == 1
+        assert "cancelled" in text_items[0].text.lower()

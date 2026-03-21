@@ -38,6 +38,12 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 !!! warning
     Authentication only works with HTTP transport (`--transport http` or `sse`). It has no effect with stdio transport.
 
+## Cost Control
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | str | `openai` | Comma-separated list of provider names that cost money. When the MCP client supports [elicitation](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/elicitation), `generate_image` asks for confirmation before using these providers. Set to empty string to disable confirmation. |
+
 ## Performance
 
 | Variable | Type | Default | Description |

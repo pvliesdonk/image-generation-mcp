@@ -18,12 +18,20 @@ from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.tools import ToolResult
-from mcp.types import Icon, ImageContent, ResourceLink, TextContent
+from mcp.types import (
+    ClientCapabilities,
+    ElicitationCapability,
+    Icon,
+    ImageContent,
+    ResourceLink,
+    TextContent,
+)
 from PIL import Image as PILImage
 from pydantic import AnyUrl
 
 from ._server_deps import get_config, get_service
 from ._server_resources import _IMAGE_VIEWER_URI
+from .config import ServerConfig
 from .processing import (
     convert_format,
     crop_to_dimensions,
@@ -69,6 +77,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         background: str = "opaque",
         model: str | None = None,
         service: ImageService = Depends(get_service),
+        config: ServerConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
         """Generate an image and return metadata with resource URIs.
@@ -128,6 +137,43 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 f"Supported: {', '.join(SUPPORTED_BACKGROUNDS)}"
             )
             raise ValueError(msg)
+
+        # Resolve provider before generation so we can check if it's paid
+        resolved_name = await asyncio.to_thread(
+            service.resolve_provider_name,
+            provider,
+            prompt,
+            background=background,
+        )
+
+        # If the resolved provider is paid and the client supports
+        # elicitation, ask for confirmation before spending money.
+        if resolved_name in config.paid_providers:
+            try:
+                supports_elicit = ctx.session.check_client_capability(
+                    ClientCapabilities(elicitation=ElicitationCapability())
+                )
+            except Exception:
+                supports_elicit = False
+
+            if supports_elicit:
+                from fastmcp.server.elicitation import AcceptedElicitation
+
+                elicit_result = await ctx.elicit(
+                    f"This will use {resolved_name}"
+                    f"{f' ({model})' if model else ''}"
+                    ", which costs money. Proceed?",
+                    response_type=None,
+                )
+                if not isinstance(elicit_result, AcceptedElicitation):
+                    return ToolResult(
+                        content=[
+                            TextContent(
+                                type="text",
+                                text=f"Image generation cancelled — {resolved_name} was not confirmed.",
+                            )
+                        ]
+                    )
 
         await ctx.report_progress(0, 2, "Generating image")
         try:
@@ -352,7 +398,6 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register the tool on.
     """
-    from .config import ServerConfig
 
     @mcp.tool(
         icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],

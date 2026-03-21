@@ -203,6 +203,32 @@ class TestTransformCacheConfig:
         config = load_config()
         assert config.transform_cache_size == 64
 
+    def test_paid_providers_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Default paid_providers includes openai."""
+        monkeypatch.delenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", raising=False)
+        from image_generation_mcp.config import load_config
+
+        config = load_config()
+        assert config.paid_providers == frozenset({"openai"})
+
+    def test_paid_providers_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """PAID_PROVIDERS env var overrides default."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "openai,a1111")
+        from image_generation_mcp.config import load_config
+
+        config = load_config()
+        assert config.paid_providers == frozenset({"openai", "a1111"})
+
+    def test_paid_providers_empty_disables(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Empty PAID_PROVIDERS disables confirmation."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "")
+        from image_generation_mcp.config import load_config
+
+        config = load_config()
+        assert config.paid_providers == frozenset()
+
 
 # ---------------------------------------------------------------------------
 # Transform paths: format conversion and proportional resize

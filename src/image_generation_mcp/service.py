@@ -179,6 +179,35 @@ class ImageService:
             result[name] = entry
         return result
 
+    def resolve_provider_name(
+        self,
+        provider: str,
+        prompt: str,
+        *,
+        background: str = "opaque",
+    ) -> str:
+        """Resolve a provider name without instantiating the provider.
+
+        Useful for pre-generation checks (e.g., cost confirmation) that
+        need to know which provider will be used before calling
+        :meth:`generate`.
+
+        Args:
+            provider: Provider name or ``"auto"``.
+            prompt: The generation prompt (used for auto-selection).
+            background: Requested background mode (used for capability filtering).
+
+        Returns:
+            The resolved provider name string.
+
+        Raises:
+            ImageProviderError: If no matching provider is available.
+        """
+        name, _ = self._resolve_provider(
+            provider or self._default_provider, prompt, background=background
+        )
+        return name
+
     def _resolve_provider(
         self,
         provider: str,

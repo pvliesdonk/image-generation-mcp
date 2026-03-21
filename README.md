@@ -171,6 +171,12 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | str | `openid` | Comma-separated required scopes |
 | `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | bool | `false` | Verify access token as JWT instead of id token |
 
+### Cost Control
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | str | `openai` | Comma-separated paid provider names. Triggers elicitation confirmation on capable clients. Set to empty to disable. |
+
 ### Performance
 
 | Variable | Type | Default | Description |
