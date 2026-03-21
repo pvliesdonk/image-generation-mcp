@@ -31,16 +31,30 @@ async def test_list_providers_no_task() -> None:
 
 
 async def test_progress_stages_present() -> None:
-    """generate_image source contains 3 report_progress calls."""
+    """generate_image source uses Progress dependency with expected stages."""
     mcp = FastMCP("test")
     register_tools(mcp)
 
     tool = await mcp.get_tool("generate_image")
     assert tool is not None
 
-    # Inspect the function source for progress calls
+    # Inspect the function source for progress/keepalive calls
     source = inspect.getsource(tool.fn)
-    assert source.count("report_progress") == 3
+    assert "progress.set_total" in source
+    assert "progress.increment" in source
     assert '"Generating image"' in source
     assert '"Saving to scratch"' in source
     assert '"Done"' in source
+
+
+async def test_keepalive_present() -> None:
+    """generate_image source contains keepalive mechanism."""
+    mcp = FastMCP("test")
+    register_tools(mcp)
+
+    tool = await mcp.get_tool("generate_image")
+    assert tool is not None
+
+    source = inspect.getsource(tool.fn)
+    assert "_keepalive" in source
+    assert "ctx.info" in source

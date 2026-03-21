@@ -14,7 +14,7 @@ import logging
 from urllib.parse import parse_qs, urlparse
 
 from fastmcp import FastMCP
-from fastmcp.dependencies import CurrentContext, Depends
+from fastmcp.dependencies import CurrentContext, Depends, Progress
 from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.server.elicitation import AcceptedElicitation
@@ -52,6 +52,7 @@ logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _THUMBNAIL_MAX_PX = 512
+_KEEPALIVE_INTERVAL_S = 10
 
 
 def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
@@ -80,6 +81,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         service: ImageService = Depends(get_service),
         config: ServerConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
+        progress: Progress = Progress(),
     ) -> ToolResult:
         """Generate an image and return metadata with resource URIs.
 
@@ -178,7 +180,25 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                         ]
                     )
 
-        await ctx.report_progress(0, 2, "Generating image")
+        await progress.set_total(3)
+        await progress.set_message("Generating image")
+
+        async def _keepalive() -> None:
+            """Send periodic MCP log notifications during generation.
+
+            Prevents clients (e.g. Claude Android) from timing out the
+            SSE connection when there are no MCP-level messages for an
+            extended period.
+            """
+            elapsed = 0
+            while True:
+                await asyncio.sleep(_KEEPALIVE_INTERVAL_S)
+                elapsed += _KEEPALIVE_INTERVAL_S
+                await ctx.info(
+                    f"Image generation in progress ({elapsed}s elapsed)"
+                )
+
+        keepalive_task = asyncio.create_task(_keepalive())
         try:
             provider_name, result = await service.generate(
                 prompt,
@@ -201,8 +221,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 "Provider is unreachable. Check that it is running, "
                 "or try a different provider.",
             ) from None
+        finally:
+            keepalive_task.cancel()
 
-        await ctx.report_progress(1, 2, "Saving to scratch")
+        await progress.increment()
+        await progress.set_message("Saving to scratch")
 
         # Register in the image registry (blocking I/O -> offload)
         record = await asyncio.to_thread(
@@ -231,7 +254,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             **result.provider_metadata,
         }
 
-        await ctx.report_progress(2, 2, "Done")
+        await progress.increment()
+        await progress.set_message("Done")
 
         return ToolResult(
             content=[
