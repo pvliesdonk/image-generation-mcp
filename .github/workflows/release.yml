@@ -61,7 +61,7 @@ jobs:
             .version = $v |
             .packages |= map(
               if .registryType == "pypi" then .version = $v
-              elif .registryType == "oci" then .identifier = ("ghcr.io/pvliesdonk/image-generation-mcp:" + $v)
+              elif .registryType == "oci" then .identifier = ("ghcr.io/pvliesdonk/image-generation-mcp:v" + $v)
               else . end
             )
           ' server.json > server.json.tmp
@@ -192,8 +192,9 @@ jobs:
             type=raw,value=v${{ steps.version.outputs.major }}
           labels: |
             org.opencontainers.image.title=image-generation-mcp
-            org.opencontainers.image.description=FastMCP server template
+            org.opencontainers.image.description=Multi-provider image generation MCP server
             org.opencontainers.image.vendor=pvliesdonk
+            io.modelcontextprotocol.server.name=io.github.pvliesdonk/image-generation-mcp
 
       - name: Build and push Docker image
         id: build-push
@@ -237,23 +238,27 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      contents: read
       id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release.outputs.tag }}
+          ref: main
           fetch-depth: 1
 
       - name: Install mcp-publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.5.0
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/v1.5.0/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          curl -sL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
 
-      - name: Authenticate and publish to MCP Registry
-        run: |
-          ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
 
   publish-linux-packages:
     needs: [release, publish-pypi]
@@ -274,27 +279,28 @@ jobs:
         run: mkdir -p dist
 
       - name: Build .deb package
-        uses: burningalchemist/nfpm-action@eeac96f42da23d091eec0d0088bf05cac0ceb9f3
+        uses: burningalchemist/action-gh-nfpm@eeac96f42da23d091eec0d0088bf05cac0ceb9f3  # v1
+        id: deb
         with:
+          nfpm_version: "2.41.1"
           packager: deb
           config: packaging/nfpm.yaml
           target: dist/
         env:
           VERSION: ${{ needs.release.outputs.version }}
+          ARCH: amd64
 
       - name: Build .rpm package
-        uses: burningalchemist/nfpm-action@eeac96f42da23d091eec0d0088bf05cac0ceb9f3
+        uses: burningalchemist/action-gh-nfpm@eeac96f42da23d091eec0d0088bf05cac0ceb9f3  # v1
+        id: rpm
         with:
+          nfpm_version: "2.41.1"
           packager: rpm
           config: packaging/nfpm.yaml
           target: dist/
         env:
           VERSION: ${{ needs.release.outputs.version }}
-
-      - name: Create versionless copies for stable download URLs
-        run: |
-          cp dist/*.deb dist/image-generation-mcp_all.deb
-          cp dist/*.rpm dist/image-generation-mcp_all.rpm
+          ARCH: x86_64
 
       - name: Upload packages to GitHub Release
         run: gh release upload ${{ needs.release.outputs.tag }} dist/*.deb dist/*.rpm --clobber
