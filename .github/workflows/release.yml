@@ -302,6 +302,11 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
           ARCH: x86_64
 
+      - name: Create versionless copies for stable download URLs
+        run: |
+          cp dist/*.deb dist/image-generation-mcp_latest.deb
+          cp dist/*.rpm dist/image-generation-mcp_latest.rpm
+
       - name: Upload packages to GitHub Release
         run: gh release upload ${{ needs.release.outputs.tag }} dist/*.deb dist/*.rpm --clobber
         env:

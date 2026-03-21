@@ -41,14 +41,6 @@ contents:
       owner: image-generation-mcp
       group: image-generation-mcp
 
-  # Install directory for venv
-  - dst: /opt/image-generation-mcp
-    type: dir
-    file_info:
-      mode: 0755
-      owner: root
-      group: root
-
 # --- Lifecycle scripts ---
 
 scripts:
