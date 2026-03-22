@@ -84,6 +84,127 @@ def _build_bearer_auth() -> Any:
     )
 
 
+def _resolve_auth_mode() -> str | None:
+    """Determine OIDC auth mode from env vars.
+
+    Auto-detection logic:
+
+    - Explicit ``AUTH_MODE`` env var takes precedence (``remote`` or ``oidc-proxy``).
+    - If ``BASE_URL`` + ``OIDC_CONFIG_URL`` + ``CLIENT_ID`` + ``CLIENT_SECRET``
+      are set → ``oidc-proxy`` (backward compatible).
+    - If ``BASE_URL`` + ``OIDC_CONFIG_URL`` are set (no client credentials)
+      → ``remote``.
+    - Otherwise → ``None`` (no OIDC).
+
+    Returns:
+        ``"remote"``, ``"oidc-proxy"``, or ``None``.
+    """
+    explicit = os.environ.get(f"{_ENV_PREFIX}_AUTH_MODE", "").strip().lower()
+    if explicit in ("remote", "oidc-proxy"):
+        return explicit
+    if explicit:
+        logger.warning(
+            "AUTH_MODE=%r is not a recognised value (expected 'remote' or "
+            "'oidc-proxy') — falling back to auto-detection",
+            explicit,
+        )
+
+    base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").strip()
+    config_url = os.environ.get(f"{_ENV_PREFIX}_OIDC_CONFIG_URL", "").strip()
+    client_id = os.environ.get(f"{_ENV_PREFIX}_OIDC_CLIENT_ID", "").strip()
+    client_secret = os.environ.get(f"{_ENV_PREFIX}_OIDC_CLIENT_SECRET", "").strip()
+
+    if client_id and client_secret and config_url and base_url:
+        return "oidc-proxy"
+    if config_url and base_url:
+        return "remote"
+    return None
+
+
+def _build_remote_auth() -> Any:
+    """Build a RemoteAuthProvider for local JWT validation.
+
+    Requires ``BASE_URL`` and ``OIDC_CONFIG_URL``.  Fetches the OIDC
+    discovery document at startup to obtain ``jwks_uri`` and ``issuer``,
+    then constructs a :class:`~fastmcp.server.auth.JWTVerifier` for
+    local token validation.
+
+    Does NOT require ``CLIENT_ID``, ``CLIENT_SECRET``, or ``JWT_SIGNING_KEY``.
+
+    Returns:
+        A configured :class:`~fastmcp.server.auth.RemoteAuthProvider`,
+        or ``None`` when required env vars are missing.
+    """
+    base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").strip()
+    config_url = os.environ.get(f"{_ENV_PREFIX}_OIDC_CONFIG_URL", "").strip()
+
+    if not base_url or not config_url:
+        missing = [
+            name
+            for name, val in [("BASE_URL", base_url), ("OIDC_CONFIG_URL", config_url)]
+            if not val
+        ]
+        logger.debug("Remote auth: disabled — missing env vars: %s", ", ".join(missing))
+        return None
+
+    import httpx
+
+    try:
+        resp = httpx.get(config_url, timeout=10)
+        resp.raise_for_status()
+        discovery = resp.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.error(
+            "Remote auth: failed to fetch OIDC discovery from %s: %s", config_url, exc
+        )
+        return None
+
+    jwks_uri = discovery.get("jwks_uri")
+    issuer = discovery.get("issuer")
+    if not jwks_uri or not issuer:
+        logger.error(
+            "Remote auth: OIDC discovery missing jwks_uri or issuer at %s", config_url
+        )
+        return None
+
+    audience = os.environ.get(f"{_ENV_PREFIX}_OIDC_AUDIENCE", "").strip() or None
+    raw_scopes = os.environ.get(f"{_ENV_PREFIX}_OIDC_REQUIRED_SCOPES", "").strip()
+    required_scopes = [s.strip() for s in raw_scopes.split(",") if s.strip()] or None
+
+    from fastmcp.server.auth import JWTVerifier, RemoteAuthProvider
+
+    verifier = JWTVerifier(
+        jwks_uri=jwks_uri,
+        issuer=issuer,
+        audience=audience,
+        required_scopes=required_scopes,
+    )
+
+    logger.debug(
+        "Remote auth config:\n"
+        "  config_url      = %s\n"
+        "  issuer          = %s\n"
+        "  jwks_uri        = %s\n"
+        "  base_url        = %s\n"
+        "  audience        = %s\n"
+        "  required_scopes = %s",
+        config_url,
+        issuer,
+        jwks_uri,
+        base_url,
+        audience or "(not set)",
+        required_scopes or "(not set)",
+    )
+
+    logger.info("OIDC auth enabled (remote — token validation only)")
+
+    return RemoteAuthProvider(
+        token_verifier=verifier,
+        authorization_servers=[issuer],
+        base_url=base_url,
+    )
+
+
 def _build_oidc_auth() -> Any:
     """Build an OIDCProxy auth provider from environment variables, or return None.
 
@@ -183,6 +304,8 @@ def _build_oidc_auth() -> Any:
             "(IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN=true)"
         )
 
+    logger.info("OIDC auth enabled (oidc-proxy — DCR emulation)")
+
     return OIDCProxy(
         config_url=config_url,
         client_id=client_id,
@@ -226,22 +349,38 @@ def create_server(transport: str = "stdio") -> FastMCP:
     instructions = os.environ.get(f"{_ENV_PREFIX}_INSTRUCTIONS", default_instructions)
 
     bearer_auth = _build_bearer_auth()
-    oidc_auth = _build_oidc_auth()
+
+    oidc_mode = _resolve_auth_mode()
+    if oidc_mode == "remote":
+        oidc_auth = _build_remote_auth()
+    elif oidc_mode == "oidc-proxy":
+        oidc_auth = _build_oidc_auth()
+    else:
+        oidc_auth = None
+
+    if oidc_mode and not oidc_auth:
+        logger.warning(
+            "AUTH_MODE=%s requested but OIDC auth could not be initialized "
+            "— check env vars and OIDC discovery endpoint",
+            oidc_mode,
+        )
 
     if bearer_auth and oidc_auth:
         from fastmcp.server.auth import MultiAuth
 
         auth = MultiAuth(server=oidc_auth, verifiers=[bearer_auth], required_scopes=[])
-        auth_mode = "multi"
-        logger.info("Multi-auth enabled: bearer token + OIDC (either accepted)")
+        auth_mode = f"multi({oidc_mode}+bearer)"
+        logger.info(
+            "Multi-auth enabled: bearer token + OIDC %s (either accepted)", oidc_mode
+        )
     elif bearer_auth:
         auth = bearer_auth
         auth_mode = "bearer"
         logger.info("Bearer token auth enabled")
     elif oidc_auth:
         auth = oidc_auth
-        auth_mode = "oidc"
-        logger.info("OIDC auth enabled")
+        auth_mode = oidc_mode or "oidc"
+        logger.info("OIDC auth enabled (mode=%s)", auth_mode)
     else:
         auth = None
         auth_mode = "none"
