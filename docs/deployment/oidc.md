@@ -79,10 +79,68 @@ openssl rand -hex 32
 !!! note
     Authelia does not support Dynamic Client Registration (RFC 7591). Clients must be registered manually in `configuration.yml`.
 
-!!! note "Opaque access tokens"
-    Authelia issues opaque (non-JWT) access tokens. This is handled automatically — the server verifies the `id_token` (always a standard JWT) instead. No extra configuration is needed.
+!!! warning "Opaque vs JWT access tokens"
+    Authelia issues **opaque** (non-JWT) access tokens by default. This affects which OIDC mode you can use:
 
-### 1. Register the client in Authelia
+    - **Remote mode** validates tokens locally via JWKS and **requires JWT access tokens**. Set `access_token_signed_response_alg: 'RS256'` on the client registration (see below).
+    - **OIDCProxy mode** verifies the `id_token` (always a standard JWT) instead of the access token, so opaque tokens work without extra configuration. However, oidc-proxy is subject to the [session lifetime limitation](#known-limitations-oidc-session-lifetime).
+
+### Remote mode (recommended)
+
+Remote mode requires only `BASE_URL` + `OIDC_CONFIG_URL` on the MCP server — no client credentials needed server-side. The client authenticates directly with Authelia; the server validates the resulting JWT access token via JWKS.
+
+!!! note "Client credentials are IdP-side only"
+    In remote mode, `CLIENT_ID` and `CLIENT_SECRET` are configured in the **Authelia client registration** (so Authelia knows which client is connecting), but they are **not** set as MCP server environment variables. The MCP server only needs the OIDC discovery URL to fetch JWKS keys for token validation.
+
+#### 1. Register the client in Authelia
+
+```yaml
+identity_providers:
+  oidc:
+    clients:
+      - client_id: image-generation-mcp
+        client_secret: '$pbkdf2-sha512$...'   # authelia crypto hash generate
+        redirect_uris:
+          - https://mcp.example.com/callback
+        grant_types: [authorization_code]
+        response_types: [code]
+        pkce_challenge_method: S256
+        scopes: [openid, profile, email]
+        # Required for remote mode — enables JWT access tokens (RFC 9068)
+        # Without this, Authelia issues opaque tokens that cannot be
+        # validated locally via JWKS
+        access_token_signed_response_alg: 'RS256'
+        # Claude Code (and some other MCP clients) sends credentials via
+        # POST body rather than HTTP Basic auth during token exchange
+        token_endpoint_auth_method: 'client_secret_post'
+```
+
+!!! tip "Why `access_token_signed_response_alg`?"
+    Remote mode's `JWTVerifier` decodes the access token as a JWT and validates its signature against the IdP's JWKS keys. Authelia's default opaque tokens are random strings with no JWT structure — they cannot be validated locally. Setting `access_token_signed_response_alg: 'RS256'` tells Authelia to issue RFC 9068 JWT access tokens for this client.
+
+!!! tip "Why `token_endpoint_auth_method`?"
+    During the OAuth token exchange, the MCP client sends `client_id` and `client_secret` in the POST body (`client_secret_post`). Authelia defaults to `client_secret_basic` (HTTP Basic auth header). If these don't match, the token exchange fails with a `token_endpoint_auth_method` error. Setting `client_secret_post` explicitly ensures compatibility with Claude Code and other MCP clients.
+
+#### 2. Set environment variables
+
+```bash
+IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
+IMAGE_GENERATION_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
+```
+
+No `CLIENT_ID`, `CLIENT_SECRET`, or `JWT_SIGNING_KEY` needed — the server only validates tokens, it does not participate in the OAuth flow.
+
+#### 3. Start with HTTP transport
+
+```bash
+image-generation-mcp serve --transport http --port 8000
+```
+
+### OIDCProxy mode (fallback)
+
+Use oidc-proxy only when remote mode is not viable (e.g., your IdP cannot issue JWT access tokens). Be aware of the [session lifetime limitation](../guides/authentication.md#known-limitations-oidc-session-lifetime).
+
+#### 1. Register the client in Authelia
 
 ```yaml
 identity_providers:
@@ -96,9 +154,13 @@ identity_providers:
         response_types: [code]
         pkce_challenge_method: S256
         scopes: [openid, profile, email]
+        # Claude Code sends credentials via POST body
+        token_endpoint_auth_method: 'client_secret_post'
 ```
 
-### 2. Set environment variables
+No `access_token_signed_response_alg` needed — oidc-proxy verifies the `id_token` (always a JWT) instead of the access token.
+
+#### 2. Set environment variables
 
 ```bash
 IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
@@ -108,15 +170,13 @@ IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET=your-client-secret
 IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=$(openssl rand -hex 32)
 ```
 
-For subpath deployments (e.g., public URL `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
-
-See also `examples/oidc-auth.env`.
-
-### 3. Start with HTTP transport
+#### 3. Start with HTTP transport
 
 ```bash
 image-generation-mcp serve --transport http --port 8000
 ```
+
+For subpath deployments (e.g., public URL `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
 
 ## Architecture
 
