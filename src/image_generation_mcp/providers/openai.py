@@ -271,6 +271,9 @@ class OpenAIImageProvider:
 
         model_caps: list[ModelCapabilities] = []
 
+        # OpenAI has no native negative_prompt API parameter; the provider
+        # implements it by appending 'Avoid: ...' to the prompt text, so
+        # supports_negative_prompt remains False at the capability level.
         if "gpt-image-1" in model_ids:
             model_caps.append(
                 ModelCapabilities(
@@ -322,14 +325,8 @@ class OpenAIImageProvider:
                 )
             )
 
-        supports_background = any(m.supports_background for m in model_caps)
-
         return ProviderCapabilities(
             provider_name="openai",
             models=tuple(model_caps),
-            supports_background=supports_background,
-            # OpenAI has no native negative prompt API parameter; the provider
-            # implements it by appending "Avoid: ..." to the prompt text.
-            supports_negative_prompt=False,
             discovered_at=discovered_at,
         )

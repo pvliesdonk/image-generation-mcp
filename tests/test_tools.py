@@ -765,3 +765,250 @@ class TestShowImageDownloadUrl:
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
         assert "download_url" not in meta
+
+
+# ---------------------------------------------------------------------------
+# generate_image — parameter validation errors
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateImageParameterValidation:
+    """generate_image raises ValueError for invalid parameters."""
+
+    async def _call_generate(
+        self,
+        service: ImageService,
+        *,
+        aspect_ratio: str = "1:1",
+        quality: str = "standard",
+        background: str = "opaque",
+    ) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("generate_image")
+        assert tool is not None
+
+        ctx = MagicMock()
+        ctx.report_progress = AsyncMock()
+        cfg = MagicMock()
+        cfg.paid_providers = frozenset()
+
+        return await tool.fn(
+            prompt="test image",
+            provider="placeholder",
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            background=background,
+            service=service,
+            config=cfg,
+            ctx=ctx,
+        )
+
+    async def test_invalid_aspect_ratio_raises(self, service: ImageService) -> None:
+        """Unsupported aspect_ratio raises ValueError."""
+        with pytest.raises(ValueError, match="Unsupported aspect_ratio"):
+            await self._call_generate(service, aspect_ratio="5:4")
+
+    async def test_invalid_quality_raises(self, service: ImageService) -> None:
+        """Unsupported quality level raises ValueError."""
+        with pytest.raises(ValueError, match="Unsupported quality"):
+            await self._call_generate(service, quality="ultra")
+
+    async def test_invalid_background_raises(self, service: ImageService) -> None:
+        """Unsupported background raises ValueError."""
+        with pytest.raises(ValueError, match="Unsupported background"):
+            await self._call_generate(service, background="blur")
+
+
+# ---------------------------------------------------------------------------
+# generate_image — error handling (content policy, connection)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateImageErrorHandling:
+    """generate_image re-raises provider errors with helpful messages."""
+
+    async def _call_generate_with_mock_service(
+        self, service: ImageService, side_effect: Exception
+    ) -> ToolResult:
+        from unittest.mock import patch
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("generate_image")
+        assert tool is not None
+
+        ctx = MagicMock()
+        ctx.report_progress = AsyncMock()
+        cfg = MagicMock()
+        cfg.paid_providers = frozenset()
+
+        with patch.object(service, "generate", side_effect=side_effect):
+            return await tool.fn(
+                prompt="test image",
+                provider="placeholder",
+                service=service,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    async def test_content_policy_error_reraises(self, service: ImageService) -> None:
+        """ImageContentPolicyError is re-raised with a helpful message."""
+        from image_generation_mcp.providers.types import ImageContentPolicyError
+
+        with pytest.raises(ImageContentPolicyError, match="Content policy"):
+            await self._call_generate_with_mock_service(
+                service, ImageContentPolicyError("placeholder", "blocked")
+            )
+
+    async def test_connection_error_reraises(self, service: ImageService) -> None:
+        """ImageProviderConnectionError is re-raised with a helpful message."""
+        from image_generation_mcp.providers.types import ImageProviderConnectionError
+
+        with pytest.raises(ImageProviderConnectionError, match="unreachable"):
+            await self._call_generate_with_mock_service(
+                service,
+                ImageProviderConnectionError("placeholder", "connection refused"),
+            )
+
+
+# ---------------------------------------------------------------------------
+# generate_image — elicitation: check_client_capability exception path
+# ---------------------------------------------------------------------------
+
+
+class TestElicitationCapabilityCheckFailure:
+    """check_client_capability exception defaults to no elicitation support."""
+
+    async def test_capability_check_exception_falls_back(
+        self, service: ImageService
+    ) -> None:
+        """Exception in check_client_capability assumes no elicitation support."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("generate_image")
+        assert tool is not None
+
+        ctx = MagicMock()
+        ctx.report_progress = AsyncMock()
+        # check_client_capability raises an exception
+        ctx.session.check_client_capability.side_effect = RuntimeError("no session")
+
+        cfg = MagicMock()
+        # placeholder is in paid_providers to trigger elicitation path
+        cfg.paid_providers = frozenset({"placeholder"})
+
+        result = await tool.fn(
+            prompt="test image",
+            provider="placeholder",
+            service=service,
+            config=cfg,
+            ctx=ctx,
+        )
+        # Should proceed (no elicitation called) and return a valid image_id
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "image_id" in meta
+
+
+# ---------------------------------------------------------------------------
+# show_image — invalid scheme error
+# ---------------------------------------------------------------------------
+
+
+class TestShowImageInvalidScheme:
+    """show_image raises ValueError for non-image:// URIs."""
+
+    async def test_wrong_scheme_raises(self, service: ImageService) -> None:
+        """Passing an https:// URI raises ValueError."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("show_image")
+        assert tool is not None
+
+        cfg = MagicMock()
+        cfg.base_url = None
+
+        with pytest.raises(ValueError, match="Expected an image://"):
+            await tool.fn(
+                uri="https://example.com/image.png",
+                service=service,
+                config=cfg,
+            )
+
+
+# ---------------------------------------------------------------------------
+# show_image — quality in transform_params when non-default
+# ---------------------------------------------------------------------------
+
+
+class TestShowImageQualityTransform:
+    """show_image includes quality in transforms_applied when non-default and format set."""
+
+    async def test_quality_in_transform_params(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """quality != 90 appears in transforms_applied when format is also set."""
+        service, image_id = registered_image
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("show_image")
+        assert tool is not None
+
+        cfg = MagicMock()
+        cfg.base_url = None
+
+        result = await tool.fn(
+            uri=f"image://{image_id}/view?format=jpeg&quality=75",
+            service=service,
+            config=cfg,
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert meta["transforms_applied"]["format"] == "jpeg"
+        assert meta["transforms_applied"]["quality"] == 75
+
+
+# ---------------------------------------------------------------------------
+# list_providers tool — direct tool execution
+# ---------------------------------------------------------------------------
+
+
+class TestListProvidersTool:
+    """list_providers tool returns JSON with provider info."""
+
+    async def test_list_providers_returns_json(self, service: ImageService) -> None:
+        """list_providers tool returns valid JSON with provider names."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("list_providers")
+        assert tool is not None
+
+        result = await tool.fn(service=service)
+        data = json.loads(result)
+        assert "placeholder" in data
+        assert data["placeholder"]["available"] is True
+
+
+# ---------------------------------------------------------------------------
+# create_download_link — registered on non-stdio transports
+# ---------------------------------------------------------------------------
+
+
+class TestCreateDownloadLinkTool:
+    """create_download_link is registered on non-stdio transports only."""
+
+    async def test_registered_on_http_transport(self) -> None:
+        """create_download_link tool exists when transport='http'."""
+        mcp = FastMCP("test")
+        register_tools(mcp, transport="http")
+        tool = await mcp.get_tool("create_download_link")
+        assert tool is not None
+
+    async def test_not_registered_on_stdio_transport(self) -> None:
+        """create_download_link tool does not exist when transport='stdio'."""
+        mcp = FastMCP("test")
+        register_tools(mcp, transport="stdio")
+        tool = await mcp.get_tool("create_download_link")
+        assert tool is None

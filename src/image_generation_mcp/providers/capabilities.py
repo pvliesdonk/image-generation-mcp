@@ -73,18 +73,28 @@ class ProviderCapabilities:
     Attributes:
         provider_name: Registry key (e.g., ``"openai"``).
         models: Per-model capability details.
-        supports_background: ``True`` if any model supports background control.
-        supports_negative_prompt: ``True`` if any model supports negative prompts.
         discovered_at: Unix timestamp when discovery completed.
         degraded: ``True`` if discovery failed (empty model list).
+        supports_background: ``True`` if any model supports background control
+            (derived from ``models``).
+        supports_negative_prompt: ``True`` if any model supports negative prompts
+            (derived from ``models``).
     """
 
     provider_name: str
     models: tuple[ModelCapabilities, ...] = ()
-    supports_background: bool = False
-    supports_negative_prompt: bool = False
     discovered_at: float = 0.0
     degraded: bool = False
+
+    @property
+    def supports_background(self) -> bool:
+        """Return True if any model in this provider supports background control."""
+        return any(m.supports_background for m in self.models)
+
+    @property
+    def supports_negative_prompt(self) -> bool:
+        """Return True if any model in this provider supports negative prompts."""
+        return any(m.supports_negative_prompt for m in self.models)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dictionary."""

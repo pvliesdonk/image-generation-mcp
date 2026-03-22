@@ -166,3 +166,143 @@ def test_image_list_resource(
     assert images[0].id == image_id
     assert images[0].provider == "placeholder"
     assert images[0].prompt == "resource test"
+
+
+# ---------------------------------------------------------------------------
+# Resource handler functions — via MCP server lifespan (Client)
+# ---------------------------------------------------------------------------
+#
+# The resource handler inner functions (provider_capabilities, image_view,
+# image_metadata) live inside register_resources() and are only reachable
+# via the FastMCP resource dispatch with an active lifespan context.  We
+# use the full server + Client to exercise those code paths.
+# ---------------------------------------------------------------------------
+
+
+async def test_provider_capabilities_resource() -> None:
+    """info://providers resource returns JSON with provider and capability info."""
+    from fastmcp import Client
+
+    from image_generation_mcp.mcp_server import create_server
+
+    server = create_server()
+    async with Client(server) as client:
+        result = await client.read_resource("info://providers")
+
+    assert result
+    data = json.loads(result[0].text)
+    assert "providers" in data
+    assert "supported_aspect_ratios" in data
+    assert "supported_quality_levels" in data
+
+
+async def test_image_view_resource_via_server(tmp_path: Path) -> None:
+    """image://{id}/view resource returns image bytes with correct MIME type."""
+
+    from fastmcp import Client, FastMCP
+
+    from image_generation_mcp._server_deps import make_service_lifespan
+    from image_generation_mcp._server_resources import register_resources
+    from image_generation_mcp._server_tools import register_tools
+    from image_generation_mcp.config import ServerConfig
+
+    # Build a minimal server with service lifespan
+    config = ServerConfig(scratch_dir=tmp_path, read_only=False)
+    mcp = FastMCP("test-view", lifespan=make_service_lifespan(config))
+    register_tools(mcp)
+    register_resources(mcp)
+
+    # Register an image via the generate_image tool through the server
+    async with Client(mcp) as client:
+        gen_result = await client.call_tool(
+            "generate_image",
+            {"prompt": "test view resource", "provider": "placeholder"},
+        )
+
+    # Extract image_id from the tool result text
+    text = next(c for c in gen_result.content if c.type == "text")
+    meta = json.loads(text.text)
+    image_id = meta["image_id"]
+
+    # Now read the image view resource
+    async with Client(mcp) as client:
+        view_result = await client.read_resource(f"image://{image_id}/view")
+
+    assert view_result
+    # Blob content with image MIME type
+    assert view_result[0].blob or view_result[0].text
+
+
+async def test_image_metadata_resource_via_server(tmp_path: Path) -> None:
+    """image://{id}/metadata resource returns JSON provenance."""
+    import json
+
+    from fastmcp import Client, FastMCP
+
+    from image_generation_mcp._server_deps import make_service_lifespan
+    from image_generation_mcp._server_resources import register_resources
+    from image_generation_mcp._server_tools import register_tools
+    from image_generation_mcp.config import ServerConfig
+
+    config = ServerConfig(scratch_dir=tmp_path, read_only=False)
+    mcp = FastMCP("test-meta", lifespan=make_service_lifespan(config))
+    register_tools(mcp)
+    register_resources(mcp)
+
+    # Generate an image first
+    async with Client(mcp) as client:
+        gen_result = await client.call_tool(
+            "generate_image",
+            {"prompt": "metadata test", "provider": "placeholder"},
+        )
+
+    text = next(c for c in gen_result.content if c.type == "text")
+    meta = json.loads(text.text)
+    image_id = meta["image_id"]
+
+    # Read the metadata resource
+    async with Client(mcp) as client:
+        meta_result = await client.read_resource(f"image://{image_id}/metadata")
+
+    assert meta_result
+    metadata = json.loads(meta_result[0].text)
+    assert metadata["id"] == image_id
+    assert metadata["prompt"] == "metadata test"
+    assert metadata["provider"] == "placeholder"
+
+
+async def test_image_metadata_resource_missing_sidecar(tmp_path: Path) -> None:
+    """image://{id}/metadata raises ImageProviderError when sidecar file missing."""
+    from fastmcp import Client, FastMCP
+
+    from image_generation_mcp._server_deps import make_service_lifespan
+    from image_generation_mcp._server_resources import register_resources
+    from image_generation_mcp._server_tools import register_tools
+    from image_generation_mcp.config import ServerConfig
+
+    config = ServerConfig(scratch_dir=tmp_path, read_only=False)
+    mcp = FastMCP("test-missing-sidecar", lifespan=make_service_lifespan(config))
+    register_tools(mcp)
+    register_resources(mcp)
+
+    # Generate image then delete its sidecar to simulate missing metadata
+    async with Client(mcp) as client:
+        gen_result = await client.call_tool(
+            "generate_image",
+            {"prompt": "sidecar test", "provider": "placeholder"},
+        )
+
+    text = next(c for c in gen_result.content if c.type == "text")
+    meta = json.loads(text.text)
+    image_id = meta["image_id"]
+
+    # Delete the sidecar file
+    sidecar = tmp_path / f"{image_id}.json"
+    sidecar.unlink()
+
+    # Reading metadata should fail with a resource or MCP error
+    from fastmcp.exceptions import McpError, ResourceError
+
+    async with Client(mcp) as client:
+        with pytest.raises((ResourceError, McpError)):
+            await client.read_resource(f"image://{image_id}/metadata")

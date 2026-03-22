@@ -118,7 +118,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/pvliesdonk/image-generation-mcp:1.1.0",
+      "identifier": "ghcr.io/pvliesdonk/image-generation-mcp:v1.1.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{--port}/mcp"
@@ -127,7 +127,7 @@
         {
           "type": "named",
           "name": "--port",
-          "default": 8000,
+          "default": "8000",
           "description": "Port for the HTTP transport"
         }
       ]

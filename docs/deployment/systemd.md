@@ -5,21 +5,21 @@ Run image-generation-mcp as a native Linux service using the `.deb` or `.rpm` pa
 ## Installation
 
 !!! note
-    Packages are architecture-independent (pure Python). The package installs [uv](https://docs.astral.sh/uv/) automatically if not already present.
+    Packages are built for x86_64/amd64 (pure Python, but packaged per-architecture). The package installs [uv](https://docs.astral.sh/uv/) automatically if not already present.
 
 ### Debian / Ubuntu
 
 ```bash
 # Download the .deb from the latest release
-curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_all.deb
-sudo apt install ./image-generation-mcp_all.deb
+curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_latest.deb
+sudo apt install ./image-generation-mcp_latest.deb
 ```
 
 ### RHEL / Fedora
 
 ```bash
-curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_all.rpm
-sudo dnf install image-generation-mcp_all.rpm
+curl -LO https://github.com/pvliesdonk/image-generation-mcp/releases/latest/download/image-generation-mcp_latest.rpm
+sudo dnf install image-generation-mcp_latest.rpm
 ```
 
 The package creates:
