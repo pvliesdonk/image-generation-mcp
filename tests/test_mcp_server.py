@@ -167,10 +167,15 @@ class TestResolveAuthMode:
             monkeypatch.setenv(var, val)
         assert _resolve_auth_mode() == "remote"
 
-    def test_invalid_auth_mode_ignored(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Unknown AUTH_MODE value is ignored, falls back to auto-detection."""
+    def test_invalid_auth_mode_warns_and_falls_back(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Unknown AUTH_MODE logs warning and falls back to auto-detection."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_AUTH_MODE", "bogus")
-        assert _resolve_auth_mode() is None
+        with caplog.at_level(logging.WARNING):
+            result = _resolve_auth_mode()
+        assert result is None
+        assert "not a recognised value" in caplog.text
 
     def test_config_url_only_returns_none(
         self, monkeypatch: pytest.MonkeyPatch

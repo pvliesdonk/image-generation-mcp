@@ -90,8 +90,10 @@ def _resolve_auth_mode() -> str | None:
     Auto-detection logic:
 
     - Explicit ``AUTH_MODE`` env var takes precedence (``remote`` or ``oidc-proxy``).
-    - If ``CLIENT_ID`` + ``CLIENT_SECRET`` are set → ``oidc-proxy`` (backward compatible).
-    - If ``CONFIG_URL`` + ``BASE_URL`` are set (no client credentials) → ``remote``.
+    - If ``BASE_URL`` + ``OIDC_CONFIG_URL`` + ``CLIENT_ID`` + ``CLIENT_SECRET``
+      are set → ``oidc-proxy`` (backward compatible).
+    - If ``BASE_URL`` + ``OIDC_CONFIG_URL`` are set (no client credentials)
+      → ``remote``.
     - Otherwise → ``None`` (no OIDC).
 
     Returns:
@@ -100,6 +102,12 @@ def _resolve_auth_mode() -> str | None:
     explicit = os.environ.get(f"{_ENV_PREFIX}_AUTH_MODE", "").strip().lower()
     if explicit in ("remote", "oidc-proxy"):
         return explicit
+    if explicit:
+        logger.warning(
+            "AUTH_MODE=%r is not a recognised value (expected 'remote' or "
+            "'oidc-proxy') — falling back to auto-detection",
+            explicit,
+        )
 
     base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").strip()
     config_url = os.environ.get(f"{_ENV_PREFIX}_OIDC_CONFIG_URL", "").strip()
@@ -192,7 +200,7 @@ def _build_remote_auth() -> Any:
 
     return RemoteAuthProvider(
         token_verifier=verifier,
-        authorization_servers=[config_url.rsplit("/.well-known/", 1)[0]],
+        authorization_servers=[issuer],
         base_url=base_url,
     )
 
