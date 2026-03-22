@@ -2,6 +2,66 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-03-22)
+
+### Bug Fixes
+
+- Add MCP-level keepalives during image generation to prevent client timeouts (#95) (#96)
+  ([#96](https://github.com/pvliesdonk/image-generation-mcp/pull/96),
+  [`3f6a91c`](https://github.com/pvliesdonk/image-generation-mcp/commit/3f6a91cd6a75931e95e0a17898b58266ca4387bf))
+
+- Release pipeline failures in publish-linux-packages and publish-registry (#97) (#98)
+  ([#98](https://github.com/pvliesdonk/image-generation-mcp/pull/98),
+  [`cdf9c60`](https://github.com/pvliesdonk/image-generation-mcp/commit/cdf9c60720d0167bfc040d6fe07986149982acec))
+
+- **ci**: Replace Codecov cloud dependency with local diff-cover for patch coverage gate (#102)
+  ([#102](https://github.com/pvliesdonk/image-generation-mcp/pull/102),
+  [`2f9030f`](https://github.com/pvliesdonk/image-generation-mcp/commit/2f9030ffdc76ab8a183b8b00efd1de31b9ddb865))
+
+### Chores
+
+- Update server.json to v1.1.0 [skip ci]
+  ([`5611d24`](https://github.com/pvliesdonk/image-generation-mcp/commit/5611d24787c4d2c86d255454b95e66fe341875fd))
+
+### Features
+
+- Elicitation confirmation for paid image providers (#88)
+  ([#88](https://github.com/pvliesdonk/image-generation-mcp/pull/88),
+  [`d4580fb`](https://github.com/pvliesdonk/image-generation-mcp/commit/d4580fba2d0e4371d30b2f91322df7398ed3e76d))
+
+- Show model name and auto-generate download link in show_image (#87)
+  ([#87](https://github.com/pvliesdonk/image-generation-mcp/pull/87),
+  [`ac66c4b`](https://github.com/pvliesdonk/image-generation-mcp/commit/ac66c4bfe18d91abd2e05dd60ba2eaa1ecd94bc2))
+
+- Support RemoteAuthProvider as default OIDC mode (#99) (#100)
+  ([#100](https://github.com/pvliesdonk/image-generation-mcp/pull/100),
+  [`cb1d669`](https://github.com/pvliesdonk/image-generation-mcp/commit/cb1d6694e63eeff976e440ef0586a51ea9a6dbb3))
+
+### Refactoring
+
+- Derive ProviderCapabilities.supports_* as properties from models (#53) (#91)
+  ([#91](https://github.com/pvliesdonk/image-generation-mcp/pull/91),
+  [`eb9eb4c`](https://github.com/pvliesdonk/image-generation-mcp/commit/eb9eb4c013ea09243a8b614509cf84a91e9b2142))
+
+- Move config tests from test_transform_cache.py to test_config.py (#89) (#90)
+  ([#90](https://github.com/pvliesdonk/image-generation-mcp/pull/90),
+  [`41020ba`](https://github.com/pvliesdonk/image-generation-mcp/commit/41020ba95d6f2ad79816d34358a7660093fec107))
+
+- Parallelize A1111 discovery API calls with asyncio.gather (#52) (#92)
+  ([#92](https://github.com/pvliesdonk/image-generation-mcp/pull/92),
+  [`72f3449`](https://github.com/pvliesdonk/image-generation-mcp/commit/72f34497cb99ef9637a4c82fe2662f6bc9b8c22f))
+
+### Testing
+
+- Add MCP-level integration tests for image resources and generate_image tool (#22) (#93)
+  ([#93](https://github.com/pvliesdonk/image-generation-mcp/pull/93),
+  [`ffc5e71`](https://github.com/pvliesdonk/image-generation-mcp/commit/ffc5e71600141ab3b1e025271ab7795fdbe427bd))
+
+- Raise test coverage to 80% with meaningful tests (#36) (#94)
+  ([#94](https://github.com/pvliesdonk/image-generation-mcp/pull/94),
+  [`e866604`](https://github.com/pvliesdonk/image-generation-mcp/commit/e86660463ff9f8e871b908bdfe3bfa8ee02b656d))
+
+
 ## v1.1.0 (2026-03-21)
 
 ### Bug Fixes
