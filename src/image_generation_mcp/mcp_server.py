@@ -380,6 +380,7 @@ def create_server(transport: str = "stdio") -> FastMCP:
     elif oidc_auth:
         auth = oidc_auth
         auth_mode = oidc_mode or "oidc"
+        logger.info("OIDC auth enabled (mode=%s)", auth_mode)
     else:
         auth = None
         auth_mode = "none"
