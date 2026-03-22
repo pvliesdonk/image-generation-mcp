@@ -42,6 +42,11 @@
       "required": false
     },
     {
+      "name": "IMAGE_GENERATION_MCP_AUTH_MODE",
+      "description": "OIDC auth mode: remote (local JWT validation, default when no CLIENT_ID/SECRET), oidc-proxy (DCR emulation, default when CLIENT_ID/SECRET set). Explicit value overrides auto-detection.",
+      "required": false
+    },
+    {
       "name": "IMAGE_GENERATION_MCP_BEARER_TOKEN",
       "description": "Static bearer token for HTTP authentication.",
       "required": false

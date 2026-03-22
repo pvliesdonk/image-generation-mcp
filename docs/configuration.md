@@ -22,18 +22,24 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_AUTH_MODE` | str | auto | OIDC auth mode: `remote` (local JWT validation) or `oidc-proxy` (DCR emulation). Auto-detected from env vars when not set — see below. |
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | -- | Static bearer token for HTTP authentication. Enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC redirects, `create_download_link`, and `show_image` auto-download URLs. Include subpath prefix if applicable. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC and for `create_download_link` / `show_image` auto-download URLs. Include subpath prefix if applicable. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL (e.g. `https://auth.example.com/.well-known/openid-configuration`). |
-| `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID registered with your identity provider. |
-| `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret. |
-| `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | str | ephemeral | JWT signing key for session tokens. **Required on Linux/Docker** -- the default ephemeral key invalidates all tokens on restart. Generate with `openssl rand -hex 32`. |
+| `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID registered with your identity provider. Required for `oidc-proxy` mode only. |
+| `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret. Required for `oidc-proxy` mode only. |
+| `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | str | ephemeral | JWT signing key for session tokens. **Required on Linux/Docker for `oidc-proxy` mode** -- the default ephemeral key invalidates all tokens on restart. Generate with `openssl rand -hex 32`. Not needed for `remote` mode. |
 | `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | str | -- | Expected JWT audience claim. Leave unset if your provider does not set one. |
-| `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | str | `openid` | Comma-separated required OIDC scopes. |
-| `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | bool | `false` | Set `true` to verify the upstream access token as JWT instead of the id token. Only needed when your provider issues JWT access tokens and you require audience-claim validation. |
+| `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | str | -- | Comma-separated required OIDC scopes. For `oidc-proxy` mode, defaults to `openid`. |
+| `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | bool | `false` | Set `true` to verify the upstream access token as JWT instead of the id token. Only applies to `oidc-proxy` mode. |
 
-!!! note
-    All four OIDC variables (`BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`) must be set to enable OIDC. If any is missing, OIDC is disabled.
+!!! note "Auth mode auto-detection"
+    When `AUTH_MODE` is not set explicitly, the mode is auto-detected:
+
+    - **`oidc-proxy`**: when all four OIDC variables (`BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`) are set. Backward compatible with existing deployments.
+    - **`remote`**: when `BASE_URL` + `OIDC_CONFIG_URL` are set but `CLIENT_ID`/`CLIENT_SECRET` are not. Recommended for new deployments — avoids the [OIDCProxy session lifetime issue](guides/authentication.md#known-limitations-oidc-session-lifetime).
+
+    Set `AUTH_MODE` explicitly to override auto-detection (e.g., `AUTH_MODE=remote` even when client credentials are present).
 
 !!! warning
     Authentication only works with HTTP transport (`--transport http` or `sse`). It has no effect with stdio transport.
@@ -83,7 +89,16 @@ IMAGE_GENERATION_MCP_A1111_HOST=http://localhost:7860
 IMAGE_GENERATION_MCP_A1111_MODEL=realisticVisionV60B1_v51VAE.safetensors
 ```
 
-### Production (OIDC + OpenAI)
+### Production — remote mode (recommended)
+
+```bash
+IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
+IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
+IMAGE_GENERATION_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
+```
+
+### Production — oidc-proxy mode (DCR emulation)
 
 ```bash
 IMAGE_GENERATION_MCP_READ_ONLY=false

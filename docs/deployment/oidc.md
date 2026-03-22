@@ -1,11 +1,50 @@
 # OIDC Authentication
 
-Optional token-based authentication for HTTP deployments. OIDC activates automatically when all four required environment variables are set. For an overview of all authentication modes (bearer token, OIDC, no auth), see the [Authentication guide](../guides/authentication.md).
+Optional token-based authentication for HTTP deployments. Two OIDC modes are available:
+
+| Mode | Env var | Use case | Required vars |
+|------|---------|----------|---------------|
+| **`remote`** (recommended) | `AUTH_MODE=remote` | Local JWT validation — no upstream token re-validation | `BASE_URL` + `OIDC_CONFIG_URL` |
+| **`oidc-proxy`** | `AUTH_MODE=oidc-proxy` | DCR emulation for non-DCR IdPs | `BASE_URL` + `OIDC_CONFIG_URL` + `OIDC_CLIENT_ID` + `OIDC_CLIENT_SECRET` |
+
+The mode is auto-detected when `AUTH_MODE` is not set: `oidc-proxy` when client credentials are present, `remote` otherwise. For an overview of all authentication modes (bearer token, OIDC, no auth), see the [Authentication guide](../guides/authentication.md).
 
 !!! warning "Transport requirement"
     OIDC requires `--transport http` (or `sse`). It has no effect with `--transport stdio`.
 
-## Required Variables
+!!! tip "Prefer remote mode"
+    `remote` mode avoids the [OIDCProxy session lifetime issue](../guides/authentication.md#known-limitations-oidc-session-lifetime) by validating tokens locally via JWKS without storing or re-validating upstream tokens. Use `oidc-proxy` only when your IdP does not support Dynamic Client Registration and you need DCR emulation.
+
+## Remote Mode (recommended)
+
+### Required Variables
+
+| Variable | Description |
+|----------|-------------|
+| `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL of the server (e.g. `https://mcp.example.com`) |
+| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint (e.g. `https://auth.example.com/.well-known/openid-configuration`) |
+
+### Optional Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | — | Expected JWT audience claim; leave unset if your provider does not set one |
+| `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | — | Comma-separated required scopes |
+
+### Example
+
+```bash
+IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
+IMAGE_GENERATION_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
+# Optional:
+# IMAGE_GENERATION_MCP_OIDC_AUDIENCE=image-generation-mcp
+```
+
+The server fetches the OIDC discovery document at startup to obtain `jwks_uri` and `issuer`, then validates incoming JWTs locally. No client credentials, JWT signing key, or upstream token storage needed.
+
+## OIDCProxy Mode
+
+### Required Variables
 
 | Variable | Description |
 |----------|-------------|
@@ -14,7 +53,7 @@ Optional token-based authentication for HTTP deployments. OIDC activates automat
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | OIDC client ID registered with your provider |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | OIDC client secret |
 
-## Optional Variables
+### Optional Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -81,7 +120,22 @@ image-generation-mcp serve --transport http --port 8000
 
 ## Architecture
 
-The server uses FastMCP's built-in `OIDCProxy` auth provider (not the external `mcp-auth-proxy` sidecar). The authentication flow:
+### Remote mode
+
+The server acts as a Resource Server (RFC 9728). The client authenticates directly with the IdP; the server validates tokens locally via JWKS.
+
+```
+Client → OIDC Provider (authenticate) → Client → image-generation-mcp (validate JWT)
+```
+
+1. Client authenticates with the OIDC provider independently
+2. Client sends requests to the MCP server with the JWT token
+3. Server validates the token locally using the IdP's JWKS keys
+4. No upstream token storage or re-validation
+
+### OIDCProxy mode
+
+The server uses FastMCP's built-in `OIDCProxy` auth provider to act as an OAuth intermediary with DCR emulation.
 
 ```
 Client → image-generation-mcp (with OIDCProxy) → OIDC Provider (Authelia/Keycloak)
@@ -90,8 +144,11 @@ Client → image-generation-mcp (with OIDCProxy) → OIDC Provider (Authelia/Key
 1. Client connects to the MCP server
 2. Server redirects to the OIDC provider for authentication
 3. Provider authenticates the user and returns a code
-4. Server exchanges the code for tokens
-5. Subsequent requests include the JWT token
+4. Server exchanges the code for tokens and issues its own proxy JWT
+5. Subsequent requests include the proxy JWT
+
+!!! warning "Session lifetime"
+    OIDCProxy re-validates upstream tokens on every request. When the upstream token expires (typically 1h), sessions die even though the proxy JWT is still valid. See [Known Limitations](../guides/authentication.md#known-limitations-oidc-session-lifetime).
 
 ## Docker Compose with OIDC
 
