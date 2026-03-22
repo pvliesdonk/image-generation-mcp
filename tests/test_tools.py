@@ -90,8 +90,14 @@ class TestGenerateImageReturnShape:
 
         ctx = MagicMock()
         ctx.report_progress = AsyncMock()
+        ctx.info = AsyncMock()
         cfg = MagicMock()
         cfg.paid_providers = frozenset()
+
+        progress = MagicMock()
+        progress.set_total = AsyncMock()
+        progress.set_message = AsyncMock()
+        progress.increment = AsyncMock()
 
         return await tool.fn(
             prompt="test image",
@@ -99,6 +105,7 @@ class TestGenerateImageReturnShape:
             service=service,
             config=cfg,
             ctx=ctx,
+            progress=progress,
         )
 
     async def test_returns_text_content(self, service: ImageService) -> None:
@@ -505,6 +512,7 @@ class TestElicitationPaidProviders:
 
         ctx = MagicMock()
         ctx.report_progress = AsyncMock()
+        ctx.info = AsyncMock()
         ctx.session.check_client_capability.return_value = elicitation_supported
 
         if elicitation_supported:
@@ -522,12 +530,18 @@ class TestElicitationPaidProviders:
         cfg = MagicMock()
         cfg.paid_providers = paid_providers
 
+        progress = MagicMock()
+        progress.set_total = AsyncMock()
+        progress.set_message = AsyncMock()
+        progress.increment = AsyncMock()
+
         return await tool.fn(
             prompt="test image",
             provider=provider,
             service=service,
             config=cfg,
             ctx=ctx,
+            progress=progress,
         )
 
     async def test_free_provider_no_elicitation(self, service: ImageService) -> None:
@@ -826,8 +840,14 @@ class TestGenerateImageErrorHandling:
 
         ctx = MagicMock()
         ctx.report_progress = AsyncMock()
+        ctx.info = AsyncMock()
         cfg = MagicMock()
         cfg.paid_providers = frozenset()
+
+        progress = MagicMock()
+        progress.set_total = AsyncMock()
+        progress.set_message = AsyncMock()
+        progress.increment = AsyncMock()
 
         with patch.object(service, "generate", side_effect=side_effect):
             return await tool.fn(
@@ -836,6 +856,7 @@ class TestGenerateImageErrorHandling:
                 service=service,
                 config=cfg,
                 ctx=ctx,
+                progress=progress,
             )
 
     async def test_content_policy_error_reraises(self, service: ImageService) -> None:
@@ -877,6 +898,7 @@ class TestElicitationCapabilityCheckFailure:
 
         ctx = MagicMock()
         ctx.report_progress = AsyncMock()
+        ctx.info = AsyncMock()
         # check_client_capability raises an exception
         ctx.session.check_client_capability.side_effect = RuntimeError("no session")
 
@@ -884,12 +906,18 @@ class TestElicitationCapabilityCheckFailure:
         # placeholder is in paid_providers to trigger elicitation path
         cfg.paid_providers = frozenset({"placeholder"})
 
+        progress = MagicMock()
+        progress.set_total = AsyncMock()
+        progress.set_message = AsyncMock()
+        progress.increment = AsyncMock()
+
         result = await tool.fn(
             prompt="test image",
             provider="placeholder",
             service=service,
             config=cfg,
             ctx=ctx,
+            progress=progress,
         )
         # Should proceed (no elicitation called) and return a valid image_id
         text_items = [c for c in result.content if isinstance(c, TextContent)]

@@ -259,7 +259,7 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 
 `generate_image` supports both foreground and background execution via
 `task=True` (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)).
-Progress is reported at 3 stages via `Context.report_progress()`.
+Progress is reported at 2 stages via the FastMCP `Progress` dependency (`progress.set_total(2)` / `progress.increment()`). A concurrent keepalive task sends `ctx.info()` every 10 s to prevent SSE client timeouts during long generations.
 
 `generate_image` returns a `ToolResult` with:
 - `TextContent` -- JSON metadata with `image_id`, `original_uri`, `resource_template`,
