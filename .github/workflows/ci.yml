@@ -57,6 +57,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental || false }}
     permissions:
       contents: read
+      pull-requests: read
       statuses: write
     strategy:
       fail-fast: false
@@ -99,7 +100,7 @@ jobs:
 
       - name: Fetch base branch for diff-cover
         if: matrix.python-version == '3.13' && github.event_name == 'pull_request'
-        run: git fetch origin ${{ github.base_ref }} --depth=1
+        run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Check patch coverage
         id: patch-coverage
@@ -126,9 +127,13 @@ jobs:
           cat /tmp/diff-cover.txt
 
           # Extract percentage from "Total:   XX.X%" line
-          PCT=$(grep -oE 'Total:\s+[0-9.]+' /tmp/diff-cover.txt | grep -oE '[0-9.]+' || echo "")
+          PCT=$(grep -oP 'Total:\s+\K[0-9.]+' /tmp/diff-cover.txt || echo "")
 
-          if [ -z "$PCT" ]; then
+          if [ -z "$PCT" ] && [ "$RC" != "0" ]; then
+            # diff-cover failed and we couldn't parse output
+            echo "state=error" >> "$GITHUB_OUTPUT"
+            echo "description=diff-cover failed to compute patch coverage" >> "$GITHUB_OUTPUT"
+          elif [ -z "$PCT" ]; then
             # No coverable lines in diff (comments, docstrings, type stubs)
             echo "state=success" >> "$GITHUB_OUTPUT"
             echo "description=No coverable lines in diff" >> "$GITHUB_OUTPUT"
@@ -143,11 +148,14 @@ jobs:
       - name: Post codecov/patch status
         if: matrix.python-version == '3.13' && github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
+        env:
+          PATCH_STATE: ${{ steps.patch-coverage.outputs.state }}
+          PATCH_DESC: ${{ steps.patch-coverage.outputs.description }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const state = '${{ steps.patch-coverage.outputs.state }}' || 'error';
-            const description = '${{ steps.patch-coverage.outputs.description }}' || 'Patch coverage check failed';
+            const state = process.env.PATCH_STATE || 'error';
+            const description = process.env.PATCH_DESC || 'Patch coverage check failed';
             const headSha = context.payload.pull_request.head.sha;
             core.info(`Posting codecov/patch: ${state} — ${description} to ${headSha}`);
             await github.rest.repos.createCommitStatus({
