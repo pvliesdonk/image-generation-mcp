@@ -57,6 +57,7 @@ jobs:
     continue-on-error: ${{ matrix.experimental || false }}
     permissions:
       contents: read
+      pull-requests: read
       statuses: write
     strategy:
       fail-fast: false
@@ -97,35 +98,75 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Post codecov/patch status for non-Python PRs
+      - name: Fetch base branch for diff-cover
         if: matrix.python-version == '3.13' && github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=50
+
+      - name: Check patch coverage
+        id: patch-coverage
+        if: matrix.python-version == '3.13' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Check if PR has Python source changes
+          PY_COUNT=$(gh pr view "$PR_NUMBER" --json files --jq '[.files[].path | select(endswith(".py"))] | length')
+
+          if [ "$PY_COUNT" = "0" ]; then
+            echo "state=success" >> "$GITHUB_OUTPUT"
+            echo "description=Coverage not affected" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Run diff-cover against base branch
+          uv run diff-cover coverage.xml \
+            --compare-branch="origin/${BASE_REF}" \
+            --fail-under=80 > /tmp/diff-cover.txt 2>&1 && RC=0 || RC=$?
+
+          cat /tmp/diff-cover.txt
+
+          # Extract percentage from "Total:   XX.X%" line
+          PCT=$(grep -oP 'Total:\s+\K[0-9.]+' /tmp/diff-cover.txt || echo "")
+
+          if [ -z "$PCT" ] && [ "$RC" != "0" ]; then
+            # diff-cover failed and we couldn't parse output
+            echo "state=error" >> "$GITHUB_OUTPUT"
+            echo "description=diff-cover failed to compute patch coverage" >> "$GITHUB_OUTPUT"
+          elif [ -z "$PCT" ]; then
+            # No coverable lines in diff (comments, docstrings, type stubs)
+            echo "state=success" >> "$GITHUB_OUTPUT"
+            echo "description=No coverable lines in diff" >> "$GITHUB_OUTPUT"
+          elif [ "$RC" = "0" ]; then
+            echo "state=success" >> "$GITHUB_OUTPUT"
+            echo "description=${PCT}% patch coverage (threshold: 80%)" >> "$GITHUB_OUTPUT"
+          else
+            echo "state=failure" >> "$GITHUB_OUTPUT"
+            echo "description=${PCT}% patch coverage — below 80% threshold" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post codecov/patch status
+        if: matrix.python-version == '3.13' && github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
+        env:
+          PATCH_STATE: ${{ steps.patch-coverage.outputs.state }}
+          PATCH_DESC: ${{ steps.patch-coverage.outputs.description }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { data: files } = await github.rest.pulls.listFiles({
+            const state = process.env.PATCH_STATE || 'error';
+            const description = process.env.PATCH_DESC || 'Patch coverage check failed';
+            const headSha = context.payload.pull_request.head.sha;
+            core.info(`Posting codecov/patch: ${state} — ${description} to ${headSha}`);
+            await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
+              sha: headSha,
+              state,
+              context: 'codecov/patch',
+              description,
+              target_url: `https://app.codecov.io/gh/${context.repo.owner}/${context.repo.repo}`,
             });
-            const hasPythonSourceChanges = files.some(
-              f => f.filename.endsWith('.py')
-            );
-            if (!hasPythonSourceChanges) {
-              const headSha = context.payload.pull_request.head.sha;
-              core.info(`No Python source changes — posting codecov/patch: success to ${headSha}`);
-              await github.rest.repos.createCommitStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                sha: headSha,
-                state: 'success',
-                context: 'codecov/patch',
-                description: 'Coverage not affected',
-                target_url: 'https://app.codecov.io/gh/pvliesdonk/image-generation-mcp',
-              });
-            } else {
-              core.info('Python source changes detected — Codecov will post patch status');
-            }
 
   audit:
     name: Dependency Audit
