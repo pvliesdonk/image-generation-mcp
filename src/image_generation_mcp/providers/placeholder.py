@@ -160,7 +160,5 @@ class PlaceholderImageProvider:
         return ProviderCapabilities(
             provider_name="placeholder",
             models=(model,),
-            supports_background=True,
-            supports_negative_prompt=False,
             discovered_at=time.time(),
         )

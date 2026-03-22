@@ -322,14 +322,8 @@ class OpenAIImageProvider:
                 )
             )
 
-        supports_background = any(m.supports_background for m in model_caps)
-
         return ProviderCapabilities(
             provider_name="openai",
             models=tuple(model_caps),
-            supports_background=supports_background,
-            # OpenAI has no native negative prompt API parameter; the provider
-            # implements it by appending "Avoid: ..." to the prompt text.
-            supports_negative_prompt=False,
             discovered_at=discovered_at,
         )

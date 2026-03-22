@@ -377,7 +377,5 @@ class A1111ImageProvider:
         return ProviderCapabilities(
             provider_name="a1111",
             models=tuple(model_caps),
-            supports_negative_prompt=True,
-            supports_background=False,
             discovered_at=discovered_at,
         )

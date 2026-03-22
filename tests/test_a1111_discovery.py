@@ -463,7 +463,7 @@ class TestA1111DiscoverProviderLevelFlags:
         caps = await provider.discover_capabilities()
         assert caps.degraded is False
         assert caps.models == ()
-        assert caps.supports_negative_prompt is True
+        assert caps.supports_negative_prompt is False
 
 
 # -- Response validation tests -----------------------------------------------
