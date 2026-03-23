@@ -81,6 +81,38 @@ Used when checkpoint name contains XL tags AND `lightning` or `turbo`.
 
 Sizes are the same as standard SDXL.
 
+### Flux Dev
+
+Used when checkpoint name contains `flux` (without `schnell`). Requires [Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) or compatible fork with Flux support.
+
+| Parameter | Value |
+|-----------|-------|
+| Base resolution | 1024px |
+| Steps | 20 |
+| CFG scale | 1.0 |
+| Distilled CFG scale | 3.5 (Forge-specific) |
+| Sampler | Euler |
+| Scheduler | Simple |
+| Negative prompt | Not supported |
+
+Sizes are the same as SDXL.
+
+### Flux Schnell
+
+Used when checkpoint name contains both `flux` and `schnell`. Optimized for fast inference.
+
+| Parameter | Value |
+|-----------|-------|
+| Base resolution | 1024px |
+| Steps | 4 |
+| CFG scale | 1.0 |
+| Distilled CFG scale | 3.5 (Forge-specific) |
+| Sampler | Euler |
+| Scheduler | Simple |
+| Negative prompt | Not supported |
+
+Sizes are the same as SDXL.
+
 ## Checkpoint override
 
 ### Server default (env var)
@@ -121,6 +153,8 @@ If the SD WebUI server is unreachable (connection error or timeout), the provide
 ## Negative prompts
 
 SD WebUI has native negative prompt support via the `negative_prompt` field in the API payload. This is more effective than OpenAI's "Avoid:" workaround.
+
+> **Note:** Flux models do not support negative prompts. When a Flux checkpoint is detected, the `negative_prompt` field is omitted from the API payload entirely. If a negative prompt is provided, it is silently ignored with a debug log.
 
 See the [Prompt Writing Guide](../guides/prompt-writing.md) for recommended negative prompts.
 

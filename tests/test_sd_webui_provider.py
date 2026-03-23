@@ -10,6 +10,8 @@ import httpx
 import pytest
 
 from image_generation_mcp.providers.sd_webui import (
+    _FLUX_DEV_PRESET,
+    _FLUX_SCHNELL_PRESET,
     _SD15_PRESET,
     _SDXL_LIGHTNING_PRESET,
     _SDXL_PRESET,
@@ -49,6 +51,40 @@ class TestPresetDetection:
 
     def test_case_insensitive(self) -> None:
         assert _resolve_preset("SDXL_Base") is _SDXL_PRESET
+
+    def test_flux_dev_model(self) -> None:
+        assert _resolve_preset("flux1-dev-fp8.safetensors") is _FLUX_DEV_PRESET
+
+    def test_flux_schnell_model(self) -> None:
+        assert _resolve_preset("flux1-schnell-Q4.gguf") is _FLUX_SCHNELL_PRESET
+
+    def test_flux_dev_preset_values(self) -> None:
+        assert _FLUX_DEV_PRESET.steps == 20
+        assert _FLUX_DEV_PRESET.cfg_scale == 1.0
+        assert _FLUX_DEV_PRESET.sampler == "Euler"
+        assert _FLUX_DEV_PRESET.scheduler == "Simple"
+        assert _FLUX_DEV_PRESET.supports_negative_prompt is False
+        assert _FLUX_DEV_PRESET.distilled_cfg_scale == 3.5
+
+    def test_flux_schnell_preset_values(self) -> None:
+        assert _FLUX_SCHNELL_PRESET.steps == 4
+        assert _FLUX_SCHNELL_PRESET.cfg_scale == 1.0
+        assert _FLUX_SCHNELL_PRESET.sampler == "Euler"
+        assert _FLUX_SCHNELL_PRESET.scheduler == "Simple"
+        assert _FLUX_SCHNELL_PRESET.supports_negative_prompt is False
+        assert _FLUX_SCHNELL_PRESET.distilled_cfg_scale == 3.5
+
+    def test_sd15_supports_negative_prompt(self) -> None:
+        assert _SD15_PRESET.supports_negative_prompt is True
+
+    def test_sdxl_supports_negative_prompt(self) -> None:
+        assert _SDXL_PRESET.supports_negative_prompt is True
+
+    def test_sd15_no_distilled_cfg(self) -> None:
+        assert _SD15_PRESET.distilled_cfg_scale is None
+
+    def test_sdxl_no_distilled_cfg(self) -> None:
+        assert _SDXL_PRESET.distilled_cfg_scale is None
 
 
 class TestSdWebuiProvider:
@@ -222,6 +258,90 @@ class TestSdWebuiProvider:
         result = await provider.generate("test", model="juggernaut_xl")
 
         assert result.provider_metadata["model"] == "juggernaut_xl"
+
+    async def test_flux_negative_prompt_omitted(self, httpx_mock) -> None:
+        """Flux models do not include negative_prompt in the payload."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(
+            host="http://localhost:7860", model="flux1-dev-fp8.safetensors"
+        )
+        await provider.generate("test", negative_prompt="blurry")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert "negative_prompt" not in payload
+
+    async def test_flux_distilled_cfg_scale_present(self, httpx_mock) -> None:
+        """Flux models include distilled_cfg_scale in the payload."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(
+            host="http://localhost:7860", model="flux1-dev-fp8.safetensors"
+        )
+        await provider.generate("test")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert payload["distilled_cfg_scale"] == 3.5
+
+    async def test_sd15_no_distilled_cfg_scale_in_payload(self, httpx_mock) -> None:
+        """SD 1.5 models do not include distilled_cfg_scale in the payload."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        await provider.generate("test")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert "distilled_cfg_scale" not in payload
+
+    async def test_flux_payload_uses_euler_simple(self, httpx_mock) -> None:
+        """Flux models use Euler sampler with Simple scheduler."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(
+            host="http://localhost:7860", model="flux1-schnell-Q4.gguf"
+        )
+        await provider.generate("test")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert payload["sampler_name"] == "Euler"
+        assert payload["scheduler"] == "Simple"
+        assert payload["cfg_scale"] == 1.0
+        assert payload["steps"] == 4  # Schnell preset
+
+    async def test_sd15_includes_negative_prompt(self, httpx_mock) -> None:
+        """SD 1.5 models always include negative_prompt in the payload."""
+        b64_image = base64.b64encode(b"data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        await provider.generate("test", negative_prompt="bad quality")
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert payload["negative_prompt"] == "bad quality"
 
     async def test_generate_no_constructor_model_with_per_call_model(
         self, httpx_mock
