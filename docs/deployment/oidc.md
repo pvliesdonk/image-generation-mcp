@@ -156,7 +156,7 @@ identity_providers:
         response_types: [code]
         pkce_challenge_method: S256
         scopes: [openid, profile, email]
-        # Claude Code sends credentials via POST body
+        # Authelia defaults to client_secret_basic; Claude Code uses client_secret_post
         token_endpoint_auth_method: 'client_secret_post'
 ```
 
@@ -180,7 +180,7 @@ image-generation-mcp serve --transport http --port 8000
 
 For subpath deployments (e.g., public URL `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
 
-See also `examples/oidc-auth.env`.
+See also `examples/oidc.env`.
 
 ## Architecture
 
