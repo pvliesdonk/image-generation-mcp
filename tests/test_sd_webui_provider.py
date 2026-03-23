@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 from typing import Any
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -361,6 +363,117 @@ class TestSdWebuiProvider:
         assert payload["override_settings"]["sd_model_checkpoint"] == "sdxl_base_1.0"
 
 
+class TestProgressPolling:
+    """Tests for SD WebUI progress polling during generation."""
+
+    async def test_progress_callback_receives_updates(
+        self, httpx_mock, monkeypatch
+    ) -> None:
+        """Progress callback is invoked with fraction and step message."""
+        import image_generation_mcp.providers.sd_webui as sd_mod
+
+        monkeypatch.setattr(sd_mod, "_PROGRESS_POLL_INTERVAL", 0.0)
+
+        b64_image = base64.b64encode(b"fake-png-data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+            delay=0.1,  # Give poll task time to fire
+        )
+        httpx_mock.get(
+            "http://localhost:7860/sdapi/v1/progress",
+            json={"progress": 0.5, "eta_relative": 10.0},
+        )
+
+        callback = MagicMock()
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        result = await provider.generate("test", progress_callback=callback)
+
+        assert result.image_data == b"fake-png-data"
+        callback.assert_called()
+        fraction, msg = callback.call_args[0]
+        assert 0.0 <= fraction <= 1.0
+        assert "Step" in msg
+
+    async def test_progress_endpoint_failure_does_not_break_generation(
+        self, httpx_mock
+    ) -> None:
+        """When /progress returns an error, generation still completes."""
+        b64_image = base64.b64encode(b"fake-png-data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+        httpx_mock.get(
+            "http://localhost:7860/sdapi/v1/progress",
+            status_code=500,
+            text="Internal Server Error",
+        )
+
+        callback = MagicMock()
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        result = await provider.generate("test", progress_callback=callback)
+
+        # Generation succeeds despite progress endpoint failure
+        assert result.image_data == b"fake-png-data"
+
+    async def test_no_callback_skips_polling(self, httpx_mock) -> None:
+        """Without progress_callback, no /progress polling occurs."""
+        b64_image = base64.b64encode(b"fake-png-data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        result = await provider.generate("test", progress_callback=None)
+
+        assert result.image_data == b"fake-png-data"
+        # No GET requests should have been made
+        assert len(httpx_mock.get_requests()) == 0
+
+    async def test_progress_message_includes_eta(self, httpx_mock, monkeypatch) -> None:
+        """Progress message includes ETA when available."""
+        import image_generation_mcp.providers.sd_webui as sd_mod
+
+        monkeypatch.setattr(sd_mod, "_PROGRESS_POLL_INTERVAL", 0.0)
+
+        b64_image = base64.b64encode(b"fake-png-data").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+            delay=0.1,  # Give poll task time to fire
+        )
+        httpx_mock.get(
+            "http://localhost:7860/sdapi/v1/progress",
+            json={"progress": 0.5, "eta_relative": 12.0},
+        )
+
+        calls: list[tuple[float, str]] = []
+
+        def _capture(fraction: float, msg: str) -> None:
+            calls.append((fraction, msg))
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        await provider.generate("test", progress_callback=_capture)
+
+        assert len(calls) > 0, "Expected at least one progress callback"
+        for fraction, msg in calls:
+            assert "ETA" in msg
+            assert fraction == 0.5
+
+    async def test_poll_progress_cancellation(self) -> None:
+        """_poll_progress respects cancellation."""
+        callback = MagicMock()
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        task = asyncio.create_task(provider._poll_progress(30, callback))
+        # Let the loop start then cancel
+        await asyncio.sleep(0.05)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+
 # -- httpx mock fixture -------------------------------------------------------
 
 
@@ -375,10 +488,31 @@ class _HttpxMock:
 
     def __init__(self, monkeypatch) -> None:
         self._monkeypatch = monkeypatch
-        self._routes: list[dict[str, Any]] = []
+        self._post_routes: list[dict[str, Any]] = []
+        self._get_routes: list[dict[str, Any]] = []
         self._requests: list[httpx.Request] = []
+        self._get_request_list: list[httpx.Request] = []
 
     def post(
+        self,
+        url: str,
+        *,
+        json: dict | None = None,
+        status_code: int = 200,
+        text: str | None = None,
+        delay: float = 0.0,
+    ) -> None:
+        route = {
+            "url": url,
+            "json": json,
+            "status_code": status_code,
+            "text": text,
+            "delay": delay,
+        }
+        self._post_routes.append(route)
+        self._patch()
+
+    def get(
         self,
         url: str,
         *,
@@ -392,12 +526,16 @@ class _HttpxMock:
             "status_code": status_code,
             "text": text,
         }
-        self._routes.append(route)
+        self._get_routes.append(route)
         self._patch()
 
     def get_request(self) -> httpx.Request:
-        assert self._requests, "No requests captured"
+        assert self._requests, "No POST requests captured"
         return self._requests[-1]
+
+    def get_requests(self) -> list[httpx.Request]:
+        """Return all captured GET requests."""
+        return list(self._get_request_list)
 
     def _patch(self) -> None:
         mock = self
@@ -417,7 +555,33 @@ class _HttpxMock:
             request = httpx.Request("POST", url, content=content)
             mock._requests.append(request)
 
-            for route in mock._routes:
+            for route in mock._post_routes:
+                if str(url) == route["url"]:
+                    if route.get("delay", 0) > 0:
+                        await asyncio.sleep(route["delay"])
+                    if route["text"] is not None:
+                        return httpx.Response(
+                            status_code=route["status_code"],
+                            text=route["text"],
+                            request=request,
+                        )
+                    return httpx.Response(
+                        status_code=route["status_code"],
+                        json=route["json"],
+                        request=request,
+                    )
+
+            return httpx.Response(status_code=404, text="Not Found", request=request)
+
+        async def _mock_get(
+            client_self: Any,  # noqa: ARG001
+            url: str,
+            **kwargs: Any,  # noqa: ARG001
+        ) -> httpx.Response:
+            request = httpx.Request("GET", url)
+            mock._get_request_list.append(request)
+
+            for route in mock._get_routes:
                 if str(url) == route["url"]:
                     if route["text"] is not None:
                         return httpx.Response(
@@ -434,3 +598,4 @@ class _HttpxMock:
             return httpx.Response(status_code=404, text="Not Found", request=request)
 
         self._monkeypatch.setattr(httpx.AsyncClient, "post", _mock_post)
+        self._monkeypatch.setattr(httpx.AsyncClient, "get", _mock_get)

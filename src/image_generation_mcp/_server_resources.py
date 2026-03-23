@@ -568,6 +568,8 @@ def register_resources(mcp: FastMCP) -> None:
                     "status": pending.status,
                     "provider": pending.provider,
                     "prompt": pending.prompt,
+                    "progress": pending.progress,
+                    "progress_message": pending.progress_message,
                     "original_uri": f"image://{pending.id}/view",
                     "resource_template": (
                         f"image://{pending.id}/view{{?format,width,height,quality}}"

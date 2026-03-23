@@ -204,7 +204,9 @@ Each item includes a `status` field: `"completed"` for registered images, `"gene
     "image_id": "c3d4e5f6a7b8",
     "provider": "sd_webui",
     "prompt": "a cyberpunk cityscape",
-    "status": "generating"
+    "status": "generating",
+    "progress": 0.3,
+    "progress_message": "Step 9/30 (ETA 12s)"
   },
   {
     "image_id": "b2c3d4e5f6a7",

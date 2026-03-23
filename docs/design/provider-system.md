@@ -54,6 +54,8 @@ MCP Client (Claude)
 All providers implement the `ImageProvider` protocol (runtime-checkable):
 
 ```python
+ProgressCallback = Callable[[float, str], None]
+
 @runtime_checkable
 class ImageProvider(Protocol):
     async def generate(
@@ -65,6 +67,7 @@ class ImageProvider(Protocol):
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ImageResult: ...
 
     async def discover_capabilities(self) -> ProviderCapabilities: ...
@@ -74,6 +77,13 @@ The optional `model` parameter allows per-call model selection. When set, it
 overrides the provider's constructor default. SD WebUI uses it for both preset
 detection and `override_settings.sd_model_checkpoint`. OpenAI uses it as the
 API `model` parameter with automatic size table switching.
+
+The optional `progress_callback` parameter enables fine-grained progress
+reporting during generation. When provided, it is called with
+`(fraction, message)` where `fraction` is 0.0-1.0 and `message` is a
+human-readable status string (e.g., `"Step 15/30 (ETA 12s)"`). Only SD WebUI
+implements this (via `/sdapi/v1/progress` polling); other providers accept
+but ignore the parameter.
 
 The `discover_capabilities()` method is called once during server lifespan
 after provider construction. Results are cached for the server lifetime
@@ -172,6 +182,7 @@ Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo.
 - **Background:** Ignored (SD does not support native transparent backgrounds); debug log emitted
 - **Discovery:** Calls `/sdapi/v1/sd-models` + `/sdapi/v1/options`, maps checkpoints to architecture-specific `ModelCapabilities`; `prompt_style` is populated per-architecture (`"clip"` for SD 1.5/SDXL, `"natural_language"` for Flux)
 - **Metadata:** Extracts seed and active model name from response `info` JSON
+- **Progress polling:** When `progress_callback` is provided, polls `GET /sdapi/v1/progress` every 2 seconds concurrently with the `/sdapi/v1/txt2img` call. Reports `(fraction, "Step N/M (ETA Xs)")`. Polling failures are logged at debug level and do not interrupt generation. The polling task is cancelled when txt2img completes.
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
 - **Registered when:** `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set (deprecated alias: `IMAGE_GENERATION_MCP_A1111_HOST`)
 
@@ -207,7 +218,7 @@ and injected via FastMCP's `Depends()` system.
 
 1. **Provider registry** -- `register_provider(name, provider)` at startup
 2. **Capability discovery** -- `discover_all_capabilities()` introspects each provider (graceful degradation)
-3. **Generation dispatch** -- `generate(prompt, *, provider, ...)` resolves provider and delegates
+3. **Generation dispatch** -- `generate(prompt, *, provider, ..., progress_callback=...)` resolves provider and delegates (forwards `progress_callback` to the provider)
 4. **Image registry** -- `register_image()` saves original + sidecar JSON, indexes in memory
 5. **Image retrieval** -- `get_image(id)` and `list_images()` for registered images
 6. **Startup rebuild** -- `_load_registry()` reconstructs in-memory registry from sidecar files
@@ -265,7 +276,10 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)). It returns
 in <1s with `{"status": "generating", "image_id": "..."}` while the image is
 generated as a background `asyncio.Task`. The client polls `show_image` to
-check progress and retrieve the result.
+check progress and retrieve the result. For SD WebUI, the background task
+includes concurrent `/sdapi/v1/progress` polling that updates
+`PendingGeneration.progress` and `PendingGeneration.progress_message`,
+surfaced via `show_image` polling responses.
 
 `generate_image` returns a `ToolResult` with:
 - `TextContent` -- JSON metadata with `status`, `image_id`, `original_uri`,

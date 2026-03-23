@@ -18,7 +18,7 @@ from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
     ProviderCapabilities,
 )
-from image_generation_mcp.providers.types import ImageResult
+from image_generation_mcp.providers.types import ImageResult, ProgressCallback
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +99,7 @@ class PlaceholderImageProvider:
         quality: str = "standard",  # noqa: ARG002
         background: str = "opaque",
         model: str | None = None,
+        progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate a placeholder PNG.
 

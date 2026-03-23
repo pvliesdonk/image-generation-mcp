@@ -10,8 +10,12 @@ included; MCP clients write prompts directly.
 from __future__ import annotations
 
 import base64
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+ProgressCallback = Callable[[float, str], None]
+"""Signature for progress callbacks: ``(progress_fraction, message)``."""
 
 if TYPE_CHECKING:
     from image_generation_mcp.providers.capabilities import ProviderCapabilities
@@ -77,6 +81,7 @@ class ImageProvider(Protocol):
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image from a text prompt.
 
@@ -90,6 +95,9 @@ class ImageProvider(Protocol):
             model: Specific model to use (e.g., a checkpoint name for SD WebUI,
                 or ``"dall-e-3"`` for OpenAI). Overrides the provider's
                 configured default for this call.
+            progress_callback: Optional callback invoked with
+                ``(fraction, message)`` during generation.  Only supported
+                by SD WebUI; other providers ignore this parameter.
 
         Returns:
             ImageResult with generated image data.
