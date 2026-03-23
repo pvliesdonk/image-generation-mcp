@@ -261,12 +261,25 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         _BACKGROUND_TASKS.add(task)
         task.add_done_callback(_BACKGROUND_TASKS.discard)
 
+        # Resolve prompt_style from capabilities for the response
+        prompt_style = None
+        caps = service.capabilities.get(resolved_name)
+        if caps:
+            if model:
+                for m in caps.models:
+                    if m.model_id == model:
+                        prompt_style = m.prompt_style
+                        break
+            elif len(caps.models) == 1:
+                prompt_style = caps.models[0].prompt_style
+
         # Return immediately with pending status
         metadata = {
             "status": "generating",
             "image_id": image_id,
             "prompt": prompt,
             "provider": resolved_name,
+            "prompt_style": prompt_style,
             "original_uri": f"image://{image_id}/view",
             "metadata_uri": f"image://{image_id}/metadata",
             "resource_template": (
@@ -443,6 +456,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "prompt": record.prompt,
             "provider": record.provider,
             "model": record.provider_metadata.get("model"),
+            "prompt_style": record.provider_metadata.get("prompt_style"),
             "dimensions": [final_w, final_h],
             "thumbnail_dimensions": list(thumb_dims),
             "original_size_bytes": original_stat.st_size,
