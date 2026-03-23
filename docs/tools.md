@@ -155,18 +155,23 @@ List available image generation providers and their status.
 |----------|-------|
 | **Tags** | *(none)* -- always visible |
 | **Task** | No |
+| **Annotations** | `idempotentHint: false` -- signals clients not to cache results |
 
 ### Parameters
 
-None.
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `force_refresh` | bool | `false` | When `true`, re-runs capability discovery on all providers before returning. Use when providers may have changed (e.g., new SD WebUI checkpoints loaded). |
 
 ### Return value
 
-JSON object with provider names, availability, and capability information:
+JSON object with a `refreshed_at` ISO 8601 timestamp and provider names, availability, and capability information:
 
 ```json
 {
-  "placeholder": {
+  "refreshed_at": "2024-03-18T12:00:00+00:00",
+  "providers": {
+    "placeholder": {
     "available": true,
     "description": "Zero-cost solid-color PNG — instant, no API key, for testing and drafts",
     "capabilities": {
@@ -223,11 +228,12 @@ JSON object with provider names, availability, and capability information:
       "discovered_at": 1710777600.0,
       "degraded": false
     }
+    }
   }
 }
 ```
 
-Only registered (configured) providers appear in the response. The `capabilities` key is present after startup discovery completes. Degraded providers (where capability discovery failed) show `"degraded": true` with an empty model list.
+The response is wrapped in an object with `refreshed_at` (ISO 8601 timestamp of when the data was produced) and `providers` (the provider map). Only registered (configured) providers appear in the response. The `capabilities` key is present after startup discovery completes. Degraded providers (where capability discovery failed) show `"degraded": true` with an empty model list.
 
 The `prompt_style` field on each model indicates the recommended prompt format: `"clip"` for SD 1.5/SDXL checkpoints (tag-based), `"natural_language"` for Flux checkpoints, and `null` for providers that do not set a preference (OpenAI, Placeholder).
 
@@ -237,6 +243,11 @@ The `prompt_style` field on each model indicates the recommended prompt format: 
 User: Which image providers are available?
 
 Tool call: list_providers
+
+User: I just loaded a new checkpoint, refresh the list
+
+Tool call: list_providers
+  force_refresh: true
 ```
 
 ---
