@@ -198,8 +198,10 @@ async def test_provider_capabilities_resource() -> None:
 
 async def test_image_view_resource_via_server(tmp_path: Path) -> None:
     """image://{id}/view resource returns image bytes with correct MIME type."""
+    import asyncio
 
     from fastmcp import Client, FastMCP
+    from mcp.types import TextContent
 
     from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp._server_resources import register_resources
@@ -212,20 +214,28 @@ async def test_image_view_resource_via_server(tmp_path: Path) -> None:
     register_tools(mcp)
     register_resources(mcp)
 
-    # Register an image via the generate_image tool through the server
+    # Generate and wait for completion via polling
     async with Client(mcp) as client:
         gen_result = await client.call_tool(
             "generate_image",
             {"prompt": "test view resource", "provider": "placeholder"},
         )
+        text = next(c for c in gen_result.content if c.type == "text")
+        meta = json.loads(text.text)
+        image_id = meta["image_id"]
 
-    # Extract image_id from the tool result text
-    text = next(c for c in gen_result.content if c.type == "text")
-    meta = json.loads(text.text)
-    image_id = meta["image_id"]
+        # Poll show_image until the background task completes
+        for _ in range(50):
+            await asyncio.sleep(0.05)
+            show = await client.call_tool(
+                "show_image", {"uri": f"image://{image_id}/view"}
+            )
+            show_text = [c for c in show.content if isinstance(c, TextContent)]
+            show_meta = json.loads(show_text[0].text)
+            if show_meta.get("status") != "generating":
+                break
 
-    # Now read the image view resource
-    async with Client(mcp) as client:
+        # Now read the image view resource
         view_result = await client.read_resource(f"image://{image_id}/view")
 
     assert view_result
@@ -235,9 +245,11 @@ async def test_image_view_resource_via_server(tmp_path: Path) -> None:
 
 async def test_image_metadata_resource_via_server(tmp_path: Path) -> None:
     """image://{id}/metadata resource returns JSON provenance."""
+    import asyncio
     import json
 
     from fastmcp import Client, FastMCP
+    from mcp.types import TextContent
 
     from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp._server_resources import register_resources
@@ -249,19 +261,28 @@ async def test_image_metadata_resource_via_server(tmp_path: Path) -> None:
     register_tools(mcp)
     register_resources(mcp)
 
-    # Generate an image first
+    # Generate and wait for completion via polling
     async with Client(mcp) as client:
         gen_result = await client.call_tool(
             "generate_image",
             {"prompt": "metadata test", "provider": "placeholder"},
         )
+        text = next(c for c in gen_result.content if c.type == "text")
+        meta = json.loads(text.text)
+        image_id = meta["image_id"]
 
-    text = next(c for c in gen_result.content if c.type == "text")
-    meta = json.loads(text.text)
-    image_id = meta["image_id"]
+        # Poll show_image until the background task completes
+        for _ in range(50):
+            await asyncio.sleep(0.05)
+            show = await client.call_tool(
+                "show_image", {"uri": f"image://{image_id}/view"}
+            )
+            show_text = [c for c in show.content if isinstance(c, TextContent)]
+            show_meta = json.loads(show_text[0].text)
+            if show_meta.get("status") != "generating":
+                break
 
-    # Read the metadata resource
-    async with Client(mcp) as client:
+        # Read the metadata resource
         meta_result = await client.read_resource(f"image://{image_id}/metadata")
 
     assert meta_result
@@ -273,7 +294,10 @@ async def test_image_metadata_resource_via_server(tmp_path: Path) -> None:
 
 async def test_image_metadata_resource_missing_sidecar(tmp_path: Path) -> None:
     """image://{id}/metadata raises ImageProviderError when sidecar file missing."""
+    import asyncio
+
     from fastmcp import Client, FastMCP
+    from mcp.types import TextContent
 
     from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp._server_resources import register_resources
@@ -285,16 +309,26 @@ async def test_image_metadata_resource_missing_sidecar(tmp_path: Path) -> None:
     register_tools(mcp)
     register_resources(mcp)
 
-    # Generate image then delete its sidecar to simulate missing metadata
+    # Generate and wait for completion via polling
     async with Client(mcp) as client:
         gen_result = await client.call_tool(
             "generate_image",
             {"prompt": "sidecar test", "provider": "placeholder"},
         )
+        text = next(c for c in gen_result.content if c.type == "text")
+        meta = json.loads(text.text)
+        image_id = meta["image_id"]
 
-    text = next(c for c in gen_result.content if c.type == "text")
-    meta = json.loads(text.text)
-    image_id = meta["image_id"]
+        # Poll show_image until the background task completes
+        for _ in range(50):
+            await asyncio.sleep(0.05)
+            show = await client.call_tool(
+                "show_image", {"uri": f"image://{image_id}/view"}
+            )
+            show_text = [c for c in show.content if isinstance(c, TextContent)]
+            show_meta = json.loads(show_text[0].text)
+            if show_meta.get("status") != "generating":
+                break
 
     # Delete the sidecar file
     sidecar = tmp_path / f"{image_id}.json"

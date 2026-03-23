@@ -4,12 +4,13 @@ image-generation-mcp exposes four domain tools plus two auto-generated resource-
 
 ## generate_image
 
-Generate an image from a text prompt. Returns metadata with resource URIs and a `ResourceLink` to the image. Call `show_image` with the image URI to display it. Read `info://prompt-guide` for provider-specific prompt writing tips.
+Generate an image from a text prompt. Returns immediately with a `status: "generating"` response while the image is generated in the background. Call `show_image` with the returned `image_id` to check progress and display the result. Read `info://prompt-guide` for provider-specific prompt writing tips.
 
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
-| **Task** | `task=True` (supports foreground and background execution) |
+| **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
+| **Pattern** | Fire-and-forget — returns in &lt;1s, client polls `show_image` |
 
 ### Parameters
 
@@ -25,39 +26,38 @@ Generate an image from a text prompt. Returns metadata with resource URIs and a 
 
 ### Return value
 
-Returns a `ToolResult` with:
+Returns immediately with a `ToolResult` containing:
 
-1. **TextContent** -- JSON metadata:
-2. **ResourceLink** -- URI reference to `image://{id}/view` for the generated image
+1. **TextContent** -- JSON metadata with `status: "generating"`:
+2. **ResourceLink** -- URI reference to `image://{id}/view` (image pending)
 
 ```json
 {
+  "status": "generating",
   "image_id": "a1b2c3d4e5f6",
   "prompt": "watercolor painting of a mountain landscape at sunset",
+  "provider": "openai",
+  "prompt_style": null,
   "original_uri": "image://a1b2c3d4e5f6/view",
   "metadata_uri": "image://a1b2c3d4e5f6/metadata",
-  "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality}",
-  "dimensions": [1024, 1024],
-  "original_size_bytes": 1048576,
-  "provider": "openai",
-  "model": "gpt-image-1",
-  "size": "1024x1024"
+  "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality}"
 }
 ```
 
-Call `show_image` with the `original_uri` (or the `resource_template` with transform params) to display the image.
+Call `show_image` with the `original_uri` to poll for completion and display the image once ready.
 
-### Progress reporting
+### Fire-and-forget workflow
 
-The tool reports progress at 3 stages:
+The tool uses a fire-and-forget pattern to avoid client tool-execution timeouts (~45s on Claude.ai/Desktop/Android):
 
-| Progress | Stage |
-|----------|-------|
-| 0/2 | Generating image |
-| 1/2 | Saving to scratch |
-| 2/2 | Done |
+1. **`generate_image`** returns in &lt;1s with `"status": "generating"` and a pre-allocated `image_id`
+2. **Background task** generates the image and registers it in the scratch directory
+3. **`show_image`** polls for status:
+    - `{"status": "generating", "progress": 0.3, ...}` -- still in progress
+    - `{"status": "failed", "error": "..."}` -- generation failed
+    - Image thumbnail + metadata -- generation complete
 
-In foreground mode (default), clients receive these as streaming progress notifications. In background mode (`task=True`), clients poll for progress updates.
+The `image://list` resource also includes pending generations with their status.
 
 ### Cost confirmation (elicitation)
 
@@ -87,7 +87,9 @@ Tool call: generate_image
 
 ## show_image
 
-Display a registered image with optional on-demand transforms. Accepts a full `image://` resource URI with transforms encoded in the query string.
+Display a registered image with optional on-demand transforms, or poll for generation status. Accepts a full `image://` resource URI with transforms encoded in the query string.
+
+Also serves as the polling endpoint for fire-and-forget generation: after calling `generate_image`, call `show_image` with the returned `image_id` to check progress and display the result once ready.
 
 | Property | Value |
 |----------|-------|
@@ -117,6 +119,7 @@ Returns a `ToolResult` with:
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "provider": "openai",
   "model": "gpt-image-1",
+  "prompt_style": null,
   "dimensions": [1024, 683],
   "thumbnail_dimensions": [512, 342],
   "original_size_bytes": 3145728,

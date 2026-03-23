@@ -11,11 +11,12 @@ import base64
 import io
 import json
 import logging
+import time
 from datetime import UTC, datetime
 from urllib.parse import parse_qs, urlparse
 
 from fastmcp import FastMCP
-from fastmcp.dependencies import CurrentContext, Depends, Progress
+from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.server.elicitation import AcceptedElicitation
@@ -53,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _THUMBNAIL_MAX_PX = 512
-_KEEPALIVE_INTERVAL_S = 10
+_BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
 
 
 def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
@@ -82,18 +83,19 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         service: ImageService = Depends(get_service),
         config: ServerConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
-        progress: Progress = Progress(),
     ) -> ToolResult:
         """Generate an image and return metadata with resource URIs.
+
+        Returns immediately with ``{"status": "generating", "image_id":
+        "..."}`` while the image is generated in the background. Call
+        ``show_image`` with the returned ``image_id`` to check progress
+        and display the result once ready.
 
         Call list_providers first to see available providers and model IDs.
         Read info://prompt-guide for provider-specific prompt writing tips.
         SD WebUI prompt style depends on the model: use CLIP tags for
         SD 1.5/SDXL, natural language for Flux (check ``prompt_style`` in
         list_providers or in the returned metadata).
-        Returns metadata including the image_id and resource URIs. Call
-        show_image with the image URI (e.g. ``image://{image_id}/view``) to
-        display the image.
 
         Args:
             prompt: Text description of the desired image.
@@ -123,8 +125,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 to the provider's configured model.
 
         Returns:
-            JSON metadata with image_id and resource URIs. Call
-            show_image with the image URI to display the result.
+            JSON metadata with ``status``, ``image_id``, and resource
+            URIs. Call ``show_image`` with the image URI to check
+            progress and display the result.
         """
         if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
             msg = (
@@ -184,84 +187,105 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                         ]
                     )
 
-        await progress.set_total(2)
-        await progress.set_message("Generating image")
-
-        async def _keepalive() -> None:
-            """Send periodic MCP log notifications during generation.
-
-            Prevents clients (e.g. Claude Android) from timing out the
-            SSE connection when there are no MCP-level messages for an
-            extended period.
-            """
-            elapsed = 0
-            while True:
-                await asyncio.sleep(_KEEPALIVE_INTERVAL_S)
-                elapsed += _KEEPALIVE_INTERVAL_S
-                try:
-                    await ctx.info(f"Image generation in progress ({elapsed}s elapsed)")
-                except Exception:
-                    logger.warning("keepalive ctx.info failed", exc_info=True)
-
-        keepalive_task = asyncio.create_task(_keepalive())
-        try:
-            provider_name, result = await service.generate(
-                prompt,
-                provider=resolved_name,
-                negative_prompt=negative_prompt,
-                aspect_ratio=aspect_ratio,
-                quality=quality,
-                background=background,
-                model=model,
-            )
-        except ImageContentPolicyError as e:
-            raise ImageContentPolicyError(
-                e.provider,
-                "Content policy rejected the prompt. "
-                "Try rephrasing or use a different provider.",
-            ) from None
-        except ImageProviderConnectionError as e:
-            raise ImageProviderConnectionError(
-                e.provider,
-                "Provider is unreachable. Check that it is running, "
-                "or try a different provider.",
-            ) from None
-        finally:
-            keepalive_task.cancel()
-            await asyncio.gather(keepalive_task, return_exceptions=True)
-
-        await progress.increment()
-        await progress.set_message("Saving to scratch")
-
-        # Register in the image registry (blocking I/O -> offload)
-        record = await asyncio.to_thread(
-            service.register_image,
-            result,
-            provider_name,
+        # Pre-allocate image ID and register as pending
+        image_id = service.allocate_image_id()
+        service.register_pending(
+            image_id=image_id,
             prompt=prompt,
+            provider=resolved_name,
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             quality=quality,
             background=background,
+            model=model,
         )
 
-        # Build metadata with resource URIs
-        metadata = {
-            "image_id": record.id,
-            "prompt": prompt,
-            "original_uri": f"image://{record.id}/view",
-            "metadata_uri": f"image://{record.id}/metadata",
-            "resource_template": (
-                f"image://{record.id}/view{{?format,width,height,quality}}"
-            ),
-            "dimensions": list(record.original_dimensions),
-            "original_size_bytes": result.size_bytes,
-            "provider": provider_name,
-            **result.provider_metadata,
-        }
+        # Spawn background generation task
+        async def _background_generate() -> None:
+            try:
+                provider_name, result = await service.generate(
+                    prompt,
+                    provider=resolved_name,
+                    negative_prompt=negative_prompt,
+                    aspect_ratio=aspect_ratio,
+                    quality=quality,
+                    background=background,
+                    model=model,
+                )
+                await asyncio.to_thread(
+                    service.register_image,
+                    result,
+                    provider_name,
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
+                    aspect_ratio=aspect_ratio,
+                    quality=quality,
+                    background=background,
+                    image_id=image_id,
+                )
+                service.complete_pending(image_id)
+                logger.info("Background generation completed: %s", image_id)
+            except ImageContentPolicyError as exc:
+                service.fail_pending(
+                    image_id,
+                    "Content policy rejected the prompt. "
+                    "Try rephrasing or use a different provider.",
+                )
+                logger.error(
+                    "Background generation failed (content policy): %s: %s",
+                    image_id,
+                    exc,
+                )
+            except ImageProviderConnectionError as exc:
+                service.fail_pending(
+                    image_id,
+                    "Provider is unreachable. "
+                    "Check that it is running, or try a different provider.",
+                )
+                logger.error(
+                    "Background generation failed (connection): %s: %s",
+                    image_id,
+                    exc,
+                )
+            except Exception as exc:
+                service.fail_pending(image_id, str(exc))
+                logger.error(
+                    "Background generation failed: %s: %s",
+                    image_id,
+                    exc,
+                    exc_info=True,
+                )
 
-        await progress.increment()
-        await progress.set_message("Done")
+        task = asyncio.create_task(_background_generate())
+        # Hold a strong reference to prevent GC before completion
+        _BACKGROUND_TASKS.add(task)
+        task.add_done_callback(_BACKGROUND_TASKS.discard)
+
+        # Resolve prompt_style from capabilities for the response
+        prompt_style = None
+        caps = service.capabilities.get(resolved_name)
+        if caps:
+            if model:
+                for m in caps.models:
+                    if m.model_id == model:
+                        prompt_style = m.prompt_style
+                        break
+            elif len(caps.models) == 1:
+                prompt_style = caps.models[0].prompt_style
+
+        # Return immediately with pending status
+        metadata = {
+            "status": "generating",
+            "image_id": image_id,
+            "prompt": prompt,
+            "provider": resolved_name,
+            "prompt_style": prompt_style,
+            "original_uri": f"image://{image_id}/view",
+            "metadata_uri": f"image://{image_id}/metadata",
+            "resource_template": (
+                f"image://{image_id}/view{{?format,width,height,quality}}"
+            ),
+        }
 
         return ToolResult(
             content=[
@@ -271,8 +295,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ),
                 ResourceLink(
                     type="resource_link",
-                    uri=AnyUrl(f"image://{record.id}/view"),
-                    name="Generated image",
+                    uri=AnyUrl(f"image://{image_id}/view"),
+                    name="Generated image (generating)",
                 ),
             ]
         )
@@ -288,6 +312,14 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         config: ServerConfig = Depends(get_config),
     ) -> ToolResult:
         """Display a registered image with optional on-demand transforms.
+
+        Also serves as the polling endpoint for fire-and-forget generation.
+        After calling ``generate_image``, call ``show_image`` with the
+        returned ``image_id`` to check progress:
+
+        - ``{"status": "generating", ...}`` — image is still being generated
+        - ``{"status": "failed", "error": "..."}`` — generation failed
+        - Image thumbnail + metadata — generation complete
 
         Accepts a full ``image://`` resource URI (e.g.
         ``image://abc123/view`` or
@@ -306,11 +338,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 running on HTTP transport with ``BASE_URL`` configured.
 
         Returns:
-            A WebP thumbnail preview (max 512px, under 1 MB) as
-            ``ImageContent`` plus JSON metadata (image_id, dimensions,
-            thumbnail_dimensions, format, applied transforms, model,
-            and optionally download_url).  For full-resolution access,
-            use the ``image://`` resource URI or the download URL.
+            For completed images: a WebP thumbnail preview (max 512px,
+            under 1 MB) as ``ImageContent`` plus JSON metadata.
+            For in-progress images: JSON with ``status`` and progress info.
+            For full-resolution access, use the ``image://`` resource URI
+            or the download URL.
         """
         parsed = urlparse(uri)
         if parsed.scheme != "image":
@@ -324,6 +356,39 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         height = int(qs.get("height", ["0"])[0])
         quality = int(qs.get("quality", ["90"])[0])
         quality = max(1, min(100, quality))
+
+        # Check for pending (fire-and-forget) generation
+        pending = service.get_pending(image_id)
+        if pending is not None and pending.status == "generating":
+            meta = {
+                "status": "generating",
+                "image_id": image_id,
+                "prompt": pending.prompt,
+                "provider": pending.provider,
+                "progress": pending.progress,
+                "progress_message": pending.progress_message,
+                "elapsed_seconds": round(time.time() - pending.created_at, 1),
+            }
+            return ToolResult(
+                content=[TextContent(type="text", text=json.dumps(meta, indent=2))]
+            )
+
+        if pending is not None and pending.status == "failed":
+            meta = {
+                "status": "failed",
+                "image_id": image_id,
+                "prompt": pending.prompt,
+                "provider": pending.provider,
+                "error": pending.error,
+            }
+            service.cleanup_pending(image_id)
+            return ToolResult(
+                content=[TextContent(type="text", text=json.dumps(meta, indent=2))]
+            )
+
+        # Completed pending — clean up and fall through to normal display
+        if pending is not None and pending.status == "completed":
+            service.cleanup_pending(image_id)
 
         record = await asyncio.to_thread(service.get_image, image_id)
         data = await asyncio.to_thread(record.original_path.read_bytes)
@@ -387,6 +452,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "prompt": record.prompt,
             "provider": record.provider,
             "model": record.provider_metadata.get("model"),
+            "prompt_style": record.provider_metadata.get("prompt_style"),
             "dimensions": [final_w, final_h],
             "thumbnail_dimensions": list(thumb_dims),
             "original_size_bytes": original_stat.st_size,

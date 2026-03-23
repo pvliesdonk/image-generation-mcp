@@ -533,13 +533,17 @@ def register_resources(mcp: FastMCP) -> None:
     ) -> str:
         """List all registered images with their IDs and resource URIs.
 
+        Includes both completed images and in-progress (fire-and-forget)
+        generations with their current status.
+
         Returns:
             JSON array of image records with resource URIs.
         """
         images = service.list_images()
-        result = [
+        result: list[dict[str, object]] = [
             {
                 "image_id": img.id,
+                "status": "completed",
                 "provider": img.provider,
                 "content_type": img.content_type,
                 "original_dimensions": list(img.original_dimensions),
@@ -555,6 +559,25 @@ def register_resources(mcp: FastMCP) -> None:
             }
             for img in images
         ]
+
+        # Include in-progress and failed generations
+        for pending in service.list_pending():
+            result.append(
+                {
+                    "image_id": pending.id,
+                    "status": pending.status,
+                    "provider": pending.provider,
+                    "prompt": pending.prompt,
+                    "original_uri": f"image://{pending.id}/view",
+                    "resource_template": (
+                        f"image://{pending.id}/view{{?format,width,height,quality}}"
+                    ),
+                    "created_at": datetime.fromtimestamp(
+                        pending.created_at, tz=UTC
+                    ).isoformat(),
+                }
+            )
+
         return json.dumps(result, indent=2)
 
     # -- MCP Apps: image viewer -------------------------------------------------

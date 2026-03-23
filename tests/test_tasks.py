@@ -1,14 +1,19 @@
-"""Tests for background task support and progress reporting."""
+"""Tests for fire-and-forget background task support in generate_image."""
 
 from __future__ import annotations
 
 import asyncio
-import inspect
-from unittest.mock import AsyncMock, MagicMock, patch
+import json
+from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, MagicMock
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from fastmcp import FastMCP
+from mcp.types import TextContent
 
-from image_generation_mcp._server_tools import register_tools
+from image_generation_mcp._server_tools import _BACKGROUND_TASKS, register_tools
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.service import ImageService
 
@@ -34,53 +39,12 @@ async def test_list_providers_no_task() -> None:
     assert tool.task_config.mode == "forbidden"
 
 
-async def test_progress_stages_present() -> None:
-    """generate_image source uses Progress dependency with expected stages."""
-    mcp = FastMCP("test")
-    register_tools(mcp)
-
-    tool = await mcp.get_tool("generate_image")
-    assert tool is not None
-
-    # Inspect the function source for progress/keepalive calls
-    source = inspect.getsource(tool.fn)
-    assert "progress.set_total" in source
-    assert "progress.increment" in source
-    assert '"Generating image"' in source
-    assert '"Saving to scratch"' in source
-    assert '"Done"' in source
-
-
-async def test_keepalive_present() -> None:
-    """generate_image source contains keepalive mechanism."""
-    mcp = FastMCP("test")
-    register_tools(mcp)
-
-    tool = await mcp.get_tool("generate_image")
-    assert tool is not None
-
-    source = inspect.getsource(tool.fn)
-    assert "_keepalive" in source
-    assert "ctx.info" in source
-    assert "_KEEPALIVE_INTERVAL_S" in source
-
-
-async def test_keepalive_fires_during_slow_generate(tmp_path: object) -> None:
-    """Keepalive sends ctx.info() when generation takes longer than the interval."""
-    from pathlib import Path
-
-    tmp = Path(str(tmp_path))
-    svc = ImageService(scratch_dir=tmp)
+async def test_generate_image_returns_generating_immediately(
+    tmp_path: Path,
+) -> None:
+    """generate_image returns status='generating' without waiting for completion."""
+    svc = ImageService(scratch_dir=tmp_path)
     svc.register_provider("placeholder", PlaceholderImageProvider())
-
-    # Wrap generate to introduce a delay longer than the keepalive interval
-    original_generate = svc.generate
-
-    async def slow_generate(*args: object, **kwargs: object) -> object:
-        await asyncio.sleep(0.05)
-        return await original_generate(*args, **kwargs)  # type: ignore[arg-type]
-
-    svc.generate = slow_generate  # type: ignore[assignment]
 
     mcp = FastMCP("test")
     register_tools(mcp)
@@ -90,44 +54,39 @@ async def test_keepalive_fires_during_slow_generate(tmp_path: object) -> None:
     ctx = MagicMock()
     ctx.report_progress = AsyncMock()
     ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
     cfg = MagicMock()
     cfg.paid_providers = frozenset()
-    progress = MagicMock()
-    progress.set_total = AsyncMock()
-    progress.set_message = AsyncMock()
-    progress.increment = AsyncMock()
 
-    with patch("image_generation_mcp._server_tools._KEEPALIVE_INTERVAL_S", 0.01):
-        await tool.fn(
-            prompt="keepalive test",
-            provider="placeholder",
-            service=svc,
-            config=cfg,
-            ctx=ctx,
-            progress=progress,
-        )
+    result = await tool.fn(
+        prompt="fire-and-forget test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
 
-    # ctx.info should have been called at least once by the keepalive task
-    assert ctx.info.call_count >= 1
-    msg = ctx.info.call_args_list[0][0][0]
-    assert "Image generation in progress" in msg
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    assert len(text_items) == 1
+    metadata = json.loads(text_items[0].text)
+    assert metadata["status"] == "generating"
+    assert "image_id" in metadata
 
 
-async def test_keepalive_handles_ctx_info_exception(tmp_path: object) -> None:
-    """Keepalive continues even if ctx.info() raises an exception."""
-    from pathlib import Path
+async def test_background_tasks_set_holds_reference(tmp_path: Path) -> None:
+    """_BACKGROUND_TASKS holds a strong reference to the task during generation."""
+    svc = ImageService(scratch_dir=tmp_path)
 
-    tmp = Path(str(tmp_path))
-    svc = ImageService(scratch_dir=tmp)
-    svc.register_provider("placeholder", PlaceholderImageProvider())
-
-    original_generate = svc.generate
+    # Use a slow provider to keep the task alive long enough to inspect
+    original_provider = PlaceholderImageProvider()
+    original_generate = original_provider.generate
 
     async def slow_generate(*args: object, **kwargs: object) -> object:
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(0.2)
         return await original_generate(*args, **kwargs)  # type: ignore[arg-type]
 
-    svc.generate = slow_generate  # type: ignore[assignment]
+    original_provider.generate = slow_generate  # type: ignore[assignment]
+    svc.register_provider("placeholder", original_provider)
 
     mcp = FastMCP("test")
     register_tools(mcp)
@@ -136,25 +95,177 @@ async def test_keepalive_handles_ctx_info_exception(tmp_path: object) -> None:
 
     ctx = MagicMock()
     ctx.report_progress = AsyncMock()
-    # First call raises, subsequent calls succeed
-    ctx.info = AsyncMock(side_effect=[RuntimeError("connection lost"), None, None])
+    ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
     cfg = MagicMock()
     cfg.paid_providers = frozenset()
-    progress = MagicMock()
-    progress.set_total = AsyncMock()
-    progress.set_message = AsyncMock()
-    progress.increment = AsyncMock()
 
-    with patch("image_generation_mcp._server_tools._KEEPALIVE_INTERVAL_S", 0.01):
-        # Should not raise despite ctx.info() failure
-        result = await tool.fn(
-            prompt="error test",
-            provider="placeholder",
-            service=svc,
-            config=cfg,
-            ctx=ctx,
-            progress=progress,
+    size_before = len(_BACKGROUND_TASKS)
+    await tool.fn(
+        prompt="background tasks test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
+    # Task was added to _BACKGROUND_TASKS while still running
+    assert len(_BACKGROUND_TASKS) > size_before
+
+    # Wait for the background task to finish
+    await asyncio.sleep(0.3)
+    # Task removed itself on completion
+    assert len(_BACKGROUND_TASKS) == size_before
+
+
+async def test_background_task_completes_after_return(tmp_path: Path) -> None:
+    """Background task registers the image after generate_image returns."""
+    svc = ImageService(scratch_dir=tmp_path)
+    svc.register_provider("placeholder", PlaceholderImageProvider())
+
+    mcp = FastMCP("test")
+    register_tools(mcp)
+    tool = await mcp.get_tool("generate_image")
+    assert tool is not None
+
+    ctx = MagicMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
+    cfg = MagicMock()
+    cfg.paid_providers = frozenset()
+
+    result = await tool.fn(
+        prompt="completion test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
+
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    image_id = json.loads(text_items[0].text)["image_id"]
+
+    # Placeholder is near-instant; after a brief wait the image is registered
+    await asyncio.sleep(0.1)
+
+    show_tool = await mcp.get_tool("show_image")
+    assert show_tool is not None
+    show_cfg = MagicMock()
+    show_cfg.base_url = None
+    show_result = await show_tool.fn(
+        uri=f"image://{image_id}/view",
+        service=svc,
+        config=show_cfg,
+    )
+    show_text = [c for c in show_result.content if isinstance(c, TextContent)]
+    show_meta = json.loads(show_text[0].text)
+    # After completion the pending entry is cleaned up and show_image returns
+    # the normal image thumbnail (status key absent or not 'generating'/'failed')
+    assert show_meta.get("status") not in ("generating", "failed")
+
+
+async def test_show_image_returns_generating_for_in_progress(
+    tmp_path: Path,
+) -> None:
+    """show_image returns status='generating' while background task is running."""
+    svc = ImageService(scratch_dir=tmp_path)
+
+    # Use a slow provider so we can inspect mid-generation state
+    original_provider = PlaceholderImageProvider()
+    original_generate = original_provider.generate
+
+    async def slow_generate(*args: object, **kwargs: object) -> object:
+        await asyncio.sleep(0.5)
+        return await original_generate(*args, **kwargs)  # type: ignore[arg-type]
+
+    original_provider.generate = slow_generate  # type: ignore[assignment]
+    svc.register_provider("placeholder", original_provider)
+
+    mcp = FastMCP("test")
+    register_tools(mcp)
+    gen_tool = await mcp.get_tool("generate_image")
+    show_tool = await mcp.get_tool("show_image")
+    assert gen_tool is not None
+    assert show_tool is not None
+
+    ctx = MagicMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
+    cfg = MagicMock()
+    cfg.paid_providers = frozenset()
+
+    result = await gen_tool.fn(
+        prompt="slow generation test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    image_id = json.loads(text_items[0].text)["image_id"]
+
+    # Call show_image immediately — background task is still running
+    show_cfg = MagicMock()
+    show_cfg.base_url = None
+    show_result = await show_tool.fn(
+        uri=f"image://{image_id}/view",
+        service=svc,
+        config=show_cfg,
+    )
+    show_text = [c for c in show_result.content if isinstance(c, TextContent)]
+    show_meta = json.loads(show_text[0].text)
+    assert show_meta["status"] == "generating"
+    assert show_meta["image_id"] == image_id
+    assert "elapsed_seconds" in show_meta
+
+    # Wait for background task to finish to avoid warnings
+    await asyncio.sleep(0.6)
+
+
+async def test_image_list_includes_pending_generation(
+    tmp_path: Path,
+) -> None:
+    """image://list includes in-progress generations with 'generating' status."""
+    from fastmcp import Client
+
+    from image_generation_mcp._server_deps import make_service_lifespan
+    from image_generation_mcp._server_resources import register_resources
+    from image_generation_mcp.config import ServerConfig
+
+    config = ServerConfig(scratch_dir=tmp_path, read_only=False)
+
+    # Patch PlaceholderImageProvider to be slow so generation stays pending
+    original_provider = PlaceholderImageProvider()
+    original_generate = original_provider.generate
+
+    async def slow_generate(*args: object, **kwargs: object) -> object:
+        await asyncio.sleep(0.5)
+        return await original_generate(*args, **kwargs)  # type: ignore[arg-type]
+
+    original_provider.generate = slow_generate  # type: ignore[assignment]
+
+    mcp = FastMCP("test-list-pending", lifespan=make_service_lifespan(config))
+    register_tools(mcp)
+    register_resources(mcp)
+
+    async with Client(mcp) as client:
+        gen_result = await client.call_tool(
+            "generate_image",
+            {"prompt": "list pending test", "provider": "placeholder"},
         )
+        text = next(c for c in gen_result.content if c.type == "text")
+        image_id = json.loads(text.text)["image_id"]
 
-    # Generation still succeeded
-    assert result is not None
+        # Read image://list while generation is still pending
+        list_result = await client.read_resource("image://list")
+        items = json.loads(list_result[0].text)  # type: ignore[union-attr]
+        pending_items = [i for i in items if i.get("status") == "generating"]
+        assert len(pending_items) >= 1
+        pending_match = [i for i in pending_items if i["image_id"] == image_id]
+        assert len(pending_match) == 1
+        assert pending_match[0]["provider"] == "placeholder"
+        assert pending_match[0]["prompt"] == "list pending test"
+
+        # Wait for background task to finish to avoid warnings
+        await asyncio.sleep(0.6)
