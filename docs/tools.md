@@ -53,7 +53,7 @@ The tool uses a fire-and-forget pattern to avoid client tool-execution timeouts 
 1. **`generate_image`** returns in &lt;1s with `"status": "generating"` and a pre-allocated `image_id`
 2. **Background task** generates the image and registers it in the scratch directory
 3. **`show_image`** polls for status:
-    - `{"status": "generating", "progress": 0.3, ...}` -- still in progress
+    - `{"status": "generating", "progress": 0.3, "progress_message": "Step 9/30 (ETA 12s)", ...}` -- still in progress (SD WebUI reports step-level detail; other providers report `0.0` until complete)
     - `{"status": "failed", "error": "..."}` -- generation failed
     - Image thumbnail + metadata -- generation complete
 
