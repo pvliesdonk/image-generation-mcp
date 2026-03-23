@@ -37,6 +37,7 @@ Returns immediately with a `ToolResult` containing:
   "image_id": "a1b2c3d4e5f6",
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "provider": "openai",
+  "prompt_style": null,
   "original_uri": "image://a1b2c3d4e5f6/view",
   "metadata_uri": "image://a1b2c3d4e5f6/metadata",
   "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality}"
@@ -118,6 +119,7 @@ Returns a `ToolResult` with:
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "provider": "openai",
   "model": "gpt-image-1",
+  "prompt_style": null,
   "dimensions": [1024, 683],
   "thumbnail_dimensions": [512, 342],
   "original_size_bytes": 3145728,

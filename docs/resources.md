@@ -193,7 +193,7 @@ Each item includes a `status` field: `"completed"` for registered images, `"gene
 ```json
 [
   {
-    "id": "a1b2c3d4e5f6",
+    "image_id": "a1b2c3d4e5f6",
     "provider": "openai",
     "prompt": "a watercolor painting of mountains at sunset",
     "aspect_ratio": "16:9",
@@ -201,13 +201,13 @@ Each item includes a `status` field: `"completed"` for registered images, `"gene
     "status": "completed"
   },
   {
-    "id": "c3d4e5f6a7b8",
+    "image_id": "c3d4e5f6a7b8",
     "provider": "sd_webui",
     "prompt": "a cyberpunk cityscape",
     "status": "generating"
   },
   {
-    "id": "b2c3d4e5f6a7",
+    "image_id": "b2c3d4e5f6a7",
     "provider": "placeholder",
     "prompt": "test image",
     "aspect_ratio": "1:1",
