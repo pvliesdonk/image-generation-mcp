@@ -19,6 +19,7 @@ Acceptance criteria verified:
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import json
@@ -29,6 +30,48 @@ from mcp.types import ImageContent, ResourceLink, TextContent
 from PIL import Image as PILImage
 
 from image_generation_mcp.mcp_server import create_server
+
+
+async def _generate_and_wait(
+    client: Client,
+    prompt: str = "test",
+    provider: str = "placeholder",
+    **kwargs: str,
+) -> str:
+    """Generate an image via fire-and-forget and wait for completion.
+
+    Returns the image_id once the image is ready.
+
+    Args:
+        client: An active FastMCP Client.
+        prompt: The image generation prompt.
+        provider: The provider name to use.
+        **kwargs: Additional keyword arguments forwarded to generate_image.
+
+    Returns:
+        The image_id of the completed image.
+    """
+    result = await client.call_tool(
+        "generate_image",
+        {"prompt": prompt, "provider": provider, **kwargs},
+    )
+    assert not result.is_error
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    metadata = json.loads(text_items[0].text)
+    image_id = metadata["image_id"]
+    assert metadata["status"] == "generating"
+
+    # Poll until complete (placeholder is near-instant)
+    for _ in range(50):
+        await asyncio.sleep(0.05)
+        show = await client.call_tool("show_image", {"uri": f"image://{image_id}/view"})
+        show_text = [c for c in show.content if isinstance(c, TextContent)]
+        show_meta = json.loads(show_text[0].text)
+        if show_meta.get("status") != "generating":
+            break
+
+    return image_id
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -82,6 +125,7 @@ class TestGenerateImageThroughClient:
         assert "resource_template" in metadata
         assert metadata["original_uri"].startswith("image://")
         assert "{?format" in metadata["resource_template"]
+        assert metadata["status"] == "generating"
 
     async def test_returns_resource_link(self, rw_server) -> None:
         """Result contains a ResourceLink with an image:// URI."""
@@ -95,7 +139,7 @@ class TestGenerateImageThroughClient:
         link_items = [c for c in result.content if isinstance(c, ResourceLink)]
         assert len(link_items) == 1
         assert str(link_items[0].uri).startswith("image://")
-        assert link_items[0].name == "Generated image"
+        assert link_items[0].name == "Generated image (generating)"
 
     async def test_no_image_content_in_result(self, rw_server) -> None:
         """generate_image must not return ImageContent (thumbnail is in show_image)."""
@@ -136,14 +180,7 @@ class TestImageViewResource:
 
     async def _generate_image_id(self, client: Client) -> str:
         """Helper: generate a placeholder image and return its image_id."""
-        result = await client.call_tool(
-            "generate_image",
-            {"prompt": "view resource test", "provider": "placeholder"},
-        )
-        assert not result.is_error
-        text_items = [c for c in result.content if isinstance(c, TextContent)]
-        metadata = json.loads(text_items[0].text)
-        return metadata["image_id"]
+        return await _generate_and_wait(client, prompt="view resource test")
 
     async def test_no_params_returns_original_bytes(self, rw_server) -> None:
         """No query params: resource returns original image bytes."""
@@ -251,14 +288,7 @@ class TestImageMetadataResource:
     async def test_metadata_returns_json_with_expected_fields(self, rw_server) -> None:
         """Metadata resource returns JSON with id, prompt, provider, dimensions."""
         async with Client(rw_server) as client:
-            gen_result = await client.call_tool(
-                "generate_image",
-                {"prompt": "metadata resource test", "provider": "placeholder"},
-            )
-            assert not gen_result.is_error
-            text_items = [c for c in gen_result.content if isinstance(c, TextContent)]
-            image_id = json.loads(text_items[0].text)["image_id"]
-
+            image_id = await _generate_and_wait(client, prompt="metadata resource test")
             contents = await client.read_resource(f"image://{image_id}/metadata")
 
         assert len(contents) == 1
@@ -293,16 +323,9 @@ class TestImageListResource:
         assert data == []
 
     async def test_list_includes_generated_image(self, rw_server) -> None:
-        """After generate_image, the image appears in image://list."""
+        """After generate_image completes, the image appears in image://list with status completed."""
         async with Client(rw_server) as client:
-            gen_result = await client.call_tool(
-                "generate_image",
-                {"prompt": "list resource test", "provider": "placeholder"},
-            )
-            assert not gen_result.is_error
-            text_items = [c for c in gen_result.content if isinstance(c, TextContent)]
-            image_id = json.loads(text_items[0].text)["image_id"]
-
+            image_id = await _generate_and_wait(client, prompt="list resource test")
             contents = await client.read_resource("image://list")
 
         data = json.loads(contents[0].text)
@@ -313,16 +336,13 @@ class TestImageListResource:
         assert item["original_uri"] == f"image://{image_id}/view"
         assert "resource_template" in item
         assert item["prompt"] == "list resource test"
+        assert item["status"] == "completed"
 
     async def test_list_multiple_images(self, rw_server) -> None:
         """image://list returns all generated images."""
         async with Client(rw_server) as client:
             for prompt in ["first image", "second image", "third image"]:
-                result = await client.call_tool(
-                    "generate_image",
-                    {"prompt": prompt, "provider": "placeholder"},
-                )
-                assert not result.is_error
+                await _generate_and_wait(client, prompt=prompt)
 
             contents = await client.read_resource("image://list")
 

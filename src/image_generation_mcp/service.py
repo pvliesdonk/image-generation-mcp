@@ -13,8 +13,9 @@ import io
 import json
 import logging
 import time
+import uuid
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar
@@ -58,6 +59,33 @@ class ImageRecord:
     created_at: float
 
 
+_PENDING_TTL_S = 600  # 10 minutes — clean up stale pending entries
+
+
+@dataclass
+class PendingGeneration:
+    """Tracks an in-progress or recently completed background generation.
+
+    Mutable: ``status``, ``error``, ``completed_at``, ``progress``, and
+    ``progress_message`` are updated as the background task progresses.
+    """
+
+    id: str
+    prompt: str
+    provider: str
+    negative_prompt: str | None = None
+    aspect_ratio: str = "1:1"
+    quality: str = "standard"
+    background: str = "opaque"
+    model: str | None = None
+    status: str = "generating"  # "generating", "completed", "failed"
+    error: str | None = None
+    created_at: float = field(default_factory=time.time)
+    completed_at: float | None = None
+    progress: float = 0.0
+    progress_message: str = ""
+
+
 class ImageService:
     """Central orchestrator for image generation.
 
@@ -85,6 +113,7 @@ class ImageService:
             tuple[str, str, int, int, int], tuple[bytes, str]
         ] = OrderedDict()
         self._transform_cache_size = transform_cache_size
+        self._pending: dict[str, PendingGeneration] = {}
 
         # Rebuild registry from existing sidecar files
         self._load_registry()
@@ -319,6 +348,118 @@ class ImageService:
         return resolved_name, result
 
     # ------------------------------------------------------------------
+    # Pending generation tracking (fire-and-forget)
+    # ------------------------------------------------------------------
+
+    def allocate_image_id(self) -> str:
+        """Pre-allocate a unique image ID for fire-and-forget generation.
+
+        Returns:
+            A 12-character hex string suitable for use as an image ID.
+        """
+        return uuid.uuid4().hex[:12]
+
+    def register_pending(
+        self,
+        image_id: str,
+        prompt: str,
+        provider: str,
+        *,
+        negative_prompt: str | None = None,
+        aspect_ratio: str = "1:1",
+        quality: str = "standard",
+        background: str = "opaque",
+        model: str | None = None,
+    ) -> PendingGeneration:
+        """Register a pending generation for background processing.
+
+        Args:
+            image_id: Pre-allocated image ID from :meth:`allocate_image_id`.
+            prompt: The generation prompt.
+            provider: Resolved provider name.
+            negative_prompt: Negative prompt (if any).
+            aspect_ratio: Requested aspect ratio.
+            quality: Requested quality level.
+            background: Requested background mode.
+            model: Specific model to use.
+
+        Returns:
+            The created PendingGeneration.
+        """
+        pending = PendingGeneration(
+            id=image_id,
+            prompt=prompt,
+            provider=provider,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            background=background,
+            model=model,
+        )
+        self._pending[image_id] = pending
+        logger.info("Registered pending generation: %s (provider=%s)", image_id, provider)
+        return pending
+
+    def get_pending(self, image_id: str) -> PendingGeneration | None:
+        """Look up a pending generation by ID.
+
+        Returns:
+            The PendingGeneration, or ``None`` if not found.
+        """
+        self._cleanup_stale_pending()
+        return self._pending.get(image_id)
+
+    def complete_pending(self, image_id: str) -> None:
+        """Mark a pending generation as completed.
+
+        Called after the image has been registered in the image registry.
+        The pending entry is kept briefly so ``show_image`` can detect the
+        transition, then cleaned up on next access.
+        """
+        pending = self._pending.get(image_id)
+        if pending is not None:
+            pending.status = "completed"
+            pending.completed_at = time.time()
+            pending.progress = 1.0
+
+    def fail_pending(self, image_id: str, error: str) -> None:
+        """Mark a pending generation as failed.
+
+        Args:
+            image_id: The pending generation ID.
+            error: Human-readable error message.
+        """
+        pending = self._pending.get(image_id)
+        if pending is not None:
+            pending.status = "failed"
+            pending.error = error
+            pending.completed_at = time.time()
+
+    def cleanup_pending(self, image_id: str) -> None:
+        """Remove a pending generation entry after it has been read."""
+        self._pending.pop(image_id, None)
+
+    def list_pending(self) -> list[PendingGeneration]:
+        """Return all pending generations (generating or recently failed).
+
+        Returns:
+            List of PendingGeneration instances.
+        """
+        self._cleanup_stale_pending()
+        return [p for p in self._pending.values() if p.status != "completed"]
+
+    def _cleanup_stale_pending(self) -> None:
+        """Remove pending entries that have exceeded the TTL."""
+        now = time.time()
+        stale = [
+            pid
+            for pid, p in self._pending.items()
+            if p.completed_at is not None and (now - p.completed_at) > _PENDING_TTL_S
+        ]
+        for pid in stale:
+            self._pending.pop(pid, None)
+
+    # ------------------------------------------------------------------
     # Image registry
     # ------------------------------------------------------------------
 
@@ -332,6 +473,7 @@ class ImageService:
         aspect_ratio: str = "1:1",
         quality: str = "standard",
         background: str = "opaque",
+        image_id: str | None = None,
     ) -> ImageRecord:
         """Register a generated image in the scratch directory.
 
@@ -346,14 +488,18 @@ class ImageService:
             aspect_ratio: Requested aspect ratio.
             quality: Requested quality level.
             background: Requested background transparency.
+            image_id: Pre-allocated image ID (from :meth:`allocate_image_id`).
+                If ``None``, a content-addressed ID is derived from the
+                image data.
 
         Returns:
             The created ImageRecord.
         """
         self._scratch_dir.mkdir(parents=True, exist_ok=True)
 
-        # Content-addressed ID
-        image_id = hashlib.sha256(result.image_data).hexdigest()[:12]
+        # Use pre-allocated ID or derive from content
+        if image_id is None:
+            image_id = hashlib.sha256(result.image_data).hexdigest()[:12]
 
         # Extract original dimensions via Pillow
         img = PILImage.open(io.BytesIO(result.image_data))

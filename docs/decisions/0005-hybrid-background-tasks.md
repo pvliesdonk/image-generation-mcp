@@ -1,93 +1,92 @@
-# ADR-0005: Hybrid Background Tasks for Image Generation
+# ADR-0005: Fire-and-Forget Image Generation
 
 ## Status
 
-Accepted
+Accepted — supersedes the original hybrid background task decision.
 
 ## Context
 
 Image generation is inherently slow -- OpenAI takes 5-15 seconds, SD WebUI takes
-10-60+ seconds on consumer GPUs. The current `generate_image` tool blocks until
-completion with no feedback to the client.
+10-60+ seconds on consumer GPUs. MCP clients enforce hard tool-execution timeouts
+that no server-side mechanism can extend:
 
-MCP clients need either real-time progress updates (foreground) or the ability
-to start generation and check back later (background). Different clients and
-use cases benefit from different modes.
+| Client | Tool timeout | Progress resets it? |
+|--------|-------------|---------------------|
+| Claude.ai | ~45s hard | No |
+| Claude Desktop | 60s hard | No |
+| Claude Code | Configurable, `resetTimeoutOnProgress=True` | **Yes** |
+| Claude Android | ~45s hard tool + ~25s SSE idle | No / Yes (keepalive) |
+
+The original Option 3 (hybrid foreground progress + background tasks) was
+implemented but live testing on 2026-03-23 confirmed that progress notifications
+do not reset the timeout on any client except Claude Code. Both SD WebUI
+(Flux/60-120s) and OpenAI gpt-image-1 (consistently >45s) time out every time
+on Claude.ai, Claude Desktop, and Claude Android.
 
 ## Decision Drivers
 
-- **Client flexibility** -- some clients want blocking + progress, others want
-  fire-and-forget
-- **Minimal complexity** -- one code path, not two divergent implementations
-- **Forward compatibility** -- MCP background task protocol (SEP-1686) is
-  gaining adoption
-- **Zero mandatory infrastructure** -- should work out-of-the-box without Redis
-
-## Considered Options
-
-### Option 1: Foreground-only with progress reporting
-
-Add `Context.report_progress()` calls but keep the tool blocking.
-
-**Pros:** Simplest change, zero new dependencies.
-**Cons:** Clients cannot do other work while waiting. 60s SD WebUI generations
-block the entire MCP session.
-
-### Option 2: Background-only with task polling
-
-Add `task=True` and remove foreground support.
-
-**Pros:** Non-blocking for all clients.
-**Cons:** Forces all clients into polling mode. Clients that prefer streaming
-progress lose that capability. Requires `fastmcp[tasks]` dependency.
-
-### Option 3: Hybrid -- foreground progress + background tasks (chosen)
-
-Add `task=True` to the decorator AND use `Context.report_progress()` in the
-tool body. `report_progress()` adapts automatically to both execution modes.
-
-**Pros:** Client chooses mode at call time. Single code path. Progress works
-in both modes. In-memory Docket backend works without Redis.
-**Cons:** Adds `fastmcp[tasks]` dependency.
+- **Universal compatibility** -- must work on all MCP clients without configuration
+- **Sub-second tool response** -- tool must return before the shortest client timeout
+- **Zero mandatory infrastructure** -- no Redis, no message queue
+- **Polling via existing tools** -- clients poll with `show_image`, no new protocol
 
 ## Decision
 
-**Option 3: Hybrid.** The `generate_image` tool uses `task=True` on the
-decorator and `Context.report_progress()` for progress updates. The client
-controls execution mode:
+**Fire-and-forget with polling.** The `generate_image` tool:
 
-- **Foreground** (default): Client calls normally, receives progress
-  notifications, gets result when done.
-- **Background**: Client calls with `task=True`, receives task ID immediately,
-  polls for progress and result.
+1. Validates inputs and resolves the provider (synchronous, <1s)
+2. Pre-allocates an `image_id` and registers a `PendingGeneration`
+3. Spawns the provider call as a background `asyncio.create_task`
+4. Returns immediately with `{"status": "generating", "image_id": "..."}`
 
-Progress stages:
-1. Generating image (0/2)
-2. Saving to scratch (1/2)
-3. Done (2/2)
+The client then polls with `show_image(uri="image://{image_id}/view")`:
 
-**Critical constraint:** The tool function must contain zero conditional logic
-based on execution mode. There must be no `if ctx.is_background_task:`
-branching, no separate foreground vs. background return paths, and no
-mode-detection code. `Context.report_progress()` handles the
-foreground/background dispatch internally -- the tool is unaware of which mode
-the client selected. If a future change requires mode-specific behavior, that
-is a signal to revisit this ADR, not to add a conditional.
+- `{"status": "generating", "progress": 0.3, ...}` -- still in progress
+- `{"status": "failed", "error": "..."}` -- generation failed
+- Image thumbnail + metadata -- generation complete (normal `show_image` response)
+
+### Key properties
+
+- **All providers use the same path** -- no provider-specific branching
+- **The tool function returns in <1s** -- well within all client timeouts
+- **Background tasks are in-process `asyncio.Task`s** -- no external infrastructure
+- **`image://list` includes pending generations** -- clients can discover in-progress work
+- **Cleanup is automatic** -- completed/failed entries expire after TTL (10 min)
+
+### Service layer API
+
+```python
+service.allocate_image_id() -> str           # pre-allocate before spawning
+service.register_pending(image_id, ...)      # track the background task
+service.get_pending(image_id)                # poll status (None if unknown)
+service.complete_pending(image_id)           # mark done after register_image
+service.fail_pending(image_id, error)        # capture background failures
+service.cleanup_pending(image_id)            # remove after client reads it
+service.register_image(..., image_id=...)    # accepts pre-allocated ID
+```
+
+### Synchronous callers
+
+`service.generate()` remains a normal async method that blocks until the image
+is ready. Only the MCP tool layer uses fire-and-forget. Direct callers of the
+service (tests, CLI) get synchronous behavior unchanged.
 
 ## Consequences
 
 ### Positive
 
-- Clients choose the mode that fits their UX (streaming vs. polling)
-- Single tool function serves both modes -- no code duplication
-- In-memory Docket backend requires zero infrastructure beyond FastMCP
-- Future: Redis backend enables persistence and horizontal scaling without
-  code changes
+- Works on every MCP client without timeout issues
+- Single code path for all providers
+- `show_image` doubles as both display tool and polling endpoint -- no new tools
+- Progress info (from SD WebUI `/sdapi/v1/progress`) can be stored in
+  `PendingGeneration` and returned via `show_image` polling
+- Background failures are captured and surfaced, not silently lost
 
 ### Negative
 
-- Adds `fastmcp[tasks]` dependency (pulls in Docket)
-- Clients that don't support MCP tasks fall back to foreground (acceptable --
-  it's the default)
-- Background mode returns task ID, not the image -- client must make a second
-  call to retrieve result
+- Client must call `show_image` at least once to see the result (not automatic)
+- Two tool calls minimum (generate + show) vs. one in the old foreground mode
+- In-process tasks are lost on server restart (acceptable -- no persistence needed
+  for ephemeral image generation)
+- The `task=True` decorator is retained for forward compatibility but the tool
+  no longer blocks long enough for MCP background task mode to be useful
