@@ -1,10 +1,12 @@
-# A1111 (Stable Diffusion WebUI)
+# SD WebUI (Stable Diffusion WebUI)
 
-Image generation via the [Automatic1111 Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) REST API. Best for photorealism, portraits, anime, and artistic styles.
+Image generation via the [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) REST API. Best for photorealism, portraits, anime, and artistic styles.
+
+> **Compatible with** AUTOMATIC1111, Forge, reForge, and Forge-neo.
 
 ## Setup
 
-1. Install and start [A1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) with API access enabled:
+1. Install and start one of the compatible WebUI forks with API access enabled:
 
     ```bash
     # Start WebUI with API enabled
@@ -14,12 +16,12 @@ Image generation via the [Automatic1111 Stable Diffusion WebUI](https://github.c
 2. Set the host URL:
 
     ```bash
-    IMAGE_GENERATION_MCP_A1111_HOST=http://localhost:7860
+    IMAGE_GENERATION_MCP_SD_WEBUI_HOST=http://localhost:7860
     ```
 
-The provider registers automatically when `IMAGE_GENERATION_MCP_A1111_HOST` is set.
+The provider registers automatically when `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set.
 
-> **Compatibility:** A1111 version 1.6 or later is required. The split `sampler_name` + `scheduler` API was introduced in 1.6; earlier versions do not support the `scheduler` field.
+> **Compatibility:** SD WebUI version 1.6 (or equivalent Forge/reForge version) or later is required. The split `sampler_name` + `scheduler` API was introduced in 1.6; earlier versions do not support the `scheduler` field.
 
 ## Model-aware presets
 
@@ -86,24 +88,24 @@ Sizes are the same as standard SDXL.
 To set a default checkpoint for all generation requests:
 
 ```bash
-IMAGE_GENERATION_MCP_A1111_MODEL=realisticVisionV60B1_v51VAE.safetensors
+IMAGE_GENERATION_MCP_SD_WEBUI_MODEL=realisticVisionV60B1_v51VAE.safetensors
 ```
 
-When `A1111_MODEL` is set, the provider sends `override_settings.sd_model_checkpoint` in the API payload and uses the checkpoint name for preset detection.
+When `SD_WEBUI_MODEL` is set, the provider sends `override_settings.sd_model_checkpoint` in the API payload and uses the checkpoint name for preset detection.
 
 ### Per-call override (model parameter)
 
 The `model` parameter on `generate_image` overrides the server default for a single request. Preset detection (steps, CFG, sampler, sizes) uses the per-call model name, not the constructor default:
 
 ```
-generate_image(prompt="...", provider="a1111", model="dreamshaperXL_v21.safetensors")
+generate_image(prompt="...", provider="sd_webui", model="dreamshaperXL_v21.safetensors")
 ```
 
 Use `list_providers` to discover available checkpoints and their model IDs.
 
 ## Background transparency
 
-The `background` parameter is **not supported** by A1111. When `background="transparent"` is passed, it is silently ignored (a debug log is emitted). Stable Diffusion does not natively support transparent background generation.
+The `background` parameter is **not supported** by SD WebUI. When `background="transparent"` is passed, it is silently ignored (a debug log is emitted). Stable Diffusion does not natively support transparent background generation.
 
 ## Capability discovery
 
@@ -114,17 +116,17 @@ At startup, the provider calls:
 
 Each checkpoint is mapped to a `ModelCapabilities` object with architecture-specific defaults (resolution, steps, CFG, sampler) based on the same name detection used for generation presets.
 
-If the A1111 server is unreachable (connection error or timeout), the provider is marked as **degraded** -- it remains available for generation but with an empty model list in the capabilities response. This prevents a slow or offline A1111 instance from blocking server startup.
+If the SD WebUI server is unreachable (connection error or timeout), the provider is marked as **degraded** -- it remains available for generation but with an empty model list in the capabilities response. This prevents a slow or offline SD WebUI instance from blocking server startup.
 
 ## Negative prompts
 
-A1111 has native negative prompt support via the `negative_prompt` field in the API payload. This is more effective than OpenAI's "Avoid:" workaround.
+SD WebUI has native negative prompt support via the `negative_prompt` field in the API payload. This is more effective than OpenAI's "Avoid:" workaround.
 
 See the [Prompt Writing Guide](../guides/prompt-writing.md) for recommended negative prompts.
 
 ## Metadata
 
-The provider extracts from the A1111 response:
+The provider extracts from the SD WebUI response:
 
 - **seed** -- the random seed used for generation (useful for reproducibility)
 - **model name** -- the active checkpoint name (from response `info` JSON)
@@ -135,10 +137,19 @@ The provider extracts from the A1111 response:
 
 The default timeout is **180 seconds**. SDXL at high resolution on consumer GPUs can take 30-60+ seconds. If you experience timeouts, ensure your WebUI is responding.
 
+## Deprecated env var aliases
+
+The previous `A1111_HOST` and `A1111_MODEL` env var names are still accepted as deprecated aliases:
+
+| Deprecated | Current |
+|------------|---------|
+| `IMAGE_GENERATION_MCP_A1111_HOST` | `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` |
+| `IMAGE_GENERATION_MCP_A1111_MODEL` | `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` |
+
 ## Troubleshooting
 
 | Error | Cause | Resolution |
 |-------|-------|------------|
-| Connection error | Cannot reach A1111 WebUI | Verify WebUI is running with `--api` flag at the configured host |
+| Connection error | Cannot reach SD WebUI | Verify WebUI is running with `--api` flag at the configured host |
 | Timeout (180s) | Generation too slow | Check GPU utilization; consider a faster model or lower resolution |
 | HTTP 404 | Wrong API endpoint | Verify the WebUI version supports `/sdapi/v1/txt2img` |

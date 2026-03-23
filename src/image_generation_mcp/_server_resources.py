@@ -39,15 +39,15 @@ _PROMPT_GUIDE = """\
 `9:16` for portraits and mobile, `3:2` for photos, `1:1` for icons and avatars.
 
 **Quality levels:** Use `standard` for drafts and iteration. Use `hd` for final
-output (only affects OpenAI — A1111 and placeholder ignore this parameter).
+output (only affects OpenAI — SD WebUI and placeholder ignore this parameter).
 
 **Negative prompts:** Use them when you want to explicitly exclude unwanted
-elements. Most effective on A1111 (native CLIP support). On OpenAI, they are
+elements. Most effective on SD WebUI (native CLIP support). On OpenAI, they are
 appended as an "Avoid:" clause with weaker effect. Placeholder ignores them.
 
 **Background:** Set `background="transparent"` when generating assets for
 compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
-placeholder. A1111 ignores this parameter.
+placeholder. SD WebUI ignores this parameter.
 
 ## OpenAI (gpt-image-1 / dall-e-3)
 
@@ -72,7 +72,7 @@ Also strong at general-purpose generation and following complex instructions.
 **Quality levels:** `standard` and `hd` are both supported. `gpt-image-1`
 maps both to its highest quality tier.
 
-## A1111 / Stable Diffusion
+## SD WebUI / Stable Diffusion
 
 Use comma-separated CLIP tags for best results. Order tags by importance —
 tokens near the front of the prompt have the most influence.
@@ -149,8 +149,8 @@ RGBA output with alpha=0.
 ## Provider Selection
 
 1. **Text, logos, typography** → `openai`
-2. **Photorealism, portraits, product shots** → prefer `a1111`, fall back to `openai`
-3. **Anime, illustration, painting, art** → prefer `a1111`, fall back to `openai`
+2. **Photorealism, portraits, product shots** → prefer `sd_webui`, fall back to `openai`
+3. **Anime, illustration, painting, art** → prefer `sd_webui`, fall back to `openai`
 4. **Quick test or placeholder** → `placeholder`
 5. **General requests** → `openai` (most versatile, default)
 
@@ -349,7 +349,7 @@ def register_resources(mcp: FastMCP) -> None:
         "info://prompt-guide",
         description=(
             "Provider-specific prompt writing tips. Read before using "
-            "A1111/Stable Diffusion to learn CLIP tag format, quality "
+            "SD WebUI/Stable Diffusion to learn CLIP tag format, quality "
             "tags, and negative prompt templates. Also covers OpenAI "
             "prompt style and provider selection guidance."
         ),

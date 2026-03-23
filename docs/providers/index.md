@@ -4,8 +4,8 @@ image-generation-mcp supports multiple image generation providers. Each provider
 
 ## Provider comparison
 
-| | OpenAI | A1111 (Stable Diffusion) | Placeholder |
-|---|--------|--------------------------|-------------|
+| | OpenAI | SD WebUI (Stable Diffusion) | Placeholder |
+|---|--------|----------------------------|-------------|
 | **Best for** | Text, logos, typography, general-purpose | Photorealism, portraits, anime, artistic styles | Testing, drafts, CI |
 | **Models** | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | -- |
 | **Quality** | High | Varies by model and steps | N/A (solid color) |
@@ -13,7 +13,7 @@ image-generation-mcp supports multiple image generation providers. Each provider
 | **Cost** | Per-image API pricing | Self-hosted (GPU cost) | Free |
 | **Negative prompt** | Appended as "Avoid:" clause | Native support | Ignored |
 | **Background control** | Supported (gpt-image-1 only) | Not supported (ignored) | Supported (RGBA PNG) |
-| **Requires** | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | Running A1111 WebUI + `IMAGE_GENERATION_MCP_A1111_HOST` | Nothing |
+| **Requires** | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | Running SD WebUI + `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | Nothing |
 
 ## Which provider should I use?
 
@@ -25,7 +25,7 @@ image-generation-mcp supports multiple image generation providers. Each provider
 - General-purpose image generation when you need reliability
 - When you don't have a GPU for local generation
 
-**Use A1111** for:
+**Use SD WebUI** for:
 
 - Photorealistic images (portraits, product shots, photography)
 - Anime, manga, and illustration styles
@@ -38,12 +38,12 @@ When `provider="auto"` (the default), the server analyzes your prompt using keyw
 
 | Prompt keywords | Preferred provider chain |
 |----------------|--------------------------|
-| realistic, photo, photography, portrait photo, product shot, headshot | a1111 -> openai |
+| realistic, photo, photography, portrait photo, product shot, headshot | sd_webui -> openai |
 | text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, oil painting, sketch, drawing | a1111 -> openai |
-| anime, manga, kawaii, chibi | a1111 -> openai |
-| *(no match)* | openai -> a1111 -> placeholder |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | sd_webui -> openai |
+| anime, manga, kawaii, chibi | sd_webui -> openai |
+| *(no match)* | openai -> sd_webui -> placeholder |
 
 The first matching rule wins. Within a rule, the first available provider is selected. If no provider in the chain is available, any registered provider is returned as a fallback.
 
@@ -55,4 +55,4 @@ Providers are registered automatically at startup based on environment variables
 
 1. **Placeholder** -- always registered (zero cost, no configuration)
 2. **OpenAI** -- registered when `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
-3. **A1111** -- registered when `IMAGE_GENERATION_MCP_A1111_HOST` is set
+3. **SD WebUI** -- registered when `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set

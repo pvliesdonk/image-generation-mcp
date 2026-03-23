@@ -87,7 +87,7 @@ class ImageProvider(Protocol):
             quality: Quality level (``standard``, ``hd``).
             background: Background transparency (``opaque``, ``transparent``).
                 Only supported by some providers.
-            model: Specific model to use (e.g., a checkpoint name for A1111,
+            model: Specific model to use (e.g., a checkpoint name for SD WebUI,
                 or ``"dall-e-3"`` for OpenAI). Overrides the provider's
                 configured default for this call.
 

@@ -31,7 +31,7 @@
 
 | Extra | Includes | When to use |
 |-------|----------|-------------|
-| `mcp` | `fastmcp[tasks]>=3.0,<4` | Minimal MCP server (A1111 + placeholder) |
+| `mcp` | `fastmcp[tasks]>=3.0,<4` | Minimal MCP server (SD WebUI + placeholder) |
 | `openai` | `openai>=1.0` | OpenAI provider only (no MCP server) |
 | `all` | `fastmcp[tasks]` + `openai` | Full installation with all providers |
 | `dev` | All above + pytest, ruff, mypy, pip-audit | Development and testing |

@@ -2,7 +2,7 @@
 
 Analyzes prompts to select the best image generation provider,
 inspired by the claude-skills provider selector but simplified
-for the current provider set (OpenAI, A1111, Placeholder).
+for the current provider set (OpenAI, SD WebUI, Placeholder).
 
 Capabilities (when available) act as a secondary filter — providers
 without a required capability are deprioritized but not excluded.
@@ -33,7 +33,7 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "portrait photo",
             "product shot",
         ],
-        ["a1111", "openai"],
+        ["sd_webui", "openai"],
     ),
     # Text rendering / logos — OpenAI is best
     (
@@ -65,17 +65,17 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "sketch",
             "drawing",
         ],
-        ["a1111", "openai"],
+        ["sd_webui", "openai"],
     ),
     # Anime / manga
     (
         ["anime", "manga", "kawaii", "chibi"],
-        ["a1111", "openai"],
+        ["sd_webui", "openai"],
     ),
 ]
 
 # Default fallback chain when no keywords match
-_DEFAULT_CHAIN = ["openai", "a1111", "placeholder"]
+_DEFAULT_CHAIN = ["openai", "sd_webui", "placeholder"]
 
 
 def select_provider(

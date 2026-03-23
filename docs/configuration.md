@@ -8,15 +8,15 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Directory for saved generated images. Created automatically on first use. |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When `true`, write-tagged tools (`generate_image`) are hidden from clients. Set to `false` to enable image generation. |
-| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `openai`, `a1111`, `placeholder`. |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `openai`, `sd_webui`, `placeholder`. |
 
 ## Providers
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | -- | OpenAI API key. Enables the OpenAI provider (gpt-image-1, dall-e-3) when set. |
-| `IMAGE_GENERATION_MCP_A1111_HOST` | str | -- | Automatic1111 WebUI base URL (e.g. `http://localhost:7860`). Enables the A1111 provider when set. |
-| `IMAGE_GENERATION_MCP_A1111_MODEL` | str | -- | A1111 checkpoint name. Used for model-aware preset detection (SD 1.5 vs SDXL vs Lightning) and checkpoint override. |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | -- | SD WebUI base URL (e.g. `http://localhost:7860`). Enables the SD WebUI provider when set. Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_HOST`. |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | str | -- | SD WebUI checkpoint name. Used for model-aware preset detection (SD 1.5 vs SDXL vs Lightning) and checkpoint override. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_MODEL`. |
 
 ## Authentication
 
@@ -85,8 +85,8 @@ IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
 ```bash
 IMAGE_GENERATION_MCP_READ_ONLY=false
 IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
-IMAGE_GENERATION_MCP_A1111_HOST=http://localhost:7860
-IMAGE_GENERATION_MCP_A1111_MODEL=realisticVisionV60B1_v51VAE.safetensors
+IMAGE_GENERATION_MCP_SD_WEBUI_HOST=http://localhost:7860
+IMAGE_GENERATION_MCP_SD_WEBUI_MODEL=realisticVisionV60B1_v51VAE.safetensors
 ```
 
 ### Production — remote mode (recommended)

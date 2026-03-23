@@ -10,14 +10,14 @@
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/image-generation-mcp/)
 [![llms.txt](https://img.shields.io/badge/llms-llms.txt-blue)](https://pvliesdonk.github.io/image-generation-mcp/llms.txt)
 
-Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (A1111 WebUI), or a zero-cost placeholder provider.
+Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (SD WebUI), or a zero-cost placeholder provider.
 
 [Documentation](https://pvliesdonk.github.io/image-generation-mcp/) | [PyPI](https://pypi.org/project/image-generation-mcp/) | [Docker](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp)
 
 ## Features
 
-- **Multi-provider architecture** -- OpenAI (gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI), and a zero-cost placeholder provider
-- **Keyword-based auto-selection** -- automatically picks the best provider for your prompt (text/logo -> OpenAI, photorealism/anime -> A1111, test/draft -> placeholder)
+- **Multi-provider architecture** -- OpenAI (gpt-image-1, dall-e-3), SD WebUI (Stable Diffusion WebUI, compatible with AUTOMATIC1111/Forge/reForge), and a zero-cost placeholder provider
+- **Keyword-based auto-selection** -- automatically picks the best provider for your prompt (text/logo -> OpenAI, photorealism/anime -> SD WebUI, test/draft -> placeholder)
 - **MCP tools** -- `generate_image` (with background task support) and `list_providers`
 - **MCP resources** -- `info://providers`, `image://{id}/view` with CDN-style transforms (format, resize, crop), `image://{id}/metadata`, `image://list`
 - **MCP prompts** -- `select_provider` (provider selection guidance) and `sd_prompt_guide` (CLIP tag format, negative prompts, BREAK syntax)
@@ -147,15 +147,15 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Directory for saved generated images |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | Hide write-tagged tools (`generate_image`) |
-| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider: `auto`, `openai`, `a1111`, `placeholder` |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider: `auto`, `openai`, `sd_webui`, `placeholder` |
 
 ### Providers
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | -- | OpenAI API key; enables OpenAI provider when set |
-| `IMAGE_GENERATION_MCP_A1111_HOST` | str | -- | A1111 WebUI URL (e.g. `http://localhost:7860`); enables A1111 provider when set |
-| `IMAGE_GENERATION_MCP_A1111_MODEL` | str | -- | A1111 checkpoint name for preset detection and override |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | -- | SD WebUI URL (e.g. `http://localhost:7860`); enables SD WebUI provider when set. Deprecated alias: `A1111_HOST`. |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | str | -- | SD WebUI checkpoint name for preset detection and override. Deprecated alias: `A1111_MODEL`. |
 
 ### Authentication
 
@@ -250,7 +250,7 @@ The `image://{id}/view` resource template supports CDN-style transforms:
 | Provider | Best for | Requires |
 |----------|----------|----------|
 | **OpenAI** | Text, logos, typography, general-purpose | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` |
-| **A1111** | Photorealism, portraits, anime, artistic styles | Running A1111 WebUI + `IMAGE_GENERATION_MCP_A1111_HOST` |
+| **SD WebUI** | Photorealism, portraits, anime, artistic styles | Running SD WebUI + `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` |
 | **Placeholder** | Testing, drafts, CI | Nothing (always available) |
 
 ### OpenAI
@@ -263,9 +263,9 @@ Best for text rendering, logos, typography, and general-purpose generation.
 - **Negative prompt:** Appended as `"Avoid: {negative_prompt}"` to the prompt
 - **Requires:** `IMAGE_GENERATION_MCP_OPENAI_API_KEY`
 
-### A1111 (Stable Diffusion WebUI)
+### SD WebUI (Stable Diffusion WebUI)
 
-Best for photorealism, portraits, anime, and artistic styles.
+Best for photorealism, portraits, anime, and artistic styles. Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo.
 
 - **API:** HTTP POST to `/sdapi/v1/txt2img`
 - **Model presets:** Auto-detected from checkpoint name:
@@ -275,7 +275,7 @@ Best for photorealism, portraits, anime, and artistic styles.
 - **Negative prompt:** Native support via `negative_prompt` field
 - **Checkpoint override:** Specify `model` to override `sd_model_checkpoint`
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
-- **Requires:** `IMAGE_GENERATION_MCP_A1111_HOST`
+- **Requires:** `IMAGE_GENERATION_MCP_SD_WEBUI_HOST`
 
 ### Placeholder
 

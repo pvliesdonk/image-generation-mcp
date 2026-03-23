@@ -12,7 +12,7 @@ class TestPromptContent:
     """Verify prompt strings contain expected guidance."""
 
     def test_select_provider_mentions_all_providers(self) -> None:
-        for provider in ("OpenAI", "A1111", "Placeholder"):
+        for provider in ("OpenAI", "SD WebUI", "Placeholder"):
             assert provider in _SELECT_PROVIDER_PROMPT
 
     def test_select_provider_mentions_auto(self) -> None:

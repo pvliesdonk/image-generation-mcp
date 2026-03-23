@@ -87,7 +87,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Call list_providers first to see available providers and model IDs.
         Read info://prompt-guide for provider-specific prompt writing tips
-        (especially important for A1111/Stable Diffusion CLIP tag format).
+        (especially important for SD WebUI/Stable Diffusion CLIP tag format).
         Returns metadata including the image_id and resource URIs. Call
         show_image with the image URI (e.g. ``image://{image_id}/view``) to
         display the image.
@@ -96,25 +96,25 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             prompt: Text description of the desired image.
             provider: Which provider to use. ``"auto"`` (default) selects
                 based on prompt analysis. ``"openai"`` — best for text,
-                logos, and general-purpose. ``"a1111"`` — best for
+                logos, and general-purpose. ``"sd_webui"`` — best for
                 photorealism, portraits, and artistic styles.
                 ``"placeholder"`` — instant zero-cost solid-color PNG
                 for testing.
-            negative_prompt: Things to avoid in the image. A1111 supports
-                this natively via CLIP. OpenAI appends as an "Avoid:"
-                clause (weaker effect). Placeholder ignores it.
+            negative_prompt: Things to avoid in the image. SD WebUI
+                supports this natively via CLIP. OpenAI appends as an
+                "Avoid:" clause (weaker effect). Placeholder ignores it.
             aspect_ratio: Desired ratio (``1:1``, ``16:9``, ``9:16``,
                 ``3:2``, ``2:3``).
             quality: Quality level. ``"hd"`` vs ``"standard"`` only
                 affects OpenAI (gpt-image-1 maps both to its highest
-                tier). A1111 and placeholder ignore this parameter.
+                tier). SD WebUI and placeholder ignore this parameter.
             background: Background transparency. ``"opaque"`` (default)
                 generates a solid background. ``"transparent"`` requests
                 an image with a transparent background. Only supported
                 by some providers (OpenAI gpt-image-1, placeholder).
-                A1111 and dall-e-3 ignore this parameter.
+                SD WebUI and dall-e-3 ignore this parameter.
             model: Specific model to use (e.g., a checkpoint name for
-                A1111, or ``"dall-e-3"`` for OpenAI). Use
+                SD WebUI, or ``"dall-e-3"`` for OpenAI). Use
                 ``list_providers`` to see available model IDs. Defaults
                 to the provider's configured model.
 

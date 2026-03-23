@@ -1,4 +1,4 @@
-"""Tests for the A1111 (Stable Diffusion WebUI) image provider."""
+"""Tests for the SD WebUI (Stable Diffusion WebUI) image provider."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from typing import Any
 import httpx
 import pytest
 
-from image_generation_mcp.providers.a1111 import (
+from image_generation_mcp.providers.sd_webui import (
     _SD15_PRESET,
     _SDXL_LIGHTNING_PRESET,
     _SDXL_PRESET,
-    A1111ImageProvider,
+    SdWebuiImageProvider,
     _resolve_preset,
 )
 from image_generation_mcp.providers.types import (
@@ -51,19 +51,19 @@ class TestPresetDetection:
         assert _resolve_preset("SDXL_Base") is _SDXL_PRESET
 
 
-class TestA1111Provider:
-    """Tests for A1111ImageProvider."""
+class TestSdWebuiProvider:
+    """Tests for SdWebuiImageProvider."""
 
     def test_implements_protocol(self) -> None:
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         assert isinstance(provider, ImageProvider)
 
     def test_host_trailing_slash_stripped(self) -> None:
-        provider = A1111ImageProvider(host="http://localhost:7860/")
+        provider = SdWebuiImageProvider(host="http://localhost:7860/")
         assert provider._host == "http://localhost:7860"
 
     def test_model_sets_preset(self) -> None:
-        provider = A1111ImageProvider(
+        provider = SdWebuiImageProvider(
             host="http://localhost:7860", model="sdxl_base_1.0"
         )
         assert provider._preset is _SDXL_PRESET
@@ -80,7 +80,7 @@ class TestA1111Provider:
             json=response_data,
         )
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         result = await provider.generate("a cat, masterpiece")
 
         assert result.image_data == b"fake-png-data"
@@ -97,7 +97,7 @@ class TestA1111Provider:
             json=response_data,
         )
 
-        provider = A1111ImageProvider(
+        provider = SdWebuiImageProvider(
             host="http://localhost:7860", model="sdxl_base_1.0"
         )
         await provider.generate("test")
@@ -114,7 +114,7 @@ class TestA1111Provider:
             json={"images": [b64_image], "info": "{}"},
         )
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         await provider.generate("test", aspect_ratio="16:9")
 
         request = httpx_mock.get_request()
@@ -129,7 +129,7 @@ class TestA1111Provider:
             json={"images": [b64_image], "info": "{}"},
         )
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         await provider.generate("cat", negative_prompt="blurry, text")
 
         request = httpx_mock.get_request()
@@ -143,7 +143,7 @@ class TestA1111Provider:
             text="Internal Server Error",
         )
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         with pytest.raises(ImageProviderError, match="HTTP 500"):
             await provider.generate("test")
 
@@ -153,7 +153,7 @@ class TestA1111Provider:
             json={"images": [], "info": "{}"},
         )
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         with pytest.raises(ImageProviderError, match="missing 'images'"):
             await provider.generate("test")
 
@@ -162,7 +162,7 @@ class TestA1111Provider:
             raise httpx.ConnectError("simulated")
 
         monkeypatch.setattr(httpx.AsyncClient, "post", _raise_connect)
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         with pytest.raises(ImageProviderConnectionError, match="Cannot connect"):
             await provider.generate("test")
 
@@ -177,7 +177,7 @@ class TestA1111Provider:
         )
 
         # Constructor uses SD 1.5, per-call uses SDXL
-        provider = A1111ImageProvider(
+        provider = SdWebuiImageProvider(
             host="http://localhost:7860", model="dreamshaper_8"
         )
         await provider.generate("test", model="sdxl_base_1.0")
@@ -198,7 +198,7 @@ class TestA1111Provider:
         )
 
         # Constructor has no model (SD 1.5), but per-call is SDXL Lightning
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         await provider.generate("test", model="sdxl_lightning_4step")
 
         request = httpx_mock.get_request()
@@ -216,7 +216,7 @@ class TestA1111Provider:
             json={"images": [b64_image], "info": "{}"},
         )
 
-        provider = A1111ImageProvider(
+        provider = SdWebuiImageProvider(
             host="http://localhost:7860", model="dreamshaper_8"
         )
         result = await provider.generate("test", model="juggernaut_xl")
@@ -233,7 +233,7 @@ class TestA1111Provider:
             json={"images": [b64_image], "info": "{}"},
         )
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
         await provider.generate("test", model="sdxl_base_1.0")
 
         request = httpx_mock.get_request()
@@ -251,7 +251,7 @@ def httpx_mock(monkeypatch):
 
 
 class _HttpxMock:
-    """Minimal httpx mock for A1111 tests."""
+    """Minimal httpx mock for SD WebUI tests."""
 
     def __init__(self, monkeypatch) -> None:
         self._monkeypatch = monkeypatch

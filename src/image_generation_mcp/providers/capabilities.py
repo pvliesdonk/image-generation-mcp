@@ -29,8 +29,8 @@ class ModelCapabilities:
         supports_negative_prompt: Accepts negative prompt parameter.
         supports_background: Supports background transparency control.
         max_resolution: Maximum dimension in pixels, or ``None`` if unlimited.
-        default_steps: Default inference steps (A1111-specific), or ``None``.
-        default_cfg: Default CFG scale (A1111-specific), or ``None``.
+        default_steps: Default inference steps (SD WebUI-specific), or ``None``.
+        default_cfg: Default CFG scale (SD WebUI-specific), or ``None``.
     """
 
     model_id: str

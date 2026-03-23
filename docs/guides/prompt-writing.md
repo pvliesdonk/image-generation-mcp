@@ -46,7 +46,7 @@ Avoid: blurry, low quality, distorted text, watermark
 
 ---
 
-## A1111 / Stable Diffusion (CLIP tag format)
+## SD WebUI / Stable Diffusion (CLIP tag format)
 
 Stable Diffusion models respond best to comma-separated tags ordered by importance.
 
@@ -116,7 +116,7 @@ Add these to improve output quality:
 
 ### Negative prompts
 
-Always include a negative prompt with A1111 to avoid common artifacts.
+Always include a negative prompt with SD WebUI to avoid common artifacts.
 
 **General-purpose:**
 
@@ -176,8 +176,8 @@ All providers support these aspect ratios:
 | Use case | Recommended provider | Prompt approach |
 |----------|---------------------|-----------------|
 | Logo with text | OpenAI | Natural language, specify text content exactly |
-| Photo-realistic portrait | A1111 | Tag format, include quality and lighting tags |
-| Anime character | A1111 | Tag format, include character details |
+| Photo-realistic portrait | SD WebUI | Tag format, include quality and lighting tags |
+| Anime character | SD WebUI | Tag format, include character details |
 | Quick placeholder | Placeholder | Any prompt (generates solid color) |
-| Product photo | A1111 or OpenAI | Describe studio setup and product details |
-| Landscape art | A1111 or OpenAI | Include composition, lighting, and style |
+| Product photo | SD WebUI or OpenAI | Describe studio setup and product details |
+| Landscape art | SD WebUI or OpenAI | Include composition, lighting, and style |

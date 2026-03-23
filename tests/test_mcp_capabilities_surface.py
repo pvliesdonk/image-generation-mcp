@@ -128,13 +128,13 @@ class TestSelectorCapabilityFiltering:
         """Provider with supports_background=True preferred for transparent."""
         caps = {
             "openai": _make_caps("openai", supports_background=True),
-            "a1111": _make_caps("a1111", supports_background=False),
+            "sd_webui": _make_caps("sd_webui", supports_background=False),
         }
         # Default chain would pick openai anyway — test with a prompt
-        # that normally prefers a1111 (photorealism)
+        # that normally prefers sd_webui (photorealism)
         result = select_provider(
             "realistic photo portrait",
-            {"openai", "a1111"},
+            {"openai", "sd_webui"},
             capabilities=caps,
             background="transparent",
         )
@@ -143,21 +143,21 @@ class TestSelectorCapabilityFiltering:
     def test_falls_back_when_no_capable_provider(self) -> None:
         """Falls back to keyword-based selection when no provider has capability."""
         caps = {
-            "a1111": _make_caps("a1111", supports_background=False),
+            "sd_webui": _make_caps("sd_webui", supports_background=False),
         }
         result = select_provider(
             "realistic photo",
-            {"a1111"},
+            {"sd_webui"},
             capabilities=caps,
             background="transparent",
         )
-        assert result == "a1111"  # only option, still selected
+        assert result == "sd_webui"  # only option, still selected
 
     def test_without_capabilities_unchanged(self) -> None:
         """Keyword heuristics work when capabilities=None."""
         result = select_provider(
             "a professional logo",
-            {"openai", "a1111", "placeholder"},
+            {"openai", "sd_webui", "placeholder"},
             capabilities=None,
         )
         assert result == "openai"
@@ -166,16 +166,16 @@ class TestSelectorCapabilityFiltering:
         """No capability filtering for opaque background (default)."""
         caps = {
             "openai": _make_caps("openai", supports_background=True),
-            "a1111": _make_caps("a1111", supports_background=False),
+            "sd_webui": _make_caps("sd_webui", supports_background=False),
         }
-        # "realistic photo" normally prefers a1111
+        # "realistic photo" normally prefers sd_webui
         result = select_provider(
             "realistic photo portrait",
-            {"openai", "a1111"},
+            {"openai", "sd_webui"},
             capabilities=caps,
             background="opaque",
         )
-        assert result == "a1111"
+        assert result == "sd_webui"
 
 
 # -- Degraded provider warning on generate -----------------------------------

@@ -24,8 +24,8 @@ class TestPromptGuideContent:
     def test_mentions_openai(self) -> None:
         assert "OpenAI" in _PROMPT_GUIDE
 
-    def test_mentions_a1111(self) -> None:
-        assert "A1111" in _PROMPT_GUIDE
+    def test_mentions_sd_webui(self) -> None:
+        assert "SD WebUI" in _PROMPT_GUIDE
 
     def test_mentions_placeholder(self) -> None:
         assert "Placeholder" in _PROMPT_GUIDE

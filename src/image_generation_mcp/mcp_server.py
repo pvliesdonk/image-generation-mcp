@@ -52,7 +52,7 @@ def _build_default_instructions(*, read_only: bool) -> str:
     )
     return (
         "AI image generation server supporting multiple providers "
-        "(OpenAI gpt-image-1/dall-e-3, Stable Diffusion via A1111, "
+        "(OpenAI gpt-image-1/dall-e-3, Stable Diffusion via SD WebUI, "
         "and a zero-cost placeholder). "
         f"{mode_line} "
         "Start by calling list_providers to see which providers are "

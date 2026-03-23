@@ -17,29 +17,31 @@ class TestSelectProvider:
 
     # -- Keyword matching --------------------------------------------------
 
-    def test_photorealism_prefers_a1111(self) -> None:
-        available = {"openai", "a1111", "placeholder"}
-        assert select_provider("realistic portrait photo", available) == "a1111"
+    def test_photorealism_prefers_sd_webui(self) -> None:
+        available = {"openai", "sd_webui", "placeholder"}
+        assert select_provider("realistic portrait photo", available) == "sd_webui"
 
     def test_photorealism_falls_back_to_openai(self) -> None:
         available = {"openai", "placeholder"}
         assert select_provider("realistic portrait photo", available) == "openai"
 
     def test_text_rendering_selects_openai(self) -> None:
-        available = {"openai", "a1111", "placeholder"}
+        available = {"openai", "sd_webui", "placeholder"}
         assert select_provider("logo with typography", available) == "openai"
 
     def test_placeholder_keywords(self) -> None:
-        available = {"openai", "a1111", "placeholder"}
+        available = {"openai", "sd_webui", "placeholder"}
         assert select_provider("quick test image", available) == "placeholder"
 
-    def test_artistic_prefers_a1111(self) -> None:
-        available = {"openai", "a1111", "placeholder"}
-        assert select_provider("watercolor painting of a sunset", available) == "a1111"
+    def test_artistic_prefers_sd_webui(self) -> None:
+        available = {"openai", "sd_webui", "placeholder"}
+        assert (
+            select_provider("watercolor painting of a sunset", available) == "sd_webui"
+        )
 
-    def test_anime_prefers_a1111(self) -> None:
-        available = {"openai", "a1111", "placeholder"}
-        assert select_provider("anime girl with sword", available) == "a1111"
+    def test_anime_prefers_sd_webui(self) -> None:
+        available = {"openai", "sd_webui", "placeholder"}
+        assert select_provider("anime girl with sword", available) == "sd_webui"
 
     def test_anime_falls_back_to_openai(self) -> None:
         available = {"openai", "placeholder"}
@@ -49,13 +51,13 @@ class TestSelectProvider:
 
     def test_default_fallback_openai(self) -> None:
         """No keyword match → default chain starts with openai."""
-        available = {"openai", "a1111", "placeholder"}
+        available = {"openai", "sd_webui", "placeholder"}
         assert select_provider("a purple dinosaur", available) == "openai"
 
-    def test_default_fallback_a1111(self) -> None:
-        """No keyword match, no openai → fall back to a1111."""
-        available = {"a1111", "placeholder"}
-        assert select_provider("a purple dinosaur", available) == "a1111"
+    def test_default_fallback_sd_webui(self) -> None:
+        """No keyword match, no openai → fall back to sd_webui."""
+        available = {"sd_webui", "placeholder"}
+        assert select_provider("a purple dinosaur", available) == "sd_webui"
 
     def test_default_fallback_placeholder(self) -> None:
         """No keyword match, only placeholder → use placeholder."""
@@ -71,19 +73,19 @@ class TestSelectProvider:
     # -- Case insensitivity ------------------------------------------------
 
     def test_case_insensitive_keywords(self) -> None:
-        available = {"openai", "a1111"}
-        assert select_provider("REALISTIC PHOTO of a car", available) == "a1111"
+        available = {"openai", "sd_webui"}
+        assert select_provider("REALISTIC PHOTO of a car", available) == "sd_webui"
 
     # -- Regression tests ----------------------------------------------------
 
     def test_professional_logo_selects_openai(self) -> None:
-        """'professional' should not route logo prompts to a1111."""
-        available = {"openai", "a1111", "placeholder"}
+        """'professional' should not route logo prompts to sd_webui."""
+        available = {"openai", "sd_webui", "placeholder"}
         assert select_provider("professional logo design", available) == "openai"
 
     def test_sign_no_false_positive(self) -> None:
         """'sign' (generic) should not match; 'signage' should."""
-        available = {"openai", "a1111", "placeholder"}
+        available = {"openai", "sd_webui", "placeholder"}
         # "give me a sign" should fall to default chain
         assert select_provider("give me a sign", available) == "openai"
         # "signage" should match text-rendering rule
@@ -93,7 +95,7 @@ class TestSelectProvider:
 
     def test_word_boundary_no_false_positive(self) -> None:
         """'art' should not match 'start' or 'party'."""
-        available = {"openai", "a1111", "placeholder"}
+        available = {"openai", "sd_webui", "placeholder"}
         # "start the party" contains "art" substring but not as a word
         result = select_provider("start the party", available)
         # Should fall through to default chain, not match "art" rule

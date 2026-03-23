@@ -24,12 +24,12 @@ Choose the best provider for the user's request based on these guidelines:
 - **Supports:** Negative prompt (as "Avoid:" clause), multiple quality levels
 - **Prompt style:** Natural language descriptions work well
 
-### A1111 / Stable Diffusion WebUI
+### SD WebUI (Stable Diffusion WebUI)
 - **Best for:** Photorealism, portraits, product shots, artistic styles
 - **Good at:** Anime/manga, watercolor, oil painting, illustration
 - **Supports:** Native negative prompt, fine-grained parameter control
 - **Prompt style:** Comma-separated tags work best (see sd_prompt_guide)
-- **Note:** Requires a running A1111 WebUI instance
+- **Note:** Compatible with A1111, Forge, reForge, and Forge-neo
 
 ### Placeholder
 - **Best for:** Quick drafts, testing, mock-ups
@@ -39,8 +39,8 @@ Choose the best provider for the user's request based on these guidelines:
 ## Selection Rules
 
 1. If the request involves **text, logos, or typography** → use **openai**
-2. If the request involves **photorealism, portraits, or product shots** → prefer **a1111** (fall back to openai)
-3. If the request involves **art, illustration, anime, or painting** → prefer **a1111** (fall back to openai)
+2. If the request involves **photorealism, portraits, or product shots** → prefer **sd_webui** (fall back to openai)
+3. If the request involves **art, illustration, anime, or painting** → prefer **sd_webui** (fall back to openai)
 4. If the request is a **quick test or placeholder** → use **placeholder**
 5. For **general requests** → default to **openai** (most versatile)
 
@@ -52,7 +52,7 @@ providers are currently available.
 """
 
 _SD_PROMPT_GUIDE = """\
-When generating images with the A1111 (Stable Diffusion) provider, format
+When generating images with the SD WebUI (Stable Diffusion) provider, format
 prompts as comma-separated tags for best results. This guide covers the
 CLIP-based prompt format used by Stable Diffusion models.
 
@@ -140,13 +140,13 @@ The server maps these to optimal pixel dimensions for each SD model.
 
 1. Draft your prompt using comma-separated tags (subject first)
 2. Add quality tags and a negative prompt
-3. Call `generate_image` with `provider="a1111"`:
+3. Call `generate_image` with `provider="sd_webui"`:
 
 ```
 generate_image(
     prompt="1girl, long hair, school uniform, cherry blossoms, masterpiece, best quality",
     negative_prompt="lowres, bad anatomy, bad hands, worst quality, low quality",
-    provider="a1111",
+    provider="sd_webui",
     aspect_ratio="2:3"
 )
 ```

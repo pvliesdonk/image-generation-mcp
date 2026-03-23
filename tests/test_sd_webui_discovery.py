@@ -1,4 +1,4 @@
-"""Tests for A1111 checkpoint discovery and _detect_architecture()."""
+"""Tests for SD WebUI checkpoint discovery and _detect_architecture()."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from image_generation_mcp.providers.a1111 import (
+from image_generation_mcp.providers.capabilities import ProviderCapabilities
+from image_generation_mcp.providers.sd_webui import (
     _SD15_PRESET,
     _SDXL_LIGHTNING_PRESET,
     _SDXL_PRESET,
-    A1111ImageProvider,
+    SdWebuiImageProvider,
     _detect_architecture,
     _resolve_preset,
 )
-from image_generation_mcp.providers.capabilities import ProviderCapabilities
 
 # -- Sample API payloads -------------------------------------------------------
 
@@ -45,8 +45,8 @@ _OPTIONS_RESPONSE = {
 }
 
 
-def _make_provider() -> A1111ImageProvider:
-    return A1111ImageProvider(host="http://localhost:7860")
+def _make_provider() -> SdWebuiImageProvider:
+    return SdWebuiImageProvider(host="http://localhost:7860")
 
 
 def _mock_get(
@@ -201,7 +201,7 @@ def _make_txt2img_mock_response() -> MagicMock:
     return mock_response
 
 
-class TestA1111PayloadScheduler:
+class TestSdWebuiPayloadScheduler:
     """Verify the txt2img payload sends separate sampler and scheduler fields."""
 
     async def test_payload_has_scheduler_field(self) -> None:
@@ -219,7 +219,7 @@ class TestA1111PayloadScheduler:
 
     async def test_lightning_payload_scheduler(self) -> None:
         """Lightning preset sends DPM++ SDE sampler with Karras scheduler."""
-        provider = A1111ImageProvider(
+        provider = SdWebuiImageProvider(
             host="http://localhost:7860", model="sdxl_lightning_4step"
         )
         provider._client.post = AsyncMock(return_value=_make_txt2img_mock_response())
@@ -234,7 +234,7 @@ class TestA1111PayloadScheduler:
 # -- discover_capabilities() success path ------------------------------------
 
 
-class TestA1111DiscoverCapabilitiesSuccess:
+class TestSdWebuiDiscoverCapabilitiesSuccess:
     """Tests for successful capability discovery with 3 checkpoints."""
 
     async def test_returns_provider_capabilities(self) -> None:
@@ -242,7 +242,7 @@ class TestA1111DiscoverCapabilitiesSuccess:
         provider._client.get = _mock_get(_CHECKPOINTS_ALL_THREE)
         caps = await provider.discover_capabilities()
         assert isinstance(caps, ProviderCapabilities)
-        assert caps.provider_name == "a1111"
+        assert caps.provider_name == "sd_webui"
         assert caps.degraded is False
 
     async def test_three_models_discovered(self) -> None:
@@ -341,7 +341,7 @@ class TestA1111DiscoverCapabilitiesSuccess:
 # -- Active model logging test ------------------------------------------------
 
 
-class TestA1111DiscoverActiveModel:
+class TestSdWebuiDiscoverActiveModel:
     """Verify active model is logged from /sdapi/v1/options."""
 
     async def test_active_model_logged_at_info(
@@ -356,7 +356,7 @@ class TestA1111DiscoverActiveModel:
         )
 
         with caplog.at_level(
-            logging.INFO, logger="image_generation_mcp.providers.a1111"
+            logging.INFO, logger="image_generation_mcp.providers.sd_webui"
         ):
             await provider.discover_capabilities()
 
@@ -375,8 +375,8 @@ class TestA1111DiscoverActiveModel:
 # -- Unreachable provider test ------------------------------------------------
 
 
-class TestA1111DiscoverUnreachable:
-    """Verify degraded result when A1111 is unreachable."""
+class TestSdWebuiDiscoverUnreachable:
+    """Verify degraded result when SD WebUI is unreachable."""
 
     async def test_connect_error_returns_degraded(self) -> None:
         import httpx
@@ -390,7 +390,7 @@ class TestA1111DiscoverUnreachable:
 
         assert caps.degraded is True
         assert caps.models == ()
-        assert caps.provider_name == "a1111"
+        assert caps.provider_name == "sd_webui"
 
     async def test_timeout_returns_degraded(self) -> None:
         import httpx
@@ -428,12 +428,13 @@ class TestA1111DiscoverUnreachable:
         )
 
         with caplog.at_level(
-            logging.WARNING, logger="image_generation_mcp.providers.a1111"
+            logging.WARNING, logger="image_generation_mcp.providers.sd_webui"
         ):
             await provider.discover_capabilities()
 
         assert any(
-            "unreachable" in record.message.lower() or "a1111" in record.message.lower()
+            "unreachable" in record.message.lower()
+            or "sd_webui" in record.message.lower()
             for record in caplog.records
             if record.levelno >= logging.WARNING
         )
@@ -442,7 +443,7 @@ class TestA1111DiscoverUnreachable:
 # -- Asymmetric failure tests -------------------------------------------------
 
 
-class TestA1111DiscoverAsymmetricFailure:
+class TestSdWebuiDiscoverAsymmetricFailure:
     """Verify degraded result when only one of the parallel requests fails."""
 
     async def test_sd_models_succeeds_options_connect_error_returns_degraded(
@@ -466,13 +467,13 @@ class TestA1111DiscoverAsymmetricFailure:
 
         assert caps.degraded is True
         assert caps.models == ()
-        assert caps.provider_name == "a1111"
+        assert caps.provider_name == "sd_webui"
 
 
 # -- Provider-level capability flags -----------------------------------------
 
 
-class TestA1111DiscoverProviderLevelFlags:
+class TestSdWebuiDiscoverProviderLevelFlags:
     """Verify provider-level supports_negative_prompt and supports_background."""
 
     async def test_supports_negative_prompt_true(self) -> None:
@@ -499,7 +500,7 @@ class TestA1111DiscoverProviderLevelFlags:
 # -- Response validation tests -----------------------------------------------
 
 
-class TestA1111DiscoverResponseValidation:
+class TestSdWebuiDiscoverResponseValidation:
     """Tests for defensive checks on unexpected API responses."""
 
     async def test_non_list_response_returns_degraded(self) -> None:
@@ -539,7 +540,7 @@ class TestA1111DiscoverResponseValidation:
         provider._client.get = AsyncMock(side_effect=_dispatch)
 
         with caplog.at_level(
-            logging.WARNING, logger="image_generation_mcp.providers.a1111"
+            logging.WARNING, logger="image_generation_mcp.providers.sd_webui"
         ):
             await provider.discover_capabilities()
 
