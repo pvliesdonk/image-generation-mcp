@@ -101,6 +101,7 @@ def _resolve_auth_mode() -> str | None:
     """
     explicit = os.environ.get(f"{_ENV_PREFIX}_AUTH_MODE", "").strip().lower()
     if explicit in ("remote", "oidc-proxy"):
+        logger.info("OIDC auth mode: %s (explicit via AUTH_MODE)", explicit)
         return explicit
     if explicit:
         logger.warning(
@@ -115,8 +116,14 @@ def _resolve_auth_mode() -> str | None:
     client_secret = os.environ.get(f"{_ENV_PREFIX}_OIDC_CLIENT_SECRET", "").strip()
 
     if client_id and client_secret and config_url and base_url:
+        logger.info(
+            "OIDC auth mode: oidc-proxy (auto-detected — all four OIDC vars set)"
+        )
         return "oidc-proxy"
     if config_url and base_url:
+        logger.info(
+            "OIDC auth mode: remote (auto-detected — BASE_URL + OIDC_CONFIG_URL set)"
+        )
         return "remote"
     return None
 
@@ -147,7 +154,15 @@ def _build_remote_auth() -> Any:
         logger.debug("Remote auth: disabled — missing env vars: %s", ", ".join(missing))
         return None
 
-    import httpx
+    try:
+        import httpx
+    except ImportError:
+        logger.error(
+            "Remote auth: 'httpx' is not installed. "
+            "Install it with: pip install 'image-generation-mcp[all]' "
+            "or pip install httpx"
+        )
+        return None
 
     try:
         resp = httpx.get(config_url, timeout=10)
