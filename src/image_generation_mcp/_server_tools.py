@@ -441,10 +441,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         that support MCP resources.
 
         Args:
-            force_refresh: Set to ``true`` to signal that cached results
-                should not be used.  The server always returns current
-                data; this parameter exists to bust client-side caches
-                by changing the tool input signature.
+            force_refresh: When ``True``, re-runs capability discovery on
+                all registered providers before returning, updating cached
+                results. Use when providers may have changed (e.g., new
+                SD WebUI checkpoints loaded).
 
         Returns:
             JSON object with provider names, capabilities, and a
