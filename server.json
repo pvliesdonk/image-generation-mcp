@@ -23,7 +23,7 @@
     },
     {
       "name": "IMAGE_GENERATION_MCP_DEFAULT_PROVIDER",
-      "description": "Default provider selection: auto (keyword-based), openai, a1111, or placeholder.",
+      "description": "Default provider selection: auto (keyword-based), openai, sd_webui, or placeholder. Deprecated alias 'a1111' is also accepted.",
       "required": false
     },
     {

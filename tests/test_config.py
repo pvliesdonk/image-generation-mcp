@@ -130,9 +130,9 @@ class TestLoadConfigEnvVars:
         assert config.base_url == "https://mcp.example.com"
 
     def test_paid_providers_custom(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "openai,a1111")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "openai,sd_webui")
         config = load_config()
-        assert config.paid_providers == frozenset({"openai", "a1111"})
+        assert config.paid_providers == frozenset({"openai", "sd_webui"})
 
     def test_paid_providers_empty_clears(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "")
@@ -140,10 +140,10 @@ class TestLoadConfigEnvVars:
         assert config.paid_providers == frozenset()
 
     def test_paid_providers_with_spaces(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", " openai , a1111 ")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", " openai , sd_webui ")
         config = load_config()
         assert "openai" in config.paid_providers
-        assert "a1111" in config.paid_providers
+        assert "sd_webui" in config.paid_providers
 
     def test_all_vars_together(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -195,6 +195,33 @@ class TestLoadConfigDeprecatedEnvVars:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_HOST", "http://old-host:7860")
         config = load_config()
         assert config.sd_webui_host == "http://new-host:7860"
+
+    def test_a1111_model_sets_sd_webui_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deprecated IMAGE_GENERATION_MCP_A1111_MODEL maps to sd_webui_model."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_MODEL", "dreamshaper_8")
+        config = load_config()
+        assert config.sd_webui_model == "dreamshaper_8"
+
+    def test_a1111_model_deprecated_logs_warning(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Setting A1111_MODEL logs a deprecation warning."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_MODEL", "dreamshaper_8")
+        with caplog.at_level(logging.WARNING):
+            load_config()
+        assert "A1111_MODEL" in caplog.text
+        assert "deprecated" in caplog.text.lower()
+
+    def test_sd_webui_model_takes_precedence_over_a1111_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When both SD_WEBUI_MODEL and A1111_MODEL are set, new name wins."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_SD_WEBUI_MODEL", "new_model")
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_A1111_MODEL", "old_model")
+        config = load_config()
+        assert config.sd_webui_model == "new_model"
 
     def test_default_provider_a1111_maps_to_sd_webui(
         self, monkeypatch: pytest.MonkeyPatch
