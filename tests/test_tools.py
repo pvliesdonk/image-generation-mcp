@@ -17,6 +17,7 @@ import asyncio
 import base64
 import io
 import json
+import unittest.mock
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
@@ -1001,8 +1002,29 @@ class TestListProvidersTool:
 
         result = await tool.fn(service=service)
         data = json.loads(result)
-        assert "placeholder" in data
-        assert data["placeholder"]["available"] is True
+        assert "refreshed_at" in data
+        assert "providers" in data
+        assert "placeholder" in data["providers"]
+        assert data["providers"]["placeholder"]["available"] is True
+
+    async def test_list_providers_force_refresh_calls_discover(
+        self, service: ImageService
+    ) -> None:
+        """force_refresh=True triggers capability re-discovery."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("list_providers")
+
+        with unittest.mock.patch.object(
+            service,
+            "discover_all_capabilities",
+            new_callable=AsyncMock,
+        ) as mock_discover:
+            result = await tool.fn(force_refresh=True, service=service)
+            mock_discover.assert_awaited_once()
+
+        data = json.loads(result)
+        assert "refreshed_at" in data
 
 
 # ---------------------------------------------------------------------------

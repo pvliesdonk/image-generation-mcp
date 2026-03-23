@@ -414,7 +414,17 @@ class TestListProvidersMatchesInfoResource:
         assert not result.is_error
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         data = json.loads(text_items[0].text)
-        assert "placeholder" in data
+        assert "placeholder" in data["providers"]
+
+    async def test_list_providers_includes_refreshed_at(self, ro_server) -> None:
+        """list_providers response includes refreshed_at timestamp."""
+        async with Client(ro_server) as client:
+            result = await client.call_tool("list_providers")
+
+        assert not result.is_error
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        data = json.loads(text_items[0].text)
+        assert "refreshed_at" in data
 
     async def test_tool_providers_match_resource_providers(self, ro_server) -> None:
         """Provider names in list_providers tool match info://providers resource."""
@@ -422,11 +432,11 @@ class TestListProvidersMatchesInfoResource:
             tool_result = await client.call_tool("list_providers")
             resource_contents = await client.read_resource("info://providers")
 
-        # Tool returns a flat providers dict
+        # Tool wraps providers under a 'providers' key with refreshed_at
         tool_text = [c for c in tool_result.content if isinstance(c, TextContent)]
-        tool_providers = set(json.loads(tool_text[0].text).keys())
+        tool_providers = set(json.loads(tool_text[0].text)["providers"].keys())
 
-        # Resource wraps providers under a 'providers' key
+        # Resource also wraps providers under a 'providers' key
         resource_data = json.loads(resource_contents[0].text)
         resource_providers = set(resource_data["providers"].keys())
 
