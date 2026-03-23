@@ -83,7 +83,7 @@ openssl rand -hex 32
     Authelia issues **opaque** (non-JWT) access tokens by default. This affects which OIDC mode you can use:
 
     - **Remote mode** validates tokens locally via JWKS and **requires JWT access tokens**. Set `access_token_signed_response_alg: 'RS256'` on the client registration (see below).
-    - **OIDCProxy mode** verifies the `id_token` (always a standard JWT) instead of the access token, so opaque tokens work without extra configuration. However, oidc-proxy is subject to the [session lifetime limitation](#known-limitations-oidc-session-lifetime).
+    - **OIDCProxy mode** verifies the `id_token` (always a standard JWT) instead of the access token, so opaque tokens work without extra configuration. However, oidc-proxy is subject to the [session lifetime limitation](../guides/authentication.md#known-limitations-oidc-session-lifetime).
 
 ### Remote mode (recommended)
 
@@ -101,7 +101,9 @@ identity_providers:
       - client_id: image-generation-mcp
         client_secret: '$pbkdf2-sha512$...'   # authelia crypto hash generate
         redirect_uris:
-          - https://mcp.example.com/callback
+          # In remote mode each MCP client handles its own OAuth flow.
+          # List the callback URLs used by your client(s):
+          - https://claude.ai/api/mcp/auth_callback  # Claude.ai web
         grant_types: [authorization_code]
         response_types: [code]
         pkce_challenge_method: S256
@@ -177,6 +179,8 @@ image-generation-mcp serve --transport http --port 8000
 ```
 
 For subpath deployments (e.g., public URL `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
+
+See also `examples/oidc-auth.env`.
 
 ## Architecture
 
