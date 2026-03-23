@@ -45,6 +45,7 @@ class TestModelCapabilities:
         assert mc.max_resolution is None
         assert mc.default_steps is None
         assert mc.default_cfg is None
+        assert mc.prompt_style is None
 
     def test_to_dict(self) -> None:
         mc = ModelCapabilities(
@@ -61,6 +62,8 @@ class TestModelCapabilities:
         assert d["supported_formats"] == ["png", "webp"]
         assert d["supports_background"] is True
         assert d["max_resolution"] == 1536
+        assert "prompt_style" in d
+        assert d["prompt_style"] is None
 
     def test_to_dict_returns_lists_not_tuples(self) -> None:
         mc = ModelCapabilities(

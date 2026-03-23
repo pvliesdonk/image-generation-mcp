@@ -170,7 +170,7 @@ Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo.
 - **Checkpoint override:** When `model` is specified, sends `override_settings.sd_model_checkpoint`
 - **Negative prompt:** Native support via `negative_prompt` field in payload
 - **Background:** Ignored (SD does not support native transparent backgrounds); debug log emitted
-- **Discovery:** Calls `/sdapi/v1/sd-models` + `/sdapi/v1/options`, maps checkpoints to architecture-specific `ModelCapabilities`
+- **Discovery:** Calls `/sdapi/v1/sd-models` + `/sdapi/v1/options`, maps checkpoints to architecture-specific `ModelCapabilities`; `prompt_style` is populated per-architecture (`"clip"` for SD 1.5/SDXL, `"natural_language"` for Flux)
 - **Metadata:** Extracts seed and active model name from response `info` JSON
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
 - **Registered when:** `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set (deprecated alias: `IMAGE_GENERATION_MCP_A1111_HOST`)
@@ -308,7 +308,7 @@ The `image://{id}/view` resource template supports:
 | Prompt | Description |
 |--------|-------------|
 | `select_provider` | Guides Claude on provider strengths and selection criteria |
-| `sd_prompt_guide` | Guides Claude on CLIP-based tag format, negative prompts, BREAK syntax |
+| `sd_prompt_guide` | Guides Claude on SD prompt writing: CLIP tag format for SD 1.5/SDXL, natural language for Flux, negative prompts, BREAK syntax |
 
 ## Configuration
 

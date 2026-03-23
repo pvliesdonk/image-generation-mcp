@@ -17,7 +17,7 @@ Generate an image from a text prompt. Returns metadata with resource URIs and a 
 |-----------|------|---------|-------------|
 | `prompt` | str | *(required)* | Text description of the desired image |
 | `provider` | str | `"auto"` | Provider name (`openai`, `sd_webui`, `placeholder`) or `"auto"` for keyword-based selection |
-| `negative_prompt` | str | `null` | Things to avoid in the image. Native support on SD WebUI; appended as "Avoid:" on OpenAI. |
+| `negative_prompt` | str | `null` | Things to avoid in the image. Native support on SD WebUI (SD 1.5/SDXL only — Flux models do NOT support negative prompts); appended as "Avoid:" on OpenAI. |
 | `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3` |
 | `quality` | str | `"standard"` | Quality level: `standard` or `hd` |
 | `background` | str | `"opaque"` | Background mode: `opaque` or `transparent`. Supported by OpenAI (gpt-image-1) and Placeholder. SD WebUI ignores this parameter. |
@@ -185,7 +185,8 @@ JSON object with provider names, availability, and capability information:
           "supports_background": true,
           "max_resolution": 640,
           "default_steps": null,
-          "default_cfg": null
+          "default_cfg": null,
+          "prompt_style": null
         }
       ],
       "supports_background": true,
@@ -213,7 +214,8 @@ JSON object with provider names, availability, and capability information:
           "supports_background": true,
           "max_resolution": 1536,
           "default_steps": null,
-          "default_cfg": null
+          "default_cfg": null,
+          "prompt_style": null
         }
       ],
       "supports_background": true,
@@ -226,6 +228,8 @@ JSON object with provider names, availability, and capability information:
 ```
 
 Only registered (configured) providers appear in the response. The `capabilities` key is present after startup discovery completes. Degraded providers (where capability discovery failed) show `"degraded": true` with an empty model list.
+
+The `prompt_style` field on each model indicates the recommended prompt format: `"clip"` for SD 1.5/SDXL checkpoints (tag-based), `"natural_language"` for Flux checkpoints, and `null` for providers that do not set a preference (OpenAI, Placeholder).
 
 ### Example
 
