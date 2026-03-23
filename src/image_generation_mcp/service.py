@@ -399,7 +399,9 @@ class ImageService:
             model=model,
         )
         self._pending[image_id] = pending
-        logger.info("Registered pending generation: %s (provider=%s)", image_id, provider)
+        logger.info(
+            "Registered pending generation: %s (provider=%s)", image_id, provider
+        )
         return pending
 
     def get_pending(self, image_id: str) -> PendingGeneration | None:
@@ -456,10 +458,7 @@ class ImageService:
         stale = [
             pid
             for pid, p in self._pending.items()
-            if (
-                p.completed_at is not None
-                and (now - p.completed_at) > _PENDING_TTL_S
-            )
+            if (p.completed_at is not None and (now - p.completed_at) > _PENDING_TTL_S)
             or (now - p.created_at) > _PENDING_TTL_S
         ]
         for pid in stale:

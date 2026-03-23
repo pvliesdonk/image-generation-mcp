@@ -370,9 +370,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 "elapsed_seconds": round(time.time() - pending.created_at, 1),
             }
             return ToolResult(
-                content=[
-                    TextContent(type="text", text=json.dumps(meta, indent=2))
-                ]
+                content=[TextContent(type="text", text=json.dumps(meta, indent=2))]
             )
 
         if pending is not None and pending.status == "failed":
@@ -385,9 +383,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             }
             service.cleanup_pending(image_id)
             return ToolResult(
-                content=[
-                    TextContent(type="text", text=json.dumps(meta, indent=2))
-                ]
+                content=[TextContent(type="text", text=json.dumps(meta, indent=2))]
             )
 
         # Completed pending — clean up and fall through to normal display
