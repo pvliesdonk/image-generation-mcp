@@ -74,6 +74,12 @@ maps both to its highest quality tier.
 
 ## SD WebUI / Stable Diffusion
 
+SD WebUI supports multiple model architectures with different prompt styles.
+Check `list_providers` to see each model's `prompt_style` field (`"clip"` or
+`"natural_language"`).
+
+### SD 1.5 / SDXL (CLIP-based models)
+
 Use comma-separated CLIP tags for best results. Order tags by importance —
 tokens near the front of the prompt have the most influence.
 
@@ -137,6 +143,44 @@ masterpiece, best quality, sharp focus
   photorealism and high-detail scenes. Use for final-quality output.
 - **SDXL Lightning/Turbo** — Distilled models, only 6 steps needed, CFG 2.0.
   Very fast but less controllable. Good for rapid iteration.
+
+### Flux (natural language)
+
+Flux models use a T5 text encoder, NOT CLIP. Write prompts as natural language
+descriptions — the same style as OpenAI.
+
+**Key differences from SD 1.5 / SDXL:**
+- Use complete sentences, not comma-separated tags
+- Do NOT include quality tags (`masterpiece`, `best quality`) — meaningless to Flux
+- Do NOT write a negative prompt — Flux does not support them
+- Do NOT use `BREAK` syntax — Flux does not use CLIP chunking
+- CFG scale and sampler are handled automatically by the server
+
+**Example prompts:**
+
+Portrait:
+```
+A young woman with long flowing hair and striking blue eyes wearing a
+school uniform, standing beneath cherry blossom trees with soft natural
+light filtering through the petals
+```
+
+Landscape:
+```
+A dramatic mountain landscape at sunset with towering peaks reflected in
+a perfectly still alpine lake, storm clouds lit orange and purple by the
+setting sun
+```
+
+Product shot:
+```
+A pair of pristine white sneakers on a clean white background, shot from
+a three-quarter angle with professional studio lighting and crisp focus
+```
+
+**Flux Schnell vs Flux Dev:**
+- **Flux Schnell:** 4 steps, fastest generation. Good for drafts and iteration.
+- **Flux Dev:** 20 steps, higher quality. Use for final output.
 
 ## Placeholder
 

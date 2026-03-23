@@ -113,6 +113,30 @@ Used when checkpoint name contains both `flux` and `schnell`. Optimized for fast
 
 Sizes are the same as SDXL.
 
+## Prompt style
+
+Different SD architectures use different prompt styles. Check `list_providers` to see each model's `prompt_style` field.
+
+### SD 1.5 / SDXL / Lightning (`prompt_style: "clip"`)
+
+Use comma-separated CLIP tags ordered by importance. Include quality tags (`masterpiece, best quality`) and a negative prompt for best results. See the [Prompt Writing Guide](../guides/prompt-writing.md) for detailed tag recommendations and BREAK syntax.
+
+### Flux (`prompt_style: "natural_language"`)
+
+Flux models use a T5 text encoder instead of CLIP. Write prompts as natural language descriptions — complete sentences, not comma-separated tags.
+
+**Do NOT use with Flux:**
+- Quality tags (`masterpiece`, `best quality`) — meaningless to T5
+- Negative prompts — Flux does not support them (the server omits them automatically)
+- `BREAK` syntax — Flux does not use CLIP chunking
+
+**Example:**
+```
+A dramatic mountain landscape at sunset with towering peaks reflected
+in a perfectly still alpine lake, storm clouds lit orange and purple
+by the setting sun
+```
+
 ## Checkpoint override
 
 ### Server default (env var)
