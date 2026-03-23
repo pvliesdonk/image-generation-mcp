@@ -203,6 +203,25 @@ class TestBuildRemoteAuth:
         )
         assert _build_remote_auth() is None
 
+    def test_returns_none_when_httpx_missing(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Returns None with install hint when httpx is not importable."""
+        for var, val in _REMOTE_REQUIRED.items():
+            monkeypatch.setenv(var, val)
+
+        # Setting sys.modules["httpx"] = None causes Python to raise
+        # ImportError regardless of prior import state (order-independent).
+        with (
+            patch.dict("sys.modules", {"httpx": None}),
+            caplog.at_level(logging.ERROR),
+        ):
+            result = _build_remote_auth()
+
+        assert result is None
+        assert "httpx" in caplog.text
+        assert "pip install" in caplog.text
+
     def test_returns_remote_auth_provider(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

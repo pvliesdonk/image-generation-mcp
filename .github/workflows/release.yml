@@ -261,7 +261,7 @@ jobs:
         run: ./mcp-publisher publish
 
   publish-linux-packages:
-    needs: [release, publish-pypi]
+    needs: [release]
     if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
 
