@@ -266,6 +266,8 @@ async def test_image_list_includes_pending_generation(
         assert len(pending_match) == 1
         assert pending_match[0]["provider"] == "placeholder"
         assert pending_match[0]["prompt"] == "list pending test"
+        assert "progress" in pending_match[0]
+        assert "progress_message" in pending_match[0]
 
         # Wait for background task to finish to avoid warnings
         await asyncio.sleep(0.6)

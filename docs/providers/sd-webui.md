@@ -182,6 +182,16 @@ SD WebUI has native negative prompt support via the `negative_prompt` field in t
 
 See the [Prompt Writing Guide](../guides/prompt-writing.md) for recommended negative prompts.
 
+## Progress polling
+
+During image generation, the provider concurrently polls `GET /sdapi/v1/progress` every 2 seconds to report step-level progress. Progress updates are surfaced through `show_image` polling responses as `progress` (0.0–1.0) and `progress_message` (e.g., `"Step 9/30 (ETA 12s)"`).
+
+- **First poll fires immediately** (poll-then-sleep pattern) — even fast generations receive at least one progress update
+- **Polling failures are silently handled** — if the progress endpoint returns an error or is unreachable, generation continues uninterrupted (failures logged at debug level)
+- **Polling stops automatically** when generation completes — the polling task is cancelled in a `finally` block
+
+No additional configuration is required. Progress polling activates whenever the fire-and-forget pattern is used (which is always, as of v1.1.0).
+
 ## Metadata
 
 The provider extracts from the SD WebUI response:
