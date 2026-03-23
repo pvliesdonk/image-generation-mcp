@@ -116,7 +116,7 @@ _FLUX_SCHNELL_PRESET = _SdWebuiPreset(
 
 _XL_TAGS = ("sdxl", "xl_", "_xl", "-xl")
 _LIGHTNING_TAGS = ("lightning", "turbo")
-_FLUX_TAGS = ("flux",)
+_FLUX_TAGS = ("flux1", "flux_", "_flux", "-flux")
 
 
 def _detect_architecture(model_name: str) -> str:
@@ -245,7 +245,7 @@ class SdWebuiImageProvider:
         if effective_preset.supports_negative_prompt:
             payload["negative_prompt"] = negative_prompt or ""
         elif negative_prompt:
-            logger.debug("Flux models do not support negative prompts, ignoring")
+            logger.debug("Model does not support negative prompts, ignoring")
 
         # distilled_cfg_scale is a Forge-specific parameter for Flux models
         if effective_preset.distilled_cfg_scale is not None:
