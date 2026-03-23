@@ -182,11 +182,13 @@ Sidecar JSON metadata with generation provenance.
 
 ## image://list
 
-List all registered images.
+List all registered images and pending generations.
 
 **MIME type:** `application/json`
 
 ### Response
+
+Each item includes a `status` field: `"completed"` for registered images, `"generating"` or `"failed"` for pending background generations.
 
 ```json
 [
@@ -195,17 +197,27 @@ List all registered images.
     "provider": "openai",
     "prompt": "a watercolor painting of mountains at sunset",
     "aspect_ratio": "16:9",
-    "created_at": 1710777600.0
+    "created_at": 1710777600.0,
+    "status": "completed"
+  },
+  {
+    "id": "c3d4e5f6a7b8",
+    "provider": "sd_webui",
+    "prompt": "a cyberpunk cityscape",
+    "status": "generating"
   },
   {
     "id": "b2c3d4e5f6a7",
     "provider": "placeholder",
     "prompt": "test image",
     "aspect_ratio": "1:1",
-    "created_at": 1710777500.0
+    "created_at": 1710777500.0,
+    "status": "completed"
   }
 ]
 ```
+
+Pending generations (status `"generating"` or `"failed"`) appear in the list alongside completed images. They are cleaned up automatically after a 10-minute TTL.
 
 ---
 

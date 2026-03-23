@@ -261,20 +261,25 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 | `list_providers` | *(none)* | -- | List available providers with availability info |
 | `create_download_link` | *(none)* | -- | Create one-time HTTP download URL (HTTP transport only) |
 
-`generate_image` supports both foreground and background execution via
-`task=True` (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)).
-Progress is reported at 2 stages via the FastMCP `Progress` dependency (`progress.set_total(2)` / `progress.increment()`). A concurrent keepalive task sends `ctx.info()` every 10 s to prevent SSE client timeouts during long generations.
+`generate_image` uses a fire-and-forget pattern
+(see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)). It returns
+in <1s with `{"status": "generating", "image_id": "..."}` while the image is
+generated as a background `asyncio.Task`. The client polls `show_image` to
+check progress and retrieve the result.
 
 `generate_image` returns a `ToolResult` with:
-- `TextContent` -- JSON metadata with `image_id`, `original_uri`, `resource_template`,
-  `original_size_bytes`, `provider`, plus provider-specific metadata
+- `TextContent` -- JSON metadata with `status`, `image_id`, `original_uri`,
+  `resource_template`, `provider`
 - `ResourceLink` -- URI reference to `image://{id}/view`
 
-`show_image` accepts a full `image://` resource URI (transforms encoded in
-query string) and returns:
-- `ImageContent` -- the image (original or transformed) as base64
+`show_image` doubles as both display tool and polling endpoint. For completed
+images, it returns:
+- `ImageContent` -- WebP thumbnail preview (max 512px, under 1 MB)
 - `TextContent` -- JSON metadata with `image_id`, `prompt`, `provider`,
   `dimensions`, `original_size_bytes`, `format`, `transforms_applied`
+
+For in-progress generations, it returns:
+- `TextContent` -- JSON with `status`, `progress`, `progress_message`, `elapsed_seconds`
 
 `show_image` is wired to the MCP Apps image viewer via
 `AppConfig(resourceUri="ui://image-viewer/view.html")`.
