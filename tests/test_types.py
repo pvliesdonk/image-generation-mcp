@@ -115,9 +115,9 @@ class TestExceptions:
         assert err.provider == "openai"
 
     def test_connection_error_is_provider_error(self) -> None:
-        err = ImageProviderConnectionError("a1111", "unreachable")
+        err = ImageProviderConnectionError("sd_webui", "unreachable")
         assert isinstance(err, ImageProviderError)
-        assert err.provider == "a1111"
+        assert err.provider == "sd_webui"
 
     def test_all_are_exceptions(self) -> None:
         for cls in (

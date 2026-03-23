@@ -9,9 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from image_generation_mcp.providers.a1111 import A1111ImageProvider
 from image_generation_mcp.providers.openai import OpenAIImageProvider
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
+from image_generation_mcp.providers.sd_webui import SdWebuiImageProvider
 from image_generation_mcp.providers.types import SUPPORTED_BACKGROUNDS
 from image_generation_mcp.service import ImageService
 
@@ -132,15 +132,15 @@ class TestOpenAIBackground:
 
 
 # ---------------------------------------------------------------------------
-# A1111ImageProvider
+# SdWebuiImageProvider
 # ---------------------------------------------------------------------------
 
 
-class TestA1111Background:
-    """Tests for background parameter in A1111ImageProvider."""
+class TestSdWebuiBackground:
+    """Tests for background parameter in SdWebuiImageProvider."""
 
-    async def test_generate_background_a1111_ignored(self) -> None:
-        """A1111 generates normally when background='transparent'."""
+    async def test_generate_background_sd_webui_ignored(self) -> None:
+        """SD WebUI generates normally when background='transparent'."""
         b64_image = base64.b64encode(b"fake-png").decode()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -149,7 +149,7 @@ class TestA1111Background:
             "info": '{"seed": 42, "sd_model_name": "test-model"}',
         }
 
-        provider = A1111ImageProvider(host="http://localhost:7860")
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
 
         with patch.object(
             provider._client, "post", new=AsyncMock(return_value=mock_response)

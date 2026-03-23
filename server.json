@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pvliesdonk/image-generation-mcp",
   "title": "Image Generation MCP Server",
-  "description": "MCP server for AI image generation via OpenAI, Stable Diffusion (A1111), or placeholders.",
+  "description": "MCP server for AI image generation via OpenAI, Stable Diffusion (SD WebUI), or placeholders.",
   "version": "1.2.0",
   "websiteUrl": "https://pvliesdonk.github.io/image-generation-mcp/",
   "runtimeHint": "auto",
@@ -23,7 +23,7 @@
     },
     {
       "name": "IMAGE_GENERATION_MCP_DEFAULT_PROVIDER",
-      "description": "Default provider selection: auto (keyword-based), openai, a1111, or placeholder.",
+      "description": "Default provider selection: auto (keyword-based), openai, sd_webui, or placeholder. Deprecated alias 'a1111' is also accepted.",
       "required": false
     },
     {
@@ -32,13 +32,23 @@
       "required": false
     },
     {
+      "name": "IMAGE_GENERATION_MCP_SD_WEBUI_HOST",
+      "description": "SD WebUI base URL (e.g. http://localhost:7860). Enables the SD WebUI provider when set.",
+      "required": false
+    },
+    {
+      "name": "IMAGE_GENERATION_MCP_SD_WEBUI_MODEL",
+      "description": "SD WebUI checkpoint name for model-aware preset detection (SD 1.5 vs SDXL vs Lightning).",
+      "required": false
+    },
+    {
       "name": "IMAGE_GENERATION_MCP_A1111_HOST",
-      "description": "Automatic1111 WebUI base URL (e.g. http://localhost:7860). Enables the A1111 provider when set.",
+      "description": "Deprecated — use SD_WEBUI_HOST instead. Accepted as fallback.",
       "required": false
     },
     {
       "name": "IMAGE_GENERATION_MCP_A1111_MODEL",
-      "description": "A1111 checkpoint name for model-aware preset detection (SD 1.5 vs SDXL vs Lightning).",
+      "description": "Deprecated — use SD_WEBUI_MODEL instead. Accepted as fallback.",
       "required": false
     },
     {

@@ -5,7 +5,7 @@ Covers:
 - get_service() raises when lifespan context missing
 - get_config() raises when lifespan context missing
 - make_service_lifespan registers OpenAI provider when openai_api_key is set
-- make_service_lifespan registers A1111 provider when a1111_host is set
+- make_service_lifespan registers SD WebUI provider when sd_webui_host is set
 - make_service_lifespan registers placeholder always
 """
 
@@ -148,11 +148,11 @@ class TestMakeServiceLifespan:
         service = await self._run_lifespan(config)
         assert "openai" not in service.providers
 
-    async def test_a1111_not_registered_without_host(self, tmp_path: Path) -> None:
-        """A1111 provider is NOT registered when a1111_host is None."""
-        config = ServerConfig(scratch_dir=tmp_path, a1111_host=None)
+    async def test_sd_webui_not_registered_without_host(self, tmp_path: Path) -> None:
+        """SD WebUI provider is NOT registered when sd_webui_host is None."""
+        config = ServerConfig(scratch_dir=tmp_path, sd_webui_host=None)
         service = await self._run_lifespan(config)
-        assert "a1111" not in service.providers
+        assert "sd_webui" not in service.providers
 
     async def test_service_store_cleared_after_lifespan(self, tmp_path: Path) -> None:
         """Module-level _service_store is cleared to None after lifespan exits."""
@@ -205,29 +205,29 @@ class TestMakeServiceLifespanOpenAIRegistration:
                 assert "openai" in service.providers
 
 
-class TestMakeServiceLifespanA1111Registration:
-    """Tests that A1111 provider registration path is exercised."""
+class TestMakeServiceLifespanSdWebuiRegistration:
+    """Tests that SD WebUI provider registration path is exercised."""
 
-    async def test_a1111_provider_registered(self, tmp_path: Path) -> None:
-        """When a1111_host is set, 'a1111' appears in service.providers."""
+    async def test_sd_webui_provider_registered(self, tmp_path: Path) -> None:
+        """When sd_webui_host is set, 'sd_webui' appears in service.providers."""
         from fastmcp import FastMCP
 
         config = ServerConfig(
             scratch_dir=tmp_path,
-            a1111_host="http://localhost:7860",
-            a1111_model="dreamshaper",
+            sd_webui_host="http://localhost:7860",
+            sd_webui_model="dreamshaper",
         )
-        server = FastMCP("test-a1111")
+        server = FastMCP("test-sd-webui")
         lifespan_fn = make_service_lifespan(config)
 
-        # A1111ImageProvider is imported locally inside the lifespan function —
-        # patch it where it lives in the a1111 module.
+        # SdWebuiImageProvider is imported locally inside the lifespan function —
+        # patch it where it lives in the sd_webui module.
         mock_provider = _make_mock_provider()
 
         with patch(
-            "image_generation_mcp.providers.a1111.A1111ImageProvider",
+            "image_generation_mcp.providers.sd_webui.SdWebuiImageProvider",
             return_value=mock_provider,
         ):
             async with lifespan_fn(server) as ctx:
                 service = ctx["service"]
-                assert "a1111" in service.providers
+                assert "sd_webui" in service.providers

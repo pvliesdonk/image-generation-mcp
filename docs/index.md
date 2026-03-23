@@ -1,10 +1,10 @@
 # image-generation-mcp
 
-Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (A1111 WebUI), or a zero-cost placeholder provider.
+Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (SD WebUI), or a zero-cost placeholder provider.
 
 ## Features
 
-- **Multi-provider** -- OpenAI (gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI), and placeholder
+- **Multi-provider** -- OpenAI (gpt-image-1, dall-e-3), SD WebUI (Stable Diffusion WebUI), and placeholder
 - **Auto-selection** -- keyword-based routing picks the best provider for your prompt
 - **Image assets** -- content-addressed registry with thumbnail previews and resource URI-based transforms
 - **Background tasks** -- hybrid foreground (progress streaming) and background (polling) execution
@@ -39,10 +39,10 @@ MCP Client (Claude Desktop / Claude Code)
 +------+----------+----------+----------------+
        |          |          |
        v          v          v
-  +---------+ +--------+ +--------------+
-  | OpenAI  | | A1111  | | Placeholder  |
-  |Provider | |Provider| | Provider     |
-  +---------+ +--------+ +--------------+
+  +---------+ +----------+ +--------------+
+  | OpenAI  | | SD WebUI | | Placeholder  |
+  |Provider | | Provider | | Provider     |
+  +---------+ +----------+ +--------------+
 ```
 
 ## Quick start
@@ -76,7 +76,7 @@ image-generation-mcp serve
 
     ---
 
-    Compare providers, set up OpenAI or A1111, use the placeholder.
+    Compare providers, set up OpenAI or SD WebUI, use the placeholder.
 
     [:octicons-arrow-right-24: Provider overview](providers/index.md)
 

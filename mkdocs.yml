@@ -44,9 +44,10 @@ plugins:
       full_output: llms-full.txt
       markdown_description: >
         image-generation-mcp is a multi-provider image generation MCP server
-        supporting OpenAI (gpt-image-1, dall-e-3), A1111 (Stable Diffusion WebUI),
-        and a zero-cost placeholder provider. Features keyword-based auto-selection,
-        background tasks with progress reporting, and resource-based image transforms.
+        supporting OpenAI (gpt-image-1, dall-e-3), SD WebUI (Stable Diffusion WebUI,
+        compatible with AUTOMATIC1111/Forge/reForge), and a zero-cost placeholder
+        provider. Features keyword-based auto-selection, background tasks with
+        progress reporting, and resource-based image transforms.
       sections:
         Getting Started:
           - index.md: Overview -- features, providers, quick start
@@ -56,7 +57,7 @@ plugins:
         Providers:
           - providers/index.md: Provider comparison and selection guide
           - providers/openai.md: OpenAI provider setup and capabilities
-          - providers/a1111.md: A1111 Stable Diffusion WebUI setup
+          - providers/sd-webui.md: SD WebUI (Stable Diffusion WebUI) setup
           - providers/placeholder.md: Zero-cost placeholder for testing
         Configuration:
           - configuration.md: All environment variables with types and defaults
@@ -111,7 +112,7 @@ nav:
   - Providers:
       - Overview: providers/index.md
       - OpenAI: providers/openai.md
-      - A1111 (Stable Diffusion): providers/a1111.md
+      - SD WebUI (Stable Diffusion): providers/sd-webui.md
       - Placeholder: providers/placeholder.md
   - Configuration: configuration.md
   - MCP Interface:

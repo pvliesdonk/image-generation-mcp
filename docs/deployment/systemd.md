@@ -44,11 +44,11 @@ IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
 IMAGE_GENERATION_MCP_SCRATCH_DIR=/var/lib/image-generation-mcp/images
 ```
 
-### A1111 (Stable Diffusion WebUI)
+### SD WebUI (Stable Diffusion WebUI)
 
 ```bash
 IMAGE_GENERATION_MCP_READ_ONLY=false
-IMAGE_GENERATION_MCP_A1111_HOST=http://localhost:7860
+IMAGE_GENERATION_MCP_SD_WEBUI_HOST=http://localhost:7860
 IMAGE_GENERATION_MCP_SCRATCH_DIR=/var/lib/image-generation-mcp/images
 ```
 
@@ -169,7 +169,7 @@ Common causes:
 
 - **Missing uv**: The service requires `uvx` at `/usr/local/bin/uvx`. Install with `curl -LsSf https://astral.sh/uv/install.sh | sudo env UV_INSTALL_DIR=/usr/local/bin sh`
 - **Missing API key**: OpenAI provider requires `IMAGE_GENERATION_MCP_OPENAI_API_KEY`
-- **A1111 not reachable**: Verify `IMAGE_GENERATION_MCP_A1111_HOST` is accessible from the service user
+- **SD WebUI not reachable**: Verify `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is accessible from the service user
 - **Port conflict**: Default HTTP port is 8000. Check with `ss -tlnp | grep 8000`
 
 ### Permission denied on images directory

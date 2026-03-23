@@ -92,7 +92,7 @@ Markdown document covering:
 
 - **General tips** — aspect ratio selection, quality levels, when to use negative prompts
 - **OpenAI** — natural-language prompts, style keywords, text rendering tips
-- **A1111 (Stable Diffusion)** — CLIP tag format, negative prompts, BREAK syntax, model-specific advice
+- **SD WebUI (Stable Diffusion)** — CLIP tag format, negative prompts, BREAK syntax, model-specific advice
 - **Placeholder** — prompt-to-color mapping explanation
 
 The `generate_image` tool description references this resource. LLM clients can read it before generating images to produce better prompts.

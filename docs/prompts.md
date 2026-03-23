@@ -14,11 +14,11 @@ MCP clients (like Claude) can load this prompt to understand provider strengths 
 
 The prompt covers:
 
-- **Provider strengths** -- what each provider (OpenAI, A1111, Placeholder) is best at
+- **Provider strengths** -- what each provider (OpenAI, SD WebUI, Placeholder) is best at
 - **Selection rules** -- ordered decision logic:
     1. Text/logos/typography -> use OpenAI
-    2. Photorealism/portraits/product shots -> prefer A1111 (fall back to OpenAI)
-    3. Art/illustration/anime -> prefer A1111 (fall back to OpenAI)
+    2. Photorealism/portraits/product shots -> prefer SD WebUI (fall back to OpenAI)
+    3. Art/illustration/anime -> prefer SD WebUI (fall back to OpenAI)
     4. Quick test/placeholder -> use placeholder
     5. General requests -> default to OpenAI
 - **Usage guidance** -- how to call `generate_image` with `provider="auto"` or a specific provider name
@@ -31,7 +31,7 @@ Guide for writing effective Stable Diffusion prompts using the CLIP-based tag fo
 
 ### When to use
 
-MCP clients should load this prompt when generating images with the A1111 provider. Stable Diffusion models respond better to comma-separated tags than natural language descriptions.
+MCP clients should load this prompt when generating images with the SD WebUI provider. Stable Diffusion models respond better to comma-separated tags than natural language descriptions.
 
 ### Content summary
 

@@ -61,14 +61,14 @@ registered by name in `ImageService` during server lifespan:
 
 ```python
 service.register_provider("openai", OpenAIImageProvider(api_key=key))
-service.register_provider("a1111", A1111ImageProvider(host=url))
+service.register_provider("sd_webui", SdWebuiImageProvider(host=url))
 service.register_provider("placeholder", PlaceholderImageProvider())
 ```
 
 Registration happens in `_server_deps.py` lifespan, gated on config:
 - Placeholder: always registered
 - OpenAI: registered when `openai_api_key` is set
-- A1111: registered when `a1111_host` is set
+- SD WebUI: registered when `sd_webui_host` is set
 
 ## Consequences
 

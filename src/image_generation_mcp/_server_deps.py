@@ -90,13 +90,15 @@ def make_service_lifespan(config: ServerConfig) -> Any:
                 OpenAIImageProvider(api_key=config.openai_api_key),
             )
 
-        # Register A1111 if host is configured
-        if config.a1111_host:
-            from image_generation_mcp.providers.a1111 import A1111ImageProvider
+        # Register SD WebUI if host is configured
+        if config.sd_webui_host:
+            from image_generation_mcp.providers.sd_webui import SdWebuiImageProvider
 
             service.register_provider(
-                "a1111",
-                A1111ImageProvider(host=config.a1111_host, model=config.a1111_model),
+                "sd_webui",
+                SdWebuiImageProvider(
+                    host=config.sd_webui_host, model=config.sd_webui_model
+                ),
             )
 
         # Discover capabilities for all registered providers

@@ -50,7 +50,7 @@ Add a `.mcp.json` file to your project root:
       "env": {
         "IMAGE_GENERATION_MCP_READ_ONLY": "false",
         "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-...",
-        "IMAGE_GENERATION_MCP_A1111_HOST": "http://localhost:7860"
+        "IMAGE_GENERATION_MCP_SD_WEBUI_HOST": "http://localhost:7860"
       }
     }
   }

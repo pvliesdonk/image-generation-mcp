@@ -7,7 +7,7 @@ Accepted
 ## Context
 
 We need an MCP server that generates images via multiple backends (OpenAI,
-Stable Diffusion WebUI / A1111, and more in the future). The server must:
+Stable Diffusion WebUI, and more in the future). The server must:
 
 - Support providers with fundamentally different APIs (REST, SDK, workflow-based)
 - Allow providers to be conditionally registered based on available credentials

@@ -42,7 +42,7 @@ Edit your Claude Desktop MCP configuration file:
 }
 ```
 
-### With OpenAI + A1111
+### With OpenAI + SD WebUI
 
 ```json
 {
@@ -53,7 +53,7 @@ Edit your Claude Desktop MCP configuration file:
       "env": {
         "IMAGE_GENERATION_MCP_READ_ONLY": "false",
         "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-...",
-        "IMAGE_GENERATION_MCP_A1111_HOST": "http://localhost:7860"
+        "IMAGE_GENERATION_MCP_SD_WEBUI_HOST": "http://localhost:7860"
       }
     }
   }
@@ -107,7 +107,7 @@ After restarting Claude Desktop:
 
 - Check the provider is available: ask Claude to run `list_providers`
 - For OpenAI: verify your API key is valid and has image generation access
-- For A1111: verify the WebUI is running and accessible at the configured host
+- For SD WebUI: verify the WebUI is running and accessible at the configured host
 
 ### Mobile app limitations
 

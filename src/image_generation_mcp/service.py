@@ -152,9 +152,9 @@ class ImageService:
             "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, "
             "and general-purpose generation"
         ),
-        "a1111": (
-            "Stable Diffusion via A1111 WebUI — best for photorealism, "
-            "portraits, and artistic styles"
+        "sd_webui": (
+            "Stable Diffusion via SD WebUI (A1111/Forge) — best for "
+            "photorealism, portraits, and artistic styles"
         ),
         "placeholder": (
             "Zero-cost solid-color PNG — instant, no API key, for testing and drafts"
@@ -233,7 +233,7 @@ class ImageService:
                 provider,
                 "No providers are registered. Configure at least one: "
                 "set IMAGE_GENERATION_MCP_OPENAI_API_KEY for OpenAI, "
-                "IMAGE_GENERATION_MCP_A1111_HOST for Stable Diffusion, "
+                "IMAGE_GENERATION_MCP_SD_WEBUI_HOST for Stable Diffusion, "
                 "or the placeholder provider is always available.",
             )
 
@@ -277,7 +277,7 @@ class ImageService:
             quality: Quality level.
             background: Background transparency (``opaque``, ``transparent``).
                 Provider support varies.
-            model: Specific model to use (e.g., a checkpoint name for A1111,
+            model: Specific model to use (e.g., a checkpoint name for SD WebUI,
                 or ``"dall-e-3"`` for OpenAI). Passed through to the provider.
 
         Returns:

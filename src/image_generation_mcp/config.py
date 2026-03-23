@@ -60,7 +60,7 @@ class ServerConfig:
         read_only: When ``True`` (default), write-tagged tools are hidden.
         scratch_dir: Directory for saving generated images.
         openai_api_key: OpenAI API key for gpt-image-1 / dall-e-3.
-        a1111_host: Automatic1111 WebUI base URL.
+        sd_webui_host: SD WebUI base URL (A1111/Forge/reForge/Forge-neo).
         default_provider: Default provider for generation (``"auto"``
             selects based on prompt analysis).
         transform_cache_size: Maximum number of transformed image results
@@ -75,8 +75,8 @@ class ServerConfig:
     read_only: bool = True
     scratch_dir: Path = field(default_factory=lambda: _DEFAULT_SCRATCH_DIR)
     openai_api_key: str | None = None
-    a1111_host: str | None = None
-    a1111_model: str | None = None
+    sd_webui_host: str | None = None
+    sd_webui_model: str | None = None
     default_provider: str = "auto"
     transform_cache_size: int = 64
     base_url: str | None = None
@@ -91,8 +91,10 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GENERATION_MCP_READ_ONLY``: disable write tools; default ``true``.
     - ``IMAGE_GENERATION_MCP_SCRATCH_DIR``: image save directory.
     - ``IMAGE_GENERATION_MCP_OPENAI_API_KEY``: OpenAI API key.
-    - ``IMAGE_GENERATION_MCP_A1111_HOST``: A1111 WebUI URL.
-    - ``IMAGE_GENERATION_MCP_A1111_MODEL``: A1111 checkpoint name for preset detection.
+    - ``IMAGE_GENERATION_MCP_SD_WEBUI_HOST``: SD WebUI URL (also accepts
+      deprecated ``A1111_HOST``).
+    - ``IMAGE_GENERATION_MCP_SD_WEBUI_MODEL``: SD WebUI checkpoint name for
+      preset detection (also accepts deprecated ``A1111_MODEL``).
     - ``IMAGE_GENERATION_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
     - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
     - ``IMAGE_GENERATION_MCP_BASE_URL``: public base URL, required for OIDC and
@@ -118,13 +120,30 @@ def load_config() -> ServerConfig:
     if key := _env("OPENAI_API_KEY"):
         kwargs["openai_api_key"] = key
 
-    if host := _env("A1111_HOST"):
-        kwargs["a1111_host"] = host
+    if host := _env("SD_WEBUI_HOST"):
+        kwargs["sd_webui_host"] = host
+    elif host := _env("A1111_HOST"):
+        logger.warning(
+            "IMAGE_GENERATION_MCP_A1111_HOST is deprecated — "
+            "use IMAGE_GENERATION_MCP_SD_WEBUI_HOST instead"
+        )
+        kwargs["sd_webui_host"] = host
 
-    if model := _env("A1111_MODEL"):
-        kwargs["a1111_model"] = model
+    if model := _env("SD_WEBUI_MODEL"):
+        kwargs["sd_webui_model"] = model
+    elif model := _env("A1111_MODEL"):
+        logger.warning(
+            "IMAGE_GENERATION_MCP_A1111_MODEL is deprecated — "
+            "use IMAGE_GENERATION_MCP_SD_WEBUI_MODEL instead"
+        )
+        kwargs["sd_webui_model"] = model
 
     if provider := _env("DEFAULT_PROVIDER"):
+        if provider == "a1111":
+            logger.warning(
+                "DEFAULT_PROVIDER='a1111' is deprecated — use 'sd_webui' instead"
+            )
+            provider = "sd_webui"
         kwargs["default_provider"] = provider
 
     if raw_cache_size := _env("TRANSFORM_CACHE_SIZE"):

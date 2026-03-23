@@ -43,10 +43,10 @@ MCP Client (Claude)
 +------+----------+----------+----------------+
        |          |          |
        v          v          v
-  +---------+ +--------+ +--------------+
-  | OpenAI  | | A1111  | | Placeholder  |
-  |Provider | |Provider| | Provider     |
-  +---------+ +--------+ +--------------+
+  +---------+ +----------+ +--------------+
+  | OpenAI  | | SD WebUI | | Placeholder  |
+  |Provider | | Provider | | Provider     |
+  +---------+ +----------+ +--------------+
 ```
 
 ## ImageProvider Protocol
@@ -71,7 +71,7 @@ class ImageProvider(Protocol):
 ```
 
 The optional `model` parameter allows per-call model selection. When set, it
-overrides the provider's constructor default. A1111 uses it for both preset
+overrides the provider's constructor default. SD WebUI uses it for both preset
 detection and `override_settings.sd_model_checkpoint`. OpenAI uses it as the
 API `model` parameter with automatic size table switching.
 
@@ -116,14 +116,14 @@ At startup, after all providers are registered, the server calls
 |----------|-----------------|-------|
 | **Placeholder** | Static return | Hardcoded capabilities, always succeeds |
 | **OpenAI** | `client.models.list()` | Filters to known image models (gpt-image-1, dall-e-3, dall-e-2) |
-| **A1111** | `GET /sdapi/v1/sd-models` + `/sdapi/v1/options` | Maps checkpoints to architecture-specific capabilities |
+| **SD WebUI** | `GET /sdapi/v1/sd-models` + `/sdapi/v1/options` | Maps checkpoints to architecture-specific capabilities |
 
 ### Degraded Mode
 
 If `discover_capabilities()` raises an exception, the provider is marked
 `degraded=True` with an empty model list. Server startup is **not blocked** --
 degraded providers can still generate images, but a warning is logged on each
-generation request. This prevents a slow or unreachable A1111 instance from
+generation request. This prevents a slow or unreachable SD WebUI instance from
 blocking the entire server.
 
 ### Capability-Aware Selection
@@ -156,7 +156,9 @@ not excluded. Keywords remain the primary selection mechanism.
 - **Error handling:** Converts `APIConnectionError`, `APIStatusError` (with content policy detection)
 - **Registered when:** `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
 
-### A1111 Provider (Stable Diffusion WebUI)
+### SD WebUI Provider (Stable Diffusion WebUI)
+
+Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo.
 
 - **API:** HTTP POST to `/sdapi/v1/txt2img`
 - **Model-aware presets:** Auto-detects SD architecture from checkpoint name:
@@ -169,7 +171,7 @@ not excluded. Keywords remain the primary selection mechanism.
 - **Discovery:** Calls `/sdapi/v1/sd-models` + `/sdapi/v1/options`, maps checkpoints to architecture-specific `ModelCapabilities`
 - **Metadata:** Extracts seed and active model name from response `info` JSON
 - **Timeout:** 180s (SDXL at high res on consumer GPUs)
-- **Registered when:** `IMAGE_GENERATION_MCP_A1111_HOST` is set
+- **Registered when:** `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set (deprecated alias: `IMAGE_GENERATION_MCP_A1111_HOST`)
 
 ## Provider Selection
 
@@ -178,12 +180,12 @@ the prompt using keyword matching with word boundaries:
 
 | Prompt Keywords | Preferred Provider Chain |
 |----------------|------------------------|
-| realistic, photo, photography, headshot, portrait photo, product shot | a1111 -> openai |
+| realistic, photo, photography, headshot, portrait photo, product shot | sd_webui -> openai |
 | text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, oil painting, sketch, drawing | a1111 -> openai |
-| anime, manga, kawaii, chibi | a1111 -> openai |
-| *(no match)* | openai -> a1111 -> placeholder |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | sd_webui -> openai |
+| anime, manga, kawaii, chibi | sd_webui -> openai |
+| *(no match)* | openai -> sd_webui -> placeholder |
 
 First matching rule wins. Within a rule, the first available provider is selected.
 If no rule matches, the default fallback chain is used. If no provider in the
@@ -234,7 +236,7 @@ Registration happens in `_server_deps.py` during server startup:
 
 1. **Placeholder** -- always registered (zero cost, no API key)
 2. **OpenAI** -- registered if `config.openai_api_key` is set
-3. **A1111** -- registered if `config.a1111_host` is set
+3. **SD WebUI** -- registered if `config.sd_webui_host` is set
 
 After all providers are registered, `discover_all_capabilities()` is called.
 This introspects each provider and caches the results for the server lifetime.
@@ -314,8 +316,8 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Scratch directory for saved images |
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | *(none)* | OpenAI API key; enables OpenAI provider |
-| `IMAGE_GENERATION_MCP_A1111_HOST` | str | *(none)* | A1111 WebUI URL; enables A1111 provider |
-| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `openai`, `a1111`, `placeholder`) |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | *(none)* | SD WebUI URL; enables SD WebUI provider (deprecated alias: `A1111_HOST`) |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `openai`, `sd_webui`, `placeholder`) |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When true, hides write-tagged tools |
 
 ## Future Work
