@@ -73,7 +73,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         annotations={
             "readOnlyHint": False,
             "destructiveHint": False,
-            "openWorldHint": False,
+            "openWorldHint": True,
         },
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
     )
@@ -518,7 +518,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         annotations={
             "readOnlyHint": True,
             "destructiveHint": False,
-            "openWorldHint": False,
+            "openWorldHint": True,
             "idempotentHint": False,
         },
     )

@@ -9,7 +9,7 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
-| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: false` |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
 | **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
 | **Pattern** | Fire-and-forget — returns in &lt;1s, client polls `show_image` |
 
@@ -159,7 +159,7 @@ List available image generation providers and their status.
 | Property | Value |
 |----------|-------|
 | **Tags** | *(none)* -- always visible |
-| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`, `idempotentHint: false` |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: true`, `idempotentHint: false` |
 | **Task** | No |
 
 ### Parameters

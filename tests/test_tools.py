@@ -1096,7 +1096,7 @@ class TestToolAnnotations:
                 {
                     "readOnlyHint": False,
                     "destructiveHint": False,
-                    "openWorldHint": False,
+                    "openWorldHint": True,
                 },
             ),
             (
@@ -1112,7 +1112,7 @@ class TestToolAnnotations:
                 {
                     "readOnlyHint": True,
                     "destructiveHint": False,
-                    "openWorldHint": False,
+                    "openWorldHint": True,
                     "idempotentHint": False,
                 },
             ),
@@ -1143,3 +1143,4 @@ class TestToolAnnotations:
         assert tool.annotations.readOnlyHint is True
         assert tool.annotations.destructiveHint is False
         assert tool.annotations.openWorldHint is False
+        assert tool.annotations.idempotentHint is None
