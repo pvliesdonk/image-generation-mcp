@@ -9,6 +9,7 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: false` |
 | **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
 | **Pattern** | Fire-and-forget — returns in &lt;1s, client polls `show_image` |
 
@@ -94,6 +95,7 @@ Also serves as the polling endpoint for fire-and-forget generation: after callin
 | Property | Value |
 |----------|-------|
 | **Tags** | *(none)* -- always visible (read-only operation) |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
 | **Task** | No |
 | **MCP App** | `ui://image-viewer/view.html` (interactive viewer in supported clients) |
 
@@ -157,8 +159,8 @@ List available image generation providers and their status.
 | Property | Value |
 |----------|-------|
 | **Tags** | *(none)* -- always visible |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`, `idempotentHint: false` |
 | **Task** | No |
-| **Annotations** | `idempotentHint: false` -- signals clients not to cache results |
 
 ### Parameters
 
@@ -294,6 +296,7 @@ Create a one-time-use HTTP download URL for an image. Enables server-to-server i
 | Property | Value |
 |----------|-------|
 | **Tags** | *(none)* |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
 | **Task** | No |
 | **Transport** | HTTP/SSE only (hidden on stdio — no HTTP server available) |
 | **Requires** | `IMAGE_GENERATION_MCP_BASE_URL` |

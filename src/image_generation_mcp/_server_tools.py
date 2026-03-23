@@ -70,6 +70,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     @mcp.tool(
         tags={"write"},
         task=True,
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
         icons=[Icon(src=_LUCIDE.format("image-plus"), mimeType="image/svg+xml")],
     )
     async def generate_image(
@@ -317,6 +322,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         )
 
     @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
         icons=[Icon(src=_LUCIDE.format("eye"), mimeType="image/svg+xml")],
         app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
     )
@@ -505,7 +515,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
     @mcp.tool(
         icons=[Icon(src=_LUCIDE.format("layers"), mimeType="image/svg+xml")],
-        annotations={"idempotentHint": False},
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+            "idempotentHint": False,
+        },
     )
     async def list_providers(
         force_refresh: bool = False,
@@ -557,6 +572,11 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
     """
 
     @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
         icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],
     )
     async def create_download_link(

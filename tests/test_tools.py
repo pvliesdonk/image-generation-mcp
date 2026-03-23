@@ -1078,3 +1078,68 @@ class TestCreateDownloadLinkTool:
         register_tools(mcp, transport="stdio")
         tool = await mcp.get_tool("create_download_link")
         assert tool is None
+
+
+# ---------------------------------------------------------------------------
+# Tool annotations (readOnlyHint, destructiveHint, openWorldHint)
+# ---------------------------------------------------------------------------
+
+
+class TestToolAnnotations:
+    """Verify all tools have correct MCP tool annotations for ChatGPT compat."""
+
+    @pytest.mark.parametrize(
+        "tool_name,expected",
+        [
+            (
+                "generate_image",
+                {
+                    "readOnlyHint": False,
+                    "destructiveHint": False,
+                    "openWorldHint": False,
+                },
+            ),
+            (
+                "show_image",
+                {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "openWorldHint": False,
+                },
+            ),
+            (
+                "list_providers",
+                {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "openWorldHint": False,
+                    "idempotentHint": False,
+                },
+            ),
+        ],
+    )
+    async def test_tool_annotations(
+        self, tool_name: str, expected: dict[str, bool]
+    ) -> None:
+        """Each tool has the expected MCP annotations."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool(tool_name)
+        assert tool is not None
+        assert tool.annotations is not None
+        for key, value in expected.items():
+            assert getattr(tool.annotations, key) == value, (
+                f"{tool_name}.annotations.{key}: "
+                f"expected {value}, got {getattr(tool.annotations, key)}"
+            )
+
+    async def test_create_download_link_annotations(self) -> None:
+        """create_download_link has read-only annotations (HTTP transport)."""
+        mcp = FastMCP("test")
+        register_tools(mcp, transport="http")
+        tool = await mcp.get_tool("create_download_link")
+        assert tool is not None
+        assert tool.annotations is not None
+        assert tool.annotations.readOnlyHint is True
+        assert tool.annotations.destructiveHint is False
+        assert tool.annotations.openWorldHint is False
