@@ -366,12 +366,19 @@ class TestSdWebuiProvider:
 class TestProgressPolling:
     """Tests for SD WebUI progress polling during generation."""
 
-    async def test_progress_callback_receives_updates(self, httpx_mock) -> None:
+    async def test_progress_callback_receives_updates(
+        self, httpx_mock, monkeypatch
+    ) -> None:
         """Progress callback is invoked with fraction and step message."""
+        import image_generation_mcp.providers.sd_webui as sd_mod
+
+        monkeypatch.setattr(sd_mod, "_PROGRESS_POLL_INTERVAL", 0.0)
+
         b64_image = base64.b64encode(b"fake-png-data").decode()
         httpx_mock.post(
             "http://localhost:7860/sdapi/v1/txt2img",
             json={"images": [b64_image], "info": "{}"},
+            delay=0.1,  # Give poll task time to fire
         )
         httpx_mock.get(
             "http://localhost:7860/sdapi/v1/progress",
@@ -383,11 +390,10 @@ class TestProgressPolling:
         result = await provider.generate("test", progress_callback=callback)
 
         assert result.image_data == b"fake-png-data"
-        # Callback should have been called at least once by the polling task
-        if callback.call_count > 0:
-            fraction, msg = callback.call_args[0]
-            assert 0.0 <= fraction <= 1.0
-            assert "Step" in msg
+        callback.assert_called()
+        fraction, msg = callback.call_args[0]
+        assert 0.0 <= fraction <= 1.0
+        assert "Step" in msg
 
     async def test_progress_endpoint_failure_does_not_break_generation(
         self, httpx_mock
@@ -426,13 +432,19 @@ class TestProgressPolling:
         # No GET requests should have been made
         assert len(httpx_mock.get_requests()) == 0
 
-    async def test_progress_message_includes_eta(self, httpx_mock) -> None:
+    async def test_progress_message_includes_eta(
+        self, httpx_mock, monkeypatch
+    ) -> None:
         """Progress message includes ETA when available."""
+        import image_generation_mcp.providers.sd_webui as sd_mod
+
+        monkeypatch.setattr(sd_mod, "_PROGRESS_POLL_INTERVAL", 0.0)
+
         b64_image = base64.b64encode(b"fake-png-data").decode()
         httpx_mock.post(
             "http://localhost:7860/sdapi/v1/txt2img",
             json={"images": [b64_image], "info": "{}"},
-            delay=0.3,  # Slow enough for at least 1 poll
+            delay=0.1,  # Give poll task time to fire
         )
         httpx_mock.get(
             "http://localhost:7860/sdapi/v1/progress",
@@ -447,8 +459,7 @@ class TestProgressPolling:
         provider = SdWebuiImageProvider(host="http://localhost:7860")
         await provider.generate("test", progress_callback=_capture)
 
-        # With a 2s poll interval and a 0.3s delay, the poll task may or
-        # may not fire. If it did, verify the message format.
+        assert len(calls) > 0, "Expected at least one progress callback"
         for fraction, msg in calls:
             assert "ETA" in msg
             assert fraction == 0.5

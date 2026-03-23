@@ -206,6 +206,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 # Progress callback updates PendingGeneration so show_image
                 # polling returns step-level detail for SD WebUI.
                 pending = service.get_pending(image_id)
+                if pending is None:
+                    logger.warning(
+                        "get_pending(%s) returned None; "
+                        "progress updates will be lost",
+                        image_id,
+                    )
 
                 def _on_progress(fraction: float, message: str) -> None:
                     if pending is not None:
