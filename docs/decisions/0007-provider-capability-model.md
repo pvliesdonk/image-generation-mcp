@@ -28,7 +28,7 @@ Key requirements:
 
 - **Client intelligence** -- LLM clients need capability data to make informed
   provider/model choices
-- **Provider heterogeneity** -- OpenAI, A1111, and Placeholder have very
+- **Provider heterogeneity** -- OpenAI, SD WebUI, and Placeholder have very
   different capability profiles
 - **Startup resilience** -- a single failing provider must not block the server
 - **Zero runtime cost** -- capabilities are discovered once at startup, not per
@@ -50,7 +50,7 @@ Each provider implements `discover_capabilities()` which queries the
 provider's API at startup and returns a structured dataclass.
 
 **Pros:** Reflects actual runtime state. Handles provider-specific discovery
-(OpenAI models.list, A1111 sd-models endpoint). Graceful degradation on
+(OpenAI models.list, SD WebUI sd-models endpoint). Graceful degradation on
 failure.
 **Cons:** Adds startup latency (one API call per provider). Discovery can fail.
 
@@ -95,8 +95,8 @@ Two frozen dataclasses model the capability hierarchy:
 | `supports_negative_prompt` | `bool` | Supports negative prompt parameter |
 | `supports_background` | `bool` | Supports background transparency |
 | `max_resolution` | `int \| None` | Max dimension in pixels |
-| `default_steps` | `int \| None` | Default inference steps (A1111) |
-| `default_cfg` | `float \| None` | Default CFG scale (A1111) |
+| `default_steps` | `int \| None` | Default inference steps (SD WebUI) |
+| `default_cfg` | `float \| None` | Default CFG scale (SD WebUI) |
 
 Both dataclasses are frozen (immutable after construction). Fields like
 `can_edit` and `supports_mask` are defined now but not yet used -- they
@@ -142,7 +142,7 @@ it just can't report its capabilities to clients.
 | Provider | API Endpoint | Discovery Logic |
 |----------|-------------|-----------------|
 | OpenAI | `client.models.list()` | Filter to known image models (`gpt-image-1`, `dall-e-3`). Map each to `ModelCapabilities` using existing hardcoded knowledge of sizes, formats, qualities. |
-| A1111 | `GET /sdapi/v1/sd-models` | List installed checkpoints. Detect architecture per checkpoint using keyword matching (same logic as `_resolve_preset`). Map to `ModelCapabilities` with architecture-specific defaults. |
+| SD WebUI | `GET /sdapi/v1/sd-models` | List installed checkpoints. Detect architecture per checkpoint using keyword matching (same logic as `_resolve_preset`). Map to `ModelCapabilities` with architecture-specific defaults. |
 | Placeholder | (none) | Return static capabilities: one model, `can_generate=True`, sizes from `_ASPECT_RATIO_TO_SIZE`. |
 
 ### Integration Points

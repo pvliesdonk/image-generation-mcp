@@ -39,10 +39,10 @@ MCP Client (Claude Desktop / Claude Code)
 +------+----------+----------+----------------+
        |          |          |
        v          v          v
-  +---------+ +--------+ +--------------+
+  +---------+ +----------+ +--------------+
   | OpenAI  | | SD WebUI | | Placeholder  |
-  |Provider | |Provider  | | Provider     |
-  +---------+ +--------+ +--------------+
+  |Provider | | Provider | | Provider     |
+  +---------+ +----------+ +--------------+
 ```
 
 ## Quick start

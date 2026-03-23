@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Image generation is inherently slow -- OpenAI takes 5-15 seconds, A1111 takes
+Image generation is inherently slow -- OpenAI takes 5-15 seconds, SD WebUI takes
 10-60+ seconds on consumer GPUs. The current `generate_image` tool blocks until
 completion with no feedback to the client.
 
@@ -30,7 +30,7 @@ use cases benefit from different modes.
 Add `Context.report_progress()` calls but keep the tool blocking.
 
 **Pros:** Simplest change, zero new dependencies.
-**Cons:** Clients cannot do other work while waiting. 60s A1111 generations
+**Cons:** Clients cannot do other work while waiting. 60s SD WebUI generations
 block the entire MCP session.
 
 ### Option 2: Background-only with task polling

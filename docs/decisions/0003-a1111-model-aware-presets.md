@@ -1,4 +1,4 @@
-# ADR-0003: A1111 Model-Aware Generation Presets
+# ADR-0003: SD WebUI Model-Aware Generation Presets
 
 ## Status
 
@@ -25,7 +25,7 @@ appropriate preset. Detection uses string matching on the model name:
 2. Check for XL tags (`sdxl`, `xl_`, `_xl`, `-xl`) → `_SDXL_PRESET`
 3. Fallback → `_SD15_PRESET`
 
-Each preset is a frozen dataclass (`_A1111Preset`) containing:
+Each preset is a frozen dataclass (`_SdWebuiPreset`) containing:
 - `sizes` — aspect ratio → (width, height) mapping
 - `steps`, `sampler`, `scheduler`, `cfg_scale` — generation parameters
 - `quality_tier` — metadata label ("medium" or "high")
@@ -45,7 +45,7 @@ Each preset is a frozen dataclass (`_A1111Preset`) containing:
 - Users get good results without needing to know optimal parameters per model
 - Checkpoint override (`override_settings.sd_model_checkpoint`) ensures the
   right model is loaded
-- Preset detection is purely string-based — no API call to A1111 needed
+- Preset detection is purely string-based — no API call to SD WebUI needed
 
 ### Negative
 
@@ -57,4 +57,4 @@ Each preset is a frozen dataclass (`_A1111Preset`) containing:
 ### Future Considerations
 
 - ComfyUI will need a different approach (workflow-based, not parameter-based)
-- Could add an `a1111_preset` config option to force a specific preset
+- Could add an `sd_webui_preset` config option to force a specific preset

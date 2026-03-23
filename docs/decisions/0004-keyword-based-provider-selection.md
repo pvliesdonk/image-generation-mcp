@@ -49,13 +49,13 @@ The selection rules are ordered lists of `(keywords, preferred_providers)`:
 
 | Keywords | Preferred Provider Chain |
 |----------|------------------------|
-| realistic, photo, photography, headshot, portrait photo, product shot | a1111 → openai |
+| realistic, photo, photography, headshot, portrait photo, product shot | sd_webui → openai |
 | text, logo, typography, poster, banner, signage, lettering, font | openai |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, oil painting, sketch, drawing | a1111 → openai |
-| anime, manga, kawaii, chibi | a1111 → openai |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | sd_webui → openai |
+| anime, manga, kawaii, chibi | sd_webui → openai |
 
-Default fallback (no keyword match): openai → a1111 → placeholder.
+Default fallback (no keyword match): openai → sd_webui → placeholder.
 
 Keywords are matched using `\b` word boundaries to avoid false positives
 (e.g., "art" should not match "start").
@@ -77,6 +77,6 @@ Keywords are matched using `\b` word boundaries to avoid false positives
 
 ### Mitigation
 
-Users can always specify `provider="openai"` or `provider="a1111"` explicitly
+Users can always specify `provider="openai"` or `provider="sd_webui"` explicitly
 to override auto-selection. The MCP `select_provider` prompt guides the client
 on when to use explicit selection.
