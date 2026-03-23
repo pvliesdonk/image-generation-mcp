@@ -207,20 +207,13 @@ class TestBuildRemoteAuth:
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Returns None with install hint when httpx is not importable."""
-        import builtins
-
         for var, val in _REMOTE_REQUIRED.items():
             monkeypatch.setenv(var, val)
 
-        real_import = builtins.__import__
-
-        def mock_import(name: str, *args: object, **kwargs: object) -> object:
-            if name == "httpx":
-                raise ImportError("No module named 'httpx'")
-            return real_import(name, *args, **kwargs)
-
+        # Setting sys.modules["httpx"] = None causes Python to raise
+        # ImportError regardless of prior import state (order-independent).
         with (
-            patch("builtins.__import__", side_effect=mock_import),
+            patch.dict("sys.modules", {"httpx": None}),
             caplog.at_level(logging.ERROR),
         ):
             result = _build_remote_auth()
