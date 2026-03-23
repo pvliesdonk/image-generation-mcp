@@ -1001,8 +1001,10 @@ class TestListProvidersTool:
 
         result = await tool.fn(service=service)
         data = json.loads(result)
-        assert "placeholder" in data
-        assert data["placeholder"]["available"] is True
+        assert "refreshed_at" in data
+        assert "providers" in data
+        assert "placeholder" in data["providers"]
+        assert data["providers"]["placeholder"]["available"] is True
 
 
 # ---------------------------------------------------------------------------

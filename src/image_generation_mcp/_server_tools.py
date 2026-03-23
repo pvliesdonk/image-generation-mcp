@@ -11,6 +11,7 @@ import base64
 import io
 import json
 import logging
+from datetime import UTC, datetime
 from urllib.parse import parse_qs, urlparse
 
 from fastmcp import FastMCP
@@ -423,17 +424,40 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
     @mcp.tool(
         icons=[Icon(src=_LUCIDE.format("layers"), mimeType="image/svg+xml")],
+        annotations={"idempotentHint": False},
     )
     async def list_providers(
+        force_refresh: bool = False,
         service: ImageService = Depends(get_service),
     ) -> str:
-        """List available image generation providers.
+        """List available image generation providers, models, and capabilities.
+
+        Returns provider names, available models, prompt_style (``"clip"``
+        or ``"natural_language"``), and capability details. Each call
+        includes a ``refreshed_at`` timestamp. Pass ``force_refresh=true``
+        if providers may have changed since the last check.
+
+        Also available as the ``info://providers`` resource for clients
+        that support MCP resources.
+
+        Args:
+            force_refresh: Set to ``true`` to signal that cached results
+                should not be used.  The server always returns current
+                data; this parameter exists to bust client-side caches
+                by changing the tool input signature.
 
         Returns:
-            JSON object with provider names and availability info.
+            JSON object with provider names, capabilities, and a
+            ``refreshed_at`` ISO 8601 timestamp.
         """
+        if force_refresh:
+            await service.discover_all_capabilities()
         providers = service.list_providers()
-        return json.dumps(providers, indent=2)
+        result = {
+            "refreshed_at": datetime.now(UTC).isoformat(),
+            "providers": providers,
+        }
+        return json.dumps(result, indent=2)
 
     # create_download_link is only available on HTTP transports —
     # stdio has no HTTP server to host the artifact endpoint.
