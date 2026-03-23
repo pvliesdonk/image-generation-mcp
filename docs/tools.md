@@ -9,7 +9,7 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
-| **Task** | `task=True` (supports foreground and background execution) |
+| **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
 | **Pattern** | Fire-and-forget — returns in &lt;1s, client polls `show_image` |
 
 ### Parameters

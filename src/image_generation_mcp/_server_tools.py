@@ -45,6 +45,8 @@ from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
     SUPPORTED_QUALITY_LEVELS,
+    ImageContentPolicyError,
+    ImageProviderConnectionError,
 )
 from .service import ImageService
 
@@ -223,6 +225,28 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 )
                 service.complete_pending(image_id)
                 logger.info("Background generation completed: %s", image_id)
+            except ImageContentPolicyError as exc:
+                service.fail_pending(
+                    image_id,
+                    "Content policy rejected the prompt. "
+                    "Try rephrasing or use a different provider.",
+                )
+                logger.error(
+                    "Background generation failed (content policy): %s: %s",
+                    image_id,
+                    exc,
+                )
+            except ImageProviderConnectionError as exc:
+                service.fail_pending(
+                    image_id,
+                    "Provider is unreachable. "
+                    "Check that it is running, or try a different provider.",
+                )
+                logger.error(
+                    "Background generation failed (connection): %s: %s",
+                    image_id,
+                    exc,
+                )
             except Exception as exc:
                 service.fail_pending(image_id, str(exc))
                 logger.error(

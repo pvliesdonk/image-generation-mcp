@@ -106,6 +106,8 @@ class ImageService:
         self._capabilities: dict[str, ProviderCapabilities] = {}
         self._scratch_dir = scratch_dir
         self._default_provider = default_provider
+        # NOTE: register_image is called via asyncio.to_thread (cross-thread
+        # mutation). Safe under CPython GIL; revisit if moving to free-threading.
         self._images: dict[str, ImageRecord] = {}
         # NOTE: OrderedDict is not thread-safe. This cache assumes single-threaded
         # access from the asyncio event loop (no to_thread dispatch).
@@ -454,7 +456,11 @@ class ImageService:
         stale = [
             pid
             for pid, p in self._pending.items()
-            if p.completed_at is not None and (now - p.completed_at) > _PENDING_TTL_S
+            if (
+                p.completed_at is not None
+                and (now - p.completed_at) > _PENDING_TTL_S
+            )
+            or (now - p.created_at) > _PENDING_TTL_S
         ]
         for pid in stale:
             self._pending.pop(pid, None)

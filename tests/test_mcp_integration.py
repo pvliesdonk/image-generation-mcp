@@ -70,6 +70,11 @@ async def _generate_and_wait(
         if show_meta.get("status") != "generating":
             break
 
+    if show_meta.get("status") == "failed":
+        raise AssertionError(
+            f"Background generation failed: {show_meta.get('error')}"
+        )
+
     return image_id
 
 
