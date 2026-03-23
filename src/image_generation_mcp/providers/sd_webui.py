@@ -54,6 +54,7 @@ class _SdWebuiPreset:
     quality_tier: str = "medium"
     supports_negative_prompt: bool = True
     distilled_cfg_scale: float | None = None
+    prompt_style: str = "clip"
 
 
 _SD15_PRESET = _SdWebuiPreset(
@@ -101,6 +102,7 @@ _FLUX_DEV_PRESET = _SdWebuiPreset(
     quality_tier="high",
     supports_negative_prompt=False,
     distilled_cfg_scale=3.5,
+    prompt_style="natural_language",
 )
 
 _FLUX_SCHNELL_PRESET = _SdWebuiPreset(
@@ -112,6 +114,7 @@ _FLUX_SCHNELL_PRESET = _SdWebuiPreset(
     quality_tier="high",
     supports_negative_prompt=False,
     distilled_cfg_scale=3.5,
+    prompt_style="natural_language",
 )
 
 _XL_TAGS = ("sdxl", "xl_", "_xl", "-xl")
@@ -313,6 +316,7 @@ class SdWebuiImageProvider:
             "model": active_model,
             "size": f"{width}x{height}",
             "steps": effective_preset.steps,
+            "prompt_style": effective_preset.prompt_style,
         }
         if seed is not None:
             metadata["seed"] = seed
@@ -429,6 +433,7 @@ class SdWebuiImageProvider:
                     max_resolution=max_resolution,
                     default_steps=preset.steps,
                     default_cfg=preset.cfg_scale,
+                    prompt_style=preset.prompt_style,
                 )
             )
 

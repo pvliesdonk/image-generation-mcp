@@ -86,8 +86,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         """Generate an image and return metadata with resource URIs.
 
         Call list_providers first to see available providers and model IDs.
-        Read info://prompt-guide for provider-specific prompt writing tips
-        (especially important for SD WebUI/Stable Diffusion CLIP tag format).
+        Read info://prompt-guide for provider-specific prompt writing tips.
+        SD WebUI prompt style depends on the model: use CLIP tags for
+        SD 1.5/SDXL, natural language for Flux (check ``prompt_style`` in
+        list_providers or in the returned metadata).
         Returns metadata including the image_id and resource URIs. Call
         show_image with the image URI (e.g. ``image://{image_id}/view``) to
         display the image.
@@ -101,8 +103,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ``"placeholder"`` — instant zero-cost solid-color PNG
                 for testing.
             negative_prompt: Things to avoid in the image. SD WebUI
-                supports this natively via CLIP. OpenAI appends as an
-                "Avoid:" clause (weaker effect). Placeholder ignores it.
+                supports this natively for SD 1.5/SDXL (CLIP-based) but
+                NOT for Flux models. OpenAI appends as an "Avoid:" clause
+                (weaker effect). Placeholder ignores it.
             aspect_ratio: Desired ratio (``1:1``, ``16:9``, ``9:16``,
                 ``3:2``, ``2:3``).
             quality: Quality level. ``"hd"`` vs ``"standard"`` only

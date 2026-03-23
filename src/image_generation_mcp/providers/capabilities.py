@@ -31,6 +31,9 @@ class ModelCapabilities:
         max_resolution: Maximum dimension in pixels, or ``None`` if unlimited.
         default_steps: Default inference steps (SD WebUI-specific), or ``None``.
         default_cfg: Default CFG scale (SD WebUI-specific), or ``None``.
+        prompt_style: Recommended prompt format — ``"clip"`` for CLIP-tag
+            models (SD 1.5, SDXL), ``"natural_language"`` for T5-based
+            models (Flux), or ``None`` for providers without guidance.
     """
 
     model_id: str
@@ -46,6 +49,7 @@ class ModelCapabilities:
     max_resolution: int | None = None
     default_steps: int | None = None
     default_cfg: float | None = None
+    prompt_style: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dictionary."""
@@ -63,6 +67,7 @@ class ModelCapabilities:
             "max_resolution": self.max_resolution,
             "default_steps": self.default_steps,
             "default_cfg": self.default_cfg,
+            "prompt_style": self.prompt_style,
         }
 
 
