@@ -184,7 +184,18 @@ lifespans:
 
 ### Opaque access tokens (Authelia)
 
-Authelia issues opaque (non-JWT) access tokens. This is handled automatically — the server verifies the `id_token` instead. No extra configuration needed.
+Authelia issues opaque (non-JWT) access tokens by default. How this affects you depends on the OIDC mode:
+
+- **Remote mode** (recommended): requires JWT access tokens. Add `access_token_signed_response_alg: 'RS256'` to the Authelia client registration. See [Authelia setup](../deployment/oidc.md#setup-with-authelia) for details.
+- **OIDCProxy mode**: handles opaque tokens automatically by verifying the `id_token` instead. No extra configuration needed.
+
+### Token exchange fails with Authelia
+
+**Symptom:** Authelia logs show a `token_endpoint_auth_method` error during the OAuth token exchange.
+
+**Root cause:** Claude Code (and some other MCP clients) sends `client_id` and `client_secret` in the POST body (`client_secret_post`), but Authelia defaults to `client_secret_basic` (HTTP Basic auth).
+
+**Fix:** Add `token_endpoint_auth_method: 'client_secret_post'` to the Authelia client registration. See [Authelia setup](../deployment/oidc.md#setup-with-authelia).
 
 ---
 
