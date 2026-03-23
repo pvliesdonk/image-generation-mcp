@@ -32,7 +32,8 @@ Provider capabilities and supported features.
             "supports_background": true,
             "max_resolution": 640,
             "default_steps": null,
-            "default_cfg": null
+            "default_cfg": null,
+            "prompt_style": null
           }
         ],
         "supports_background": true,
@@ -60,7 +61,8 @@ Provider capabilities and supported features.
             "supports_background": true,
             "max_resolution": 1536,
             "default_steps": null,
-            "default_cfg": null
+            "default_cfg": null,
+            "prompt_style": null
           }
         ],
         "supports_background": true,
@@ -92,7 +94,7 @@ Markdown document covering:
 
 - **General tips** — aspect ratio selection, quality levels, when to use negative prompts
 - **OpenAI** — natural-language prompts, style keywords, text rendering tips
-- **SD WebUI (Stable Diffusion)** — CLIP tag format, negative prompts, BREAK syntax, model-specific advice
+- **SD WebUI (Stable Diffusion)** — CLIP tags for SD 1.5/SDXL, natural language for Flux, negative prompts, BREAK syntax, model-specific advice
 - **Placeholder** — prompt-to-color mapping explanation
 
 The `generate_image` tool description references this resource. LLM clients can read it before generating images to produce better prompts.

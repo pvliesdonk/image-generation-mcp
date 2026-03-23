@@ -349,6 +349,7 @@ class TestSdWebuiDiscoverCapabilitiesSuccess:
         assert sd15.max_resolution == 768
         assert sd15.default_steps == 30
         assert sd15.default_cfg == 7.0
+        assert sd15.prompt_style == "clip"
         assert "1:1" in sd15.supported_aspect_ratios
         assert "16:9" in sd15.supported_aspect_ratios
 
@@ -363,6 +364,7 @@ class TestSdWebuiDiscoverCapabilitiesSuccess:
         assert sdxl.max_resolution == 1024
         assert sdxl.default_steps == 35
         assert sdxl.default_cfg == 7.5
+        assert sdxl.prompt_style == "clip"
 
     async def test_lightning_model_capabilities(self) -> None:
         provider = _make_provider()
@@ -683,6 +685,7 @@ class TestSdWebuiDiscoverFluxModels:
         assert flux_dev.default_steps == 20
         assert flux_dev.default_cfg == 1.0
         assert flux_dev.supports_negative_prompt is False
+        assert flux_dev.prompt_style == "natural_language"
 
     async def test_flux_schnell_capabilities(self) -> None:
         provider = _make_provider()
@@ -696,6 +699,7 @@ class TestSdWebuiDiscoverFluxModels:
         assert flux_schnell.default_steps == 4
         assert flux_schnell.default_cfg == 1.0
         assert flux_schnell.supports_negative_prompt is False
+        assert flux_schnell.prompt_style == "natural_language"
 
     async def test_provider_supports_negative_prompt_mixed(self) -> None:
         """Provider-level flag is True when at least one model supports it."""

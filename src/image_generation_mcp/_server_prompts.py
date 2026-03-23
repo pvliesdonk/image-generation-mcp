@@ -27,9 +27,12 @@ Choose the best provider for the user's request based on these guidelines:
 ### SD WebUI (Stable Diffusion WebUI)
 - **Best for:** Photorealism, portraits, product shots, artistic styles
 - **Good at:** Anime/manga, watercolor, oil painting, illustration
-- **Supports:** Native negative prompt, fine-grained parameter control
-- **Prompt style:** Comma-separated tags work best (see sd_prompt_guide)
+- **Supports:** Native negative prompt (SD 1.5/SDXL only), fine-grained parameter control
+- **Prompt style depends on the loaded model:**
+  - **SD 1.5 / SDXL:** Comma-separated CLIP tags (see sd_prompt_guide)
+  - **Flux (dev/schnell):** Natural language descriptions, like OpenAI (see sd_prompt_guide)
 - **Note:** Compatible with A1111, Forge, reForge, and Forge-neo
+- Check `list_providers` for each model's `prompt_style` field
 
 ### Placeholder
 - **Best for:** Quick drafts, testing, mock-ups
@@ -52,13 +55,13 @@ providers are currently available.
 """
 
 _SD_PROMPT_GUIDE = """\
-When generating images with the SD WebUI (Stable Diffusion) provider, format
-prompts as comma-separated tags for best results. This guide covers the
-CLIP-based prompt format used by Stable Diffusion models.
+Guide for writing SD WebUI prompts. The correct prompt style depends on the
+model architecture — check `list_providers` to see which models are loaded.
 
-## Prompt Format
+## SD 1.5 / SDXL — CLIP Tag Format
 
-Use comma-separated descriptive tags, ordered by importance:
+These models use a CLIP text encoder. Format prompts as comma-separated
+descriptive tags ordered by importance:
 
 ```
 subject, medium, style, lighting, camera, quality tags
@@ -84,7 +87,7 @@ white sneakers, product photography, studio lighting, white background,
 sharp focus, commercial photography, high resolution
 ```
 
-## Quality Tags
+### Quality Tags
 
 Add these to improve output quality:
 - `masterpiece, best quality` — general quality boost
@@ -92,7 +95,7 @@ Add these to improve output quality:
 - `8k, ultra high res` — resolution boost (use sparingly)
 - `professional, award winning` — style refinement
 
-## Negative Prompt
+### Negative Prompt
 
 Always include a negative prompt to avoid common artifacts:
 
@@ -113,7 +116,7 @@ cartoon, anime, illustration, painting, drawing, art, sketch
 photo, realistic, 3d render
 ```
 
-## CLIP Token Limits
+### CLIP Token Limits
 
 - **SD 1.5:** 77 tokens per CLIP chunk. Use `BREAK` to start a new chunk.
 - **SDXL:** 77 tokens per chunk, but two CLIP encoders (ViT-L + ViT-bigG).
@@ -121,7 +124,7 @@ photo, realistic, 3d render
 Keep prompts concise. Front-load the most important tags — tokens beyond
 the first 77-token chunk have diminishing influence.
 
-## BREAK Syntax
+### BREAK Syntax
 
 Use `BREAK` to separate prompt concepts into different CLIP chunks:
 
@@ -131,6 +134,48 @@ forest background, sunlight through trees BREAK
 masterpiece, best quality, sharp focus
 ```
 
+## Flux — Natural Language Format
+
+Flux models (flux-dev, flux-schnell) use a T5 text encoder, NOT CLIP.
+Write prompts as natural language descriptions — the same style as OpenAI.
+
+**Key differences from SD 1.5 / SDXL:**
+- Use complete sentences, not comma-separated tags
+- Do NOT include quality tags (`masterpiece`, `best quality`) — they are meaningless to Flux
+- Do NOT write a negative prompt — Flux does not support them (the server omits them automatically)
+- Do NOT use `BREAK` syntax — Flux does not use CLIP chunking
+- CFG scale and sampler are handled automatically by the server
+
+### Flux Example Prompts
+
+**Portrait:**
+```
+A young woman with long flowing hair and striking blue eyes wearing a
+school uniform, standing beneath cherry blossom trees with soft natural
+light filtering through the petals
+```
+
+**Landscape:**
+```
+A dramatic mountain landscape at sunset with towering peaks reflected in
+a perfectly still alpine lake, storm clouds lit orange and purple by the
+setting sun
+```
+
+**Product shot:**
+```
+A pair of pristine white sneakers on a clean white background, shot from
+a three-quarter angle with professional studio lighting and crisp focus
+```
+
+### Flux Schnell vs Flux Dev
+
+- **Flux Schnell:** 4 steps, fastest generation (~5-10s). Good for drafts.
+- **Flux Dev:** 20 steps, higher quality (~60-120s). Use for final output.
+
+Both use Euler sampler, Simple scheduler, CFG 1.0, and distilled CFG 3.5
+(all set automatically by the server).
+
 ## Aspect Ratios
 
 Supported aspect ratios: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`.
@@ -138,15 +183,29 @@ The server maps these to optimal pixel dimensions for each SD model.
 
 ## Workflow
 
-1. Draft your prompt using comma-separated tags (subject first)
-2. Add quality tags and a negative prompt
-3. Call `generate_image` with `provider="sd_webui"`:
+1. Check `list_providers` to see available models and their `prompt_style`
+   (`"clip"` for SD 1.5/SDXL, `"natural_language"` for Flux)
+2. Write your prompt in the appropriate style for the model
+3. For SD 1.5/SDXL: add quality tags and a negative prompt
+4. For Flux: write a natural language description, skip negative prompt
+5. Call `generate_image` with `provider="sd_webui"`:
 
+**SD 1.5 / SDXL example:**
 ```
 generate_image(
     prompt="1girl, long hair, school uniform, cherry blossoms, masterpiece, best quality",
     negative_prompt="lowres, bad anatomy, bad hands, worst quality, low quality",
     provider="sd_webui",
+    aspect_ratio="2:3"
+)
+```
+
+**Flux example:**
+```
+generate_image(
+    prompt="A young woman with long hair in a school uniform standing beneath cherry blossom trees",
+    provider="sd_webui",
+    model="flux1-dev-bnb-nf4-v2.safetensors",
     aspect_ratio="2:3"
 )
 ```
@@ -178,8 +237,8 @@ def register_prompts(mcp: FastMCP) -> None:
     @mcp.prompt(
         name="sd_prompt_guide",
         description=(
-            "Guide for writing Stable Diffusion prompts "
-            "(CLIP tag format, negative prompts, BREAK syntax)"
+            "Guide for writing SD WebUI prompts — "
+            "CLIP tags for SD 1.5/SDXL, natural language for Flux"
         ),
         icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
     )
