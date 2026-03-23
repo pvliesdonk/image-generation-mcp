@@ -165,6 +165,8 @@ Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo.
   - **SD 1.5** (default): 768px base, 30 steps, CFG 7.0, DPM++ 2M sampler, Karras scheduler
   - **SDXL**: 1024px base, 35 steps, CFG 7.5, DPM++ 2M sampler, Karras scheduler
   - **SDXL Lightning/Turbo**: 1024px base, 6 steps, CFG 2.0, DPM++ SDE sampler, Karras scheduler
+  - **Flux Dev**: 1024px base, 20 steps, CFG 1.0, Euler sampler, Simple scheduler, distilled_cfg_scale 3.5, no negative prompt
+  - **Flux Schnell**: 1024px base, 4 steps, CFG 1.0, Euler sampler, Simple scheduler, distilled_cfg_scale 3.5, no negative prompt
 - **Checkpoint override:** When `model` is specified, sends `override_settings.sd_model_checkpoint`
 - **Negative prompt:** Native support via `negative_prompt` field in payload
 - **Background:** Ignored (SD does not support native transparent backgrounds); debug log emitted

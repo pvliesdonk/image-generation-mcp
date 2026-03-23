@@ -10,6 +10,8 @@ import pytest
 
 from image_generation_mcp.providers.capabilities import ProviderCapabilities
 from image_generation_mcp.providers.sd_webui import (
+    _FLUX_DEV_PRESET,
+    _FLUX_SCHNELL_PRESET,
     _SD15_PRESET,
     _SDXL_LIGHTNING_PRESET,
     _SDXL_PRESET,
@@ -38,7 +40,27 @@ _CHECKPOINT_LIGHTNING = {
     "hash": "def456",
 }
 
+_CHECKPOINT_FLUX_DEV = {
+    "title": "flux1-dev-fp8.safetensors [aaa111]",
+    "model_name": "flux1-dev-fp8",
+    "hash": "aaa111",
+}
+
+_CHECKPOINT_FLUX_SCHNELL = {
+    "title": "flux1-schnell-Q4.gguf [bbb222]",
+    "model_name": "flux1-schnell-Q4",
+    "hash": "bbb222",
+}
+
 _CHECKPOINTS_ALL_THREE = [_CHECKPOINT_SD15, _CHECKPOINT_SDXL, _CHECKPOINT_LIGHTNING]
+
+_CHECKPOINTS_ALL_FIVE = [
+    _CHECKPOINT_SD15,
+    _CHECKPOINT_SDXL,
+    _CHECKPOINT_LIGHTNING,
+    _CHECKPOINT_FLUX_DEV,
+    _CHECKPOINT_FLUX_SCHNELL,
+]
 
 _OPTIONS_RESPONSE = {
     "sd_model_checkpoint": "v1-5-pruned-emaonly.safetensors [6ce0161689]"
@@ -112,6 +134,26 @@ class TestDetectArchitecture:
         # "lightning" alone (no xl tag) → sd15
         assert _detect_architecture("dreamshaper_lightning") == "sd15"
 
+    def test_flux_dev(self) -> None:
+        assert _detect_architecture("flux1-dev-fp8.safetensors") == "flux_dev"
+
+    def test_flux_schnell(self) -> None:
+        assert _detect_architecture("flux1-schnell-Q4.gguf") == "flux_schnell"
+
+    def test_flux_dev_uppercase(self) -> None:
+        assert _detect_architecture("FLUX1-DEV-FP8") == "flux_dev"
+
+    def test_flux_schnell_mixed_case(self) -> None:
+        assert _detect_architecture("Flux1-Schnell-Q4") == "flux_schnell"
+
+    def test_flux_without_schnell_is_dev(self) -> None:
+        # "flux" without "schnell" → flux_dev
+        assert _detect_architecture("flux_model_v2") == "flux_dev"
+
+    def test_flux_takes_priority_over_xl(self) -> None:
+        # Flux detection runs before XL detection
+        assert _detect_architecture("flux_xl_hybrid") == "flux_dev"
+
     def test_returns_string(self) -> None:
         result = _detect_architecture("some_model")
         assert isinstance(result, str)
@@ -183,6 +225,35 @@ class TestResolvePresetStillWorks:
     def test_lightning_scheduler(self) -> None:
         assert _SDXL_LIGHTNING_PRESET.scheduler == "Karras"
 
+    def test_flux_dev_model(self) -> None:
+        assert _resolve_preset("flux1-dev-fp8.safetensors") is _FLUX_DEV_PRESET
+
+    def test_flux_schnell_model(self) -> None:
+        assert _resolve_preset("flux1-schnell-Q4.gguf") is _FLUX_SCHNELL_PRESET
+
+    def test_flux_dev_steps(self) -> None:
+        assert _FLUX_DEV_PRESET.steps == 20
+
+    def test_flux_schnell_steps(self) -> None:
+        assert _FLUX_SCHNELL_PRESET.steps == 4
+
+    def test_flux_dev_cfg(self) -> None:
+        assert _FLUX_DEV_PRESET.cfg_scale == 1.0
+
+    def test_flux_dev_sampler(self) -> None:
+        assert _FLUX_DEV_PRESET.sampler == "Euler"
+
+    def test_flux_dev_scheduler(self) -> None:
+        assert _FLUX_DEV_PRESET.scheduler == "Simple"
+
+    def test_flux_no_negative_prompt(self) -> None:
+        assert _FLUX_DEV_PRESET.supports_negative_prompt is False
+        assert _FLUX_SCHNELL_PRESET.supports_negative_prompt is False
+
+    def test_flux_distilled_cfg(self) -> None:
+        assert _FLUX_DEV_PRESET.distilled_cfg_scale == 3.5
+        assert _FLUX_SCHNELL_PRESET.distilled_cfg_scale == 3.5
+
 
 # -- txt2img payload includes scheduler field --------------------------------
 
@@ -229,6 +300,22 @@ class TestSdWebuiPayloadScheduler:
         payload = provider._client.post.call_args.kwargs["json"]
         assert payload["sampler_name"] == "DPM++ SDE"
         assert payload["scheduler"] == "Karras"
+
+    async def test_flux_payload_scheduler(self) -> None:
+        """Flux preset sends Euler sampler with Simple scheduler."""
+        provider = SdWebuiImageProvider(
+            host="http://localhost:7860", model="flux1-dev-fp8.safetensors"
+        )
+        provider._client.post = AsyncMock(return_value=_make_txt2img_mock_response())
+
+        await provider.generate("test prompt")
+
+        payload = provider._client.post.call_args.kwargs["json"]
+        assert payload["sampler_name"] == "Euler"
+        assert payload["scheduler"] == "Simple"
+        assert payload["cfg_scale"] == 1.0
+        assert payload["distilled_cfg_scale"] == 3.5
+        assert "negative_prompt" not in payload
 
 
 # -- discover_capabilities() success path ------------------------------------
@@ -299,7 +386,7 @@ class TestSdWebuiDiscoverCapabilitiesSuccess:
             assert model.can_edit is False
             assert model.supports_mask is False
 
-    async def test_all_models_negative_prompt(self) -> None:
+    async def test_all_sd_models_negative_prompt(self) -> None:
         provider = _make_provider()
         provider._client.get = _mock_get(_CHECKPOINTS_ALL_THREE)
         caps = await provider.discover_capabilities()
@@ -570,3 +657,59 @@ class TestSdWebuiDiscoverResponseValidation:
         caps = await provider.discover_capabilities()
 
         assert len(caps.models) == 1
+
+
+# -- Flux model discovery tests -----------------------------------------------
+
+
+class TestSdWebuiDiscoverFluxModels:
+    """Tests for Flux model discovery and capability reporting."""
+
+    async def test_five_models_discovered(self) -> None:
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+        caps = await provider.discover_capabilities()
+        assert len(caps.models) == 5
+
+    async def test_flux_dev_capabilities(self) -> None:
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+        caps = await provider.discover_capabilities()
+
+        flux_dev = next(m for m in caps.models if "flux1-dev" in m.model_id)
+        assert flux_dev.model_id == _CHECKPOINT_FLUX_DEV["title"]
+        assert flux_dev.display_name == _CHECKPOINT_FLUX_DEV["model_name"]
+        assert flux_dev.max_resolution == 1024
+        assert flux_dev.default_steps == 20
+        assert flux_dev.default_cfg == 1.0
+        assert flux_dev.supports_negative_prompt is False
+
+    async def test_flux_schnell_capabilities(self) -> None:
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+        caps = await provider.discover_capabilities()
+
+        flux_schnell = next(m for m in caps.models if "schnell" in m.model_id)
+        assert flux_schnell.model_id == _CHECKPOINT_FLUX_SCHNELL["title"]
+        assert flux_schnell.display_name == _CHECKPOINT_FLUX_SCHNELL["model_name"]
+        assert flux_schnell.max_resolution == 1024
+        assert flux_schnell.default_steps == 4
+        assert flux_schnell.default_cfg == 1.0
+        assert flux_schnell.supports_negative_prompt is False
+
+    async def test_provider_supports_negative_prompt_mixed(self) -> None:
+        """Provider-level flag is True when at least one model supports it."""
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+        caps = await provider.discover_capabilities()
+        # SD15, SDXL, Lightning support it; Flux doesn't → provider says True
+        assert caps.supports_negative_prompt is True
+
+    async def test_flux_only_no_negative_prompt(self) -> None:
+        """Provider-level flag is False when only Flux models are present."""
+        provider = _make_provider()
+        provider._client.get = _mock_get(
+            [_CHECKPOINT_FLUX_DEV, _CHECKPOINT_FLUX_SCHNELL]
+        )
+        caps = await provider.discover_capabilities()
+        assert caps.supports_negative_prompt is False

@@ -2,8 +2,8 @@
 
 Generates images via the SD WebUI REST API (``/sdapi/v1/txt2img``).
 Compatible with A1111, Forge, reForge, and Forge-neo.
-Model-aware presets auto-detect SD 1.5, SDXL, and SDXL Lightning
-from the checkpoint name.
+Model-aware presets auto-detect SD 1.5, SDXL, SDXL Lightning,
+and Flux (dev/schnell) from the checkpoint name.
 
 Ported from questfoundry — prompt distillation removed entirely.
 """
@@ -52,6 +52,8 @@ class _SdWebuiPreset:
     scheduler: str = "Karras"
     cfg_scale: float = 7.0
     quality_tier: str = "medium"
+    supports_negative_prompt: bool = True
+    distilled_cfg_scale: float | None = None
 
 
 _SD15_PRESET = _SdWebuiPreset(
@@ -90,25 +92,56 @@ _SDXL_LIGHTNING_PRESET = _SdWebuiPreset(
     quality_tier="high",
 )
 
+_FLUX_DEV_PRESET = _SdWebuiPreset(
+    sizes=_SDXL_SIZES,
+    steps=20,
+    sampler="Euler",
+    scheduler="Simple",
+    cfg_scale=1.0,
+    quality_tier="high",
+    supports_negative_prompt=False,
+    distilled_cfg_scale=3.5,
+)
+
+_FLUX_SCHNELL_PRESET = _SdWebuiPreset(
+    sizes=_SDXL_SIZES,
+    steps=4,
+    sampler="Euler",
+    scheduler="Simple",
+    cfg_scale=1.0,
+    quality_tier="high",
+    supports_negative_prompt=False,
+    distilled_cfg_scale=3.5,
+)
+
 _XL_TAGS = ("sdxl", "xl_", "_xl", "-xl")
 _LIGHTNING_TAGS = ("lightning", "turbo")
+_FLUX_TAGS = ("flux1", "flux_", "_flux", "-flux")
 
 
 def _detect_architecture(model_name: str) -> str:
     """Detect SD architecture from a checkpoint name.
 
     Detection order:
-    1. Lightning/Turbo SDXL — returns ``"sdxl_lightning"``
-    2. Standard SDXL — returns ``"sdxl"``
-    3. SD 1.5 fallback — returns ``"sd15"``
+    1. Flux schnell — returns ``"flux_schnell"``
+    2. Flux dev — returns ``"flux_dev"``
+    3. Lightning/Turbo SDXL — returns ``"sdxl_lightning"``
+    4. Standard SDXL — returns ``"sdxl"``
+    5. SD 1.5 fallback — returns ``"sd15"``
 
     Args:
         model_name: Checkpoint name or title string (case-insensitive).
 
     Returns:
-        One of ``"sd15"``, ``"sdxl"``, or ``"sdxl_lightning"``.
+        One of ``"sd15"``, ``"sdxl"``, ``"sdxl_lightning"``,
+        ``"flux_dev"``, or ``"flux_schnell"``.
     """
     lower = model_name.lower()
+    is_flux = any(tag in lower for tag in _FLUX_TAGS)
+    if is_flux:
+        if "schnell" in lower:
+            return "flux_schnell"
+        return "flux_dev"
     is_xl = any(tag in lower for tag in _XL_TAGS)
     is_lightning = any(tag in lower for tag in _LIGHTNING_TAGS)
     if is_xl and is_lightning:
@@ -118,22 +151,20 @@ def _detect_architecture(model_name: str) -> str:
     return "sd15"
 
 
-def _resolve_preset(model: str | None) -> _SdWebuiPreset:
-    """Choose generation preset based on checkpoint name.
+_ARCH_PRESETS: dict[str, _SdWebuiPreset] = {
+    "flux_schnell": _FLUX_SCHNELL_PRESET,
+    "flux_dev": _FLUX_DEV_PRESET,
+    "sdxl_lightning": _SDXL_LIGHTNING_PRESET,
+    "sdxl": _SDXL_PRESET,
+}
 
-    Detection order:
-    1. Lightning/Turbo SDXL — low steps, low CFG
-    2. Standard SDXL — matches xl tags
-    3. SD 1.5 — fallback default
-    """
+
+def _resolve_preset(model: str | None) -> _SdWebuiPreset:
+    """Choose generation preset based on checkpoint name."""
     if not model:
         return _SD15_PRESET
     arch = _detect_architecture(model)
-    if arch == "sdxl_lightning":
-        return _SDXL_LIGHTNING_PRESET
-    if arch == "sdxl":
-        return _SDXL_PRESET
-    return _SD15_PRESET
+    return _ARCH_PRESETS.get(arch, _SD15_PRESET)
 
 
 class SdWebuiImageProvider:
@@ -201,7 +232,6 @@ class SdWebuiImageProvider:
 
         payload: dict[str, Any] = {
             "prompt": prompt,
-            "negative_prompt": negative_prompt or "",
             "width": width,
             "height": height,
             "steps": effective_preset.steps,
@@ -209,6 +239,17 @@ class SdWebuiImageProvider:
             "sampler_name": effective_preset.sampler,
             "scheduler": effective_preset.scheduler,
         }
+
+        # Flux models do not support negative prompts — omit entirely.
+        # Other architectures always include the field (empty string if None).
+        if effective_preset.supports_negative_prompt:
+            payload["negative_prompt"] = negative_prompt or ""
+        elif negative_prompt:
+            logger.debug("Model does not support negative prompts, ignoring")
+
+        # distilled_cfg_scale is a Forge-specific parameter for Flux models
+        if effective_preset.distilled_cfg_scale is not None:
+            payload["distilled_cfg_scale"] = effective_preset.distilled_cfg_scale
 
         if effective_model:
             payload["override_settings"] = {"sd_model_checkpoint": effective_model}
@@ -367,7 +408,11 @@ class SdWebuiImageProvider:
             arch = _detect_architecture(title)
             preset = _resolve_preset(title)
 
-            max_resolution = 1024 if arch in ("sdxl", "sdxl_lightning") else 768
+            max_resolution = (
+                1024
+                if arch in ("sdxl", "sdxl_lightning", "flux_dev", "flux_schnell")
+                else 768
+            )
 
             model_caps.append(
                 ModelCapabilities(
@@ -379,7 +424,7 @@ class SdWebuiImageProvider:
                     supported_aspect_ratios=tuple(preset.sizes.keys()),
                     supported_qualities=("standard",),
                     supported_formats=("png",),
-                    supports_negative_prompt=True,
+                    supports_negative_prompt=preset.supports_negative_prompt,
                     supports_background=False,
                     max_resolution=max_resolution,
                     default_steps=preset.steps,
