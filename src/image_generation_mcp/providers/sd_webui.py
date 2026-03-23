@@ -277,9 +277,7 @@ class SdWebuiImageProvider:
         progress_task: asyncio.Task[None] | None = None
         if progress_callback is not None:
             progress_task = asyncio.create_task(
-                self._poll_progress(
-                    effective_preset.steps, progress_callback
-                )
+                self._poll_progress(effective_preset.steps, progress_callback)
             )
 
         try:

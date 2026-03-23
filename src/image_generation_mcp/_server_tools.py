@@ -208,8 +208,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 pending = service.get_pending(image_id)
                 if pending is None:
                     logger.warning(
-                        "get_pending(%s) returned None; "
-                        "progress updates will be lost",
+                        "get_pending(%s) returned None; progress updates will be lost",
                         image_id,
                     )
 

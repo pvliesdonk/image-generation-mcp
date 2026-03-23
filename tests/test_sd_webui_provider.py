@@ -432,9 +432,7 @@ class TestProgressPolling:
         # No GET requests should have been made
         assert len(httpx_mock.get_requests()) == 0
 
-    async def test_progress_message_includes_eta(
-        self, httpx_mock, monkeypatch
-    ) -> None:
+    async def test_progress_message_includes_eta(self, httpx_mock, monkeypatch) -> None:
         """Progress message includes ETA when available."""
         import image_generation_mcp.providers.sd_webui as sd_mod
 
