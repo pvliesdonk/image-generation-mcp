@@ -108,8 +108,7 @@
         },
         {
           "name": "IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES",
-          "description": "Comma-separated required OIDC scopes.",
-          "default": "openid"
+          "description": "Comma-separated required OIDC scopes (default: openid for oidc-proxy mode, none for remote mode)."
         },
         {
           "name": "IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN",
@@ -242,8 +241,7 @@
         },
         {
           "name": "IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES",
-          "description": "Comma-separated required OIDC scopes.",
-          "default": "openid"
+          "description": "Comma-separated required OIDC scopes (default: openid for oidc-proxy mode, none for remote mode)."
         },
         {
           "name": "IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN",

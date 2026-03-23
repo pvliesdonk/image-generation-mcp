@@ -162,6 +162,8 @@ def _build_remote_auth() -> Any:
             "Install it with: pip install 'image-generation-mcp[all]' "
             "or pip install httpx"
         )
+        # Intentionally return None rather than raising: OIDC auth is optional
+        # and the server can still run with bearer-token-only auth or no auth.
         return None
 
     try:
