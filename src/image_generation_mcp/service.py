@@ -35,6 +35,7 @@ from image_generation_mcp.providers.types import (
     ImageProvider,
     ImageProviderError,
     ImageResult,
+    ProgressCallback,
 )
 
 logger = logging.getLogger(__name__)
@@ -297,6 +298,7 @@ class ImageService:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> tuple[str, ImageResult]:
         """Generate an image using a provider.
 
@@ -310,6 +312,9 @@ class ImageService:
                 Provider support varies.
             model: Specific model to use (e.g., a checkpoint name for SD WebUI,
                 or ``"dall-e-3"`` for OpenAI). Passed through to the provider.
+            progress_callback: Optional callback invoked with
+                ``(fraction, message)`` during generation.  Only SD WebUI
+                uses this; other providers ignore it.
 
         Returns:
             Tuple of (provider_name, ImageResult).
@@ -345,6 +350,7 @@ class ImageService:
             quality=quality,
             background=background,
             model=model,
+            progress_callback=progress_callback,
         )
 
         return resolved_name, result

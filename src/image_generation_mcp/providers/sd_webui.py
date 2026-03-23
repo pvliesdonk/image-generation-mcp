@@ -28,11 +28,13 @@ from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    ProgressCallback,
 )
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 180.0  # SDXL at high res can be slow on consumer GPUs
+_PROGRESS_POLL_INTERVAL = 2.0  # seconds between /sdapi/v1/progress polls
 
 
 # -- Model-aware generation presets -------------------------------------------
@@ -202,6 +204,7 @@ class SdWebuiImageProvider:
         quality: str = "standard",  # noqa: ARG002
         background: str = "opaque",
         model: str | None = None,
+        progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image via SD WebUI txt2img API.
 
@@ -215,6 +218,9 @@ class SdWebuiImageProvider:
             model: Specific checkpoint name to use for this call. Overrides
                 the constructor model for preset detection and
                 ``override_settings``.
+            progress_callback: Optional callback invoked with
+                ``(fraction, message)`` during generation.  When provided,
+                ``/sdapi/v1/progress`` is polled concurrently.
 
         Returns:
             ImageResult with PNG data and provider metadata.
@@ -267,6 +273,15 @@ class SdWebuiImageProvider:
             height,
         )
 
+        # Run txt2img with concurrent progress polling when callback provided
+        progress_task: asyncio.Task[None] | None = None
+        if progress_callback is not None:
+            progress_task = asyncio.create_task(
+                self._poll_progress(
+                    effective_preset.steps, progress_callback
+                )
+            )
+
         try:
             response = await self._client.post(url, json=payload)
         except httpx.ConnectError as e:
@@ -278,6 +293,10 @@ class SdWebuiImageProvider:
                 "sd_webui",
                 f"Request to SD WebUI timed out after {_DEFAULT_TIMEOUT}s: {e}",
             ) from e
+        finally:
+            if progress_task is not None:
+                progress_task.cancel()
+                await asyncio.gather(progress_task, return_exceptions=True)
 
         if response.status_code != 200:
             body_preview = response.text[:200]
@@ -448,3 +467,46 @@ class SdWebuiImageProvider:
             models=tuple(model_caps),
             discovered_at=discovered_at,
         )
+
+    async def _poll_progress(
+        self,
+        total_steps: int,
+        callback: ProgressCallback,
+    ) -> None:
+        """Poll ``/sdapi/v1/progress`` and relay updates via *callback*.
+
+        Runs as a concurrent task alongside ``/sdapi/v1/txt2img``.
+        Cancellation-safe — the caller cancels this task when txt2img
+        finishes.
+
+        Args:
+            total_steps: Expected step count (from the preset) for
+                human-readable messages.
+            callback: Called with ``(fraction, message)`` on each poll.
+        """
+        url = f"{self._host}/sdapi/v1/progress"
+        while True:
+            await asyncio.sleep(_PROGRESS_POLL_INTERVAL)
+            try:
+                resp = await self._client.get(url, timeout=5.0)
+                if resp.status_code != 200:
+                    logger.debug(
+                        "SD WebUI progress endpoint returned HTTP %d",
+                        resp.status_code,
+                    )
+                    continue
+                data = resp.json()
+                progress: float = data.get("progress", 0.0)
+                eta: float = data.get("eta_relative", 0.0)
+                current_step = round(progress * total_steps)
+                msg = f"Step {current_step}/{total_steps}"
+                if eta > 0:
+                    msg += f" (ETA {eta:.0f}s)"
+                callback(progress, msg)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.debug(
+                    "SD WebUI progress poll failed — continuing without update",
+                    exc_info=True,
+                )

@@ -20,6 +20,7 @@ from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    ProgressCallback,
 )
 
 if TYPE_CHECKING:
@@ -115,6 +116,7 @@ class OpenAIImageProvider:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
 

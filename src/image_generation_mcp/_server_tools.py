@@ -203,6 +203,15 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # Spawn background generation task
         async def _background_generate() -> None:
             try:
+                # Progress callback updates PendingGeneration so show_image
+                # polling returns step-level detail for SD WebUI.
+                pending = service.get_pending(image_id)
+
+                def _on_progress(fraction: float, message: str) -> None:
+                    if pending is not None:
+                        pending.progress = fraction
+                        pending.progress_message = message
+
                 provider_name, result = await service.generate(
                     prompt,
                     provider=resolved_name,
@@ -211,6 +220,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     quality=quality,
                     background=background,
                     model=model,
+                    progress_callback=_on_progress,
                 )
                 await asyncio.to_thread(
                     service.register_image,
