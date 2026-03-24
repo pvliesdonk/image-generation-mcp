@@ -400,21 +400,33 @@ _IMAGE_VIEWER_HTML = """\
       return keys;
     }
 
+    // Returns store keys sorted oldest-first by timestamp for correct LRU eviction.
+    // localStorage.key(i) has no guaranteed iteration order, so we read the stored ts field.
+    function storeKeysByAge() {
+      return storeKeys().map(k => {
+        try {
+          const d = JSON.parse(localStorage.getItem(k));
+          return { k, ts: (d && d.ts) ? d.ts : 0 };
+        } catch (_) { return { k, ts: 0 }; }
+      }).sort((a, b) => a.ts - b.ts).map(e => e.k);
+    }
+
     function saveState(key, img, text) {
       if (!key) return;
       const fullKey = STORE + key;
-      const value = JSON.stringify({ img, text });
+      const value = JSON.stringify({ img, text, ts: Date.now() });
       try {
         localStorage.setItem(fullKey, value);
       } catch (e) {
-        const keys = storeKeys().filter(k => k !== fullKey);
+        const keys = storeKeysByAge().filter(k => k !== fullKey);
         while (keys.length > 0) {
           localStorage.removeItem(keys.shift());
           try { localStorage.setItem(fullKey, value); return; } catch (_) {}
         }
         console.warn('localStorage full — could not save state after eviction');
+        return;
       }
-      const all = storeKeys().filter(k => k !== fullKey);
+      const all = storeKeysByAge().filter(k => k !== fullKey);
       while (all.length >= MAX_ENTRIES) localStorage.removeItem(all.shift());
     }
 
@@ -520,7 +532,7 @@ _IMAGE_VIEWER_HTML = """\
       renderCompleted(img, text);
       let key = imageKey;
       if (!key && text) {
-        try { key = JSON.parse(text.text).image_id; } catch (e) {}
+        try { key = JSON.parse(text.text).image_id; } catch (e) { console.warn('Could not parse image_id from result text', e); }
       }
       if (key) saveState(key, img, text);
     };
