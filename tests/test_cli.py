@@ -175,9 +175,13 @@ class TestCmdServe:
             )
             _cmd_serve(args)
 
-        mock_server.run.assert_called_once_with(
-            transport="http", host="0.0.0.0", port=8000, path="/mcp"
-        )
+        mock_server.run.assert_called_once()
+        call_kwargs = mock_server.run.call_args.kwargs
+        assert call_kwargs["transport"] == "http"
+        assert call_kwargs["host"] == "0.0.0.0"
+        assert call_kwargs["port"] == 8000
+        assert call_kwargs["path"] == "/mcp"
+        assert "middleware" in call_kwargs
 
     def test_cmd_serve_http_custom_path(self) -> None:
         """serve with http and custom path uses normalised path."""
@@ -193,9 +197,13 @@ class TestCmdServe:
             )
             _cmd_serve(args)
 
-        mock_server.run.assert_called_once_with(
-            transport="http", host="localhost", port=9000, path="/custom"
-        )
+        mock_server.run.assert_called_once()
+        call_kwargs = mock_server.run.call_args.kwargs
+        assert call_kwargs["transport"] == "http"
+        assert call_kwargs["host"] == "localhost"
+        assert call_kwargs["port"] == 9000
+        assert call_kwargs["path"] == "/custom"
+        assert "middleware" in call_kwargs
 
     def test_cmd_serve_http_path_from_env(
         self, monkeypatch: pytest.MonkeyPatch
@@ -214,9 +222,11 @@ class TestCmdServe:
             )
             _cmd_serve(args)
 
-        mock_server.run.assert_called_once_with(
-            transport="http", host="0.0.0.0", port=8000, path="/from-env"
-        )
+        mock_server.run.assert_called_once()
+        call_kwargs = mock_server.run.call_args.kwargs
+        assert call_kwargs["transport"] == "http"
+        assert call_kwargs["path"] == "/from-env"
+        assert "middleware" in call_kwargs
 
     def test_cmd_serve_stdio_warns_for_http_args(
         self, caplog: pytest.LogCaptureFixture
