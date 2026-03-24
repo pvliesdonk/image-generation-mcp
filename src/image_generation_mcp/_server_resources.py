@@ -570,15 +570,15 @@ def register_resources(
     # Extract hostname from BASE_URL for the MCP Apps widget domain.
     # The domain field is host-dependent (per the MCP Apps ext spec);
     # when omitted, each host assigns its own default sandbox origin.
-    _app_domain: str | None = None
+    app_domain: str | None = None
     if config and config.base_url:
-        _app_domain = urlparse(config.base_url).hostname
+        app_domain = urlparse(config.base_url).hostname
 
     @mcp.resource(
         _IMAGE_VIEWER_URI,
         description="Interactive image viewer for show_image results.",
         app=AppConfig(
-            domain=_app_domain,
+            domain=app_domain,
             csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
         ),
     )

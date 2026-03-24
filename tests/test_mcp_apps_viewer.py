@@ -78,7 +78,9 @@ class TestImageViewerResource:
         viewer = next(
             r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
         )
-        assert viewer.meta is not None
+        assert viewer.meta is not None, (
+            "AppConfig should still produce meta even with domain=None"
+        )
         app_meta = viewer.meta.get("ui", {})
         # domain excluded via exclude_none when BASE_URL is not set
         assert "domain" not in app_meta
