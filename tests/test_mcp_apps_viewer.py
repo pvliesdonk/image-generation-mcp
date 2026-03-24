@@ -103,6 +103,16 @@ class TestImageViewerResource:
         text = result.contents[0].content
         assert "console.warn" in text
 
+    async def test_viewer_html_has_download_button(self, server) -> None:
+        """Viewer has a download button with downloadFile and openLink fallback."""
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert 'id="dl-btn"' in text
+        assert "app.downloadFile" in text
+        assert "app.openLink" in text
+        assert "getHostCapabilities" in text
+        assert "resource_link" in text
+
     async def test_viewer_domain_omitted_without_base_url(self, server) -> None:
         """Without APP_DOMAIN, domain is omitted (host uses default sandbox)."""
         resources = await server.list_resources()
