@@ -85,13 +85,14 @@ class TestImageViewerResource:
         # domain excluded via exclude_none when BASE_URL is not set
         assert "domain" not in app_meta
 
-    async def test_viewer_domain_derived_from_base_url(
+    async def test_viewer_domain_from_app_domain_env(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """When BASE_URL is set, domain is the hostname extracted from it."""
+        """When APP_DOMAIN is set, domain is passed through verbatim."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
         monkeypatch.setenv(
-            "IMAGE_GENERATION_MCP_BASE_URL", "https://mcp.example.com:8080/v1"
+            "IMAGE_GENERATION_MCP_APP_DOMAIN",
+            "abcdef01234567890abcdef012345678.claudemcpcontent.com",
         )
         srv = create_server()
         resources = await srv.list_resources()
@@ -100,7 +101,9 @@ class TestImageViewerResource:
         )
         assert viewer.meta is not None
         app_meta = viewer.meta.get("ui", {})
-        assert app_meta.get("domain") == "mcp.example.com"
+        assert app_meta.get("domain") == (
+            "abcdef01234567890abcdef012345678.claudemcpcontent.com"
+        )
 
     async def test_viewer_imgel_declared_before_if_blocks(self, server) -> None:
         """imgEl must be declared before both if(img) and if(text) blocks
