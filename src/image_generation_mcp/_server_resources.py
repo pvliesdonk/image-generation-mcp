@@ -796,12 +796,6 @@ _IMAGE_GALLERY_HTML = """\
       s = String(s || "");
       return s.length > n ? s.slice(0, n) + "\\u2026" : s;
     }
-    function computePageSize() {
-      const w = gridItems.offsetWidth || 300;
-      const cols = Math.max(3, Math.floor(w / 160));
-      return cols * 3;
-    }
-
     // --- Display states ---
     function show(which) {
       loadingEl.style.display = which === "loading" ? "flex" : "none";

@@ -267,7 +267,7 @@ This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025
 ### Features
 
 - **Thumbnail grid** — responsive grid using CSS `auto-fill` with 140 px minimum card width; 3×3 at typical inline size, adapts to available width (4×3 at wider sizes)
-- **Adaptive page size** — page size is computed from the container width: `cols × 3` rows, minimum 9
+- **Page size** — fixed at 12 items per page, set server-side by `browse_gallery` and propagated via `data.page_size`
 - **Pagination** — Prev/Next buttons call the `gallery_page` app-only tool; page indicator shows current/total
 - **Hover overlay** — prompt excerpt (2-line clamp) and provider badge on thumbnail hover
 - **Download button** — shown when `downloadFile` host capability is available; uses `resource_link` to `image://{id}/view` for full-resolution download

@@ -57,6 +57,7 @@ logger = logging.getLogger(__name__)
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
+_GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
 
 
@@ -557,7 +558,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         total = len(images) + len(pending)
 
         # Build page-1 items: pending first (newest), then completed
-        page_size = 12
+        page_size = _GALLERY_PAGE_SIZE
         all_items: list[dict[str, object]] = []
         for p in pending:
             if len(all_items) >= page_size:
@@ -620,7 +621,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     )
     async def gallery_page(
         page: int = 1,
-        page_size: int = 9,
+        page_size: int = _GALLERY_PAGE_SIZE,
         service: ImageService = Depends(get_service),
     ) -> str:
         """Return a page of image thumbnails for the gallery UI.
@@ -630,7 +631,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Args:
             page: 1-based page number.
-            page_size: Number of items per page (1-24, default 9).
+            page_size: Number of items per page (1-24, default 12).
 
         Returns:
             JSON with ``total``, ``page``, ``page_size``, and ``items``.
