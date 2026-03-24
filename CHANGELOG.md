@@ -2,6 +2,70 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-03-24)
+
+### Bug Fixes
+
+- Add Flux prompt guidance and prompt_style metadata (#114) (#115)
+  ([#115](https://github.com/pvliesdonk/image-generation-mcp/pull/115),
+  [`546bc04`](https://github.com/pvliesdonk/image-generation-mcp/commit/546bc0482a0cd19e5df028b752cee700f33bd27a))
+
+- Add force_refresh and refreshed_at to list_providers (#113) (#116)
+  ([#116](https://github.com/pvliesdonk/image-generation-mcp/pull/116),
+  [`e8e0478`](https://github.com/pvliesdonk/image-generation-mcp/commit/e8e0478d78d8a6a1dbf6cb53cfdc9a793f633179))
+
+- Add MCP tool annotations and widget domain for ChatGPT compatibility (#121)
+  ([#121](https://github.com/pvliesdonk/image-generation-mcp/pull/121),
+  [`f23a8cf`](https://github.com/pvliesdonk/image-generation-mcp/commit/f23a8cfce7e149850f5807ecdb1fc6dca4aa6295))
+
+- Set project GitHub URL as widget domain for ChatGPT app identity (#125)
+  ([#125](https://github.com/pvliesdonk/image-generation-mcp/pull/125),
+  [`72c0981`](https://github.com/pvliesdonk/image-generation-mcp/commit/72c098135d03406eb5808b35c90638d761686bde))
+
+- Shorten server.json description for MCP registry 100-char limit (#103)
+  ([#103](https://github.com/pvliesdonk/image-generation-mcp/pull/103),
+  [`79ee6d0`](https://github.com/pvliesdonk/image-generation-mcp/commit/79ee6d042bb359c2560957aca63fce18882fdb3e))
+
+- **widget**: Remove non-functional download button from image viewer (#123)
+  ([#123](https://github.com/pvliesdonk/image-generation-mcp/pull/123),
+  [`f5ca2a9`](https://github.com/pvliesdonk/image-generation-mcp/commit/f5ca2a94d8e16a636e82403db4771c8e4fb8a7ef))
+
+### Chores
+
+- Adopt shared infrastructure improvements from markdown-vault-mcp (#111)
+  ([#111](https://github.com/pvliesdonk/image-generation-mcp/pull/111),
+  [`d2c6956`](https://github.com/pvliesdonk/image-generation-mcp/commit/d2c695617fda1d1f3998d3b6d740c322b711edf2))
+
+- Update server.json to v1.2.0 [skip ci]
+  ([`b4a4bf8`](https://github.com/pvliesdonk/image-generation-mcp/commit/b4a4bf8cff294be3731875d474b980122d2517f7))
+
+### Documentation
+
+- Update Authelia setup for remote auth mode and Claude Code client config (#105)
+  ([#105](https://github.com/pvliesdonk/image-generation-mcp/pull/105),
+  [`a9e582f`](https://github.com/pvliesdonk/image-generation-mcp/commit/a9e582f8a65fe6e4221241493b27eb40528e2dac))
+
+### Features
+
+- Fire-and-forget async generation (#112) (#117)
+  ([#117](https://github.com/pvliesdonk/image-generation-mcp/pull/117),
+  [`fa6f661`](https://github.com/pvliesdonk/image-generation-mcp/commit/fa6f661ba849028f21f055b0be9cccdcb90151f2))
+
+- **sd_webui**: Add Flux dev/schnell model presets (#109)
+  ([#109](https://github.com/pvliesdonk/image-generation-mcp/pull/109),
+  [`b05128b`](https://github.com/pvliesdonk/image-generation-mcp/commit/b05128b46af833dfd7b359bdd57297792c1f03a4))
+
+- **sd_webui**: Add progress polling via /sdapi/v1/progress (#76) (#118)
+  ([#118](https://github.com/pvliesdonk/image-generation-mcp/pull/118),
+  [`434fea3`](https://github.com/pvliesdonk/image-generation-mcp/commit/434fea38d5c276258b3299fe0d728d605a992bbe))
+
+### Refactoring
+
+- Rename a1111 provider to sd-webui (#108)
+  ([#108](https://github.com/pvliesdonk/image-generation-mcp/pull/108),
+  [`2c389ff`](https://github.com/pvliesdonk/image-generation-mcp/commit/2c389ff23489c13556a50722ec1ac4eab649d82c))
+
+
 ## v1.2.0 (2026-03-22)
 
 ### Bug Fixes
