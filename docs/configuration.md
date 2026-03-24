@@ -64,12 +64,17 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_INSTRUCTIONS` | str | (dynamic) | System-level instructions injected into LLM context. Defaults to a description reflecting the read-only/read-write state. |
 | `FASTMCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. Controls FastMCP internals (auth, transport) directly; app loggers use `INFO` unless overridden by `--verbose`. |
 | `IMAGE_GENERATION_MCP_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path for streamable-HTTP transport. |
-| `IMAGE_GENERATION_MCP_APP_DOMAIN` | str | -- | MCP Apps widget sandbox domain. Format is host-specific: Claude requires `{sha256-hash}.claudemcpcontent.com` (see below). When omitted, the host assigns its own default sandbox origin. |
+| `IMAGE_GENERATION_MCP_APP_DOMAIN` | str | (auto) | MCP Apps widget sandbox domain. **Auto-computed from `BASE_URL`** for Claude when not set. Override for other hosts or custom domains (see below). |
 
-!!! tip "Computing the MCP Apps domain for Claude"
-    The MCP Apps `domain` field format is [host-specific](https://modelcontextprotocol.io/extensions/apps/overview).
-    Claude requires `{sha256-of-server-url}.claudemcpcontent.com`.
-    Compute it from your server's MCP endpoint URL:
+!!! tip "MCP Apps domain (usually automatic)"
+    When `BASE_URL` is set (which it should be for HTTP deployments), the
+    Claude sandbox domain is **auto-computed** — no extra configuration needed.
+
+    The computation is `sha256(BASE_URL + HTTP_PATH)[:32] + ".claudemcpcontent.com"`.
+    Set `APP_DOMAIN` explicitly only if you need to override this (e.g. for
+    a non-Claude host like ChatGPT, or a custom HTTP path).
+
+    To compute manually:
 
     ```bash
     # Python
@@ -78,10 +83,6 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
     # Node.js
     node -e "console.log(require('crypto').createHash('sha256').update('https://mcp.example.com/mcp').digest('hex').slice(0,32)+'.claudemcpcontent.com')"
     ```
-
-    Use your actual public URL including the HTTP path (default `/mcp`).
-    When omitted, Claude assigns a per-conversation sandbox origin which works
-    but is not stable across conversations.
 
 ## Example configurations
 

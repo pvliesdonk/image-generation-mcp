@@ -191,7 +191,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | `IMAGE_GENERATION_MCP_INSTRUCTIONS` | str | (dynamic) | System instructions for LLM context |
 | `FASTMCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` (controls FastMCP internals; use `-v` to set app loggers to DEBUG) |
 | `IMAGE_GENERATION_MCP_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path |
-| `IMAGE_GENERATION_MCP_APP_DOMAIN` | str | -- | MCP Apps widget sandbox domain (host-specific format; see [docs](https://pvliesdonk.github.io/image-generation-mcp/configuration/)) |
+| `IMAGE_GENERATION_MCP_APP_DOMAIN` | str | (auto) | MCP Apps widget sandbox domain. Auto-computed from `BASE_URL` for Claude; override for other hosts (see [docs](https://pvliesdonk.github.io/image-generation-mcp/configuration/)) |
 
 ## CLI reference
 

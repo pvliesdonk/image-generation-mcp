@@ -136,6 +136,52 @@ class TestImageViewerResource:
             "abcdef01234567890abcdef012345678.claudemcpcontent.com"
         )
 
+    async def test_viewer_domain_auto_computed_from_base_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When BASE_URL is set but APP_DOMAIN is not, domain is auto-computed."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
+        monkeypatch.setenv(
+            "IMAGE_GENERATION_MCP_BASE_URL", "https://example.com"
+        )
+        srv = create_server()
+        resources = await srv.list_resources()
+        viewer = next(
+            r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
+        )
+        assert viewer.meta is not None
+        app_meta = viewer.meta.get("ui", {})
+        # sha256("https://example.com/mcp")[:32] + ".claudemcpcontent.com"
+        import hashlib
+
+        expected_hash = hashlib.sha256(
+            b"https://example.com/mcp"
+        ).hexdigest()[:32]
+        assert app_meta.get("domain") == (
+            f"{expected_hash}.claudemcpcontent.com"
+        )
+
+    async def test_viewer_domain_app_domain_overrides_base_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Explicit APP_DOMAIN takes priority over BASE_URL auto-compute."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
+        monkeypatch.setenv(
+            "IMAGE_GENERATION_MCP_BASE_URL", "https://example.com"
+        )
+        monkeypatch.setenv(
+            "IMAGE_GENERATION_MCP_APP_DOMAIN",
+            "custom-domain.example.com",
+        )
+        srv = create_server()
+        resources = await srv.list_resources()
+        viewer = next(
+            r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
+        )
+        assert viewer.meta is not None
+        app_meta = viewer.meta.get("ui", {})
+        assert app_meta.get("domain") == "custom-domain.example.com"
+
     async def test_viewer_connects_after_handlers(self, server) -> None:
         """All handlers must be registered BEFORE app.connect() per SDK spec."""
         result = await server.read_resource("ui://image-viewer/view.html")
