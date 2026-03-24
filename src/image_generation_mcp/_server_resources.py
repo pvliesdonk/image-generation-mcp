@@ -412,6 +412,7 @@ _IMAGE_VIEWER_HTML = """\
           localStorage.removeItem(keys.shift());
           try { localStorage.setItem(fullKey, value); return; } catch (_) {}
         }
+        console.warn('localStorage full — could not save state after eviction');
       }
       const all = storeKeys().filter(k => k !== fullKey);
       while (all.length >= MAX_ENTRIES) localStorage.removeItem(all.shift());

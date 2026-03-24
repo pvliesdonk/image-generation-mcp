@@ -67,18 +67,20 @@ class _MCPRequestLoggingMiddleware(BaseHTTPMiddleware):
         if request.method == "POST":
             try:
                 body = await request.body()
-                # Cache the body so downstream handlers can read it again.
+                # Cache body so downstream handlers can re-read it.
+                # Uses Starlette's internal _body attr (checked in .body()).
                 request._body = body
                 payload = json.loads(body)
                 if isinstance(payload, dict):
-                    rpc_method = payload.get("method", "-")
+                    rpc_method = _sanitize(str(payload.get("method", "-")))
                     params = payload.get("params", {})
                     if isinstance(params, dict):
                         rpc_extra = _extract_rpc_context(rpc_method, params)
                 elif isinstance(payload, list) and payload:
                     # Batch request — show first method + count
-                    rpc_method = f"{payload[0].get('method', '?')}[+{len(payload) - 1}]"
-            except (json.JSONDecodeError, UnicodeDecodeError, KeyError):
+                    first = _sanitize(str(payload[0].get("method", "?")))
+                    rpc_method = f"{first}[+{len(payload) - 1}]"
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 rpc_method = "<parse-error>"
 
         start = time.monotonic()

@@ -862,3 +862,41 @@ class TestEdgeCases:
         assert any(
             "tool_with-dash/slash" in record.message for record in caplog.records
         )
+
+    @pytest.mark.asyncio
+    async def test_rpc_method_sanitized_against_log_injection(
+        self, client: httpx.AsyncClient, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """JSON-RPC method with newlines is sanitized to prevent log injection."""
+        with caplog.at_level(logging.DEBUG):
+            payload = {
+                "jsonrpc": "2.0",
+                "method": "evil\nMCP POST /mcp (initialize) client=attacker/1.0",
+                "params": {},
+            }
+            await client.post(
+                "/mcp",
+                json=payload,
+                headers={"mcp-session-id": "inject-1"},
+            )
+        # The newline should be replaced with a space — no multi-line injection
+        for record in caplog.records:
+            assert "\n" not in record.message
+
+    @pytest.mark.asyncio
+    async def test_batch_method_sanitized(
+        self, client: httpx.AsyncClient, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Batch request first method is sanitized against log injection."""
+        with caplog.at_level(logging.DEBUG):
+            payload = [
+                {"jsonrpc": "2.0", "method": "evil\rfake", "params": {}},
+                {"jsonrpc": "2.0", "method": "tools/call", "params": {}},
+            ]
+            await client.post(
+                "/mcp",
+                json=payload,
+                headers={"mcp-session-id": "batch-inject"},
+            )
+        for record in caplog.records:
+            assert "\r" not in record.message
