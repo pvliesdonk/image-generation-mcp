@@ -913,7 +913,7 @@ _IMAGE_GALLERY_HTML = """\
 
     // --- Paginate via app-only tool ---
     async function goTo(page) {
-      const ps = computePageSize();
+      const ps = currentPageSize;
       currentPageSize = ps;
       show("loading");
       try {
