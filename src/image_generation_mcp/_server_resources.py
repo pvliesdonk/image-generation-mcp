@@ -914,9 +914,9 @@ _IMAGE_GALLERY_HTML = """\
         const text = result.content?.find(c => c.type === "text")?.text;
         if (!text) { show("empty"); return; }
         const data = JSON.parse(text);
-        currentPage = data.page;
-        currentTotal = data.total;
-        currentPageSize = data.page_size;
+        currentPage = data.page || 1;
+        currentTotal = data.total || 0;
+        currentPageSize = data.page_size || 12;
         renderGrid(data);
       } catch (e) {
         console.warn("gallery_page failed", e);

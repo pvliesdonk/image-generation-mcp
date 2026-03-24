@@ -554,7 +554,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             items for page 1) as a :class:`~fastmcp.tools.ToolResult`.
         """
         images = sorted(service.list_images(), key=lambda r: r.created_at, reverse=True)
-        pending = service.list_pending()
+        pending = sorted(service.list_pending(), key=lambda p: p.created_at, reverse=True)
         total = len(images) + len(pending)
 
         # Build page-1 items: pending first (newest), then completed
@@ -639,7 +639,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             Pending/generating items omit the thumbnail.
         """
         images = sorted(service.list_images(), key=lambda r: r.created_at, reverse=True)
-        pending = service.list_pending()
+        pending = sorted(service.list_pending(), key=lambda p: p.created_at, reverse=True)
         total = len(images) + len(pending)
 
         page = max(1, page)
