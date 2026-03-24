@@ -295,7 +295,9 @@ _IMAGE_VIEWER_HTML = """\
       font-size: var(--font-text-xs-size, 12px);
       color: var(--color-text-secondary, #666);
       line-height: 1.5;
+      display: flex; align-items: flex-start; gap: 8px;
     }
+    .meta-text { flex: 1; min-width: 0; }
     .meta-prompt {
       font-style: italic; margin-bottom: 4px;
       color: var(--color-text-primary, #333);
@@ -303,6 +305,16 @@ _IMAGE_VIEWER_HTML = """\
     .meta-details {
       color: var(--color-text-tertiary, #999);
     }
+    .dl-btn {
+      display: none; flex-shrink: 0;
+      background: none; border: none; cursor: pointer;
+      color: var(--color-text-tertiary, #999);
+      padding: 2px; margin-top: -2px;
+      border-radius: var(--border-radius-sm, 4px);
+      transition: color 0.15s;
+    }
+    .dl-btn:hover { color: var(--color-text-primary, #333); }
+    .dl-btn svg { width: 18px; height: 18px; display: block; }
 
     /* --- Cancelled --- */
     .state-cancelled {
@@ -330,8 +342,16 @@ _IMAGE_VIEWER_HTML = """\
     <div class="state-completed" id="completed">
       <img id="image" alt="Generated image">
       <div class="meta">
-        <div class="meta-prompt" id="meta-prompt"></div>
-        <div class="meta-details" id="meta-details"></div>
+        <div class="meta-text">
+          <div class="meta-prompt" id="meta-prompt"></div>
+          <div class="meta-details" id="meta-details"></div>
+        </div>
+        <button class="dl-btn" id="dl-btn" title="Download full-resolution image">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -354,6 +374,7 @@ _IMAGE_VIEWER_HTML = """\
 
     // --- State management ---
     let imageKey = null;
+    let currentMeta = null;   // metadata for download
     const STORE = "imgview:";
     const MAX_ENTRIES = 5;
 
@@ -439,6 +460,7 @@ _IMAGE_VIEWER_HTML = """\
       if (text) {
         try {
           const m = JSON.parse(text.text);
+          currentMeta = m;
           if (m.prompt) {
             imgEl.alt = m.prompt;
             document.getElementById("meta-prompt").textContent =
@@ -458,6 +480,10 @@ _IMAGE_VIEWER_HTML = """\
           }
           document.getElementById("meta-details").textContent =
             parts.join(" \\u00b7 ");
+          // In openLink mode, only show button when download_url exists
+          if (dlMode === "openLink") {
+            dlBtn.style.display = m.download_url ? "block" : "none";
+          }
         } catch (e) { console.warn("Failed to parse metadata", e); }
       }
     }
@@ -520,9 +546,58 @@ _IMAGE_VIEWER_HTML = """\
     app.onhostcontextchanged = handleHostContext;
     app.onerror = console.error;
 
+    // --- Download button ---
+    const dlBtn = document.getElementById("dl-btn");
+    let dlMode = null; // "downloadFile" | "openLink" | null
+
+    async function tryDownloadFile() {
+      if (!currentMeta?.image_id) return false;
+      const id = currentMeta.image_id;
+      const mime = currentMeta.format || "image/png";
+      const ext = mime.split("/").pop() || "png";
+      const { isError } = await app.downloadFile({
+        contents: [{
+          type: "resource_link",
+          uri: "image://" + id + "/view",
+          name: id + "." + ext,
+          mimeType: mime,
+        }],
+      });
+      return !isError;
+    }
+
+    async function tryOpenLink() {
+      if (!currentMeta?.download_url) return false;
+      const { isError } = await app.openLink({ url: currentMeta.download_url });
+      return !isError;
+    }
+
+    dlBtn.addEventListener("click", async () => {
+      if (!currentMeta) return;
+      try {
+        // Try downloadFile first (full-res via MCP), fall back to openLink
+        if (dlMode === "downloadFile") {
+          if (await tryDownloadFile()) return;
+          if (await tryOpenLink()) return;
+        } else {
+          if (await tryOpenLink()) return;
+        }
+      } catch (e) { console.warn("Download failed", e); }
+    });
+
     await app.connect();
     const ctx = app.getHostContext();
     if (ctx) handleHostContext(ctx);
+
+    // Show download button: prefer downloadFile, fall back to openLink
+    const caps = app.getHostCapabilities();
+    if (caps?.downloadFile) {
+      dlMode = "downloadFile";
+      dlBtn.style.display = "block";
+    } else if (caps?.openLinks) {
+      dlMode = "openLink";
+      dlBtn.style.display = "block";
+    }
   </script>
 </body>
 </html>"""
