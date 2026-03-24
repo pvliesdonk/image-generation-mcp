@@ -233,4 +233,6 @@ This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025
 
 The viewer persists rendered images in `localStorage` (keyed by image ID, LRU-capped at 5 entries). When a new widget instance loads, the `ontoolinput` handler restores cached state immediately so the image is visible before the tool result arrives. The live `ontoolresult` always takes precedence over the cached version.
 
+The widget does not render download links — the sandboxed iframe cannot navigate to external URLs. When `download_url` is present in the `show_image` metadata, the LLM should present it directly to the user as a clickable link in the conversation text.
+
 Clients without MCP Apps support ignore this resource entirely.

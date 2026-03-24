@@ -361,6 +361,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             with_link: When ``True`` (default), include a one-time
                 ``download_url`` in the metadata if the server is
                 running on HTTP transport with ``BASE_URL`` configured.
+                Present this URL directly to the user as a clickable
+                link — the MCP App widget cannot open it from its
+                sandboxed iframe.
 
         Returns:
             For completed images: a WebP thumbnail preview (max 512px,
