@@ -498,9 +498,17 @@ def build_event_store(url: str | None = None) -> EventStore:
         return _EventStore(max_events_per_stream=100, ttl=3600)
 
     if parsed.scheme == "file":
+        if parsed.netloc:
+            raise ValueError(
+                f"EVENT_STORE_URL '{url}' has a host component; "
+                "use 'file:///absolute/path' (three slashes)."
+            )
         directory = parsed.path or _DEFAULT_EVENT_STORE_DIR
-        Path(directory).mkdir(parents=True, exist_ok=True)
-        logger.info("Event store: file-backed at %s", directory)
+        if directory == "/":
+            raise ValueError(
+                "Using the root directory '/' for the event store is not allowed. "
+                "Provide an explicit path, e.g. 'file:///data/state/events'."
+            )
         try:
             from key_value.aio.stores.filetree import FileTreeStore
         except ImportError:
@@ -508,6 +516,8 @@ def build_event_store(url: str | None = None) -> EventStore:
                 "FileTreeStore requires fastmcp>=3.0 with key-value support. "
                 "Install with: pip install 'image-generation-mcp[mcp]'"
             ) from None
+        Path(directory).mkdir(parents=True, exist_ok=True)
+        logger.info("Event store: file-backed at %s", directory)
         storage = FileTreeStore(data_directory=directory)
         return _EventStore(storage=storage, max_events_per_stream=100, ttl=3600)
 

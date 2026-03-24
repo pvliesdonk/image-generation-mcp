@@ -59,6 +59,14 @@ class TestBuildEventStoreURLParsing:
 
         assert isinstance(store, EventStore)
 
+    def test_file_root_directory_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="root directory"):
+            build_event_store("file:///")
+
+    def test_file_netloc_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="host component"):
+            build_event_store("file://relative/dir")
+
     def test_unsupported_scheme_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="Unsupported EVENT_STORE_URL scheme"):
             build_event_store("redis://localhost:6379")

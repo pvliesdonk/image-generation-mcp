@@ -191,6 +191,7 @@ class TestCmdServe:
 
         mock_uvicorn_run.assert_called_once()
         run_args = mock_uvicorn_run.call_args
+        assert run_args.args[0] is mock_server.http_app.return_value
         assert run_args.kwargs["host"] == "0.0.0.0"
         assert run_args.kwargs["port"] == 8000
 
