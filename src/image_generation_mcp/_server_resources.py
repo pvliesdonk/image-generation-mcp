@@ -221,6 +221,14 @@ _IMAGE_VIEWER_HTML = """\
       color: #888; font-size: 14px; padding: 40px;
       text-align: center;
     }
+    #status {
+      display: none; width: 100%; max-width: 640px;
+      text-align: center; padding: 24px;
+      font-size: 13px; color: #666; line-height: 1.6;
+    }
+    #status .label { font-weight: 600; margin-bottom: 4px; }
+    #status .detail { font-size: 12px; color: #888; }
+    #status.failed .label { color: #c33; }
     #viewer { display: none; width: 100%; max-width: 640px; }
     #viewer img {
       width: 100%; height: auto; border-radius: 8px;
@@ -233,11 +241,14 @@ _IMAGE_VIEWER_HTML = """\
     @media (prefers-color-scheme: dark) {
       #meta { color: #aaa; }
       #placeholder { color: #777; }
+      #status { color: #aaa; }
+      #status .detail { color: #777; }
     }
   </style>
 </head>
 <body>
   <div id="placeholder">Waiting for image generation&hellip;</div>
+  <div id="status"><div class="label"></div><div class="detail"></div></div>
   <div id="viewer">
     <img id="image" alt="Generated image">
     <div id="meta"></div>
@@ -341,10 +352,44 @@ _IMAGE_VIEWER_HTML = """\
       }
     };
 
+    function showStatus(meta) {
+      const el = document.getElementById("status");
+      const label = el.querySelector(".label");
+      const detail = el.querySelector(".detail");
+      document.getElementById("placeholder").style.display = "none";
+      document.getElementById("viewer").style.display = "none";
+      el.style.display = "block";
+      el.className = meta.status === "failed" ? "failed" : "";
+      if (meta.status === "generating") {
+        const elapsed = meta.elapsed_seconds ? ` (${Math.round(meta.elapsed_seconds)}s)` : "";
+        label.textContent = `Generating${elapsed}`;
+        const parts = [];
+        if (meta.provider) parts.push(meta.provider);
+        if (meta.progress_message) parts.push(meta.progress_message);
+        else if (meta.prompt) parts.push(`"${meta.prompt}"`);
+        detail.textContent = parts.join(" \u00b7 ");
+      } else if (meta.status === "failed") {
+        label.textContent = "Generation failed";
+        detail.textContent = meta.error || "";
+      }
+    }
+
     app.ontoolresult = ({ content }) => {
       const img = content?.find(c => c.type === "image");
       const text = content?.find(c => c.type === "text");
-      // Always render live result — it takes precedence over cached state
+
+      // Check for in-progress or failed status (no image content)
+      if (!img && text) {
+        try {
+          const meta = JSON.parse(text.text);
+          if (meta.status === "generating" || meta.status === "failed") {
+            showStatus(meta);
+            return;
+          }
+        } catch (e) { /* not status JSON, fall through to normal render */ }
+      }
+
+      // Completed image — render normally
       render(img, text);
       let key = imageKey;
       if (!key && text) {
