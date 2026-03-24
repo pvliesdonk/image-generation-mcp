@@ -72,6 +72,17 @@ class TestImageViewerResource:
         text = result.contents[0].content
         assert "console.warn" in text
 
+    async def test_viewer_resource_has_domain(self, server) -> None:
+        """Widget domain must be set for ChatGPT compatibility."""
+        resources = await server.list_resources()
+        viewer = next(
+            r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
+        )
+        # AppConfig.domain is serialized into resource.meta under the 'ui' key
+        assert viewer.meta is not None
+        app_meta = viewer.meta.get("ui", {})
+        assert app_meta.get("domain"), "AppConfig must set a domain for ChatGPT"
+
     async def test_viewer_imgel_declared_before_if_blocks(self, server) -> None:
         """imgEl must be declared before both if(img) and if(text) blocks
         so it is accessible in both scopes."""
