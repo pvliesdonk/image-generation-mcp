@@ -253,3 +253,26 @@ When `IMAGE_GENERATION_MCP_BASE_URL` is set, the Claude sandbox domain is auto-c
 - **Download button** — uses the ext-apps `downloadFile` API with a `resource_link` to `image://{id}/view` for the full-resolution image; falls back to `openLink` with the artifact `download_url` when the host does not support `downloadFile`
 
 Clients without MCP Apps support ignore this resource entirely.
+
+---
+
+## ui://image-gallery/view.html
+
+Interactive image gallery rendered by MCP Apps-capable clients (Claude Desktop, claude.ai).
+
+**MIME type:** `text/html;profile=mcp-app`
+
+This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) wired to the `browse_gallery` tool via `AppConfig(resourceUri=...)`. It shares the same sandbox domain configuration as `ui://image-viewer/view.html`.
+
+### Features
+
+- **Thumbnail grid** — responsive grid using CSS `auto-fill` with 140 px minimum card width; 3×3 at typical inline size, adapts to available width (4×3 at wider sizes)
+- **Adaptive page size** — page size is computed from the container width: `cols × 3` rows, minimum 9
+- **Pagination** — Prev/Next buttons call the `gallery_page` app-only tool; page indicator shows current/total
+- **Hover overlay** — prompt excerpt (2-line clamp) and provider badge on thumbnail hover
+- **Download button** — shown when `downloadFile` host capability is available; uses `resource_link` to `image://{id}/view` for full-resolution download
+- **Pending items** — in-progress generations appear with spinner overlay and prompt label
+- **Empty state** — friendly message with `generate_image` call-to-action when no images exist
+- **Host theming** — same theme/CSS-variable/safe-area integration as the image viewer
+
+Clients without MCP Apps support receive the raw JSON response from `browse_gallery` instead.

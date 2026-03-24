@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
+_IMAGE_GALLERY_URI = "ui://image-gallery/view.html"
 
 _PROMPT_GUIDE = """\
 # Image Generation Prompt Guide
@@ -615,6 +616,390 @@ _IMAGE_VIEWER_HTML = """\
 </body>
 </html>"""
 
+_IMAGE_GALLERY_HTML = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { overflow: hidden; background: transparent; }
+    body {
+      font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+      color: var(--color-text-primary, #333);
+    }
+    .main { padding: 12px; width: 100%; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 20px; height: 20px; flex-shrink: 0;
+      border: 2px solid var(--color-border-primary, #ddd);
+      border-top-color: var(--color-text-secondary, #666);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+
+    /* Loading */
+    .state-loading {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 16px; gap: 10px;
+      color: var(--color-text-tertiary, #999);
+      font-size: var(--font-text-sm-size, 13px);
+    }
+
+    /* Empty */
+    .state-empty { display: none; text-align: center; padding: 48px 16px; }
+    .empty-icon { color: var(--color-text-tertiary, #ccc); margin-bottom: 12px; }
+    .empty-title {
+      font-size: var(--font-text-sm-size, 13px); font-weight: 600;
+      color: var(--color-text-secondary, #666);
+    }
+    .empty-sub {
+      font-size: var(--font-text-xs-size, 12px);
+      color: var(--color-text-tertiary, #999); margin-top: 4px;
+    }
+    .empty-sub code {
+      font-family: var(--font-mono, monospace); font-size: 11px;
+      background: var(--color-background-secondary, #f0f0f0);
+      padding: 1px 4px; border-radius: 3px;
+    }
+
+    /* Grid */
+    .state-grid { display: none; }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 6px;
+    }
+
+    /* Card */
+    .card {
+      position: relative; aspect-ratio: 1;
+      border-radius: var(--border-radius-md, 8px);
+      overflow: hidden;
+      background: var(--color-background-secondary, #f0f0f0);
+      cursor: pointer; user-select: none;
+    }
+    .card img {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block; transition: opacity 0.15s;
+    }
+    .card:hover img { opacity: 0.82; }
+    .card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 55%);
+      opacity: 0; transition: opacity 0.15s;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 6px;
+    }
+    .card:hover .card-overlay { opacity: 1; }
+    .card-prompt {
+      font-size: 10px; color: #fff; line-height: 1.3;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      margin-bottom: 4px;
+    }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-provider {
+      font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.35); padding: 1px 4px; border-radius: 3px;
+      max-width: 70%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    .card-dl {
+      display: none; background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.9); padding: 2px; line-height: 0;
+    }
+    .card-dl:hover { color: #fff; }
+    .card-dl svg { width: 13px; height: 13px; }
+
+    /* Pending card */
+    .card-pending {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; padding: 8px;
+    }
+    .card-pending .spinner { width: 18px; height: 18px; }
+    .card-pending-label {
+      font-size: 10px; color: var(--color-text-tertiary, #999);
+      text-align: center; overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-top: 10px; padding-top: 4px;
+    }
+    .page-btn {
+      background: var(--color-background-secondary, #f0f0f0);
+      border: 1px solid var(--color-border-primary, #ddd);
+      border-radius: var(--border-radius-sm, 4px);
+      padding: 4px 12px;
+      font-size: var(--font-text-xs-size, 12px);
+      cursor: pointer; color: var(--color-text-primary, #333);
+    }
+    .page-btn:disabled { opacity: 0.35; cursor: default; }
+    .page-btn:not(:disabled):hover {
+      background: var(--color-background-tertiary, #e8e8e8);
+    }
+    .page-info {
+      font-size: var(--font-text-xs-size, 12px);
+      color: var(--color-text-secondary, #666);
+      min-width: 90px; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="main" id="main">
+    <div class="state-loading" id="loading">
+      <div class="spinner"></div>Loading gallery\u2026
+    </div>
+    <div class="state-empty" id="empty">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </div>
+      <div class="empty-title">No images yet</div>
+      <div class="empty-sub">Use <code>generate_image</code> to create your first image.</div>
+    </div>
+    <div class="state-grid" id="grid-container">
+      <div class="gallery-grid" id="gallery-grid"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
+      from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+
+    const app = new App({ name: "Image Gallery", version: "1.0.0" });
+
+    const mainEl    = document.getElementById("main");
+    const loadingEl = document.getElementById("loading");
+    const emptyEl   = document.getElementById("empty");
+    const gridEl    = document.getElementById("grid-container");
+    const gridItems = document.getElementById("gallery-grid");
+    const pagEl     = document.getElementById("pagination");
+
+    let currentPage = 1;
+    let currentTotal = 0;
+    let currentPageSize = 12;
+    let dlMode = null; // "downloadFile" | null
+
+    // --- Helpers ---
+    function trunc(s, n) {
+      s = String(s || "");
+      return s.length > n ? s.slice(0, n) + "\\u2026" : s;
+    }
+    function computePageSize() {
+      const w = gridItems.offsetWidth || 300;
+      const cols = Math.max(3, Math.floor(w / 160));
+      return cols * 3;
+    }
+
+    // --- Display states ---
+    function show(which) {
+      loadingEl.style.display = which === "loading" ? "flex" : "none";
+      emptyEl.style.display   = which === "empty"   ? "block" : "none";
+      gridEl.style.display    = which === "grid"    ? "block" : "none";
+    }
+
+    // --- Card builder ---
+    function makeCard(item) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      if (item.status === "generating" || !item.thumbnail_b64) {
+        const pend = document.createElement("div");
+        pend.className = "card-pending";
+        const sp = document.createElement("div");
+        sp.className = "spinner";
+        const lbl = document.createElement("div");
+        lbl.className = "card-pending-label";
+        lbl.textContent = item.progress_message
+          || (item.prompt ? "\\u201c" + trunc(item.prompt, 40) + "\\u201d" : "Generating\\u2026");
+        pend.appendChild(sp);
+        pend.appendChild(lbl);
+        card.appendChild(pend);
+        return card;
+      }
+
+      const img = document.createElement("img");
+      img.src = "data:image/webp;base64," + item.thumbnail_b64;
+      img.alt = item.prompt || "Generated image";
+      img.loading = "lazy";
+      card.appendChild(img);
+
+      const overlay = document.createElement("div");
+      overlay.className = "card-overlay";
+
+      const promptDiv = document.createElement("div");
+      promptDiv.className = "card-prompt";
+      promptDiv.textContent = item.prompt || "";
+      overlay.appendChild(promptDiv);
+
+      const footer = document.createElement("div");
+      footer.className = "card-footer";
+
+      const badge = document.createElement("span");
+      badge.className = "card-provider";
+      badge.textContent = item.provider || "";
+      footer.appendChild(badge);
+
+      const dlBtn = document.createElement("button");
+      dlBtn.className = "card-dl";
+      dlBtn.title = "Download";
+      dlBtn.dataset.imageId = item.image_id;
+      dlBtn.dataset.mime = item.content_type || "image/png";
+      dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      if (dlMode === "downloadFile") dlBtn.style.display = "block";
+      footer.appendChild(dlBtn);
+
+      overlay.appendChild(footer);
+      card.appendChild(overlay);
+      return card;
+    }
+
+    // --- Grid render ---
+    function renderGrid(data) {
+      const { total, items } = data;
+      currentTotal = total;
+      gridItems.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        if (total === 0) { show("empty"); return; }
+        show("grid");
+        renderPagination();
+        return;
+      }
+
+      show("grid");
+      for (const item of items) {
+        gridItems.appendChild(makeCard(item));
+      }
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const totalPages = Math.max(1, Math.ceil(currentTotal / currentPageSize));
+      pagEl.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      const prev = document.createElement("button");
+      prev.className = "page-btn";
+      prev.textContent = "\\u2190 Prev";
+      prev.disabled = currentPage <= 1;
+      prev.addEventListener("click", () => goTo(currentPage - 1));
+
+      const info = document.createElement("span");
+      info.className = "page-info";
+      info.textContent = "Page " + currentPage + " of " + totalPages;
+
+      const next = document.createElement("button");
+      next.className = "page-btn";
+      next.textContent = "Next \\u2192";
+      next.disabled = currentPage >= totalPages;
+      next.addEventListener("click", () => goTo(currentPage + 1));
+
+      pagEl.append(prev, info, next);
+    }
+
+    // --- Paginate via app-only tool ---
+    async function goTo(page) {
+      const ps = computePageSize();
+      currentPageSize = ps;
+      show("loading");
+      try {
+        const result = await app.callServerTool("gallery_page", { page, page_size: ps });
+        if (result.isError) { show("empty"); return; }
+        const text = result.content?.find(c => c.type === "text")?.text;
+        if (!text) { show("empty"); return; }
+        const data = JSON.parse(text);
+        currentPage = data.page;
+        currentTotal = data.total;
+        currentPageSize = data.page_size;
+        renderGrid(data);
+      } catch (e) {
+        console.warn("gallery_page failed", e);
+        show("empty");
+      }
+    }
+
+    // --- Download ---
+    gridItems.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".card-dl");
+      if (!btn || dlMode !== "downloadFile") return;
+      e.stopPropagation();
+      const id   = btn.dataset.imageId;
+      const mime = btn.dataset.mime || "image/png";
+      if (!id) return;
+      const ext = mime.split("/").pop() || "png";
+      try {
+        await app.downloadFile({
+          contents: [{
+            type: "resource_link",
+            uri: "image://" + id + "/view",
+            name: id + "." + ext,
+            mimeType: mime,
+          }],
+        });
+      } catch (ex) { console.warn("Download failed", ex); }
+    });
+
+    // --- Lifecycle handlers (ALL before connect) ---
+    app.ontoolinput = () => { show("loading"); };
+
+    app.ontoolresult = ({ content }) => {
+      const text = content?.find(c => c.type === "text");
+      if (!text) { show("empty"); return; }
+      try {
+        const data = JSON.parse(text.text);
+        if (typeof data.total !== "number") { show("empty"); return; }
+        currentPage = data.page || 1;
+        currentTotal = data.total;
+        currentPageSize = computePageSize();
+        const sliced = { ...data, items: (data.items || []).slice(0, currentPageSize) };
+        renderGrid(sliced);
+      } catch (e) {
+        console.warn("Failed to parse gallery data", e);
+        show("empty");
+      }
+    };
+
+    function handleHostContext(ctx) {
+      if (ctx.theme) applyDocumentTheme(ctx.theme);
+      if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+      if (ctx.styles?.css?.fonts) applyHostFonts(ctx.styles.css.fonts);
+      if (ctx.safeAreaInsets) {
+        const { top, right, bottom, left } = ctx.safeAreaInsets;
+        mainEl.style.paddingTop    = (12 + top)    + "px";
+        mainEl.style.paddingRight  = (12 + right)  + "px";
+        mainEl.style.paddingBottom = (12 + bottom) + "px";
+        mainEl.style.paddingLeft   = (12 + left)   + "px";
+      }
+    }
+
+    app.onhostcontextchanged = handleHostContext;
+    app.onerror = console.error;
+
+    await app.connect();
+    const ctx = app.getHostContext();
+    if (ctx) handleHostContext(ctx);
+
+    const caps = app.getHostCapabilities();
+    if (caps?.downloadFile) {
+      dlMode = "downloadFile";
+      document.querySelectorAll(".card-dl").forEach(b => b.style.display = "block");
+    }
+  </script>
+</body>
+</html>"""
+
 
 def _compute_claude_app_domain() -> str | None:
     """Auto-compute Claude's MCP Apps sandbox domain from BASE_URL.
@@ -866,3 +1251,23 @@ def register_resources(mcp: FastMCP) -> None:
         displays the image with metadata.
         """
         return _IMAGE_VIEWER_HTML
+
+    # -- MCP Apps: image gallery ------------------------------------------------
+
+    @mcp.resource(
+        _IMAGE_GALLERY_URI,
+        description="Interactive gallery for browsing all generated images.",
+        app=AppConfig(
+            domain=app_domain,
+            csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
+        ),
+    )
+    def image_gallery() -> str:
+        """HTML gallery that renders a browsable grid of generated images.
+
+        Loaded by MCP Apps-capable clients (Claude Desktop, claude.ai) in a
+        sandboxed iframe.  Receives the first page of thumbnail data from the
+        ``browse_gallery`` tool result, then paginates via the ``gallery_page``
+        app-only tool.
+        """
+        return _IMAGE_GALLERY_HTML

@@ -1,7 +1,9 @@
 """MCP tool registrations for image generation.
 
-Exposes ``generate_image``, ``show_image``, and ``list_providers`` tools to
-MCP clients.  ``generate_image`` is tagged ``write`` (hidden in read-only mode).
+Exposes ``generate_image``, ``show_image``, ``browse_gallery``,
+``gallery_page``, and ``list_providers`` tools to MCP clients.
+``generate_image`` is tagged ``write`` (hidden in read-only mode).
+``gallery_page`` is app-only (``visibility=["app"]``) and not shown to the model.
 """
 
 from __future__ import annotations
@@ -33,7 +35,7 @@ from PIL import Image as PILImage
 from pydantic import AnyUrl
 
 from ._server_deps import get_config, get_service
-from ._server_resources import _IMAGE_VIEWER_URI
+from ._server_resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
 from .config import ServerConfig
 from .processing import (
     convert_format,
@@ -48,12 +50,13 @@ from .providers.types import (
     ImageContentPolicyError,
     ImageProviderConnectionError,
 )
-from .service import ImageService
+from .service import ImageRecord, ImageService, PendingGeneration
 
 logger = logging.getLogger(__name__)
 
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _THUMBNAIL_MAX_PX = 512
+_GALLERY_THUMBNAIL_MAX_PX = 128
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
 
 
@@ -514,6 +517,180 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     text=json.dumps(metadata, indent=2),
                 ),
             ]
+        )
+
+    @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        icons=[Icon(src=_LUCIDE.format("images"), mimeType="image/svg+xml")],
+        app=AppConfig(resourceUri=_IMAGE_GALLERY_URI),
+    )
+    async def browse_gallery(
+        service: ImageService = Depends(get_service),
+        config: ServerConfig = Depends(get_config),
+    ) -> ToolResult:
+        """Browse all generated images in an interactive visual gallery.
+
+        Opens a gallery view showing thumbnail previews of every image in the
+        scratch directory.  The UI renders immediately from the first page of
+        thumbnails returned by this tool, then paginates using the
+        ``gallery_page`` helper.
+
+        For non-UI clients the response is a JSON object with ``total``,
+        ``page``, ``page_size``, and ``items``.  Each completed item includes
+        ``image_id``, ``prompt``, ``provider``, ``dimensions``,
+        ``created_at``, ``thumbnail_b64`` (128 px WebP, base64-encoded),
+        and ``content_type``.  Pending/generating items include ``status``,
+        ``progress``, and ``progress_message`` instead of a thumbnail.
+
+        Use ``show_image`` with the returned ``image_id`` to view a single
+        image at full resolution with metadata.
+
+        Returns:
+            JSON with gallery data (total count, page metadata, thumbnail
+            items for page 1) as a :class:`~fastmcp.tools.ToolResult`.
+        """
+        images = sorted(
+            service.list_images(), key=lambda r: r.created_at, reverse=True
+        )
+        pending = service.list_pending()
+        total = len(images) + len(pending)
+
+        # Build page-1 items: pending first (newest), then completed
+        page_size = 12
+        all_items: list[dict[str, object]] = []
+        for p in pending:
+            all_items.append(
+                {
+                    "image_id": p.id,
+                    "status": p.status,
+                    "prompt": p.prompt,
+                    "provider": p.provider,
+                    "progress": p.progress,
+                    "progress_message": p.progress_message,
+                }
+            )
+        for img in images:
+            if len(all_items) >= page_size:
+                break
+            img_data = await asyncio.to_thread(img.original_path.read_bytes)
+            thumb_bytes, _ = await asyncio.to_thread(
+                generate_thumbnail, img_data, _GALLERY_THUMBNAIL_MAX_PX, "webp", 80
+            )
+            all_items.append(
+                {
+                    "image_id": img.id,
+                    "status": "completed",
+                    "prompt": img.prompt,
+                    "provider": img.provider,
+                    "dimensions": list(img.original_dimensions),
+                    "created_at": datetime.fromtimestamp(
+                        img.created_at, tz=UTC
+                    ).isoformat(),
+                    "thumbnail_b64": base64.b64encode(thumb_bytes).decode(),
+                    "content_type": img.content_type,
+                }
+            )
+
+        gallery_data = {
+            "total": total,
+            "page": 1,
+            "page_size": page_size,
+            "items": all_items,
+        }
+
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=json.dumps(gallery_data),
+                )
+            ]
+        )
+
+    @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        app=AppConfig(resourceUri=_IMAGE_GALLERY_URI, visibility=["app"]),
+    )
+    async def gallery_page(
+        page: int = 1,
+        page_size: int = 9,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Return a page of image thumbnails for the gallery UI.
+
+        App-only helper called by the gallery UI to load additional pages when
+        the user paginates.  Not intended for direct model invocation.
+
+        Args:
+            page: 1-based page number.
+            page_size: Number of items per page (1-24, default 9).
+
+        Returns:
+            JSON with ``total``, ``page``, ``page_size``, and ``items``.
+            Each completed item includes ``thumbnail_b64`` (128 px WebP).
+            Pending/generating items omit the thumbnail.
+        """
+        images = sorted(
+            service.list_images(), key=lambda r: r.created_at, reverse=True
+        )
+        pending = service.list_pending()
+        total = len(images) + len(pending)
+
+        page = max(1, page)
+        page_size = max(1, min(24, page_size))
+        start = (page - 1) * page_size
+
+        # Merge pending + completed; pending items go first (newest)
+        all_pending = list(pending)
+        all_completed = list(images)
+        all_meta: list[tuple[str, PendingGeneration | ImageRecord]] = [
+            ("pending", p) for p in all_pending
+        ] + [("completed", img) for img in all_completed]
+        page_slice = all_meta[start : start + page_size]
+
+        items: list[dict[str, object]] = []
+        for kind, record in page_slice:
+            if kind == "pending" and isinstance(record, PendingGeneration):
+                items.append(
+                    {
+                        "image_id": record.id,
+                        "status": record.status,
+                        "prompt": record.prompt,
+                        "provider": record.provider,
+                        "progress": record.progress,
+                        "progress_message": record.progress_message,
+                    }
+                )
+            elif isinstance(record, ImageRecord):
+                img_data = await asyncio.to_thread(record.original_path.read_bytes)
+                thumb_bytes, _ = await asyncio.to_thread(
+                    generate_thumbnail, img_data, _GALLERY_THUMBNAIL_MAX_PX, "webp", 80
+                )
+                items.append(
+                    {
+                        "image_id": record.id,
+                        "status": "completed",
+                        "prompt": record.prompt,
+                        "provider": record.provider,
+                        "dimensions": list(record.original_dimensions),
+                        "created_at": datetime.fromtimestamp(
+                            record.created_at, tz=UTC
+                        ).isoformat(),
+                        "thumbnail_b64": base64.b64encode(thumb_bytes).decode(),
+                        "content_type": record.content_type,
+                    }
+                )
+
+        return json.dumps(
+            {"total": total, "page": page, "page_size": page_size, "items": items}
         )
 
     @mcp.tool(
