@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import UTC, datetime
+from urllib.parse import urlparse
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
@@ -17,6 +18,7 @@ from fastmcp.server.apps import AppConfig, ResourceCSP
 from mcp.types import Icon
 
 from image_generation_mcp._server_deps import get_service
+from image_generation_mcp.config import ServerConfig
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
@@ -357,11 +359,17 @@ _IMAGE_VIEWER_HTML = """\
 </html>"""
 
 
-def register_resources(mcp: FastMCP) -> None:
+def register_resources(
+    mcp: FastMCP,
+    *,
+    config: ServerConfig | None = None,
+) -> None:
     """Register all MCP resources on *mcp*.
 
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register resources on.
+        config: Server configuration.  When provided and ``base_url`` is set,
+            the hostname is extracted and used as the MCP Apps widget domain.
     """
 
     @mcp.resource(
@@ -559,11 +567,18 @@ def register_resources(mcp: FastMCP) -> None:
 
     # -- MCP Apps: image viewer -------------------------------------------------
 
+    # Extract hostname from BASE_URL for the MCP Apps widget domain.
+    # The domain field is host-dependent (per the MCP Apps ext spec);
+    # when omitted, each host assigns its own default sandbox origin.
+    app_domain: str | None = None
+    if config and config.base_url:
+        app_domain = urlparse(config.base_url).hostname
+
     @mcp.resource(
         _IMAGE_VIEWER_URI,
         description="Interactive image viewer for show_image results.",
         app=AppConfig(
-            domain="https://github.com/pvliesdonk/image-generation-mcp",
+            domain=app_domain,
             csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
         ),
     )

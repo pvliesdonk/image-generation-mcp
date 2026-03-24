@@ -231,6 +231,8 @@ Interactive image viewer rendered by MCP Apps-capable clients (Claude Desktop, c
 
 This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) — a custom HTML page loaded in a sandboxed iframe. It listens for `show_image` tool results and displays the image with metadata. The `show_image` tool is wired to this resource via `AppConfig(resourceUri=...)`.
 
+When `IMAGE_GENERATION_MCP_BASE_URL` is configured, the hostname is extracted and set as the widget `domain` (e.g., `https://mcp.example.com:8080/v1` → domain `mcp.example.com`). The domain field format is host-dependent per the MCP Apps extension spec — when omitted (stdio transport or no `BASE_URL`), each host assigns its own default sandbox origin.
+
 The viewer persists rendered images in `localStorage` (keyed by image ID, LRU-capped at 5 entries). When a new widget instance loads, the `ontoolinput` handler restores cached state immediately so the image is visible before the tool result arrives. The live `ontoolresult` always takes precedence over the cached version.
 
 The widget does not render download links — the sandboxed iframe cannot navigate to external URLs. When `download_url` is present in the `show_image` metadata, the LLM should present it directly to the user as a clickable link in the conversation text.
