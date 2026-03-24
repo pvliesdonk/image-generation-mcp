@@ -233,6 +233,33 @@ Images larger than 1 MB are resized to 1024 px wide WebP before encoding.
 
 ---
 
+## delete_image
+
+Permanently delete an image from the scratch directory. Removes the image file and its metadata sidecar. Hidden in read-only mode.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `image_id` | str | *(required)* | Image ID to delete (12-character hex string) |
+
+### Return value
+
+Text confirmation with the deleted image's prompt and provider, e.g.:
+
+```
+Deleted image a1b2c3d4e5f6 (prompt: 'a mountain landscape', provider: openai)
+```
+
+Raises an error if the image ID is not found.
+
+---
+
 ## list_providers
 
 List available image generation providers and their status.

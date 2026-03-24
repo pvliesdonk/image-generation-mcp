@@ -1,9 +1,10 @@
 """MCP tool registrations for image generation.
 
 Exposes ``generate_image``, ``show_image``, ``browse_gallery``,
-``gallery_page``, ``gallery_full_image``, and ``list_providers`` tools to
-MCP clients.  ``generate_image`` is tagged ``write`` (hidden in read-only
-mode).  ``gallery_page`` and ``gallery_full_image`` are app-only
+``gallery_page``, ``gallery_full_image``, ``delete_image``, and
+``list_providers`` tools to MCP clients.  ``generate_image`` and
+``delete_image`` are tagged ``write`` (hidden in read-only mode).
+``gallery_page`` and ``gallery_full_image`` are app-only
 (``visibility=["app"]``) and not shown to the model.
 """
 
@@ -753,6 +754,36 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     record.created_at, tz=UTC
                 ).isoformat(),
             }
+        )
+
+    @mcp.tool(
+        tags={"write"},
+        icons=[Icon(src=_LUCIDE.format("trash-2"), mimeType="image/svg+xml")],
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "openWorldHint": False,
+        },
+    )
+    async def delete_image(
+        image_id: str,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Delete an image from the scratch directory.
+
+        Permanently removes the image file and its metadata sidecar.
+        This action cannot be undone.  Hidden in read-only mode.
+
+        Args:
+            image_id: The image ID to delete (12-character hex string).
+
+        Returns:
+            Confirmation text with the deleted image's prompt and provider.
+        """
+        record = await asyncio.to_thread(service.delete_image, image_id)
+        return (
+            f"Deleted image {record.id} "
+            f"(prompt: {record.prompt!r}, provider: {record.provider})"
         )
 
     @mcp.tool(
