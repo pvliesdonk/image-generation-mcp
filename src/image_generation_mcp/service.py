@@ -587,6 +587,48 @@ class ImageService:
             )
         return self._images[image_id]
 
+    def delete_image(self, image_id: str) -> "ImageRecord":
+        """Delete a registered image from the scratch directory.
+
+        Removes the image file and its sidecar JSON, evicts all transform
+        cache entries for this image, and removes it from the in-memory
+        registry.
+
+        Args:
+            image_id: The content-addressed image ID.
+
+        Returns:
+            The ``ImageRecord`` that was deleted (for confirmation logging).
+
+        Raises:
+            ImageProviderError: If *image_id* is not registered.
+        """
+        record = self.get_image(image_id)  # raises if not found
+
+        # Delete original image file
+        try:
+            record.original_path.unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("Could not delete image file %s: %s", record.original_path, exc)
+
+        # Delete sidecar JSON
+        sidecar_path = self._scratch_dir / f"{image_id}.json"
+        try:
+            sidecar_path.unlink(missing_ok=True)
+        except OSError as exc:
+            logger.warning("Could not delete sidecar %s: %s", sidecar_path, exc)
+
+        # Evict all transform cache entries for this image
+        stale_keys = [k for k in self._transform_cache if k[0] == image_id]
+        for key in stale_keys:
+            self._transform_cache.pop(key, None)
+
+        # Remove from registry
+        del self._images[image_id]
+
+        logger.info("Deleted image %s (provider=%s)", image_id, record.provider)
+        return record
+
     def get_transformed_image(
         self,
         image_id: str,

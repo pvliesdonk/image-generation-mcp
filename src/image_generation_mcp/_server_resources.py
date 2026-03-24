@@ -705,12 +705,13 @@ _IMAGE_GALLERY_HTML = """\
       background: rgba(0,0,0,0.35); padding: 1px 4px; border-radius: 3px;
       max-width: 70%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
     }
-    .card-dl {
+    .card-dl, .card-del {
       display: none; background: none; border: none; cursor: pointer;
       color: rgba(255,255,255,0.9); padding: 2px; line-height: 0;
     }
     .card-dl:hover { color: #fff; }
-    .card-dl svg { width: 13px; height: 13px; }
+    .card-del:hover { color: #ff6b6b; }
+    .card-dl svg, .card-del svg { width: 13px; height: 13px; }
 
     /* Pending card */
     .card-pending {
@@ -771,6 +772,7 @@ _IMAGE_GALLERY_HTML = """\
       padding: 5px 10px; font-size: 14px; line-height: 1;
     }
     .lb-btn:hover { color: #fff; background: rgba(0,0,0,0.75); }
+    .lb-del-btn:hover { color: #ff6b6b; }
     .lb-body { display: flex; align-items: center; gap: 8px; }
     .lb-nav-btn {
       flex-shrink: 0; background: rgba(0,0,0,0.5); border: none; cursor: pointer;
@@ -838,6 +840,7 @@ _IMAGE_GALLERY_HTML = """\
     <div class="lb-panel">
       <div class="lb-toolbar">
         <button class="lb-btn" id="lb-fullscreen" hidden title="Enter fullscreen">\u26f6</button>
+        <button class="lb-btn lb-del-btn" id="lb-delete" title="Delete image"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
         <button class="lb-btn" id="lb-close" title="Close (Esc)">\u2715</button>
       </div>
       <div class="lb-body">
@@ -876,6 +879,7 @@ _IMAGE_GALLERY_HTML = """\
     const lbPrev     = document.getElementById("lb-prev");
     const lbNext     = document.getElementById("lb-next");
     const lbClose    = document.getElementById("lb-close");
+    const lbDelBtn   = document.getElementById("lb-delete");
     const lbFsBtn    = document.getElementById("lb-fullscreen");
     const lbMeta     = document.getElementById("lb-meta");
     const lbPromptEl = document.getElementById("lb-prompt");
@@ -994,6 +998,7 @@ _IMAGE_GALLERY_HTML = """\
 
     lbBackdrop.addEventListener("click", closeLightbox);
     lbClose.addEventListener("click", closeLightbox);
+    lbDelBtn.addEventListener("click", deleteLightboxImage);
     lbPrev.addEventListener("click", () => navigateLb(-1));
     lbNext.addEventListener("click", () => navigateLb(1));
     lbFsBtn.addEventListener("click", async () => {
@@ -1072,6 +1077,14 @@ _IMAGE_GALLERY_HTML = """\
       if (dlMode === "downloadFile" || dlMode === "openLink") dlBtn.style.display = "block";
       footer.appendChild(dlBtn);
 
+      const delBtn = document.createElement("button");
+      delBtn.className = "card-del";
+      delBtn.title = "Delete image";
+      delBtn.dataset.imageId = item.image_id;
+      delBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
+      delBtn.style.display = "block";
+      footer.appendChild(delBtn);
+
       overlay.appendChild(footer);
       card.appendChild(overlay);
       return card;
@@ -1101,7 +1114,7 @@ _IMAGE_GALLERY_HTML = """\
           const capturedIdx = lbIdx++;
           card.setAttribute("role", "button");
           card.addEventListener("click", (e) => {
-            if (!e.target.closest(".card-dl")) openLightbox(capturedIdx);
+            if (!e.target.closest(".card-dl") && !e.target.closest(".card-del")) openLightbox(capturedIdx);
           });
           card.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLightbox(capturedIdx); }
@@ -1178,6 +1191,43 @@ _IMAGE_GALLERY_HTML = """\
         }
       } catch (ex) { console.warn("Download failed", ex); }
     });
+
+    // --- Delete (grid) ---
+    gridItems.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".card-del");
+      if (!btn) return;
+      e.stopPropagation();
+      const id = btn.dataset.imageId;
+      if (!id) return;
+      if (!confirm("Delete this image? This cannot be undone.")) return;
+      btn.disabled = true;
+      try {
+        const result = await app.callServerTool("delete_image", { image_id: id });
+        if (result.isError) { btn.disabled = false; return; }
+        // Reload current page
+        await goTo(currentPage);
+      } catch (ex) { console.warn("Delete failed", ex); btn.disabled = false; }
+    });
+
+    // --- Delete (lightbox) ---
+    async function deleteLightboxImage() {
+      const item = lbPageItems[lbIndex];
+      if (!item || !item.image_id) return;
+      if (!confirm("Delete this image? This cannot be undone.")) return;
+      try {
+        const result = await app.callServerTool("delete_image", { image_id: item.image_id });
+        if (result.isError) return;
+        // Reload page and reopen lightbox at next/prev item
+        const oldIndex = lbIndex;
+        await goTo(currentPage);
+        if (lbPageItems.length === 0) {
+          closeLightbox();
+        } else {
+          const newIdx = Math.min(oldIndex, lbPageItems.length - 1);
+          openLightbox(newIdx);
+        }
+      } catch (ex) { console.warn("Lightbox delete failed", ex); }
+    }
 
     // --- Lifecycle handlers (ALL before connect) ---
     app.ontoolinput = () => { show("loading"); };
