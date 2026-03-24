@@ -132,6 +132,14 @@ class TestGalleryResource:
         assert "resource_link" in text
         assert "getHostCapabilities" in text
 
+    async def test_gallery_html_has_open_link_fallback(self, server) -> None:
+        """Download must fall back to openLink when downloadFile is unavailable."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "openLinks" in text
+        assert "app.openLink" in text
+        assert "openLink" in text
+
     async def test_gallery_html_has_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content

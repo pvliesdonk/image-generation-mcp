@@ -684,7 +684,7 @@ _IMAGE_GALLERY_HTML = """\
       width: 100%; height: 100%; object-fit: cover;
       display: block; transition: opacity 0.15s;
     }
-    .card:hover img { opacity: 0.82; }
+    .card:hover img, .card:focus-within img { opacity: 0.82; }
     .card-overlay {
       position: absolute; inset: 0;
       background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 55%);
@@ -692,7 +692,7 @@ _IMAGE_GALLERY_HTML = """\
       display: flex; flex-direction: column; justify-content: flex-end;
       padding: 6px;
     }
-    .card:hover .card-overlay { opacity: 1; }
+    .card:hover .card-overlay, .card:focus-within .card-overlay { opacity: 1; }
     .card-prompt {
       font-size: 10px; color: #fff; line-height: 1.3;
       overflow: hidden; display: -webkit-box;
@@ -789,7 +789,7 @@ _IMAGE_GALLERY_HTML = """\
     let currentPage = 1;
     let currentTotal = 0;
     let currentPageSize = 12;
-    let dlMode = null; // "downloadFile" | null
+    let dlMode = null; // "downloadFile" | "openLink" | null
 
     // --- Helpers ---
     function trunc(s, n) {
@@ -813,6 +813,7 @@ _IMAGE_GALLERY_HTML = """\
     function makeCard(item) {
       const card = document.createElement("div");
       card.className = "card";
+      card.tabIndex = 0;
 
       if (item.status === "generating" || !item.thumbnail_b64) {
         const pend = document.createElement("div");
@@ -856,8 +857,9 @@ _IMAGE_GALLERY_HTML = """\
       dlBtn.title = "Download";
       dlBtn.dataset.imageId = item.image_id;
       dlBtn.dataset.mime = item.content_type || "image/png";
+      if (item.download_url) dlBtn.dataset.downloadUrl = item.download_url;
       dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-      if (dlMode === "downloadFile") dlBtn.style.display = "block";
+      if (dlMode === "downloadFile" || dlMode === "openLink") dlBtn.style.display = "block";
       footer.appendChild(dlBtn);
 
       overlay.appendChild(footer);
@@ -933,21 +935,26 @@ _IMAGE_GALLERY_HTML = """\
     // --- Download ---
     gridItems.addEventListener("click", async (e) => {
       const btn = e.target.closest(".card-dl");
-      if (!btn || dlMode !== "downloadFile") return;
+      if (!btn || !dlMode) return;
       e.stopPropagation();
       const id   = btn.dataset.imageId;
       const mime = btn.dataset.mime || "image/png";
       if (!id) return;
       const ext = mime.split("/").pop() || "png";
       try {
-        await app.downloadFile({
-          contents: [{
-            type: "resource_link",
-            uri: "image://" + id + "/view",
-            name: id + "." + ext,
-            mimeType: mime,
-          }],
-        });
+        if (dlMode === "downloadFile") {
+          await app.downloadFile({
+            contents: [{
+              type: "resource_link",
+              uri: "image://" + id + "/view",
+              name: id + "." + ext,
+              mimeType: mime,
+            }],
+          });
+        } else if (dlMode === "openLink") {
+          const url = btn.dataset.downloadUrl;
+          if (url) await app.openLink({ url });
+        }
       } catch (ex) { console.warn("Download failed", ex); }
     });
 
@@ -991,10 +998,14 @@ _IMAGE_GALLERY_HTML = """\
     const ctx = app.getHostContext();
     if (ctx) handleHostContext(ctx);
 
+    // Show download buttons: prefer downloadFile, fall back to openLink
     const caps = app.getHostCapabilities();
     if (caps?.downloadFile) {
       dlMode = "downloadFile";
       document.querySelectorAll(".card-dl").forEach(b => b.style.display = "block");
+    } else if (caps?.openLinks) {
+      dlMode = "openLink";
+      document.querySelectorAll(".card-dl[data-download-url]").forEach(b => b.style.display = "block");
     }
   </script>
 </body>
