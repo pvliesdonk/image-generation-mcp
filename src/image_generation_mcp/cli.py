@@ -58,7 +58,15 @@ def _cmd_serve(args: argparse.Namespace) -> None:
     ):
         logger.warning("--host, --port and --path are only used with --transport http")
     if transport == "http":
-        server.run(transport="http", host=args.host, port=args.port, path=http_path)
+        from image_generation_mcp._http_logging import mcp_request_logging_middleware
+
+        server.run(
+            transport="http",
+            host=args.host,
+            port=args.port,
+            path=http_path,
+            middleware=mcp_request_logging_middleware(),
+        )
     else:
         server.run(transport=transport)
 
