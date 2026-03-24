@@ -24,7 +24,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_AUTH_MODE` | str | auto | OIDC auth mode: `remote` (local JWT validation) or `oidc-proxy` (DCR emulation). Auto-detected from env vars when not set — see below. |
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | -- | Static bearer token for HTTP authentication. Enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC and for `create_download_link` / `show_image` auto-download URLs. Include subpath prefix if applicable. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC and for `create_download_link` / `show_image` auto-download URLs. Also used to derive the MCP Apps widget domain (hostname extracted). Include subpath prefix if applicable. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL (e.g. `https://auth.example.com/.well-known/openid-configuration`). |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID registered with your identity provider. Required for `oidc-proxy` mode only. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret. Required for `oidc-proxy` mode only. |
