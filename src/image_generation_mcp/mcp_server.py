@@ -15,10 +15,15 @@ import logging
 import os
 import sys
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 from fastmcp import FastMCP
 from fastmcp.server.transforms import ResourcesAsTools
+
+if TYPE_CHECKING:
+    from fastmcp.server.event_store import EventStore
 
 from image_generation_mcp.config import _ENV_PREFIX, load_config
 
@@ -452,3 +457,71 @@ def create_server(transport: str = "stdio") -> FastMCP:
         mcp.disable(tags={"write"})
 
     return mcp
+
+
+_DEFAULT_EVENT_STORE_DIR: str = "/data/state/events"
+
+
+def build_event_store(url: str | None = None) -> EventStore:
+    """Build an :class:`~fastmcp.server.event_store.EventStore` for HTTP transport.
+
+    The store enables SSE session resumability — clients that reconnect after a
+    network blip can replay missed events without re-running their requests.
+
+    URL schemes:
+
+    - ``None`` / empty — file-backed store at :data:`_DEFAULT_EVENT_STORE_DIR`
+    - ``file:///path`` — file-backed store at *path* (created if absent)
+    - ``memory://`` — in-memory store (events lost on restart; dev/test only)
+
+    Args:
+        url: Optional ``EVENT_STORE_URL`` value.  ``None`` selects the default
+            file-backed store.
+
+    Returns:
+        A configured :class:`~fastmcp.server.event_store.EventStore`.
+
+    Raises:
+        ValueError: If *url* uses an unsupported scheme.
+        ImportError: If the ``key-value`` library is unavailable when a
+            file-backed store is requested.
+    """
+    from fastmcp.server.event_store import EventStore as _EventStore
+
+    if not url:
+        url = f"file://{_DEFAULT_EVENT_STORE_DIR}"
+
+    parsed = urlparse(url)
+
+    if parsed.scheme == "memory":
+        logger.info("Event store: in-memory (sessions lost on restart)")
+        return _EventStore(max_events_per_stream=100, ttl=3600)
+
+    if parsed.scheme == "file":
+        if parsed.netloc:
+            raise ValueError(
+                f"EVENT_STORE_URL '{url}' has a host component; "
+                "use 'file:///absolute/path' (three slashes)."
+            )
+        directory = parsed.path or _DEFAULT_EVENT_STORE_DIR
+        if directory == "/":
+            raise ValueError(
+                "Using the root directory '/' for the event store is not allowed. "
+                "Provide an explicit path, e.g. 'file:///data/state/events'."
+            )
+        try:
+            from key_value.aio.stores.filetree import FileTreeStore
+        except ImportError:
+            raise ImportError(
+                "FileTreeStore requires fastmcp>=3.0 with key-value support. "
+                "Install with: pip install 'image-generation-mcp[mcp]'"
+            ) from None
+        Path(directory).mkdir(parents=True, exist_ok=True)
+        logger.info("Event store: file-backed at %s", directory)
+        storage = FileTreeStore(data_directory=directory)
+        return _EventStore(storage=storage, max_events_per_stream=100, ttl=3600)
+
+    raise ValueError(
+        f"Unsupported EVENT_STORE_URL scheme {parsed.scheme!r}. "
+        "Use 'file:///path' or 'memory://'."
+    )

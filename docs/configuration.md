@@ -56,6 +56,12 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | int | `64` | Maximum number of transformed image results (resize/crop/convert) to keep in memory. Repeated requests for the same transform parameters are served from cache. Set to `0` to disable caching. |
 
+## Session persistence (HTTP transport)
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_EVENT_STORE_URL` | str | `file:///data/state/events` | EventStore backend for SSE session resumability. `file:///path` stores events on disk (survives restarts); `memory://` keeps events in-process only (dev/test). |
+
 ## Server
 
 | Variable | Type | Default | Description |
