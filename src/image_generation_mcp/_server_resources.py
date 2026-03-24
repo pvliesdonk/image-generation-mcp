@@ -206,63 +206,161 @@ Call `list_providers` to see which providers are currently available.
 
 _IMAGE_VIEWER_HTML = """\
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { overflow: hidden; background: transparent; }
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+      color: var(--color-text-primary, #333);
+    }
+    .main {
       display: flex; flex-direction: column; align-items: center;
-      padding: 16px; background: transparent;
+      padding: 12px; width: 100%;
     }
-    #placeholder {
-      color: #888; font-size: 14px; padding: 40px;
-      text-align: center;
+
+    /* --- State: waiting (before any tool result) --- */
+    .state-waiting {
+      color: var(--color-text-tertiary, #999);
+      font-size: var(--font-text-sm-size, 13px);
+      padding: 32px 16px; text-align: center;
     }
-    #status {
+
+    /* --- State: generating (progress) --- */
+    .state-generating {
+      display: none; width: 100%; max-width: 480px;
+      text-align: center; padding: 24px 16px;
+    }
+    .state-generating .spinner {
+      width: 24px; height: 24px; margin: 0 auto 12px;
+      border: 3px solid var(--color-border-primary, #ddd);
+      border-top-color: var(--color-text-secondary, #666);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-generating .gen-label {
+      font-size: var(--font-text-sm-size, 13px);
+      font-weight: 600;
+      color: var(--color-text-secondary, #666);
+    }
+    .state-generating .gen-detail {
+      font-size: var(--font-text-xs-size, 12px);
+      color: var(--color-text-tertiary, #999);
+      margin-top: 4px;
+    }
+    .state-generating .gen-progress {
+      margin-top: 8px; height: 4px;
+      background: var(--color-background-tertiary, #eee);
+      border-radius: var(--border-radius-full, 9999px);
+      overflow: hidden;
+    }
+    .state-generating .gen-progress-fill {
+      height: 100%; width: 0%;
+      background: var(--color-text-secondary, #666);
+      border-radius: var(--border-radius-full, 9999px);
+      transition: width 0.3s ease;
+    }
+
+    /* --- State: failed --- */
+    .state-failed {
+      display: none; width: 100%; max-width: 480px;
+      text-align: center; padding: 24px 16px;
+    }
+    .state-failed .fail-label {
+      font-size: var(--font-text-sm-size, 13px);
+      font-weight: 600; color: #c33;
+    }
+    .state-failed .fail-detail {
+      font-size: var(--font-text-xs-size, 12px);
+      color: var(--color-text-tertiary, #999);
+      margin-top: 4px; word-break: break-word;
+    }
+
+    /* --- State: completed (image + metadata) --- */
+    .state-completed {
       display: none; width: 100%; max-width: 640px;
-      text-align: center; padding: 24px;
-      font-size: 13px; color: #666; line-height: 1.6;
     }
-    #status .label { font-weight: 600; margin-bottom: 4px; }
-    #status .detail { font-size: 12px; color: #888; }
-    #status.failed .label { color: #c33; }
-    #viewer { display: none; width: 100%; max-width: 640px; }
-    #viewer img {
-      width: 100%; height: auto; border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    .state-completed img {
+      width: 100%; height: auto;
+      border-radius: var(--border-radius-md, 8px);
+      box-shadow: var(--shadow-md, 0 2px 12px rgba(0,0,0,0.12));
     }
-    #meta {
-      margin-top: 12px; font-size: 12px; color: #666;
-      line-height: 1.6; width: 100%; white-space: pre-wrap;
+    .meta {
+      margin-top: 10px; width: 100%;
+      font-size: var(--font-text-xs-size, 12px);
+      color: var(--color-text-secondary, #666);
+      line-height: 1.5;
     }
-    @media (prefers-color-scheme: dark) {
-      #meta { color: #aaa; }
-      #placeholder { color: #777; }
-      #status { color: #aaa; }
-      #status .detail { color: #777; }
+    .meta-prompt {
+      font-style: italic; margin-bottom: 4px;
+      color: var(--color-text-primary, #333);
+    }
+    .meta-details {
+      color: var(--color-text-tertiary, #999);
+    }
+
+    /* --- Cancelled --- */
+    .state-cancelled {
+      display: none; width: 100%; max-width: 480px;
+      text-align: center; padding: 24px 16px;
+      font-size: var(--font-text-sm-size, 13px);
+      color: var(--color-text-tertiary, #999);
     }
   </style>
 </head>
 <body>
-  <div id="placeholder">Waiting for image generation&hellip;</div>
-  <div id="status"><div class="label"></div><div class="detail"></div></div>
-  <div id="viewer">
-    <img id="image" alt="Generated image">
-    <div id="meta"></div>
+  <div class="main">
+    <div class="state-waiting" id="waiting">Waiting for image&hellip;</div>
+    <div class="state-generating" id="generating">
+      <div class="spinner"></div>
+      <div class="gen-label" id="gen-label">Generating&hellip;</div>
+      <div class="gen-detail" id="gen-detail"></div>
+      <div class="gen-progress"><div class="gen-progress-fill" id="gen-fill"></div></div>
+    </div>
+    <div class="state-failed" id="failed">
+      <div class="fail-label">Generation failed</div>
+      <div class="fail-detail" id="fail-detail"></div>
+    </div>
+    <div class="state-cancelled" id="cancelled">Cancelled</div>
+    <div class="state-completed" id="completed">
+      <img id="image" alt="Generated image">
+      <div class="meta">
+        <div class="meta-prompt" id="meta-prompt"></div>
+        <div class="meta-details" id="meta-details"></div>
+      </div>
+    </div>
   </div>
+
   <script type="module">
-    import { App } from
-      "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+    import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
+      from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
 
-    const app = new App({ name: "Image Viewer", version: "1.0.0" });
+    const app = new App({ name: "Image Viewer", version: "2.0.0" });
 
-    let rendered = false;
+    // --- DOM refs ---
+    const mainEl = document.querySelector(".main");
+    const sections = {
+      waiting:    document.getElementById("waiting"),
+      generating: document.getElementById("generating"),
+      failed:     document.getElementById("failed"),
+      cancelled:  document.getElementById("cancelled"),
+      completed:  document.getElementById("completed"),
+    };
+
+    // --- State management ---
     let imageKey = null;
     const STORE = "imgview:";
     const MAX_ENTRIES = 5;
+
+    function show(state) {
+      for (const [k, el] of Object.entries(sections)) {
+        el.style.display = k === state ? "block" : "none";
+      }
+    }
 
     function extractImageKey(uri) {
       if (!uri) return null;
@@ -270,6 +368,7 @@ _IMAGE_VIEWER_HTML = """\
       return m ? m[1] : null;
     }
 
+    // --- localStorage cache (LRU, quota-safe) ---
     function storeKeys() {
       const keys = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -286,19 +385,14 @@ _IMAGE_VIEWER_HTML = """\
       try {
         localStorage.setItem(fullKey, value);
       } catch (e) {
-        // Quota exceeded — evict oldest entries and retry
         const keys = storeKeys().filter(k => k !== fullKey);
         while (keys.length > 0) {
           localStorage.removeItem(keys.shift());
           try { localStorage.setItem(fullKey, value); return; } catch (_) {}
         }
-        console.warn("Image viewer: localStorage quota exceeded", e);
       }
-      // Enforce LRU cap
       const all = storeKeys().filter(k => k !== fullKey);
-      while (all.length >= MAX_ENTRIES) {
-        localStorage.removeItem(all.shift());
-      }
+      while (all.length >= MAX_ENTRIES) localStorage.removeItem(all.shift());
     }
 
     function loadState(key) {
@@ -306,99 +400,128 @@ _IMAGE_VIEWER_HTML = """\
       try {
         const raw = localStorage.getItem(STORE + key);
         return raw ? JSON.parse(raw) : null;
-      } catch (e) { console.warn("Image viewer: failed to load cached state", e); return null; }
+      } catch (e) { return null; }
     }
 
-    function render(img, text) {
+    // --- Rendering ---
+    function renderGenerating(meta) {
+      show("generating");
+      const elapsed = meta.elapsed_seconds
+        ? ` (${Math.round(meta.elapsed_seconds)}s)` : "";
+      document.getElementById("gen-label").textContent =
+        "Generating" + elapsed;
+      const parts = [];
+      if (meta.provider) parts.push(meta.provider);
+      if (meta.progress_message) parts.push(meta.progress_message);
+      else if (meta.prompt) parts.push("\\u201c" + meta.prompt + "\\u201d");
+      document.getElementById("gen-detail").textContent =
+        parts.join(" \\u00b7 ");
+      const pct = (meta.progress || 0) * 100;
+      document.getElementById("gen-fill").style.width =
+        pct > 0 ? pct + "%" : "0%";
+    }
+
+    function renderFailed(meta) {
+      show("failed");
+      document.getElementById("fail-detail").textContent =
+        meta.error || "Unknown error";
+    }
+
+    function renderCompleted(img, text) {
+      show("completed");
       const imgEl = document.getElementById("image");
-
       if (img) {
-        imgEl.src = `data:${img.mimeType};base64,${img.data}`;
-        document.getElementById("placeholder").style.display = "none";
-        document.getElementById("viewer").style.display = "block";
+        const allowed = ["image/png","image/jpeg","image/webp","image/gif"];
+        const mime = allowed.includes(img.mimeType) ? img.mimeType : "image/png";
+        imgEl.src = "data:" + mime + ";base64," + img.data;
       }
-
       if (text) {
         try {
-          const meta = JSON.parse(text.text);
-          if (meta.prompt) {
-            imgEl.alt = meta.prompt;
+          const m = JSON.parse(text.text);
+          if (m.prompt) {
+            imgEl.alt = m.prompt;
+            document.getElementById("meta-prompt").textContent =
+              "\\u201c" + m.prompt + "\\u201d";
           }
           const parts = [];
-          if (meta.provider) {
-            let providerStr = `Provider: ${meta.provider}`;
-            if (meta.model) providerStr += ` (${meta.model})`;
-            parts.push(providerStr);
+          if (m.provider) {
+            let s = m.provider;
+            if (m.model) s += " (" + m.model + ")";
+            parts.push(s);
           }
-          if (meta.dimensions) parts.push(`${meta.dimensions[0]}\u00d7${meta.dimensions[1]}`);
-          if (meta.original_size_bytes) {
-            const kb = (meta.original_size_bytes / 1024).toFixed(1);
-            parts.push(`${kb} KB`);
+          if (m.dimensions)
+            parts.push(m.dimensions[0] + "\\u00d7" + m.dimensions[1]);
+          if (m.original_size_bytes) {
+            const kb = (m.original_size_bytes / 1024).toFixed(1);
+            parts.push(kb + " KB");
           }
-          document.getElementById("meta").textContent =
-            (meta.prompt ? `"${meta.prompt}"\\n` : "") +
+          document.getElementById("meta-details").textContent =
             parts.join(" \\u00b7 ");
-        } catch (e) { console.warn("Image viewer: failed to parse metadata", e); }
+        } catch (e) { console.warn("Failed to parse metadata", e); }
       }
-
-      rendered = true;
     }
 
+    // --- Handlers (registered BEFORE connect) ---
     app.ontoolinput = (params) => {
       imageKey = extractImageKey(params?.arguments?.uri);
-      if (imageKey && !rendered) {
+      // Restore cached image while waiting for result
+      if (imageKey) {
         const saved = loadState(imageKey);
-        if (saved) render(saved.img, saved.text);
+        if (saved) {
+          renderCompleted(saved.img, saved.text);
+          return;
+        }
       }
+      show("waiting");
     };
-
-    function showStatus(meta) {
-      const el = document.getElementById("status");
-      const label = el.querySelector(".label");
-      const detail = el.querySelector(".detail");
-      document.getElementById("placeholder").style.display = "none";
-      document.getElementById("viewer").style.display = "none";
-      el.style.display = "block";
-      el.className = meta.status === "failed" ? "failed" : "";
-      if (meta.status === "generating") {
-        const elapsed = meta.elapsed_seconds ? ` (${Math.round(meta.elapsed_seconds)}s)` : "";
-        label.textContent = `Generating${elapsed}`;
-        const parts = [];
-        if (meta.provider) parts.push(meta.provider);
-        if (meta.progress_message) parts.push(meta.progress_message);
-        else if (meta.prompt) parts.push(`"${meta.prompt}"`);
-        detail.textContent = parts.join(" \u00b7 ");
-      } else if (meta.status === "failed") {
-        label.textContent = "Generation failed";
-        detail.textContent = meta.error || "";
-      }
-    }
 
     app.ontoolresult = ({ content }) => {
       const img = content?.find(c => c.type === "image");
       const text = content?.find(c => c.type === "text");
 
-      // Check for in-progress or failed status (no image content)
+      // Status-only results (generating / failed)
       if (!img && text) {
         try {
           const meta = JSON.parse(text.text);
-          if (meta.status === "generating" || meta.status === "failed") {
-            showStatus(meta);
-            return;
-          }
-        } catch (e) { /* not status JSON, fall through to normal render */ }
+          if (meta.status === "generating") { renderGenerating(meta); return; }
+          if (meta.status === "failed") { renderFailed(meta); return; }
+        } catch (e) { /* not status JSON */ }
       }
 
-      // Completed image — render normally
-      render(img, text);
+      // Completed image
+      renderCompleted(img, text);
       let key = imageKey;
       if (!key && text) {
-        try { key = JSON.parse(text.text).image_id; } catch (e) { console.warn("Image viewer: failed to get image_id from tool result", e); }
+        try { key = JSON.parse(text.text).image_id; } catch (e) {}
       }
       if (key) saveState(key, img, text);
     };
 
+    app.ontoolcancelled = (params) => {
+      document.getElementById("cancelled").textContent =
+        "Cancelled" + (params?.reason ? ": " + params.reason : "");
+      show("cancelled");
+    };
+
+    function handleHostContext(ctx) {
+      if (ctx.theme) applyDocumentTheme(ctx.theme);
+      if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
+      if (ctx.styles?.css?.fonts) applyHostFonts(ctx.styles.css.fonts);
+      if (ctx.safeAreaInsets) {
+        const { top, right, bottom, left } = ctx.safeAreaInsets;
+        mainEl.style.paddingTop = top + "px";
+        mainEl.style.paddingRight = right + "px";
+        mainEl.style.paddingBottom = bottom + "px";
+        mainEl.style.paddingLeft = left + "px";
+      }
+    }
+
+    app.onhostcontextchanged = handleHostContext;
+    app.onerror = console.error;
+
     await app.connect();
+    const ctx = app.getHostContext();
+    if (ctx) handleHostContext(ctx);
   </script>
 </body>
 </html>"""
