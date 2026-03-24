@@ -459,7 +459,7 @@ def create_server(transport: str = "stdio") -> FastMCP:
     return mcp
 
 
-_DEFAULT_EVENT_STORE_DIR = "/data/state/events"
+_DEFAULT_EVENT_STORE_DIR: str = "/data/state/events"
 
 
 def build_event_store(url: str | None = None) -> EventStore:

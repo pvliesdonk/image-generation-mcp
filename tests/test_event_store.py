@@ -18,13 +18,19 @@ if TYPE_CHECKING:
 
 
 class TestBuildEventStoreURLParsing:
-    def test_none_url_returns_file_backed_store(self) -> None:
-        """No URL defaults to file://<default_dir>; use memory:// to verify type."""
-        # Use memory:// for isolation — can't override _DEFAULT_EVENT_STORE_DIR here.
-        store = build_event_store("memory://")
-        from fastmcp.server.event_store import EventStore
+    def test_none_url_returns_file_backed_store(self, tmp_path: Path) -> None:
+        """No URL defaults to file-backed store at _DEFAULT_EVENT_STORE_DIR."""
+        import image_generation_mcp.mcp_server as mod
 
-        assert isinstance(store, EventStore)
+        orig = mod._DEFAULT_EVENT_STORE_DIR
+        try:
+            mod._DEFAULT_EVENT_STORE_DIR = str(tmp_path / "events")
+            store = build_event_store(None)
+            from fastmcp.server.event_store import EventStore
+
+            assert isinstance(store, EventStore)
+        finally:
+            mod._DEFAULT_EVENT_STORE_DIR = orig
 
     def test_memory_scheme_returns_event_store(self) -> None:
         store = build_event_store("memory://")
