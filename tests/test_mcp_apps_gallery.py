@@ -2,21 +2,22 @@
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import json
 from io import BytesIO
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+from fastmcp import FastMCP
 from PIL import Image as PILImage
 
-from fastmcp import FastMCP
-from image_generation_mcp._server_resources import register_resources
 from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.mcp_server import create_server
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.service import ImageRecord, ImageService, PendingGeneration
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +33,7 @@ def _make_png_bytes(width: int = 32, height: int = 32) -> bytes:
     return buf.getvalue()
 
 
-def _add_image(service: ImageService, tmp_path: Path, idx: int) -> ImageRecord:
+def _add_image(service: ImageService, idx: int) -> ImageRecord:
     """Register a synthetic unique image in *service* and return its record."""
     from image_generation_mcp.providers.types import ImageResult
 
@@ -223,10 +224,10 @@ class TestBrowseGallery:
         assert data["page"] == 1
 
     async def test_browse_gallery_returns_thumbnail_for_image(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         """browse_gallery embeds a base64 thumbnail for each completed image."""
-        _add_image(service, tmp_path, 0)
+        _add_image(service, 0)
 
         mcp = self._mcp()
         tool = await mcp.get_tool("browse_gallery")
@@ -298,11 +299,11 @@ class TestBrowseGallery:
         assert "page_size" in data
 
     async def test_browse_gallery_page_size_is_twelve(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         """browse_gallery returns at most 12 items on the first page."""
         for i in range(15):
-            _add_image(service, tmp_path, i)
+            _add_image(service, i)
 
         mcp = self._mcp()
         tool = await mcp.get_tool("browse_gallery")
@@ -348,11 +349,11 @@ class TestGalleryPage:
         assert "model" not in visibility
 
     async def test_gallery_page_returns_all_items_single_page(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         """Page 1 with page_size>=count returns all images."""
         for i in range(3):
-            _add_image(service, tmp_path, i)
+            _add_image(service, i)
 
         mcp = self._mcp()
         tool = await mcp.get_tool("gallery_page")
@@ -370,11 +371,11 @@ class TestGalleryPage:
             base64.b64decode(item["thumbnail_b64"])  # must be valid base64
 
     async def test_gallery_page_pagination_second_page(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         """Pages must not overlap and together cover all items."""
         for i in range(5):
-            _add_image(service, tmp_path, i)
+            _add_image(service, i)
 
         mcp = self._mcp()
         tool = await mcp.get_tool("gallery_page")
