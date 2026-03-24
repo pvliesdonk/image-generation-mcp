@@ -724,12 +724,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             JSON with ``image_id``, ``b64``, ``content_type``, ``dimensions``,
             ``prompt``, ``provider``, and ``created_at``.
         """
-        record = await asyncio.to_thread(service.get_image, image_id)
-        # get_transformed_image with no transforms returns original bytes
-        img_bytes, content_type = await asyncio.to_thread(
-            service.get_transformed_image, image_id
-        )
-        if len(img_bytes) > _LIGHTBOX_MAX_BYTES:
+        record = service.get_image(image_id)  # simple dict lookup, no I/O
+        # Check file size via stat to decide transform upfront — avoids double
+        # read: stat is O(1), reading bytes is O(size).
+        file_size = await asyncio.to_thread(lambda: record.original_path.stat().st_size)
+        if file_size > _LIGHTBOX_MAX_BYTES:
             img_bytes, content_type = await asyncio.to_thread(
                 service.get_transformed_image,
                 image_id,
@@ -737,6 +736,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 _LIGHTBOX_MAX_PX,
                 0,
                 85,
+            )
+        else:
+            img_bytes, content_type = await asyncio.to_thread(
+                service.get_transformed_image, image_id
             )
         return json.dumps(
             {

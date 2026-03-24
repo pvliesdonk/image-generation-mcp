@@ -932,15 +932,16 @@ _IMAGE_GALLERY_HTML = """\
     }
 
     async function loadFullImage(item) {
+      const capturedIndex = lbIndex;
       try {
         const result = await app.callServerTool("gallery_full_image", { image_id: item.image_id });
-        if (result.isError) { lbLoading.style.display = "none"; return; }
+        if (lbIndex !== capturedIndex) return; // navigated away while loading
+        if (result.isError) return;
         const text = result.content?.find(c => c.type === "text")?.text;
-        if (!text) { lbLoading.style.display = "none"; return; }
+        if (!text) return;
         const data = JSON.parse(text);
         lbImg.src = "data:" + (data.content_type || "image/webp") + ";base64," + data.b64;
         lbImg.removeAttribute("hidden");
-        lbLoading.style.display = "none";
         lbPromptEl.textContent = data.prompt || "";
         const parts = [data.provider];
         if (data.dimensions) parts.push(data.dimensions.join("\\u00d7") + "px");
@@ -949,7 +950,10 @@ _IMAGE_GALLERY_HTML = """\
         lbMeta.removeAttribute("hidden");
       } catch (e) {
         console.warn("Failed to load full image", e);
-        lbLoading.style.display = "none";
+      } finally {
+        // Only hide the loader if we're still showing the same image.
+        // If the user navigated away, the new loadFullImage owns the loader.
+        if (lbIndex === capturedIndex) lbLoading.style.display = "none";
       }
     }
 
@@ -960,6 +964,7 @@ _IMAGE_GALLERY_HTML = """\
       lbImg.setAttribute("hidden", "");
       lbImg.src = "";
       lbMeta.setAttribute("hidden", "");
+      lbFsBtn.setAttribute("hidden", "");
     }
 
     async function navigateLb(delta) {
@@ -1100,6 +1105,7 @@ _IMAGE_GALLERY_HTML = """\
         const card = makeCard(item);
         if (item.status === "completed" && item.image_id) {
           const capturedIdx = lbIdx++;
+          card.setAttribute("role", "button");
           card.addEventListener("click", (e) => {
             if (!e.target.closest(".card-dl")) openLightbox(capturedIdx);
           });

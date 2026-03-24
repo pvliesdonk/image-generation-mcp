@@ -459,16 +459,17 @@ class TestGalleryFullImage:
         tools = await server.list_tools()
         tool = next((t for t in tools if t.name == "gallery_full_image"), None)
         assert tool is not None
-        if tool.meta:
-            app_meta = tool.meta.get("ui", {})
-            visibility = app_meta.get("visibility", [])
-            assert "model" not in visibility
+        assert tool.meta is not None, "gallery_full_image must have app meta"
+        app_meta = tool.meta.get("ui", {})
+        visibility = app_meta.get("visibility", [])
+        assert "app" in visibility, f"expected 'app' in visibility, got {visibility}"
+        assert "model" not in visibility
 
     async def test_gallery_full_image_returns_base64(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         """gallery_full_image must return valid base64 image bytes."""
-        record = _add_image(service, tmp_path, 0)
+        record = _add_image(service, 0)
 
         mcp = self._mcp()
         tool = await mcp.get_tool("gallery_full_image")
@@ -483,10 +484,10 @@ class TestGalleryFullImage:
         assert len(img_bytes) > 0
 
     async def test_gallery_full_image_includes_metadata(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         """gallery_full_image must include prompt, provider, dimensions, created_at."""
-        record = _add_image(service, tmp_path, 0)
+        record = _add_image(service, 0)
 
         mcp = self._mcp()
         tool = await mcp.get_tool("gallery_full_image")
@@ -510,7 +511,9 @@ class TestGalleryFullImage:
         tool = await mcp.get_tool("gallery_full_image")
         assert tool is not None
 
-        with pytest.raises(Exception):
+        from image_generation_mcp.providers.types import ImageProviderError
+
+        with pytest.raises(ImageProviderError):
             await tool.fn(image_id="nonexistent_id", service=service)
 
 
@@ -566,5 +569,5 @@ class TestLightboxHTML:
         text = result.contents[0].content
         assert "thumbnail_b64" in text
         # The lightbox code should reference thumbnail_b64 for preview
-        lb_section = text[text.index("openLightbox"):]
+        lb_section = text[text.index("openLightbox") :]
         assert "thumbnail_b64" in lb_section
