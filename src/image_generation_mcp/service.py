@@ -590,7 +590,7 @@ class ImageService:
             )
         return self._images[image_id]
 
-    def delete_image(self, image_id: str) -> "ImageRecord":
+    def delete_image(self, image_id: str) -> ImageRecord:
         """Delete a registered image from the scratch directory.
 
         Removes the image file and its sidecar JSON, evicts all transform
