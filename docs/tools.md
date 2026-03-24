@@ -193,8 +193,43 @@ JSON with gallery data (for non-UI clients):
 For MCP Apps-capable clients, the gallery widget is rendered inline with:
 - Responsive thumbnail grid (3×3 default, adaptive to available width)
 - Hover overlay showing prompt excerpt and provider badge
-- Download button (requires `downloadFile` host capability)
+- Download button (`downloadFile` → `openLink` fallback)
 - Prev/Next pagination
+- Lightbox view on thumbnail click (see below)
+
+---
+
+## gallery_full_image (app-only)
+
+Load full-resolution image data for the gallery lightbox. App-only — not shown to the model; called internally by the gallery UI when a thumbnail is clicked.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | *(none)* |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
+| **MCP App** | `ui://image-gallery/view.html` (app-only, `visibility=["app"]`) |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `image_id` | str | *(required)* | Image ID to load |
+
+### Return value
+
+```json
+{
+  "image_id": "a1b2c3d4e5f6",
+  "b64": "<base64-encoded image bytes>",
+  "content_type": "image/png",
+  "dimensions": [1024, 1024],
+  "prompt": "a mountain landscape",
+  "provider": "openai",
+  "created_at": "2026-03-24T10:00:00+00:00"
+}
+```
+
+Images larger than 1 MB are resized to 1024 px wide WebP before encoding.
 
 ---
 

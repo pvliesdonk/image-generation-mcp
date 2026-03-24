@@ -1,9 +1,10 @@
 """MCP tool registrations for image generation.
 
 Exposes ``generate_image``, ``show_image``, ``browse_gallery``,
-``gallery_page``, and ``list_providers`` tools to MCP clients.
-``generate_image`` is tagged ``write`` (hidden in read-only mode).
-``gallery_page`` is app-only (``visibility=["app"]``) and not shown to the model.
+``gallery_page``, ``gallery_full_image``, and ``list_providers`` tools to
+MCP clients.  ``generate_image`` is tagged ``write`` (hidden in read-only
+mode).  ``gallery_page`` and ``gallery_full_image`` are app-only
+(``visibility=["app"]``) and not shown to the model.
 """
 
 from __future__ import annotations
@@ -693,6 +694,62 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         return json.dumps(
             {"total": total, "page": page, "page_size": page_size, "items": items}
+        )
+
+    _LIGHTBOX_MAX_BYTES = 1 * 1024 * 1024  # 1 MB size cap for lightbox images
+    _LIGHTBOX_MAX_PX = 1024  # resize target when image exceeds size cap
+
+    @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        app=AppConfig(resourceUri=_IMAGE_GALLERY_URI, visibility=["app"]),
+    )
+    async def gallery_full_image(
+        image_id: str,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Return full-resolution image data for the gallery lightbox.
+
+        App-only helper called by the gallery lightbox to load a single image
+        at full (or near-full) resolution.  Images larger than 1 MB are
+        downscaled to 1024 px wide WebP before encoding.
+
+        Args:
+            image_id: The image ID to load.
+
+        Returns:
+            JSON with ``image_id``, ``b64``, ``content_type``, ``dimensions``,
+            ``prompt``, ``provider``, and ``created_at``.
+        """
+        record = await asyncio.to_thread(service.get_image, image_id)
+        # get_transformed_image with no transforms returns original bytes
+        img_bytes, content_type = await asyncio.to_thread(
+            service.get_transformed_image, image_id
+        )
+        if len(img_bytes) > _LIGHTBOX_MAX_BYTES:
+            img_bytes, content_type = await asyncio.to_thread(
+                service.get_transformed_image,
+                image_id,
+                "webp",
+                _LIGHTBOX_MAX_PX,
+                0,
+                85,
+            )
+        return json.dumps(
+            {
+                "image_id": record.id,
+                "b64": base64.b64encode(img_bytes).decode(),
+                "content_type": content_type,
+                "dimensions": list(record.original_dimensions),
+                "prompt": record.prompt,
+                "provider": record.provider,
+                "created_at": datetime.fromtimestamp(
+                    record.created_at, tz=UTC
+                ).isoformat(),
+            }
         )
 
     @mcp.tool(

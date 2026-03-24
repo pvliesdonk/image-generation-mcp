@@ -439,3 +439,132 @@ class TestGalleryPage:
         assert item["status"] == "generating"
         assert "thumbnail_b64" not in item
         assert item["progress"] == 0.3
+
+
+# ---------------------------------------------------------------------------
+# gallery_full_image tool
+# ---------------------------------------------------------------------------
+
+
+class TestGalleryFullImage:
+    """gallery_full_image must return base64 image data + metadata."""
+
+    def _mcp(self) -> FastMCP:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        return mcp
+
+    async def test_gallery_full_image_is_app_only(self, server) -> None:
+        """gallery_full_image must carry visibility=["app"] in its app meta."""
+        tools = await server.list_tools()
+        tool = next((t for t in tools if t.name == "gallery_full_image"), None)
+        assert tool is not None
+        if tool.meta:
+            app_meta = tool.meta.get("ui", {})
+            visibility = app_meta.get("visibility", [])
+            assert "model" not in visibility
+
+    async def test_gallery_full_image_returns_base64(
+        self, service: ImageService, tmp_path: Path
+    ) -> None:
+        """gallery_full_image must return valid base64 image bytes."""
+        record = _add_image(service, tmp_path, 0)
+
+        mcp = self._mcp()
+        tool = await mcp.get_tool("gallery_full_image")
+        assert tool is not None
+
+        result = await tool.fn(image_id=record.id, service=service)
+        data = json.loads(result)
+
+        assert data["image_id"] == record.id
+        assert "b64" in data
+        img_bytes = base64.b64decode(data["b64"])
+        assert len(img_bytes) > 0
+
+    async def test_gallery_full_image_includes_metadata(
+        self, service: ImageService, tmp_path: Path
+    ) -> None:
+        """gallery_full_image must include prompt, provider, dimensions, created_at."""
+        record = _add_image(service, tmp_path, 0)
+
+        mcp = self._mcp()
+        tool = await mcp.get_tool("gallery_full_image")
+        assert tool is not None
+
+        result = await tool.fn(image_id=record.id, service=service)
+        data = json.loads(result)
+
+        assert data["prompt"] == "prompt 0"
+        assert data["provider"] == "placeholder"
+        assert isinstance(data["dimensions"], list)
+        assert len(data["dimensions"]) == 2
+        assert "created_at" in data
+        assert "content_type" in data
+
+    async def test_gallery_full_image_unknown_id_raises(
+        self, service: ImageService
+    ) -> None:
+        """gallery_full_image must raise for unknown image IDs."""
+        mcp = self._mcp()
+        tool = await mcp.get_tool("gallery_full_image")
+        assert tool is not None
+
+        with pytest.raises(Exception):
+            await tool.fn(image_id="nonexistent_id", service=service)
+
+
+# ---------------------------------------------------------------------------
+# Lightbox HTML tests
+# ---------------------------------------------------------------------------
+
+
+class TestLightboxHTML:
+    """Gallery HTML must contain the lightbox overlay and JS."""
+
+    async def test_gallery_html_has_lightbox_overlay(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "lb-backdrop" in text
+        assert "lb-panel" in text
+        assert "lb-img" in text
+
+    async def test_gallery_html_has_lightbox_nav(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "lb-prev" in text
+        assert "lb-next" in text
+        assert "navigateLb" in text
+
+    async def test_gallery_html_has_close_button(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "lb-close" in text
+        assert "closeLightbox" in text
+
+    async def test_gallery_html_has_escape_key_handler(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "Escape" in text
+
+    async def test_gallery_html_has_fullscreen_button(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "lb-fullscreen" in text
+        assert "requestDisplayMode" in text
+        assert "availableDisplayModes" in text
+
+    async def test_gallery_html_calls_gallery_full_image(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "gallery_full_image" in text
+        assert "loadFullImage" in text
+
+    async def test_gallery_html_shows_thumbnail_preview(self, server) -> None:
+        """Lightbox must show thumbnail immediately before full-res loads."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "thumbnail_b64" in text
+        # The lightbox code should reference thumbnail_b64 for preview
+        lb_section = text[text.index("openLightbox"):]
+        assert "thumbnail_b64" in lb_section

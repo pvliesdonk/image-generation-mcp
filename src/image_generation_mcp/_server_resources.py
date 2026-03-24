@@ -747,6 +747,65 @@ _IMAGE_GALLERY_HTML = """\
       color: var(--color-text-secondary, #666);
       min-width: 90px; text-align: center;
     }
+
+    /* Lightbox */
+    #lightbox {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #lightbox[hidden] { display: none; }
+    .lb-backdrop {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.88); cursor: pointer;
+    }
+    .lb-panel {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      max-width: min(95vw, 1100px); max-height: 95vh;
+    }
+    .lb-toolbar {
+      display: flex; justify-content: flex-end; gap: 6px; padding-bottom: 6px;
+    }
+    .lb-btn {
+      background: rgba(0,0,0,0.5); border: none; cursor: pointer;
+      color: rgba(255,255,255,0.85); border-radius: var(--border-radius-sm, 4px);
+      padding: 5px 10px; font-size: 14px; line-height: 1;
+    }
+    .lb-btn:hover { color: #fff; background: rgba(0,0,0,0.75); }
+    .lb-body { display: flex; align-items: center; gap: 8px; }
+    .lb-nav-btn {
+      flex-shrink: 0; background: rgba(0,0,0,0.5); border: none; cursor: pointer;
+      color: rgba(255,255,255,0.85); border-radius: 50%;
+      width: 36px; height: 36px; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lb-nav-btn:disabled { opacity: 0.2; cursor: default; }
+    .lb-nav-btn:not(:disabled):hover { background: rgba(0,0,0,0.75); color: #fff; }
+    .lb-img-wrap {
+      flex: 1; min-width: 0;
+      display: flex; align-items: center; justify-content: center; position: relative;
+      min-height: 60px;
+    }
+    .lb-loading {
+      position: absolute;
+      display: flex; align-items: center; justify-content: center;
+      width: 60px; height: 60px;
+    }
+    .lb-loading .spinner { width: 28px; height: 28px; }
+    #lb-img {
+      max-width: 100%; max-height: 75vh; object-fit: contain;
+      border-radius: var(--border-radius-sm, 4px); display: block;
+    }
+    #lb-img[hidden] { display: none; }
+    .lb-meta {
+      padding: 8px 0 0; color: rgba(255,255,255,0.85);
+      max-width: 600px; margin: 0 auto;
+    }
+    .lb-meta-prompt {
+      font-size: var(--font-text-sm-size, 13px); line-height: 1.4; margin-bottom: 4px;
+    }
+    .lb-meta-info {
+      font-size: var(--font-text-xs-size, 12px); color: rgba(255,255,255,0.6);
+    }
   </style>
 </head>
 <body>
@@ -773,6 +832,29 @@ _IMAGE_GALLERY_HTML = """\
     </div>
   </div>
 
+  <!-- Lightbox overlay -->
+  <div id="lightbox" hidden aria-modal="true" role="dialog" aria-label="Image viewer">
+    <div id="lb-backdrop" class="lb-backdrop"></div>
+    <div class="lb-panel">
+      <div class="lb-toolbar">
+        <button class="lb-btn" id="lb-fullscreen" hidden title="Enter fullscreen">\u26f6</button>
+        <button class="lb-btn" id="lb-close" title="Close (Esc)">\u2715</button>
+      </div>
+      <div class="lb-body">
+        <button class="lb-nav-btn" id="lb-prev" title="Previous" disabled>&#10094;</button>
+        <div class="lb-img-wrap">
+          <div class="lb-loading" id="lb-loading"><div class="spinner"></div></div>
+          <img id="lb-img" src="" alt="" hidden>
+        </div>
+        <button class="lb-nav-btn" id="lb-next" title="Next" disabled>&#10095;</button>
+      </div>
+      <div class="lb-meta" id="lb-meta" hidden>
+        <div class="lb-meta-prompt" id="lb-prompt"></div>
+        <div class="lb-meta-info" id="lb-info"></div>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
       from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
@@ -786,16 +868,151 @@ _IMAGE_GALLERY_HTML = """\
     const gridItems = document.getElementById("gallery-grid");
     const pagEl     = document.getElementById("pagination");
 
+    // Lightbox DOM refs
+    const lbOverlay  = document.getElementById("lightbox");
+    const lbBackdrop = document.getElementById("lb-backdrop");
+    const lbImg      = document.getElementById("lb-img");
+    const lbLoading  = document.getElementById("lb-loading");
+    const lbPrev     = document.getElementById("lb-prev");
+    const lbNext     = document.getElementById("lb-next");
+    const lbClose    = document.getElementById("lb-close");
+    const lbFsBtn    = document.getElementById("lb-fullscreen");
+    const lbMeta     = document.getElementById("lb-meta");
+    const lbPromptEl = document.getElementById("lb-prompt");
+    const lbInfoEl   = document.getElementById("lb-info");
+
     let currentPage = 1;
     let currentTotal = 0;
     let currentPageSize = 12;
     let dlMode = null; // "downloadFile" | "openLink" | null
+
+    // Lightbox state
+    let lbActive = false;
+    let lbIndex  = 0;       // index within lbPageItems
+    let lbPageItems = [];   // completed items on current page (for lightbox nav)
+    let lbFsAvailable = false;
 
     // --- Helpers ---
     function trunc(s, n) {
       s = String(s || "");
       return s.length > n ? s.slice(0, n) + "\\u2026" : s;
     }
+    function computePageSize() {
+      const w = gridItems.offsetWidth || 300;
+      const cols = Math.max(3, Math.floor(w / 160));
+      return cols * 3;
+    }
+
+    // --- Lightbox ---
+    function updateLbNav() {
+      const globalOffset = (currentPage - 1) * currentPageSize;
+      const globalIdx = globalOffset + lbIndex;
+      lbPrev.disabled = globalIdx <= 0;
+      lbNext.disabled = globalIdx >= currentTotal - 1;
+    }
+
+    function openLightbox(pageIndex) {
+      const item = lbPageItems[pageIndex];
+      if (!item) return;
+      lbActive = true;
+      lbIndex  = pageIndex;
+      lbOverlay.removeAttribute("hidden");
+      lbLoading.style.display = "flex";
+      lbMeta.setAttribute("hidden", "");
+      if (lbFsAvailable) lbFsBtn.removeAttribute("hidden");
+      updateLbNav();
+      // Preview with thumbnail immediately
+      if (item.thumbnail_b64) {
+        lbImg.src = "data:image/webp;base64," + item.thumbnail_b64;
+        lbImg.removeAttribute("hidden");
+      } else {
+        lbImg.setAttribute("hidden", "");
+      }
+      loadFullImage(item);
+    }
+
+    async function loadFullImage(item) {
+      try {
+        const result = await app.callServerTool("gallery_full_image", { image_id: item.image_id });
+        if (result.isError) { lbLoading.style.display = "none"; return; }
+        const text = result.content?.find(c => c.type === "text")?.text;
+        if (!text) { lbLoading.style.display = "none"; return; }
+        const data = JSON.parse(text);
+        lbImg.src = "data:" + (data.content_type || "image/webp") + ";base64," + data.b64;
+        lbImg.removeAttribute("hidden");
+        lbLoading.style.display = "none";
+        lbPromptEl.textContent = data.prompt || "";
+        const parts = [data.provider];
+        if (data.dimensions) parts.push(data.dimensions.join("\\u00d7") + "px");
+        if (data.created_at) parts.push(new Date(data.created_at).toLocaleDateString());
+        lbInfoEl.textContent = parts.filter(Boolean).join(" \\u00b7 ");
+        lbMeta.removeAttribute("hidden");
+      } catch (e) {
+        console.warn("Failed to load full image", e);
+        lbLoading.style.display = "none";
+      }
+    }
+
+    function closeLightbox() {
+      if (!lbActive) return;
+      lbActive = false;
+      lbOverlay.setAttribute("hidden", "");
+      lbImg.setAttribute("hidden", "");
+      lbImg.src = "";
+      lbMeta.setAttribute("hidden", "");
+    }
+
+    async function navigateLb(delta) {
+      const newIdx = lbIndex + delta;
+      if (newIdx >= 0 && newIdx < lbPageItems.length) {
+        openLightbox(newIdx);
+      } else {
+        // Cross-page: load adjacent page then open first/last item
+        const targetPage = delta > 0 ? currentPage + 1 : currentPage - 1;
+        if (targetPage < 1) return;
+        lbLoading.style.display = "flex";
+        lbImg.setAttribute("hidden", "");
+        lbMeta.setAttribute("hidden", "");
+        try {
+          const ps = currentPageSize;
+          const result = await app.callServerTool("gallery_page", { page: targetPage, page_size: ps });
+          if (result.isError) { lbLoading.style.display = "none"; return; }
+          const text = result.content?.find(c => c.type === "text")?.text;
+          if (!text) { lbLoading.style.display = "none"; return; }
+          const data = JSON.parse(text);
+          currentPage = data.page;
+          currentTotal = data.total;
+          currentPageSize = data.page_size;
+          renderGrid(data);
+          const newPageIdx = delta > 0 ? 0 : lbPageItems.length - 1;
+          if (lbPageItems[newPageIdx]) openLightbox(newPageIdx);
+        } catch (e) {
+          console.warn("Cross-page lightbox nav failed", e);
+          lbLoading.style.display = "none";
+        }
+      }
+    }
+
+    lbBackdrop.addEventListener("click", closeLightbox);
+    lbClose.addEventListener("click", closeLightbox);
+    lbPrev.addEventListener("click", () => navigateLb(-1));
+    lbNext.addEventListener("click", () => navigateLb(1));
+    lbFsBtn.addEventListener("click", async () => {
+      const mode = lbFsBtn.dataset.active === "1" ? "inline" : "fullscreen";
+      try {
+        const res = await app.requestDisplayMode({ mode });
+        const isFs = res.mode === "fullscreen";
+        lbFsBtn.dataset.active = isFs ? "1" : "0";
+        lbFsBtn.title = isFs ? "Exit fullscreen" : "Enter fullscreen";
+      } catch (e) { console.warn("requestDisplayMode failed", e); }
+    });
+    window.addEventListener("keydown", (e) => {
+      if (!lbActive) return;
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "ArrowLeft")  navigateLb(-1);
+      else if (e.key === "ArrowRight") navigateLb(1);
+    });
+
     // --- Display states ---
     function show(which) {
       loadingEl.style.display = which === "loading" ? "flex" : "none";
@@ -867,6 +1084,9 @@ _IMAGE_GALLERY_HTML = """\
       currentTotal = total;
       gridItems.innerHTML = "";
 
+      // Update lightbox page items (completed images only)
+      lbPageItems = (items || []).filter(i => i.status === "completed" && i.image_id);
+
       if (!items || items.length === 0) {
         if (total === 0) { show("empty"); return; }
         show("grid");
@@ -875,8 +1095,19 @@ _IMAGE_GALLERY_HTML = """\
       }
 
       show("grid");
+      let lbIdx = 0;
       for (const item of items) {
-        gridItems.appendChild(makeCard(item));
+        const card = makeCard(item);
+        if (item.status === "completed" && item.image_id) {
+          const capturedIdx = lbIdx++;
+          card.addEventListener("click", (e) => {
+            if (!e.target.closest(".card-dl")) openLightbox(capturedIdx);
+          });
+          card.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openLightbox(capturedIdx); }
+          });
+        }
+        gridItems.appendChild(card);
       }
       renderPagination();
     }
@@ -977,6 +1208,11 @@ _IMAGE_GALLERY_HTML = """\
         mainEl.style.paddingRight  = (12 + right)  + "px";
         mainEl.style.paddingBottom = (12 + bottom) + "px";
         mainEl.style.paddingLeft   = (12 + left)   + "px";
+      }
+      lbFsAvailable = ctx.availableDisplayModes?.includes("fullscreen") ?? false;
+      if (lbActive) {
+        if (lbFsAvailable) lbFsBtn.removeAttribute("hidden");
+        else lbFsBtn.setAttribute("hidden", "");
       }
     }
 
