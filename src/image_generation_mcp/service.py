@@ -612,7 +612,9 @@ class ImageService:
         try:
             record.original_path.unlink(missing_ok=True)
         except OSError as exc:
-            logger.warning("Could not delete image file %s: %s", record.original_path, exc)
+            logger.warning(
+                "Could not delete image file %s: %s", record.original_path, exc
+            )
 
         # Delete sidecar JSON
         sidecar_path = self._scratch_dir / f"{image_id}.json"

@@ -62,18 +62,14 @@ def server_readonly(monkeypatch: pytest.MonkeyPatch):
 
 
 class TestServiceDeleteImage:
-    def test_delete_removes_image_from_registry(
-        self, service: ImageService
-    ) -> None:
+    def test_delete_removes_image_from_registry(self, service: ImageService) -> None:
         record = _add_image(service, 0)
         assert record.id in service._images
 
         service.delete_image(record.id)
         assert record.id not in service._images
 
-    def test_delete_removes_image_file(
-        self, service: ImageService
-    ) -> None:
+    def test_delete_removes_image_file(self, service: ImageService) -> None:
         record = _add_image(service, 0)
         assert record.original_path.exists()
 
@@ -90,18 +86,14 @@ class TestServiceDeleteImage:
         service.delete_image(record.id)
         assert not sidecar.exists()
 
-    def test_delete_returns_record(
-        self, service: ImageService
-    ) -> None:
+    def test_delete_returns_record(self, service: ImageService) -> None:
         record = _add_image(service, 0)
         deleted = service.delete_image(record.id)
         assert deleted.id == record.id
         assert deleted.prompt == "test 0"
         assert deleted.provider == "placeholder"
 
-    def test_delete_evicts_transform_cache(
-        self, service: ImageService
-    ) -> None:
+    def test_delete_evicts_transform_cache(self, service: ImageService) -> None:
         record = _add_image(service, 0)
         # Warm the transform cache
         service.get_transformed_image(record.id, "webp", 64, 0, 80)
@@ -116,9 +108,7 @@ class TestServiceDeleteImage:
         with pytest.raises(ImageProviderError):
             service.delete_image("nonexistent_id")
 
-    def test_delete_second_time_raises(
-        self, service: ImageService
-    ) -> None:
+    def test_delete_second_time_raises(self, service: ImageService) -> None:
         record = _add_image(service, 0)
         service.delete_image(record.id)
         with pytest.raises(ImageProviderError):
@@ -148,16 +138,12 @@ class TestDeleteImageTool:
         assert tool.annotations.readOnlyHint is False
         assert tool.annotations.destructiveHint is True
 
-    async def test_delete_tool_hidden_in_readonly_mode(
-        self, server_readonly
-    ) -> None:
+    async def test_delete_tool_hidden_in_readonly_mode(self, server_readonly) -> None:
         tools = await server_readonly.list_tools()
         names = [t.name for t in tools]
         assert "delete_image" not in names
 
-    async def test_delete_tool_removes_image(
-        self, service: ImageService
-    ) -> None:
+    async def test_delete_tool_removes_image(self, service: ImageService) -> None:
         record = _add_image(service, 0)
         assert record.id in service._images
 
@@ -182,9 +168,7 @@ class TestDeleteImageTool:
         assert "test 0" in result  # prompt in confirmation
         assert "placeholder" in result  # provider in confirmation
 
-    async def test_delete_tool_error_on_missing_id(
-        self, service: ImageService
-    ) -> None:
+    async def test_delete_tool_error_on_missing_id(self, service: ImageService) -> None:
         mcp = self._mcp()
         tool = await mcp.get_tool("delete_image")
         assert tool is not None
