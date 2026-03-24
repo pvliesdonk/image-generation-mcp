@@ -423,7 +423,7 @@ def create_server(transport: str = "stdio") -> FastMCP:
     )
 
     register_tools(mcp, transport=transport)
-    register_resources(mcp)
+    register_resources(mcp, config=config)
     register_prompts(mcp)
 
     # Mount artifact download endpoint for HTTP transports

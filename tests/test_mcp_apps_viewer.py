@@ -72,19 +72,33 @@ class TestImageViewerResource:
         text = result.contents[0].content
         assert "console.warn" in text
 
-    async def test_viewer_resource_has_domain(self, server) -> None:
-        """Widget domain must be set for ChatGPT compatibility."""
+    async def test_viewer_domain_omitted_without_base_url(self, server) -> None:
+        """Without BASE_URL, domain is omitted (host uses default sandbox)."""
         resources = await server.list_resources()
         viewer = next(
             r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
         )
-        # AppConfig.domain is serialized into resource.meta under the 'ui' key
         assert viewer.meta is not None
         app_meta = viewer.meta.get("ui", {})
-        assert (
-            app_meta.get("domain")
-            == "https://github.com/pvliesdonk/image-generation-mcp"
+        # domain excluded via exclude_none when BASE_URL is not set
+        assert "domain" not in app_meta
+
+    async def test_viewer_domain_derived_from_base_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When BASE_URL is set, domain is the hostname extracted from it."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
+        monkeypatch.setenv(
+            "IMAGE_GENERATION_MCP_BASE_URL", "https://mcp.example.com:8080/v1"
         )
+        srv = create_server()
+        resources = await srv.list_resources()
+        viewer = next(
+            r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
+        )
+        assert viewer.meta is not None
+        app_meta = viewer.meta.get("ui", {})
+        assert app_meta.get("domain") == "mcp.example.com"
 
     async def test_viewer_imgel_declared_before_if_blocks(self, server) -> None:
         """imgEl must be declared before both if(img) and if(text) blocks
