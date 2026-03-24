@@ -619,6 +619,8 @@ def _compute_claude_app_domain() -> str | None:
     http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH", "/mcp").strip() or "/mcp"
     if not http_path.startswith("/"):
         http_path = f"/{http_path}"
+    if len(http_path) > 1:
+        http_path = http_path.rstrip("/")
     mcp_url = f"{base_url}{http_path}"
     hash_prefix = hashlib.sha256(mcp_url.encode()).hexdigest()[:32]
     return f"{hash_prefix}.claudemcpcontent.com"
