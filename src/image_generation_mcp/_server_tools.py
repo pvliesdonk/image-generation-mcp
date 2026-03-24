@@ -552,9 +552,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             JSON with gallery data (total count, page metadata, thumbnail
             items for page 1) as a :class:`~fastmcp.tools.ToolResult`.
         """
-        images = sorted(
-            service.list_images(), key=lambda r: r.created_at, reverse=True
-        )
+        images = sorted(service.list_images(), key=lambda r: r.created_at, reverse=True)
         pending = service.list_pending()
         total = len(images) + len(pending)
 
@@ -639,9 +637,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             Each completed item includes ``thumbnail_b64`` (128 px WebP).
             Pending/generating items omit the thumbnail.
         """
-        images = sorted(
-            service.list_images(), key=lambda r: r.created_at, reverse=True
-        )
+        images = sorted(service.list_images(), key=lambda r: r.created_at, reverse=True)
         pending = service.list_pending()
         total = len(images) + len(pending)
 

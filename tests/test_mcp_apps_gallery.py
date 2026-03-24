@@ -249,9 +249,7 @@ class TestBrowseGallery:
         thumb_bytes = base64.b64decode(item["thumbnail_b64"])
         assert len(thumb_bytes) > 0
 
-    async def test_browse_gallery_pending_included(
-        self, service: ImageService
-    ) -> None:
+    async def test_browse_gallery_pending_included(self, service: ImageService) -> None:
         """In-progress generations appear as pending items (no thumbnail)."""
         pend = PendingGeneration(
             id="pend001",
@@ -311,9 +309,7 @@ class TestBrowseGallery:
 
         result = await tool.fn(service=service)
 
-        data = json.loads(
-            next(c for c in result.content if c.type == "text").text
-        )
+        data = json.loads(next(c for c in result.content if c.type == "text").text)
         assert data["total"] == 15
         assert len(data["items"]) == 12  # page_size cap
 
@@ -397,9 +393,7 @@ class TestGalleryPage:
         assert ids_p1.isdisjoint(ids_p2), "Pages must not overlap"
         assert len(ids_p1 | ids_p2) == 5, "Pages together must cover all items"
 
-    async def test_gallery_page_empty_returns_zero(
-        self, service: ImageService
-    ) -> None:
+    async def test_gallery_page_empty_returns_zero(self, service: ImageService) -> None:
         mcp = self._mcp()
         tool = await mcp.get_tool("gallery_page")
         assert tool is not None
@@ -409,9 +403,7 @@ class TestGalleryPage:
         assert data["total"] == 0
         assert data["items"] == []
 
-    async def test_gallery_page_clamps_page_size(
-        self, service: ImageService
-    ) -> None:
+    async def test_gallery_page_clamps_page_size(self, service: ImageService) -> None:
         """page_size is clamped to max 24."""
         mcp = self._mcp()
         tool = await mcp.get_tool("gallery_page")
