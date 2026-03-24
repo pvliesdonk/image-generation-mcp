@@ -6,6 +6,7 @@ image viewer as MCP resources.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -527,6 +528,27 @@ _IMAGE_VIEWER_HTML = """\
 </html>"""
 
 
+def _compute_claude_app_domain() -> str | None:
+    """Auto-compute Claude's MCP Apps sandbox domain from BASE_URL.
+
+    Claude requires ``{sha256_prefix}.claudemcpcontent.com`` where the hash
+    is derived from the full MCP endpoint URL the client connects to.
+
+    Returns:
+        The computed domain string, or ``None`` when ``BASE_URL`` is not set
+        (e.g. stdio transport or local development).
+    """
+    base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").strip().rstrip("/")
+    if not base_url:
+        return None
+    http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH", "/mcp").strip() or "/mcp"
+    if not http_path.startswith("/"):
+        http_path = f"/{http_path}"
+    mcp_url = f"{base_url}{http_path}"
+    hash_prefix = hashlib.sha256(mcp_url.encode()).hexdigest()[:32]
+    return f"{hash_prefix}.claudemcpcontent.com"
+
+
 def register_resources(mcp: FastMCP) -> None:
     """Register all MCP resources on *mcp*.
 
@@ -729,13 +751,13 @@ def register_resources(mcp: FastMCP) -> None:
 
     # -- MCP Apps: image viewer -------------------------------------------------
 
-    # The domain field is host-specific (per the MCP Apps ext spec):
-    # Claude requires "{sha256}.claudemcpcontent.com", ChatGPT uses
-    # "*.oaiusercontent.com", etc.  Since a universal server cannot guess
-    # the right format, we omit domain by default (host assigns its own
-    # sandbox origin) and let users override via APP_DOMAIN env var.
+    # Resolve the MCP Apps sandbox domain.  Priority:
+    # 1. Explicit APP_DOMAIN env var (any host format)
+    # 2. Auto-computed from BASE_URL for Claude (sha256 of MCP endpoint URL)
+    # 3. None — host assigns its own sandbox origin (stdio / local setups)
     app_domain: str | None = (
-        os.environ.get(f"{_ENV_PREFIX}_APP_DOMAIN", "").strip() or None
+        os.environ.get(f"{_ENV_PREFIX}_APP_DOMAIN", "").strip()
+        or _compute_claude_app_domain()
     )
 
     @mcp.resource(
