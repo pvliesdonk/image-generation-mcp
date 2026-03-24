@@ -3,18 +3,20 @@
 from __future__ import annotations
 
 from io import BytesIO
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+from fastmcp import FastMCP
 from PIL import Image as PILImage
 
 from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.mcp_server import create_server
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
-from image_generation_mcp.providers.types import ImageResult
+from image_generation_mcp.providers.types import ImageProviderError, ImageResult
 from image_generation_mcp.service import ImageRecord, ImageService
 
-from fastmcp import FastMCP
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +63,7 @@ def server_readonly(monkeypatch: pytest.MonkeyPatch):
 
 class TestServiceDeleteImage:
     def test_delete_removes_image_from_registry(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         record = _add_image(service, 0)
         assert record.id in service._images
@@ -70,7 +72,7 @@ class TestServiceDeleteImage:
         assert record.id not in service._images
 
     def test_delete_removes_image_file(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         record = _add_image(service, 0)
         assert record.original_path.exists()
@@ -89,7 +91,7 @@ class TestServiceDeleteImage:
         assert not sidecar.exists()
 
     def test_delete_returns_record(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         record = _add_image(service, 0)
         deleted = service.delete_image(record.id)
@@ -98,7 +100,7 @@ class TestServiceDeleteImage:
         assert deleted.provider == "placeholder"
 
     def test_delete_evicts_transform_cache(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         record = _add_image(service, 0)
         # Warm the transform cache
@@ -111,16 +113,12 @@ class TestServiceDeleteImage:
         assert not any(k[0] == record.id for k in remaining_keys)
 
     def test_delete_raises_for_unknown_id(self, service: ImageService) -> None:
-        from image_generation_mcp.providers.types import ImageProviderError
-
         with pytest.raises(ImageProviderError):
             service.delete_image("nonexistent_id")
 
     def test_delete_second_time_raises(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
-        from image_generation_mcp.providers.types import ImageProviderError
-
         record = _add_image(service, 0)
         service.delete_image(record.id)
         with pytest.raises(ImageProviderError):
@@ -158,7 +156,7 @@ class TestDeleteImageTool:
         assert "delete_image" not in names
 
     async def test_delete_tool_removes_image(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         record = _add_image(service, 0)
         assert record.id in service._images
@@ -172,7 +170,7 @@ class TestDeleteImageTool:
         assert record.id in result
 
     async def test_delete_tool_returns_confirmation(
-        self, service: ImageService, tmp_path: Path
+        self, service: ImageService
     ) -> None:
         record = _add_image(service, 0)
 
@@ -191,7 +189,7 @@ class TestDeleteImageTool:
         tool = await mcp.get_tool("delete_image")
         assert tool is not None
 
-        with pytest.raises(Exception):
+        with pytest.raises(ImageProviderError):
             await tool.fn(image_id="nonexistent_id", service=service)
 
 
