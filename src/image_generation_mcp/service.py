@@ -110,8 +110,11 @@ class ImageService:
         # NOTE: register_image is called via asyncio.to_thread (cross-thread
         # mutation). Safe under CPython GIL; revisit if moving to free-threading.
         self._images: dict[str, ImageRecord] = {}
-        # NOTE: OrderedDict is not thread-safe. This cache assumes single-threaded
-        # access from the asyncio event loop (no to_thread dispatch).
+        # NOTE: OrderedDict is not thread-safe in general, but CPython's GIL
+        # serialises individual dict operations. Methods that touch this cache
+        # (get_transformed_image, delete_image) are called via asyncio.to_thread,
+        # so concurrent mutations are possible, but each individual op is atomic
+        # under the GIL. Safe under CPython; revisit if moving to free-threading.
         self._transform_cache: OrderedDict[
             tuple[str, str, int, int, int], tuple[bytes, str]
         ] = OrderedDict()

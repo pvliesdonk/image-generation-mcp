@@ -1203,10 +1203,20 @@ _IMAGE_GALLERY_HTML = """\
       btn.disabled = true;
       try {
         const result = await app.callServerTool("delete_image", { image_id: id });
-        if (result.isError) { btn.disabled = false; return; }
-        // Reload current page
-        await goTo(currentPage);
-      } catch (ex) { console.warn("Delete failed", ex); btn.disabled = false; }
+        if (result.isError) {
+          alert("Delete failed: " + (result.content?.find(c => c.type === "text")?.text || "Unknown error"));
+          return;
+        }
+        // Reload current page; navigate back if this was the last item on a non-first page
+        const newPage = (currentTotal - 1 <= (currentPage - 1) * currentPageSize && currentPage > 1)
+          ? currentPage - 1 : currentPage;
+        await goTo(newPage);
+      } catch (ex) {
+        console.warn("Delete failed", ex);
+        alert("Delete failed: " + ex.message);
+      } finally {
+        btn.disabled = false;
+      }
     });
 
     // --- Delete (lightbox) ---
@@ -1214,19 +1224,30 @@ _IMAGE_GALLERY_HTML = """\
       const item = lbPageItems[lbIndex];
       if (!item || !item.image_id) return;
       if (!confirm("Delete this image? This cannot be undone.")) return;
+      lbDelBtn.disabled = true;
       try {
         const result = await app.callServerTool("delete_image", { image_id: item.image_id });
-        if (result.isError) return;
-        // Reload page and reopen lightbox at next/prev item
+        if (result.isError) {
+          alert("Delete failed: " + (result.content?.find(c => c.type === "text")?.text || "Unknown error"));
+          return;
+        }
+        // Reload page; if last item on a non-first page, navigate back first
         const oldIndex = lbIndex;
-        await goTo(currentPage);
+        const newPage = (currentTotal - 1 <= (currentPage - 1) * currentPageSize && currentPage > 1)
+          ? currentPage - 1 : currentPage;
+        await goTo(newPage);
         if (lbPageItems.length === 0) {
           closeLightbox();
         } else {
           const newIdx = Math.min(oldIndex, lbPageItems.length - 1);
           openLightbox(newIdx);
         }
-      } catch (ex) { console.warn("Lightbox delete failed", ex); }
+      } catch (ex) {
+        console.warn("Lightbox delete failed", ex);
+        alert("Delete failed: " + ex.message);
+      } finally {
+        lbDelBtn.disabled = false;
+      }
     }
 
     // --- Lifecycle handlers (ALL before connect) ---

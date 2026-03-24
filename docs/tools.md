@@ -256,7 +256,7 @@ Text confirmation with the deleted image's prompt and provider, e.g.:
 Deleted image a1b2c3d4e5f6 (prompt: 'a mountain landscape', provider: openai)
 ```
 
-Returns an error message if the image ID is not found.
+Raises an error if the image ID is not found.
 
 ---
 
