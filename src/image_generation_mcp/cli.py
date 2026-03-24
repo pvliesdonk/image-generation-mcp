@@ -58,15 +58,20 @@ def _cmd_serve(args: argparse.Namespace) -> None:
     ):
         logger.warning("--host, --port and --path are only used with --transport http")
     if transport == "http":
-        from image_generation_mcp._http_logging import mcp_request_logging_middleware
+        import uvicorn
 
-        server.run(
-            transport="http",
-            host=args.host,
-            port=args.port,
+        from image_generation_mcp._http_logging import mcp_request_logging_middleware
+        from image_generation_mcp.mcp_server import build_event_store
+
+        event_store_url = os.environ.get(f"{_ENV_PREFIX}_EVENT_STORE_URL")
+        event_store = build_event_store(event_store_url)
+
+        app = server.http_app(
             path=http_path,
             middleware=mcp_request_logging_middleware(),
+            event_store=event_store,
         )
+        uvicorn.run(app, host=args.host, port=args.port)
     else:
         server.run(transport=transport)
 

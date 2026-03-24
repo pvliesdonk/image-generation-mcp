@@ -187,6 +187,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_EVENT_STORE_URL` | str | `file:///data/state/events` | EventStore backend: `file:///path` (persistent, survives restarts) or `memory://` (dev only) |
 | `IMAGE_GENERATION_MCP_SERVER_NAME` | str | `image-generation-mcp` | Server name shown to MCP clients |
 | `IMAGE_GENERATION_MCP_INSTRUCTIONS` | str | (dynamic) | System instructions for LLM context |
 | `FASTMCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR` (controls FastMCP internals; use `-v` to set app loggers to DEBUG) |

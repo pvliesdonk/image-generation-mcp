@@ -162,11 +162,19 @@ class TestCmdServe:
         mock_server.run.assert_called_once_with(transport="stdio")
 
     def test_cmd_serve_http_transport(self) -> None:
-        """serve with http transport calls server.run with host/port/path."""
+        """serve with http transport calls http_app + uvicorn.run with host/port/path."""
         mock_server = MagicMock()
         mock_create = MagicMock(return_value=mock_server)
+        mock_event_store = MagicMock()
 
-        with patch("image_generation_mcp.mcp_server.create_server", mock_create):
+        with (
+            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch(
+                "image_generation_mcp.mcp_server.build_event_store",
+                return_value=mock_event_store,
+            ),
+            patch("uvicorn.run") as mock_uvicorn_run,
+        ):
             args = argparse.Namespace(
                 transport="http",
                 host="0.0.0.0",
@@ -175,20 +183,30 @@ class TestCmdServe:
             )
             _cmd_serve(args)
 
-        mock_server.run.assert_called_once()
-        call_kwargs = mock_server.run.call_args.kwargs
-        assert call_kwargs["transport"] == "http"
-        assert call_kwargs["host"] == "0.0.0.0"
-        assert call_kwargs["port"] == 8000
-        assert call_kwargs["path"] == "/mcp"
-        assert "middleware" in call_kwargs
+        mock_server.http_app.assert_called_once()
+        app_kwargs = mock_server.http_app.call_args.kwargs
+        assert app_kwargs["path"] == "/mcp"
+        assert "middleware" in app_kwargs
+        assert app_kwargs["event_store"] is mock_event_store
+
+        mock_uvicorn_run.assert_called_once()
+        run_args = mock_uvicorn_run.call_args
+        assert run_args.kwargs["host"] == "0.0.0.0"
+        assert run_args.kwargs["port"] == 8000
 
     def test_cmd_serve_http_custom_path(self) -> None:
         """serve with http and custom path uses normalised path."""
         mock_server = MagicMock()
         mock_create = MagicMock(return_value=mock_server)
 
-        with patch("image_generation_mcp.mcp_server.create_server", mock_create):
+        with (
+            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch(
+                "image_generation_mcp.mcp_server.build_event_store",
+                return_value=MagicMock(),
+            ),
+            patch("uvicorn.run") as mock_uvicorn_run,
+        ):
             args = argparse.Namespace(
                 transport="http",
                 host="localhost",
@@ -197,13 +215,15 @@ class TestCmdServe:
             )
             _cmd_serve(args)
 
-        mock_server.run.assert_called_once()
-        call_kwargs = mock_server.run.call_args.kwargs
-        assert call_kwargs["transport"] == "http"
-        assert call_kwargs["host"] == "localhost"
-        assert call_kwargs["port"] == 9000
-        assert call_kwargs["path"] == "/custom"
-        assert "middleware" in call_kwargs
+        mock_server.http_app.assert_called_once()
+        app_kwargs = mock_server.http_app.call_args.kwargs
+        assert app_kwargs["path"] == "/custom"
+        assert "middleware" in app_kwargs
+
+        mock_uvicorn_run.assert_called_once()
+        run_args = mock_uvicorn_run.call_args
+        assert run_args.kwargs["host"] == "localhost"
+        assert run_args.kwargs["port"] == 9000
 
     def test_cmd_serve_http_path_from_env(
         self, monkeypatch: pytest.MonkeyPatch
@@ -213,7 +233,14 @@ class TestCmdServe:
         mock_server = MagicMock()
         mock_create = MagicMock(return_value=mock_server)
 
-        with patch("image_generation_mcp.mcp_server.create_server", mock_create):
+        with (
+            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch(
+                "image_generation_mcp.mcp_server.build_event_store",
+                return_value=MagicMock(),
+            ),
+            patch("uvicorn.run") as mock_uvicorn_run,
+        ):
             args = argparse.Namespace(
                 transport="http",
                 host="0.0.0.0",
@@ -222,11 +249,11 @@ class TestCmdServe:
             )
             _cmd_serve(args)
 
-        mock_server.run.assert_called_once()
-        call_kwargs = mock_server.run.call_args.kwargs
-        assert call_kwargs["transport"] == "http"
-        assert call_kwargs["path"] == "/from-env"
-        assert "middleware" in call_kwargs
+        mock_server.http_app.assert_called_once()
+        app_kwargs = mock_server.http_app.call_args.kwargs
+        assert app_kwargs["path"] == "/from-env"
+        assert "middleware" in app_kwargs
+        mock_uvicorn_run.assert_called_once()
 
     def test_cmd_serve_stdio_warns_for_http_args(
         self, caplog: pytest.LogCaptureFixture

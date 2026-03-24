@@ -203,6 +203,11 @@
           "default": "/mcp"
         },
         {
+          "name": "IMAGE_GENERATION_MCP_EVENT_STORE_URL",
+          "description": "EventStore backend for SSE session resumability. file:///path (file-backed, survives restarts) or memory:// (in-process only, dev mode).",
+          "default": "file:///data/state/events"
+        },
+        {
           "name": "PUID",
           "description": "Run as this UID (Docker entrypoint).",
           "format": "number",
