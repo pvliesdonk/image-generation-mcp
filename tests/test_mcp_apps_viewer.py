@@ -151,9 +151,7 @@ class TestImageViewerResource:
     ) -> None:
         """When BASE_URL is set but APP_DOMAIN is not, domain is auto-computed."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-        monkeypatch.setenv(
-            "IMAGE_GENERATION_MCP_BASE_URL", "https://example.com"
-        )
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://example.com")
         srv = create_server()
         resources = await srv.list_resources()
         viewer = next(
@@ -164,21 +162,15 @@ class TestImageViewerResource:
         # sha256("https://example.com/mcp")[:32] + ".claudemcpcontent.com"
         import hashlib
 
-        expected_hash = hashlib.sha256(
-            b"https://example.com/mcp"
-        ).hexdigest()[:32]
-        assert app_meta.get("domain") == (
-            f"{expected_hash}.claudemcpcontent.com"
-        )
+        expected_hash = hashlib.sha256(b"https://example.com/mcp").hexdigest()[:32]
+        assert app_meta.get("domain") == (f"{expected_hash}.claudemcpcontent.com")
 
     async def test_viewer_domain_auto_computed_custom_http_path(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Custom HTTP_PATH (with trailing slash) is normalised in hash."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-        monkeypatch.setenv(
-            "IMAGE_GENERATION_MCP_BASE_URL", "https://example.com"
-        )
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://example.com")
         monkeypatch.setenv("IMAGE_GENERATION_MCP_HTTP_PATH", "custom/")
         srv = create_server()
         resources = await srv.list_resources()
@@ -190,21 +182,15 @@ class TestImageViewerResource:
         import hashlib
 
         # Trailing slash stripped, leading slash added
-        expected_hash = hashlib.sha256(
-            b"https://example.com/custom"
-        ).hexdigest()[:32]
-        assert app_meta.get("domain") == (
-            f"{expected_hash}.claudemcpcontent.com"
-        )
+        expected_hash = hashlib.sha256(b"https://example.com/custom").hexdigest()[:32]
+        assert app_meta.get("domain") == (f"{expected_hash}.claudemcpcontent.com")
 
     async def test_viewer_domain_app_domain_overrides_base_url(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Explicit APP_DOMAIN takes priority over BASE_URL auto-compute."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-        monkeypatch.setenv(
-            "IMAGE_GENERATION_MCP_BASE_URL", "https://example.com"
-        )
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://example.com")
         monkeypatch.setenv(
             "IMAGE_GENERATION_MCP_APP_DOMAIN",
             "custom-domain.example.com",

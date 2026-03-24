@@ -16,39 +16,50 @@ from __future__ import annotations
 import json
 import logging
 import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 from starlette.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 if TYPE_CHECKING:
     from starlette.requests import Request
     from starlette.responses import Response
+    from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
 
 _SESSION_HEADER = "mcp-session-id"
+_MAX_SEEN_SESSIONS = 10_000
+
+
+def _sanitize(value: str) -> str:
+    """Replace CR and LF characters to prevent log injection."""
+    return value.replace("\r", " ").replace("\n", " ")
 
 
 class _MCPRequestLoggingMiddleware(BaseHTTPMiddleware):
     """Log MCP HTTP requests with session and JSON-RPC context."""
 
-    def __init__(self, app):
+    def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
-        self._seen_sessions: set[str] = set()
+        # Bounded LRU to prevent unbounded memory growth.
+        self._seen_sessions: OrderedDict[str, None] = OrderedDict()
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """Log request method, JSON-RPC method, session ID, and status."""
         session_id = request.headers.get(_SESSION_HEADER, "-")
         session_short = session_id[:12] if session_id != "-" else "-"
 
         # Log User-Agent on first request per session.
         if session_id not in self._seen_sessions:
-            self._seen_sessions.add(session_id)
-            ua = request.headers.get("user-agent", "-")
-            logger.info(
-                "MCP new session=%s User-Agent: %s", session_short, ua
-            )
+            if len(self._seen_sessions) >= _MAX_SEEN_SESSIONS:
+                self._seen_sessions.popitem(last=False)
+            self._seen_sessions[session_id] = None
+            ua = _sanitize(request.headers.get("user-agent", "-"))
+            logger.info("MCP new session=%s User-Agent: %s", session_short, ua)
 
         # Extract JSON-RPC method and extra context from POST body.
         rpc_method = "-"
@@ -56,6 +67,8 @@ class _MCPRequestLoggingMiddleware(BaseHTTPMiddleware):
         if request.method == "POST":
             try:
                 body = await request.body()
+                # Cache the body so downstream handlers can read it again.
+                request._body = body
                 payload = json.loads(body)
                 if isinstance(payload, dict):
                     rpc_method = payload.get("method", "-")
@@ -64,9 +77,7 @@ class _MCPRequestLoggingMiddleware(BaseHTTPMiddleware):
                         rpc_extra = _extract_rpc_context(rpc_method, params)
                 elif isinstance(payload, list) and payload:
                     # Batch request — show first method + count
-                    rpc_method = (
-                        f"{payload[0].get('method', '?')}[+{len(payload) - 1}]"
-                    )
+                    rpc_method = f"{payload[0].get('method', '?')}[+{len(payload) - 1}]"
             except (json.JSONDecodeError, UnicodeDecodeError, KeyError):
                 rpc_method = "<parse-error>"
 
@@ -101,23 +112,26 @@ class _MCPRequestLoggingMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def _extract_rpc_context(method: str, params: dict) -> str:
+def _extract_rpc_context(method: str, params: dict[str, object]) -> str:
     """Extract human-readable context from JSON-RPC params.
 
     Returns a short string to append to the log label, or empty string.
     """
     if method == "initialize":
         ci = params.get("clientInfo", {})
-        name = ci.get("name", "?")
-        ver = ci.get("version", "?")
+        if isinstance(ci, dict):
+            name = _sanitize(str(ci.get("name", "?")))
+            ver = _sanitize(str(ci.get("version", "?")))
+        else:
+            name, ver = "?", "?"
         return f"client={name}/{ver}"
 
     if method == "resources/read":
-        uri = params.get("uri", "?")
+        uri = _sanitize(str(params.get("uri", "?")))
         return f"uri={uri}"
 
     if method == "tools/call":
-        tool = params.get("name", "?")
+        tool = _sanitize(str(params.get("name", "?")))
         return f"tool={tool}"
 
     return ""
