@@ -7,7 +7,6 @@ import base64
 import json
 from io import BytesIO
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 from PIL import Image as PILImage
@@ -132,13 +131,16 @@ class TestGalleryResource:
         assert "resource_link" in text
         assert "getHostCapabilities" in text
 
-    async def test_gallery_html_has_open_link_fallback(self, server) -> None:
-        """Download must fall back to openLink when downloadFile is unavailable."""
+    async def test_gallery_html_download_requires_downloadfile(self, server) -> None:
+        """Download buttons are only shown when downloadFile capability is present.
+        The openLink fallback is intentionally omitted: download_url is never
+        returned in gallery tool responses, so the fallback would be dead code.
+        """
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert "openLinks" in text
-        assert "app.openLink" in text
-        assert "openLink" in text
+        assert "downloadFile" in text
+        # openLink fallback removed — download_url not in tool responses
+        assert 'dlMode = "openLink"' not in text
 
     async def test_gallery_html_has_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
@@ -212,8 +214,7 @@ class TestBrowseGallery:
         tool = await mcp.get_tool("browse_gallery")
         assert tool is not None
 
-        cfg = MagicMock()
-        result = await tool.fn(service=service, config=cfg)
+        result = await tool.fn(service=service)
 
         text_content = next(c for c in result.content if c.type == "text")
         data = json.loads(text_content.text)
@@ -231,8 +232,7 @@ class TestBrowseGallery:
         tool = await mcp.get_tool("browse_gallery")
         assert tool is not None
 
-        cfg = MagicMock()
-        result = await tool.fn(service=service, config=cfg)
+        result = await tool.fn(service=service)
 
         text_content = next(c for c in result.content if c.type == "text")
         data = json.loads(text_content.text)
@@ -266,8 +266,7 @@ class TestBrowseGallery:
         tool = await mcp.get_tool("browse_gallery")
         assert tool is not None
 
-        cfg = MagicMock()
-        result = await tool.fn(service=service, config=cfg)
+        result = await tool.fn(service=service)
 
         text_content = next(c for c in result.content if c.type == "text")
         data = json.loads(text_content.text)
@@ -287,8 +286,7 @@ class TestBrowseGallery:
         tool = await mcp.get_tool("browse_gallery")
         assert tool is not None
 
-        cfg = MagicMock()
-        result = await tool.fn(service=service, config=cfg)
+        result = await tool.fn(service=service)
 
         text_contents = [c for c in result.content if c.type == "text"]
         assert len(text_contents) >= 1
@@ -310,8 +308,7 @@ class TestBrowseGallery:
         tool = await mcp.get_tool("browse_gallery")
         assert tool is not None
 
-        cfg = MagicMock()
-        result = await tool.fn(service=service, config=cfg)
+        result = await tool.fn(service=service)
 
         data = json.loads(
             next(c for c in result.content if c.type == "text").text
@@ -339,15 +336,16 @@ class TestGalleryPage:
         register_tools(mcp)
         tool = await mcp.get_tool("gallery_page")
         assert tool is not None
-        # The app meta is attached to the FastMCP tool object
         # Check via server.list_tools() which returns all tools including app-only
         tools = await server.list_tools()
         gp = next((t for t in tools if t.name == "gallery_page"), None)
-        if gp is not None and gp.meta:
-            app_meta = gp.meta.get("ui", {})
-            visibility = app_meta.get("visibility", [])
-            # app-only means "model" is NOT in visibility
-            assert "model" not in visibility
+        assert gp is not None, "gallery_page must be registered"
+        assert gp.meta is not None, "gallery_page must have meta"
+        app_meta = gp.meta.get("ui", {})
+        visibility = app_meta.get("visibility", [])
+        # app-only means "app" is in visibility and "model" is NOT
+        assert "app" in visibility
+        assert "model" not in visibility
 
     async def test_gallery_page_returns_all_items_single_page(
         self, service: ImageService, tmp_path: Path

@@ -530,7 +530,6 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     )
     async def browse_gallery(
         service: ImageService = Depends(get_service),
-        config: ServerConfig = Depends(get_config),
     ) -> ToolResult:
         """Browse all generated images in an interactive visual gallery.
 
@@ -563,6 +562,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         page_size = 12
         all_items: list[dict[str, object]] = []
         for p in pending:
+            if len(all_items) >= page_size:
+                break
             all_items.append(
                 {
                     "image_id": p.id,

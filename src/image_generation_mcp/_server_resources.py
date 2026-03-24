@@ -951,9 +951,6 @@ _IMAGE_GALLERY_HTML = """\
               mimeType: mime,
             }],
           });
-        } else if (dlMode === "openLink") {
-          const url = btn.dataset.downloadUrl;
-          if (url) await app.openLink({ url });
         }
       } catch (ex) { console.warn("Download failed", ex); }
     });
@@ -969,9 +966,8 @@ _IMAGE_GALLERY_HTML = """\
         if (typeof data.total !== "number") { show("empty"); return; }
         currentPage = data.page || 1;
         currentTotal = data.total;
-        currentPageSize = computePageSize();
-        const sliced = { ...data, items: (data.items || []).slice(0, currentPageSize) };
-        renderGrid(sliced);
+        currentPageSize = data.page_size || 12;
+        renderGrid(data);
       } catch (e) {
         console.warn("Failed to parse gallery data", e);
         show("empty");
@@ -998,14 +994,12 @@ _IMAGE_GALLERY_HTML = """\
     const ctx = app.getHostContext();
     if (ctx) handleHostContext(ctx);
 
-    // Show download buttons: prefer downloadFile, fall back to openLink
+    // Show download buttons only when downloadFile is available.
+    // openLink fallback omitted: download_url is not returned in tool responses.
     const caps = app.getHostCapabilities();
     if (caps?.downloadFile) {
       dlMode = "downloadFile";
       document.querySelectorAll(".card-dl").forEach(b => b.style.display = "block");
-    } else if (caps?.openLinks) {
-      dlMode = "openLink";
-      document.querySelectorAll(".card-dl[data-download-url]").forEach(b => b.style.display = "block");
     }
   </script>
 </body>
