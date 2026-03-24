@@ -3,7 +3,7 @@
   "name": "io.github.pvliesdonk/image-generation-mcp",
   "title": "Image Generation MCP Server",
   "description": "MCP server for AI image generation via OpenAI, Stable Diffusion (SD WebUI), or placeholders.",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "websiteUrl": "https://pvliesdonk.github.io/image-generation-mcp/",
   "repository": {
     "url": "https://github.com/pvliesdonk/image-generation-mcp",
@@ -13,7 +13,7 @@
     {
       "registryType": "pypi",
       "identifier": "image-generation-mcp",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -60,7 +60,12 @@
           "name": "FASTMCP_LOG_LEVEL",
           "description": "Log level for FastMCP internals; app loggers default to INFO, -v overrides both to DEBUG.",
           "default": "INFO",
-          "choices": ["DEBUG", "INFO", "WARNING", "ERROR"]
+          "choices": [
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR"
+          ]
         },
         {
           "name": "IMAGE_GENERATION_MCP_SERVER_NAME",
@@ -120,7 +125,7 @@
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/pvliesdonk/image-generation-mcp:v1.2.0",
+      "identifier": "ghcr.io/pvliesdonk/image-generation-mcp:v1.3.0",
       "transport": {
         "type": "streamable-http",
         "url": "http://localhost:{--port}/mcp"
@@ -176,7 +181,12 @@
           "name": "FASTMCP_LOG_LEVEL",
           "description": "Log level for FastMCP internals; app loggers default to INFO, -v overrides both to DEBUG.",
           "default": "INFO",
-          "choices": ["DEBUG", "INFO", "WARNING", "ERROR"]
+          "choices": [
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "ERROR"
+          ]
         },
         {
           "name": "IMAGE_GENERATION_MCP_SERVER_NAME",
