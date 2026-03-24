@@ -67,6 +67,20 @@ class TestBuildEventStoreURLParsing:
         with pytest.raises(ValueError, match="host component"):
             build_event_store("file://relative/dir")
 
+    def test_empty_string_url_returns_file_backed_store(self, tmp_path: Path) -> None:
+        """Empty string hits the same 'if not url' branch as None."""
+        import image_generation_mcp.mcp_server as mod
+
+        orig = mod._DEFAULT_EVENT_STORE_DIR
+        try:
+            mod._DEFAULT_EVENT_STORE_DIR = str(tmp_path / "events")
+            store = build_event_store("")
+            from fastmcp.server.event_store import EventStore
+
+            assert isinstance(store, EventStore)
+        finally:
+            mod._DEFAULT_EVENT_STORE_DIR = orig
+
     def test_unsupported_scheme_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="Unsupported EVENT_STORE_URL scheme"):
             build_event_store("redis://localhost:6379")

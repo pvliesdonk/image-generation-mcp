@@ -256,6 +256,29 @@ class TestCmdServe:
         assert "middleware" in app_kwargs
         mock_uvicorn_run.assert_called_once()
 
+    def test_cmd_serve_http_event_store_url_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """EVENT_STORE_URL is read from env and forwarded to build_event_store."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_EVENT_STORE_URL", "memory://")
+        mock_server = MagicMock()
+        mock_build = MagicMock(return_value=MagicMock())
+
+        with (
+            patch("image_generation_mcp.mcp_server.create_server", return_value=mock_server),
+            patch("image_generation_mcp.mcp_server.build_event_store", mock_build),
+            patch("uvicorn.run"),
+        ):
+            args = argparse.Namespace(
+                transport="http",
+                host="0.0.0.0",
+                port=8000,
+                path=None,
+            )
+            _cmd_serve(args)
+
+        mock_build.assert_called_once_with("memory://")
+
     def test_cmd_serve_stdio_warns_for_http_args(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
