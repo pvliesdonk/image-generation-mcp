@@ -152,6 +152,52 @@ show_image(uri="image://a1b2c3d4e5f6/view?width=256&height=256")
 
 ---
 
+## browse_gallery
+
+Open an interactive visual gallery of all generated images. The gallery renders a responsive thumbnail grid directly in Claude Desktop / claude.ai via the MCP Apps widget.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | *(none — read-only, always visible)* |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
+| **MCP App** | Opens `ui://image-gallery/view.html` widget |
+
+### Parameters
+
+None. The gallery loads all images automatically.
+
+### Return value
+
+JSON with gallery data (for non-UI clients):
+
+```json
+{
+  "total": 42,
+  "page": 1,
+  "page_size": 12,
+  "items": [
+    {
+      "image_id": "a1b2c3d4e5f6",
+      "status": "completed",
+      "prompt": "a mountain landscape",
+      "provider": "openai",
+      "dimensions": [1024, 1024],
+      "created_at": "2026-03-24T10:00:00+00:00",
+      "thumbnail_b64": "<base64-encoded 128px WebP>",
+      "content_type": "image/png"
+    }
+  ]
+}
+```
+
+For MCP Apps-capable clients, the gallery widget is rendered inline with:
+- Responsive thumbnail grid (3×3 default, adaptive to available width)
+- Hover overlay showing prompt excerpt and provider badge
+- Download button (requires `downloadFile` host capability)
+- Prev/Next pagination
+
+---
+
 ## list_providers
 
 List available image generation providers and their status.
