@@ -265,7 +265,10 @@ class TestCmdServe:
         mock_build = MagicMock(return_value=MagicMock())
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", return_value=mock_server),
+            patch(
+                "image_generation_mcp.mcp_server.create_server",
+                return_value=mock_server,
+            ),
             patch("image_generation_mcp.mcp_server.build_event_store", mock_build),
             patch("uvicorn.run"),
         ):
