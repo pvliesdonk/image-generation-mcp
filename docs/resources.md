@@ -269,8 +269,9 @@ This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025
 - **Thumbnail grid** — responsive grid using CSS `auto-fill` with 140 px minimum card width; 3×3 at typical inline size, adapts to available width (4×3 at wider sizes)
 - **Page size** — fixed at 12 items per page, set server-side by `browse_gallery` and propagated via `data.page_size`
 - **Pagination** — Prev/Next buttons call the `gallery_page` app-only tool; page indicator shows current/total
-- **Hover overlay** — prompt excerpt (2-line clamp) and provider badge on thumbnail hover
-- **Download button** — shown when `downloadFile` host capability is available; uses `resource_link` to `image://{id}/view` for full-resolution download
+- **Hover overlay** — prompt excerpt (2-line clamp) and provider badge on thumbnail hover; keyboard-accessible (`:focus-within`)
+- **Download button** — uses `resource_link` to `image://{id}/view` with `downloadFile` → `openLink` fallback
+- **Lightbox** — clicking a thumbnail opens a full-resolution overlay via `gallery_full_image` (app-only); prev/next navigation with cross-page support; close via ✕ button, Escape key, or backdrop click; fullscreen toggle when `requestDisplayMode("fullscreen")` is available from the host
 - **Pending items** — in-progress generations appear with spinner overlay and prompt label
 - **Empty state** — friendly message with `generate_image` call-to-action when no images exist
 - **Host theming** — same theme/CSS-variable/safe-area integration as the image viewer
