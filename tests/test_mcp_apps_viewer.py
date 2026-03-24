@@ -81,7 +81,10 @@ class TestImageViewerResource:
         # AppConfig.domain is serialized into resource.meta under the 'ui' key
         assert viewer.meta is not None
         app_meta = viewer.meta.get("ui", {})
-        assert app_meta.get("domain") == "https://github.com/pvliesdonk/image-generation-mcp"
+        assert (
+            app_meta.get("domain")
+            == "https://github.com/pvliesdonk/image-generation-mcp"
+        )
 
     async def test_viewer_imgel_declared_before_if_blocks(self, server) -> None:
         """imgEl must be declared before both if(img) and if(text) blocks
