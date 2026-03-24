@@ -24,7 +24,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_AUTH_MODE` | str | auto | OIDC auth mode: `remote` (local JWT validation) or `oidc-proxy` (DCR emulation). Auto-detected from env vars when not set — see below. |
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | -- | Static bearer token for HTTP authentication. Enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC and for `create_download_link` / `show_image` auto-download URLs. Also used to derive the MCP Apps widget domain (hostname extracted). Include subpath prefix if applicable. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC and for `create_download_link` / `show_image` auto-download URLs. Include subpath prefix if applicable. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL (e.g. `https://auth.example.com/.well-known/openid-configuration`). |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID registered with your identity provider. Required for `oidc-proxy` mode only. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret. Required for `oidc-proxy` mode only. |
@@ -64,6 +64,25 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_INSTRUCTIONS` | str | (dynamic) | System-level instructions injected into LLM context. Defaults to a description reflecting the read-only/read-write state. |
 | `FASTMCP_LOG_LEVEL` | str | `INFO` | Log level: `DEBUG`, `INFO`, `WARNING`, `ERROR`. Controls FastMCP internals (auth, transport) directly; app loggers use `INFO` unless overridden by `--verbose`. |
 | `IMAGE_GENERATION_MCP_HTTP_PATH` | str | `/mcp` | HTTP endpoint mount path for streamable-HTTP transport. |
+| `IMAGE_GENERATION_MCP_APP_DOMAIN` | str | (auto) | MCP Apps widget sandbox domain. **Auto-computed from `BASE_URL`** for Claude when not set. Override for other hosts or custom domains (see below). |
+
+!!! tip "MCP Apps domain (usually automatic)"
+    When `BASE_URL` is set (which it should be for HTTP deployments), the
+    Claude sandbox domain is **auto-computed** — no extra configuration needed.
+
+    The computation is `sha256(BASE_URL + HTTP_PATH)[:32] + ".claudemcpcontent.com"`.
+    Set `APP_DOMAIN` explicitly only if you need to override this (e.g. for
+    a non-Claude host like ChatGPT, or a custom HTTP path).
+
+    To compute manually:
+
+    ```bash
+    # Python
+    python3 -c "import hashlib; print(hashlib.sha256(b'https://mcp.example.com/mcp').hexdigest()[:32] + '.claudemcpcontent.com')"
+
+    # Node.js
+    node -e "console.log(require('crypto').createHash('sha256').update('https://mcp.example.com/mcp').digest('hex').slice(0,32)+'.claudemcpcontent.com')"
+    ```
 
 ## Example configurations
 
