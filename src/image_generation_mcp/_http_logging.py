@@ -51,7 +51,7 @@ class _MCPRequestLoggingMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         """Log request method, JSON-RPC method, session ID, and status."""
         session_id = request.headers.get(_SESSION_HEADER, "-")
-        session_short = session_id[:12] if session_id != "-" else "-"
+        session_short = _sanitize(session_id[:12]) if session_id != "-" else "-"
 
         # Log User-Agent on first request per session.
         if session_id not in self._seen_sessions:

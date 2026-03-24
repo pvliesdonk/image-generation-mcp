@@ -900,3 +900,18 @@ class TestEdgeCases:
             )
         for record in caplog.records:
             assert "\r" not in record.message
+
+    @pytest.mark.asyncio
+    async def test_session_id_sanitized_against_log_injection(
+        self, client: httpx.AsyncClient, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Session ID header with newlines is sanitized to prevent log injection."""
+        with caplog.at_level(logging.DEBUG):
+            payload = {"jsonrpc": "2.0", "method": "ping", "params": {}}
+            await client.post(
+                "/mcp",
+                json=payload,
+                headers={"mcp-session-id": "\nfake-log-line"},
+            )
+        for record in caplog.records:
+            assert "\n" not in record.message
