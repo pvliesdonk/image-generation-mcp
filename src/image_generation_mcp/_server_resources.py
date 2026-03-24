@@ -6,11 +6,10 @@ image viewer as MCP resources.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
-import os
 from datetime import UTC, datetime
+from urllib.parse import urlparse
 
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
@@ -19,7 +18,7 @@ from fastmcp.server.apps import AppConfig, ResourceCSP
 from mcp.types import Icon
 
 from image_generation_mcp._server_deps import get_service
-from image_generation_mcp.config import _ENV_PREFIX
+from image_generation_mcp.config import ServerConfig
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
@@ -207,182 +206,52 @@ Call `list_providers` to see which providers are currently available.
 
 _IMAGE_VIEWER_HTML = """\
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { overflow: hidden; background: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
-      color: var(--color-text-primary, #333);
-    }
-    .main {
+      font-family: system-ui, -apple-system, sans-serif;
       display: flex; flex-direction: column; align-items: center;
-      padding: 12px; width: 100%;
+      padding: 16px; background: transparent;
     }
-
-    /* --- State: waiting (before any tool result) --- */
-    .state-waiting {
-      color: var(--color-text-tertiary, #999);
-      font-size: var(--font-text-sm-size, 13px);
-      padding: 32px 16px; text-align: center;
+    #placeholder {
+      color: #888; font-size: 14px; padding: 40px;
+      text-align: center;
     }
-
-    /* --- State: generating (progress) --- */
-    .state-generating {
-      display: none; width: 100%; max-width: 480px;
-      text-align: center; padding: 24px 16px;
+    #viewer { display: none; width: 100%; max-width: 640px; }
+    #viewer img {
+      width: 100%; height: auto; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
     }
-    .state-generating .spinner {
-      width: 24px; height: 24px; margin: 0 auto 12px;
-      border: 3px solid var(--color-border-primary, #ddd);
-      border-top-color: var(--color-text-secondary, #666);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
+    #meta {
+      margin-top: 12px; font-size: 12px; color: #666;
+      line-height: 1.6; width: 100%; white-space: pre-wrap;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .state-generating .gen-label {
-      font-size: var(--font-text-sm-size, 13px);
-      font-weight: 600;
-      color: var(--color-text-secondary, #666);
-    }
-    .state-generating .gen-detail {
-      font-size: var(--font-text-xs-size, 12px);
-      color: var(--color-text-tertiary, #999);
-      margin-top: 4px;
-    }
-    .state-generating .gen-progress {
-      margin-top: 8px; height: 4px;
-      background: var(--color-background-tertiary, #eee);
-      border-radius: var(--border-radius-full, 9999px);
-      overflow: hidden;
-    }
-    .state-generating .gen-progress-fill {
-      height: 100%; width: 0%;
-      background: var(--color-text-secondary, #666);
-      border-radius: var(--border-radius-full, 9999px);
-      transition: width 0.3s ease;
-    }
-
-    /* --- State: failed --- */
-    .state-failed {
-      display: none; width: 100%; max-width: 480px;
-      text-align: center; padding: 24px 16px;
-    }
-    .state-failed .fail-label {
-      font-size: var(--font-text-sm-size, 13px);
-      font-weight: 600; color: #c33;
-    }
-    .state-failed .fail-detail {
-      font-size: var(--font-text-xs-size, 12px);
-      color: var(--color-text-tertiary, #999);
-      margin-top: 4px; word-break: break-word;
-    }
-
-    /* --- State: completed (image + metadata) --- */
-    .state-completed {
-      display: none; width: 100%; max-width: 640px;
-    }
-    .state-completed img {
-      width: 100%; height: auto;
-      border-radius: var(--border-radius-md, 8px);
-      box-shadow: var(--shadow-md, 0 2px 12px rgba(0,0,0,0.12));
-    }
-    .meta {
-      margin-top: 10px; width: 100%;
-      font-size: var(--font-text-xs-size, 12px);
-      color: var(--color-text-secondary, #666);
-      line-height: 1.5;
-      display: flex; align-items: flex-start; gap: 8px;
-    }
-    .meta-text { flex: 1; min-width: 0; }
-    .meta-prompt {
-      font-style: italic; margin-bottom: 4px;
-      color: var(--color-text-primary, #333);
-    }
-    .meta-details {
-      color: var(--color-text-tertiary, #999);
-    }
-    .dl-btn {
-      display: none; flex-shrink: 0;
-      background: none; border: none; cursor: pointer;
-      color: var(--color-text-tertiary, #999);
-      padding: 2px; margin-top: -2px;
-      border-radius: var(--border-radius-sm, 4px);
-      transition: color 0.15s;
-    }
-    .dl-btn:hover { color: var(--color-text-primary, #333); }
-    .dl-btn svg { width: 18px; height: 18px; display: block; }
-
-    /* --- Cancelled --- */
-    .state-cancelled {
-      display: none; width: 100%; max-width: 480px;
-      text-align: center; padding: 24px 16px;
-      font-size: var(--font-text-sm-size, 13px);
-      color: var(--color-text-tertiary, #999);
+    @media (prefers-color-scheme: dark) {
+      #meta { color: #aaa; }
+      #placeholder { color: #777; }
     }
   </style>
 </head>
 <body>
-  <div class="main">
-    <div class="state-waiting" id="waiting">Waiting for image&hellip;</div>
-    <div class="state-generating" id="generating">
-      <div class="spinner"></div>
-      <div class="gen-label" id="gen-label">Generating&hellip;</div>
-      <div class="gen-detail" id="gen-detail"></div>
-      <div class="gen-progress"><div class="gen-progress-fill" id="gen-fill"></div></div>
-    </div>
-    <div class="state-failed" id="failed">
-      <div class="fail-label">Generation failed</div>
-      <div class="fail-detail" id="fail-detail"></div>
-    </div>
-    <div class="state-cancelled" id="cancelled">Cancelled</div>
-    <div class="state-completed" id="completed">
-      <img id="image" alt="Generated image">
-      <div class="meta">
-        <div class="meta-text">
-          <div class="meta-prompt" id="meta-prompt"></div>
-          <div class="meta-details" id="meta-details"></div>
-        </div>
-        <button class="dl-btn" id="dl-btn" title="Download full-resolution image">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-      </div>
-    </div>
+  <div id="placeholder">Waiting for image generation&hellip;</div>
+  <div id="viewer">
+    <img id="image" alt="Generated image">
+    <div id="meta"></div>
   </div>
-
   <script type="module">
-    import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
-      from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+    import { App } from
+      "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
 
-    const app = new App({ name: "Image Viewer", version: "2.0.0" });
+    const app = new App({ name: "Image Viewer", version: "1.0.0" });
 
-    // --- DOM refs ---
-    const mainEl = document.querySelector(".main");
-    const sections = {
-      waiting:    document.getElementById("waiting"),
-      generating: document.getElementById("generating"),
-      failed:     document.getElementById("failed"),
-      cancelled:  document.getElementById("cancelled"),
-      completed:  document.getElementById("completed"),
-    };
-
-    // --- State management ---
+    let rendered = false;
     let imageKey = null;
-    let currentMeta = null;   // metadata for download
     const STORE = "imgview:";
     const MAX_ENTRIES = 5;
-
-    function show(state) {
-      for (const [k, el] of Object.entries(sections)) {
-        el.style.display = k === state ? "block" : "none";
-      }
-    }
 
     function extractImageKey(uri) {
       if (!uri) return null;
@@ -390,7 +259,6 @@ _IMAGE_VIEWER_HTML = """\
       return m ? m[1] : null;
     }
 
-    // --- localStorage cache (LRU, quota-safe) ---
     function storeKeys() {
       const keys = [];
       for (let i = 0; i < localStorage.length; i++) {
@@ -407,14 +275,19 @@ _IMAGE_VIEWER_HTML = """\
       try {
         localStorage.setItem(fullKey, value);
       } catch (e) {
+        // Quota exceeded — evict oldest entries and retry
         const keys = storeKeys().filter(k => k !== fullKey);
         while (keys.length > 0) {
           localStorage.removeItem(keys.shift());
           try { localStorage.setItem(fullKey, value); return; } catch (_) {}
         }
+        console.warn("Image viewer: localStorage quota exceeded", e);
       }
+      // Enforce LRU cap
       const all = storeKeys().filter(k => k !== fullKey);
-      while (all.length >= MAX_ENTRIES) localStorage.removeItem(all.shift());
+      while (all.length >= MAX_ENTRIES) {
+        localStorage.removeItem(all.shift());
+      }
     }
 
     function loadState(key) {
@@ -422,215 +295,81 @@ _IMAGE_VIEWER_HTML = """\
       try {
         const raw = localStorage.getItem(STORE + key);
         return raw ? JSON.parse(raw) : null;
-      } catch (e) { return null; }
+      } catch (e) { console.warn("Image viewer: failed to load cached state", e); return null; }
     }
 
-    // --- Rendering ---
-    function renderGenerating(meta) {
-      show("generating");
-      const elapsed = meta.elapsed_seconds
-        ? ` (${Math.round(meta.elapsed_seconds)}s)` : "";
-      document.getElementById("gen-label").textContent =
-        "Generating" + elapsed;
-      const parts = [];
-      if (meta.provider) parts.push(meta.provider);
-      if (meta.progress_message) parts.push(meta.progress_message);
-      else if (meta.prompt) parts.push("\\u201c" + meta.prompt + "\\u201d");
-      document.getElementById("gen-detail").textContent =
-        parts.join(" \\u00b7 ");
-      const pct = (meta.progress || 0) * 100;
-      document.getElementById("gen-fill").style.width =
-        pct > 0 ? pct + "%" : "0%";
-    }
-
-    function renderFailed(meta) {
-      show("failed");
-      document.getElementById("fail-detail").textContent =
-        meta.error || "Unknown error";
-    }
-
-    function renderCompleted(img, text) {
-      show("completed");
+    function render(img, text) {
       const imgEl = document.getElementById("image");
+
       if (img) {
-        const allowed = ["image/png","image/jpeg","image/webp","image/gif"];
-        const mime = allowed.includes(img.mimeType) ? img.mimeType : "image/png";
-        imgEl.src = "data:" + mime + ";base64," + img.data;
+        imgEl.src = `data:${img.mimeType};base64,${img.data}`;
+        document.getElementById("placeholder").style.display = "none";
+        document.getElementById("viewer").style.display = "block";
       }
+
       if (text) {
         try {
-          const m = JSON.parse(text.text);
-          currentMeta = m;
-          if (m.prompt) {
-            imgEl.alt = m.prompt;
-            document.getElementById("meta-prompt").textContent =
-              "\\u201c" + m.prompt + "\\u201d";
+          const meta = JSON.parse(text.text);
+          if (meta.prompt) {
+            imgEl.alt = meta.prompt;
           }
           const parts = [];
-          if (m.provider) {
-            let s = m.provider;
-            if (m.model) s += " (" + m.model + ")";
-            parts.push(s);
+          if (meta.provider) {
+            let providerStr = `Provider: ${meta.provider}`;
+            if (meta.model) providerStr += ` (${meta.model})`;
+            parts.push(providerStr);
           }
-          if (m.dimensions)
-            parts.push(m.dimensions[0] + "\\u00d7" + m.dimensions[1]);
-          if (m.original_size_bytes) {
-            const kb = (m.original_size_bytes / 1024).toFixed(1);
-            parts.push(kb + " KB");
+          if (meta.dimensions) parts.push(`${meta.dimensions[0]}\u00d7${meta.dimensions[1]}`);
+          if (meta.original_size_bytes) {
+            const kb = (meta.original_size_bytes / 1024).toFixed(1);
+            parts.push(`${kb} KB`);
           }
-          document.getElementById("meta-details").textContent =
+          document.getElementById("meta").textContent =
+            (meta.prompt ? `"${meta.prompt}"\\n` : "") +
             parts.join(" \\u00b7 ");
-          // In openLink mode, only show button when download_url exists
-          if (dlMode === "openLink") {
-            dlBtn.style.display = m.download_url ? "block" : "none";
-          }
-        } catch (e) { console.warn("Failed to parse metadata", e); }
+        } catch (e) { console.warn("Image viewer: failed to parse metadata", e); }
       }
+
+      rendered = true;
     }
 
-    // --- Handlers (registered BEFORE connect) ---
     app.ontoolinput = (params) => {
       imageKey = extractImageKey(params?.arguments?.uri);
-      // Restore cached image while waiting for result
-      if (imageKey) {
+      if (imageKey && !rendered) {
         const saved = loadState(imageKey);
-        if (saved) {
-          renderCompleted(saved.img, saved.text);
-          return;
-        }
+        if (saved) render(saved.img, saved.text);
       }
-      show("waiting");
     };
 
     app.ontoolresult = ({ content }) => {
       const img = content?.find(c => c.type === "image");
       const text = content?.find(c => c.type === "text");
-
-      // Status-only results (generating / failed)
-      if (!img && text) {
-        try {
-          const meta = JSON.parse(text.text);
-          if (meta.status === "generating") { renderGenerating(meta); return; }
-          if (meta.status === "failed") { renderFailed(meta); return; }
-        } catch (e) { /* not status JSON */ }
-      }
-
-      // Completed image
-      renderCompleted(img, text);
+      // Always render live result — it takes precedence over cached state
+      render(img, text);
       let key = imageKey;
       if (!key && text) {
-        try { key = JSON.parse(text.text).image_id; } catch (e) {}
+        try { key = JSON.parse(text.text).image_id; } catch (e) { console.warn("Image viewer: failed to get image_id from tool result", e); }
       }
       if (key) saveState(key, img, text);
     };
 
-    app.ontoolcancelled = (params) => {
-      document.getElementById("cancelled").textContent =
-        "Cancelled" + (params?.reason ? ": " + params.reason : "");
-      show("cancelled");
-    };
-
-    function handleHostContext(ctx) {
-      if (ctx.theme) applyDocumentTheme(ctx.theme);
-      if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
-      if (ctx.styles?.css?.fonts) applyHostFonts(ctx.styles.css.fonts);
-      if (ctx.safeAreaInsets) {
-        const { top, right, bottom, left } = ctx.safeAreaInsets;
-        mainEl.style.paddingTop = top + "px";
-        mainEl.style.paddingRight = right + "px";
-        mainEl.style.paddingBottom = bottom + "px";
-        mainEl.style.paddingLeft = left + "px";
-      }
-    }
-
-    app.onhostcontextchanged = handleHostContext;
-    app.onerror = console.error;
-
-    // --- Download button ---
-    const dlBtn = document.getElementById("dl-btn");
-    let dlMode = null; // "downloadFile" | "openLink" | null
-
-    async function tryDownloadFile() {
-      if (!currentMeta?.image_id) return false;
-      const id = currentMeta.image_id;
-      const mime = currentMeta.format || "image/png";
-      const ext = mime.split("/").pop() || "png";
-      const { isError } = await app.downloadFile({
-        contents: [{
-          type: "resource_link",
-          uri: "image://" + id + "/view",
-          name: id + "." + ext,
-          mimeType: mime,
-        }],
-      });
-      return !isError;
-    }
-
-    async function tryOpenLink() {
-      if (!currentMeta?.download_url) return false;
-      const { isError } = await app.openLink({ url: currentMeta.download_url });
-      return !isError;
-    }
-
-    dlBtn.addEventListener("click", async () => {
-      if (!currentMeta) return;
-      try {
-        // Try downloadFile first (full-res via MCP), fall back to openLink
-        if (dlMode === "downloadFile") {
-          if (await tryDownloadFile()) return;
-          if (await tryOpenLink()) return;
-        } else {
-          if (await tryOpenLink()) return;
-        }
-      } catch (e) { console.warn("Download failed", e); }
-    });
-
     await app.connect();
-    const ctx = app.getHostContext();
-    if (ctx) handleHostContext(ctx);
-
-    // Show download button: prefer downloadFile, fall back to openLink
-    const caps = app.getHostCapabilities();
-    if (caps?.downloadFile) {
-      dlMode = "downloadFile";
-      dlBtn.style.display = "block";
-    } else if (caps?.openLinks) {
-      dlMode = "openLink";
-      dlBtn.style.display = "block";
-    }
   </script>
 </body>
 </html>"""
 
 
-def _compute_claude_app_domain() -> str | None:
-    """Auto-compute Claude's MCP Apps sandbox domain from BASE_URL.
-
-    Claude requires ``{sha256_prefix}.claudemcpcontent.com`` where the hash
-    is derived from the full MCP endpoint URL the client connects to.
-
-    Returns:
-        The computed domain string, or ``None`` when ``BASE_URL`` is not set
-        (e.g. stdio transport or local development).
-    """
-    base_url = os.environ.get(f"{_ENV_PREFIX}_BASE_URL", "").strip().rstrip("/")
-    if not base_url:
-        return None
-    http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH", "/mcp").strip() or "/mcp"
-    if not http_path.startswith("/"):
-        http_path = f"/{http_path}"
-    if len(http_path) > 1:
-        http_path = http_path.rstrip("/")
-    mcp_url = f"{base_url}{http_path}"
-    hash_prefix = hashlib.sha256(mcp_url.encode()).hexdigest()[:32]
-    return f"{hash_prefix}.claudemcpcontent.com"
-
-
-def register_resources(mcp: FastMCP) -> None:
+def register_resources(
+    mcp: FastMCP,
+    *,
+    config: ServerConfig | None = None,
+) -> None:
     """Register all MCP resources on *mcp*.
 
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register resources on.
+        config: Server configuration.  When provided and ``base_url`` is set,
+            the hostname is extracted and used as the MCP Apps widget domain.
     """
 
     @mcp.resource(
@@ -828,14 +567,12 @@ def register_resources(mcp: FastMCP) -> None:
 
     # -- MCP Apps: image viewer -------------------------------------------------
 
-    # Resolve the MCP Apps sandbox domain.  Priority:
-    # 1. Explicit APP_DOMAIN env var (any host format)
-    # 2. Auto-computed from BASE_URL for Claude (sha256 of MCP endpoint URL)
-    # 3. None — host assigns its own sandbox origin (stdio / local setups)
-    app_domain: str | None = (
-        os.environ.get(f"{_ENV_PREFIX}_APP_DOMAIN", "").strip()
-        or _compute_claude_app_domain()
-    )
+    # Extract hostname from BASE_URL for the MCP Apps widget domain.
+    # The domain field is host-dependent (per the MCP Apps ext spec);
+    # when omitted, each host assigns its own default sandbox origin.
+    app_domain: str | None = None
+    if config and config.base_url:
+        app_domain = urlparse(config.base_url).hostname
 
     @mcp.resource(
         _IMAGE_VIEWER_URI,

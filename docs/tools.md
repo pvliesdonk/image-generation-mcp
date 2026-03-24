@@ -345,9 +345,6 @@ The viewer is a custom HTML resource at `ui://image-viewer/view.html` that:
 
 - Listens for `show_image` tool results via the `@modelcontextprotocol/ext-apps` SDK
 - Displays the image with metadata (prompt, provider, model name, dimensions, file size)
-- Shows generating, failed, and cancelled states with progress indicators
-- Integrates with host theming (colors, fonts, safe area insets) via ext-apps SDK
-- Caches rendered images in `localStorage` for instant restore on revisit
-- Offers a download button (uses `downloadFile` API or `openLink` fallback) for the full-resolution image
+- Supports light and dark color schemes
 
-No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. The Claude sandbox domain is auto-computed from `BASE_URL` (see [Configuration](configuration.md#server)). Clients without Apps support see the standard base64 image + metadata response.
+No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. Clients without Apps support see the standard base64 image + metadata response.

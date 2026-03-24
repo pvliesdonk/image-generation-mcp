@@ -227,29 +227,14 @@ Pending generations (status `"generating"` or `"failed"`) appear in the list alo
 
 Interactive image viewer rendered by MCP Apps-capable clients (Claude Desktop, claude.ai).
 
-**MIME type:** `text/html;profile=mcp-app`
+**MIME type:** `text/html`
 
-This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) — a custom HTML page loaded in a sandboxed iframe via the `@modelcontextprotocol/ext-apps` SDK. It is wired to the `show_image` tool via `AppConfig(resourceUri=...)`.
+This resource is an [MCP App](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps) — a custom HTML page loaded in a sandboxed iframe. It listens for `show_image` tool results and displays the image with metadata. The `show_image` tool is wired to this resource via `AppConfig(resourceUri=...)`.
 
-### Sandbox domain
+When `IMAGE_GENERATION_MCP_BASE_URL` is configured, the hostname is extracted and set as the widget `domain` (e.g., `https://mcp.example.com:8080/v1` → domain `mcp.example.com`). The domain field format is host-dependent per the MCP Apps extension spec — when omitted (stdio transport or no `BASE_URL`), each host assigns its own default sandbox origin.
 
-When `IMAGE_GENERATION_MCP_BASE_URL` is set, the Claude sandbox domain is auto-computed as `sha256(BASE_URL + HTTP_PATH)[:32].claudemcpcontent.com`. Override with `IMAGE_GENERATION_MCP_APP_DOMAIN` for other hosts or custom setups. When neither is set (stdio transport), the host assigns its own sandbox origin.
+The viewer persists rendered images in `localStorage` (keyed by image ID, LRU-capped at 5 entries). When a new widget instance loads, the `ontoolinput` handler restores cached state immediately so the image is visible before the tool result arrives. The live `ontoolresult` always takes precedence over the cached version.
 
-### Viewer states
-
-| State | Trigger | Display |
-|-------|---------|---------|
-| Waiting | Widget loaded, no tool result yet | "Waiting for image..." |
-| Generating | `show_image` returns `{"status": "generating", ...}` | Spinner, progress bar, provider info |
-| Failed | `show_image` returns `{"status": "failed", ...}` | Error message |
-| Completed | `show_image` returns image + metadata | Image, prompt, provider, dimensions, file size |
-| Cancelled | Host cancels the tool call | "Cancelled" message |
-
-### Features
-
-- **Host theming** — applies `applyDocumentTheme()`, `applyHostStyleVariables()`, and `applyHostFonts()` from the ext-apps SDK; CSS uses host variables (`--color-text-primary`, `--font-sans`, etc.)
-- **Safe area insets** — respects `safeAreaInsets` from `onhostcontextchanged` for mobile notch/status bar
-- **localStorage cache** — persists rendered images (keyed by image ID, LRU-capped at 5 entries); restores cached state on `ontoolinput` before the tool result arrives
-- **Download button** — uses the ext-apps `downloadFile` API with a `resource_link` to `image://{id}/view` for the full-resolution image; falls back to `openLink` with the artifact `download_url` when the host does not support `downloadFile`
+The widget does not render download links — the sandboxed iframe cannot navigate to external URLs. When `download_url` is present in the `show_image` metadata, the LLM should present it directly to the user as a clickable link in the conversation text.
 
 Clients without MCP Apps support ignore this resource entirely.
