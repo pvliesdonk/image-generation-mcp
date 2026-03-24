@@ -563,7 +563,7 @@ def register_resources(mcp: FastMCP) -> None:
         _IMAGE_VIEWER_URI,
         description="Interactive image viewer for show_image results.",
         app=AppConfig(
-            domain="https://image-gen-mcp.local",  # TODO: use BASE_URL when available (see follow-up issue)
+            domain="https://github.com/pvliesdonk/image-generation-mcp",
             csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
         ),
     )
