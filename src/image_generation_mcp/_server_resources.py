@@ -58,9 +58,11 @@ _SDK_IMPORT_MAP = (
 
 def _inject_sdk(html: str) -> str:
     """Insert the vendored SDK import-map before the module script tag."""
-    return html.replace(
-        '  <script type="module">', _SDK_IMPORT_MAP + '  <script type="module">', 1
-    )
+    target = '  <script type="module">'
+    if target not in html:
+        msg = "HTML template missing expected module script tag"
+        raise ValueError(msg)
+    return html.replace(target, _SDK_IMPORT_MAP + target, 1)
 
 _PROMPT_GUIDE = """\
 # Image Generation Prompt Guide

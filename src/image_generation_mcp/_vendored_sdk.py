@@ -6,6 +6,7 @@ Do not edit manually.  Regenerate with::
 """
 
 # vendor-sdk-config-hash:4a582c626b3e3bec9b21d1f6e0f2002686e202aa68b2374fda8b3752bc30ef07
+# vendor-sdk-content-sha256:36495489aa8939e4eb7421c8a03c220b9f502d79e87895f88599eb6c02377fdd
 
 VERSION = '1.3.1'
 IMPORT_SPECIFIER = '@modelcontextprotocol/ext-apps'

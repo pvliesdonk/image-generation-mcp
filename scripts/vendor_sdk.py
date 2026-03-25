@@ -75,7 +75,8 @@ def _config_hash() -> str:
 def main() -> int:
     """Entry point.  Returns 0 on success, 1 on failure."""
     check_mode = "--check" in sys.argv
-    marker = f"# vendor-sdk-config-hash:{_config_hash()}"
+    config_marker = f"# vendor-sdk-config-hash:{_config_hash()}"
+    content_marker = f"# vendor-sdk-content-sha256:{SDK_SHA256}"
 
     if check_mode:
         if not _OUT_PATH.exists():
@@ -86,15 +87,22 @@ def main() -> int:
             )
             return 1
         content = _OUT_PATH.read_text(encoding="utf-8")
-        if marker in content:
-            print("OK: _vendored_sdk.py is up-to-date.")
-            return 0
-        print(
-            "ERROR: _vendored_sdk.py is out of date — "
-            "run  python scripts/vendor_sdk.py  to regenerate.",
-            file=sys.stderr,
-        )
-        return 1
+        if config_marker not in content:
+            print(
+                "ERROR: _vendored_sdk.py config hash mismatch — "
+                "run  python scripts/vendor_sdk.py  to regenerate.",
+                file=sys.stderr,
+            )
+            return 1
+        if content_marker not in content:
+            print(
+                "ERROR: _vendored_sdk.py content hash mismatch — "
+                "run  python scripts/vendor_sdk.py  to regenerate.",
+                file=sys.stderr,
+            )
+            return 1
+        print("OK: _vendored_sdk.py is up-to-date.")
+        return 0
 
     # Download and verify
     print(f"  Downloading ext-apps SDK v{SDK_VERSION} …")
@@ -124,7 +132,8 @@ def main() -> int:
     lines = [
         _HEADER,
         "",
-        marker,
+        config_marker,
+        content_marker,
         "",
         f"VERSION = {SDK_VERSION!r}",
         f"IMPORT_SPECIFIER = {SDK_IMPORT_SPECIFIER!r}",
