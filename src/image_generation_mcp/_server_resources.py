@@ -64,6 +64,7 @@ def _inject_sdk(html: str) -> str:
         raise ValueError(msg)
     return html.replace(target, _SDK_IMPORT_MAP + target, 1)
 
+
 _PROMPT_GUIDE = """\
 # Image Generation Prompt Guide
 
