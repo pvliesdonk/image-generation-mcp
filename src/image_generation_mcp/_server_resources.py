@@ -1092,7 +1092,7 @@ _IMAGE_GALLERY_HTML = """\
           card.appendChild(img);
         }
         const capturedIdx = i;
-        async function activatePipCard() {
+        const activatePipCard = async () => {
           try {
             const res = await app.requestDisplayMode({ mode: "inline" });
             applyDisplayMode(res.mode);
