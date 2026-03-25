@@ -58,13 +58,6 @@ def _download(url: str) -> bytes:
         raise SystemExit(f"ERROR: failed to download {url}: {exc}") from exc
 
 
-def _expected_content() -> str:
-    """Build the expected file content from current config (without downloading)."""
-    # Read the existing base64 from the generated file (if it exists) for
-    # --check mode.  We only need to verify the config hash matches.
-    return f"VERSION = {SDK_VERSION!r}\nIMPORT_SPECIFIER = {SDK_IMPORT_SPECIFIER!r}"
-
-
 def _config_hash() -> str:
     """Hash of pinned config fields — changes when version/URL/hash are bumped."""
     h = hashlib.sha256()

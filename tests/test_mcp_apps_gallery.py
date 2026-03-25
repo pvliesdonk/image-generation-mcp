@@ -168,9 +168,10 @@ class TestGalleryResource:
             r for r in resources if str(r.uri) == "ui://image-gallery/view.html"
         )
         assert gallery.meta is not None
-        # AppConfig is present — ui key may be empty when domain is None
-        # and no CSP is configured (SDK is vendored inline).
-        assert "ui" in gallery.meta or gallery.meta
+        # AppConfig must produce a "ui" key (may be empty dict when no
+        # domain or CSP is configured, e.g. in test/stdio setups).
+        assert "ui" in gallery.meta
+        assert isinstance(gallery.meta["ui"], dict)
 
     async def test_gallery_domain_omitted_without_base_url(self, server) -> None:
         resources = await server.list_resources()

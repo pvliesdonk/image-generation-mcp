@@ -31,6 +31,9 @@ jobs:
       - name: Run ruff format check
         run: uv run ruff format --check src/ tests/
 
+      - name: Verify vendored SDK is up-to-date
+        run: python scripts/vendor_sdk.py --check
+
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
