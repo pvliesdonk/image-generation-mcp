@@ -1078,7 +1078,7 @@ _IMAGE_GALLERY_HTML = """\
 
     function renderPipStrip() {
       gridItems.innerHTML = "";
-      const items = lbPageItems.slice(-4);
+      const items = lbPageItems.slice(0, 4);
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         const card = document.createElement("div");
@@ -1190,11 +1190,13 @@ _IMAGE_GALLERY_HTML = """\
       if (!items || items.length === 0) {
         if (total === 0) { show("empty"); return; }
         show("grid");
-        renderPagination();
+        if (!pipActive) renderPagination();
         return;
       }
 
       show("grid");
+      // In PiP mode, render compact strip instead of full grid
+      if (pipActive) { renderPipStrip(); return; }
       let lbIdx = 0;
       for (const item of items) {
         const card = makeCard(item);
