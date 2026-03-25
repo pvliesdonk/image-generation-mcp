@@ -78,11 +78,11 @@ class TestPromptGuideResourceRegistration:
 
 
 class TestGenerateImageToolDescription:
-    """Verify generate_image docstring references info://prompt-guide."""
+    """Verify generate_image docstring has inline prompt_style guidance."""
 
-    async def test_generate_image_description_mentions_prompt_guide(
+    async def test_generate_image_description_has_prompt_style_guidance(
         self, server
     ) -> None:
         tools = await server.list_tools()
         gen_tool = next(t for t in tools if t.name == "generate_image")
-        assert "info://prompt-guide" in gen_tool.description
+        assert "prompt_style" in gen_tool.description
