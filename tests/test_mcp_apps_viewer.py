@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from image_generation_mcp._server_resources import _inject_sdk
 from image_generation_mcp.mcp_server import create_server
 
 
@@ -282,6 +283,18 @@ class TestGenerateImageMetadataShape:
         # Read the source to verify no file_path in metadata dict
         source = inspect.getsource(_server_tools)
         assert "file_path" not in source
+
+
+# -- SDK injection -----------------------------------------------------------
+
+
+class TestInjectSdk:
+    """Unit tests for the _inject_sdk helper."""
+
+    def test_inject_sdk_raises_on_missing_script_tag(self) -> None:
+        """ValueError when HTML has no module script tag."""
+        with pytest.raises(ValueError, match="missing expected module script tag"):
+            _inject_sdk("<html><body>no script here</body></html>")
 
 
 # -- Read-only mode ----------------------------------------------------------
