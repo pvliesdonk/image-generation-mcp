@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 
 from fastmcp import FastMCP
 from fastmcp.server.transforms import ResourcesAsTools
+from mcp.types import Icon
 
 if TYPE_CHECKING:
     from fastmcp.server.event_store import EventStore
@@ -422,9 +423,12 @@ def create_server(transport: str = "stdio") -> FastMCP:
         "read-only" if is_read_only else "read-write",
     )
 
+    _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+
     mcp = FastMCP(
         server_name,
         instructions=instructions,
+        icons=[Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")],
         lifespan=make_service_lifespan(config),
         auth=auth,
     )
