@@ -347,8 +347,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         """Display a registered image with optional on-demand transforms.
 
         Also serves as the polling endpoint for fire-and-forget generation.
-        After calling ``generate_image``, call ``show_image`` with the
-        returned ``image_id`` to check progress:
+        After calling ``generate_image``, call
+        ``show_image(uri=original_uri)`` to check progress:
 
         - ``{"status": "generating", ...}`` — image is still being generated
         - ``{"status": "failed", "error": "..."}`` — generation failed
