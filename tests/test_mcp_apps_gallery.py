@@ -648,3 +648,15 @@ class TestPipModeHTML:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert "renderPipStrip" in text
+
+    async def test_gallery_html_disables_auto_resize(self, server) -> None:
+        """Gallery must disable autoResize to prevent oversized iframe."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "autoResize: false" in text
+
+    async def test_gallery_html_sends_size_changed(self, server) -> None:
+        """Gallery must call sendSizeChanged after render transitions."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "sendSizeChanged" in text

@@ -113,6 +113,18 @@ class TestImageViewerResource:
         assert "getHostCapabilities" in text
         assert "resource_link" in text
 
+    async def test_viewer_html_disables_auto_resize(self, server) -> None:
+        """Viewer must disable autoResize to prevent oversized iframe."""
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "autoResize: false" in text
+
+    async def test_viewer_html_sends_size_changed(self, server) -> None:
+        """Viewer must call sendSizeChanged after render transitions."""
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "sendSizeChanged" in text
+
     async def test_viewer_domain_omitted_without_base_url(self, server) -> None:
         """Without APP_DOMAIN, domain is omitted (host uses default sandbox)."""
         resources = await server.list_resources()
