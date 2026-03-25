@@ -361,10 +361,21 @@ _IMAGE_VIEWER_HTML = """\
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
       from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.3.1/app-with-deps";
 
-    const app = new App({ name: "Image Viewer", version: "2.0.0" });
+    const app = new App(
+      { name: "Image Viewer", version: "2.0.0" },
+      {},
+      { autoResize: false }
+    );
 
     // --- DOM refs ---
     const mainEl = document.querySelector(".main");
+
+    // --- Size reporting ---
+    function updateSize() {
+      requestAnimationFrame(() => {
+        app.sendSizeChanged({ height: mainEl.scrollHeight });
+      });
+    }
     const sections = {
       waiting:    document.getElementById("waiting"),
       generating: document.getElementById("generating"),
@@ -383,6 +394,7 @@ _IMAGE_VIEWER_HTML = """\
       for (const [k, el] of Object.entries(sections)) {
         el.style.display = k === state ? "block" : "none";
       }
+      updateSize();
     }
 
     function extractImageKey(uri) {
@@ -470,6 +482,7 @@ _IMAGE_VIEWER_HTML = """\
         const allowed = ["image/png","image/jpeg","image/webp","image/gif"];
         const mime = allowed.includes(img.mimeType) ? img.mimeType : "image/png";
         imgEl.src = "data:" + mime + ";base64," + img.data;
+        imgEl.onload = updateSize;
       }
       if (text) {
         try {
@@ -892,7 +905,11 @@ _IMAGE_GALLERY_HTML = """\
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
       from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.3.1/app-with-deps";
 
-    const app = new App({ name: "Image Gallery", version: "1.0.0" });
+    const app = new App(
+      { name: "Image Gallery", version: "1.0.0" },
+      {},
+      { autoResize: false }
+    );
 
     const mainEl    = document.getElementById("main");
     const loadingEl = document.getElementById("loading");
@@ -916,6 +933,16 @@ _IMAGE_GALLERY_HTML = """\
     const lbInfoEl   = document.getElementById("lb-info");
 
     const pipBtn    = document.getElementById("pip-btn");
+
+    // --- Size reporting ---
+    let currentDisplayMode = "inline";
+    function updateSize() {
+      // Don't report size in fullscreen — host controls sizing
+      if (currentDisplayMode === "fullscreen") return;
+      requestAnimationFrame(() => {
+        app.sendSizeChanged({ height: mainEl.scrollHeight });
+      });
+    }
 
     let currentPage = 1;
     let currentTotal = 0;
@@ -1064,6 +1091,7 @@ _IMAGE_GALLERY_HTML = """\
 
     function applyDisplayMode(mode) {
       const wasPip = pipActive;
+      currentDisplayMode = mode;
       pipActive = mode === "pip";
       mainEl.classList.toggle("pip-mode", pipActive);
       pipBtn.textContent = pipActive ? "\\u25a1" : "\\u25a3";
@@ -1107,6 +1135,7 @@ _IMAGE_GALLERY_HTML = """\
       }
       // Hide pagination in PiP (also enforced by CSS)
       pagEl.innerHTML = "";
+      updateSize();
     }
 
     // --- Display states ---
@@ -1114,6 +1143,7 @@ _IMAGE_GALLERY_HTML = """\
       loadingEl.style.display = which === "loading" ? "flex" : "none";
       emptyEl.style.display   = which === "empty"   ? "block" : "none";
       gridEl.style.display    = which === "grid"    ? "block" : "none";
+      updateSize();
     }
 
     // --- Card builder ---
@@ -1217,6 +1247,7 @@ _IMAGE_GALLERY_HTML = """\
         gridItems.appendChild(card);
       }
       renderPagination();
+      updateSize();
     }
 
     function renderPagination() {
