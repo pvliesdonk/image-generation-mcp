@@ -359,7 +359,7 @@ _IMAGE_VIEWER_HTML = """\
 
   <script type="module">
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
-      from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+      from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.3.1/app-with-deps";
 
     const app = new App({ name: "Image Viewer", version: "2.0.0" });
 
@@ -860,7 +860,7 @@ _IMAGE_GALLERY_HTML = """\
 
   <script type="module">
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
-      from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+      from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.3.1/app-with-deps";
 
     const app = new App({ name: "Image Gallery", version: "1.0.0" });
 
@@ -932,7 +932,7 @@ _IMAGE_GALLERY_HTML = """\
     async function loadFullImage(item) {
       const capturedIndex = lbIndex;
       try {
-        const result = await app.callServerTool("gallery_full_image", { image_id: item.image_id });
+        const result = await app.callServerTool({ name: "gallery_full_image", arguments: { image_id: item.image_id } });
         if (lbIndex !== capturedIndex) return; // navigated away while loading
         if (result.isError) return;
         const text = result.content?.find(c => c.type === "text")?.text;
@@ -978,7 +978,7 @@ _IMAGE_GALLERY_HTML = """\
         lbMeta.setAttribute("hidden", "");
         try {
           const ps = currentPageSize;
-          const result = await app.callServerTool("gallery_page", { page: targetPage, page_size: ps });
+          const result = await app.callServerTool({ name: "gallery_page", arguments: { page: targetPage, page_size: ps } });
           if (result.isError) { lbLoading.style.display = "none"; return; }
           const text = result.content?.find(c => c.type === "text")?.text;
           if (!text) { lbLoading.style.display = "none"; return; }
@@ -1154,7 +1154,7 @@ _IMAGE_GALLERY_HTML = """\
       const ps = currentPageSize;
       show("loading");
       try {
-        const result = await app.callServerTool("gallery_page", { page, page_size: ps });
+        const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps } });
         if (result.isError) { show("empty"); return; }
         const text = result.content?.find(c => c.type === "text")?.text;
         if (!text) { show("empty"); return; }
@@ -1202,7 +1202,7 @@ _IMAGE_GALLERY_HTML = """\
       if (!confirm("Delete this image? This cannot be undone.")) return;
       btn.disabled = true;
       try {
-        const result = await app.callServerTool("delete_image", { image_id: id });
+        const result = await app.callServerTool({ name: "delete_image", arguments: { image_id: id } });
         if (result.isError) {
           alert("Delete failed: " + (result.content?.find(c => c.type === "text")?.text || "Unknown error"));
           return;
@@ -1226,7 +1226,7 @@ _IMAGE_GALLERY_HTML = """\
       if (!confirm("Delete this image? This cannot be undone.")) return;
       lbDelBtn.disabled = true;
       try {
-        const result = await app.callServerTool("delete_image", { image_id: item.image_id });
+        const result = await app.callServerTool({ name: "delete_image", arguments: { image_id: item.image_id } });
         if (result.isError) {
           alert("Delete failed: " + (result.content?.find(c => c.type === "text")?.text || "Unknown error"));
           return;
