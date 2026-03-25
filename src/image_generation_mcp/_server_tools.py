@@ -97,16 +97,18 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     ) -> ToolResult:
         """Generate an image and return metadata with resource URIs.
 
-        Returns immediately with ``{"status": "generating", "image_id":
-        "..."}`` while the image is generated in the background. Call
-        ``show_image`` with the returned ``image_id`` to check progress
-        and display the result once ready.
+        Returns immediately with ``{"status": "generating",
+        "original_uri": "image://…/original"}`` while the image is
+        generated in the background.  Call
+        ``show_image(uri=original_uri)`` to check progress and display
+        the result once ready.
 
         Call list_providers first to see available providers and model IDs.
-        Read info://prompt-guide for provider-specific prompt writing tips.
-        SD WebUI prompt style depends on the model: use CLIP tags for
-        SD 1.5/SDXL, natural language for Flux (check ``prompt_style`` in
-        list_providers or in the returned metadata).
+        Check each model's ``prompt_style`` in list_providers to choose the
+        right prompt format: ``"clip"`` models (SD 1.5/SDXL) need
+        comma-separated CLIP tags; ``"natural_language"`` models (Flux,
+        OpenAI) need descriptive sentences.  Flux ignores
+        ``negative_prompt``.
 
         Args:
             prompt: Text description of the desired image.
@@ -127,18 +129,18 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 tier). SD WebUI and placeholder ignore this parameter.
             background: Background transparency. ``"opaque"`` (default)
                 generates a solid background. ``"transparent"`` requests
-                an image with a transparent background. Only supported
-                by some providers (OpenAI gpt-image-1, placeholder).
-                SD WebUI and dall-e-3 ignore this parameter.
+                an image with a transparent background. Supported by
+                gpt-image-1 and placeholder. dall-e-3 and SD WebUI
+                always produce opaque images (this parameter is ignored).
             model: Specific model to use (e.g., a checkpoint name for
                 SD WebUI, or ``"dall-e-3"`` for OpenAI). Use
                 ``list_providers`` to see available model IDs. Defaults
                 to the provider's configured model.
 
         Returns:
-            JSON metadata with ``status``, ``image_id``, and resource
-            URIs. Call ``show_image`` with the image URI to check
-            progress and display the result.
+            JSON metadata with ``status``, ``original_uri``, and other
+            resource URIs.  Call ``show_image(uri=original_uri)`` to
+            poll progress and display the result.
         """
         if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
             msg = (
@@ -801,10 +803,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     ) -> str:
         """List available image generation providers, models, and capabilities.
 
-        Returns provider names, available models, prompt_style (``"clip"``
-        or ``"natural_language"``), and capability details. Each call
-        includes a ``refreshed_at`` timestamp. Pass ``force_refresh=true``
-        if providers may have changed since the last check.
+        Returns provider names, available models, and capability details.
+        Each model includes a ``prompt_style`` field: use ``"clip"`` for
+        comma-separated CLIP tags (SD 1.5/SDXL) or ``"natural_language"``
+        for descriptive sentences (Flux, OpenAI).  Each call includes a
+        ``refreshed_at`` timestamp.  Pass ``force_refresh=true`` if
+        providers may have changed since the last check.
 
         Also available as the ``info://providers`` resource for clients
         that support MCP resources.
