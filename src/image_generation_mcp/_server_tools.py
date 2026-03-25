@@ -367,11 +367,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ``width`` (pixels), ``height`` (pixels),
                 ``quality`` (1-100, for lossy formats).
             with_link: When ``True`` (default), include a one-time
-                ``download_url`` in the metadata if the server is
-                running on HTTP transport with ``BASE_URL`` configured.
-                Present this URL directly to the user as a clickable
-                link — the MCP App widget cannot open it from its
-                sandboxed iframe.
+                ``download_url`` in the metadata.  Only available on
+                HTTP deployments with ``BASE_URL`` configured — absent
+                on stdio transport.  If present in the response, show
+                the URL to the user as a clickable link (the MCP App
+                widget cannot open it from its sandboxed iframe).
 
         Returns:
             For completed images: a WebP thumbnail preview (max 512px,
@@ -539,9 +539,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         """Browse all generated images in an interactive visual gallery.
 
         Opens a gallery view showing thumbnail previews of every image in the
-        scratch directory.  The UI renders immediately from the first page of
-        thumbnails returned by this tool, then paginates using the
-        ``gallery_page`` helper.
+        scratch directory.
 
         For non-UI clients the response is a JSON object with ``total``,
         ``page``, ``page_size``, and ``items``.  Each completed item includes
@@ -550,8 +548,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         and ``content_type``.  Pending/generating items include ``status``,
         ``progress``, and ``progress_message`` instead of a thumbnail.
 
-        Use ``show_image`` with the returned ``image_id`` to view a single
-        image at full resolution with metadata.
+        Use ``browse_gallery`` to see all images; use ``show_image`` with
+        a specific ``image_id`` to view one image at full resolution.
 
         Returns:
             JSON with gallery data (total count, page metadata, thumbnail
@@ -864,9 +862,10 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
     ) -> str:
         """Create a one-time download URL for an image.
 
-        Creates a temporary HTTP endpoint that serves the image once,
-        then invalidates the link. Use this to pass images to other
-        MCP servers (e.g., save to a vault, attach to email).
+        Creates a temporary HTTP endpoint that expires after a single
+        download OR when ``ttl_seconds`` elapses, whichever comes first.
+        Use this to pass images to other MCP servers (e.g., save to a
+        vault, attach to email).
 
         The URI should be an ``image://`` resource URI, optionally with
         transform parameters (``format``, ``width``, ``height``,

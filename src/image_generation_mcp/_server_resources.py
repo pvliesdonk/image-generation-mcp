@@ -1441,10 +1441,10 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource(
         "info://prompt-guide",
         description=(
-            "Provider-specific prompt writing tips. Read before using "
-            "SD WebUI/Stable Diffusion to learn CLIP tag format, quality "
-            "tags, and negative prompt templates. Also covers OpenAI "
-            "prompt style and provider selection guidance."
+            "Provider-specific prompt writing tips. Covers CLIP tag "
+            "format for SD 1.5/SDXL, Flux natural language style, "
+            "OpenAI prompt guidance, quality tags, negative prompt "
+            "templates, and provider selection."
         ),
         mime_type="text/markdown",
         icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
@@ -1460,8 +1460,8 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource(
         "info://providers",
         description=(
-            "Read this to discover which image providers are configured "
-            "and what aspect ratios and quality levels are supported."
+            "Discover configured providers, available models, each "
+            "model's prompt_style, and supported aspect ratios."
         ),
         icons=[Icon(src=_LUCIDE.format("info"), mimeType="image/svg+xml")],
     )
