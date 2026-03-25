@@ -15,10 +15,16 @@ from datetime import UTC, datetime
 from fastmcp import FastMCP
 from fastmcp.dependencies import Depends
 from fastmcp.resources import ResourceContent, ResourceResult
-from fastmcp.server.apps import AppConfig, ResourceCSP
+from fastmcp.server.apps import AppConfig
 from mcp.types import Icon
 
 from image_generation_mcp._server_deps import get_service
+from image_generation_mcp._vendored_sdk import (
+    IMPORT_SPECIFIER as _SDK_SPECIFIER,
+)
+from image_generation_mcp._vendored_sdk import (
+    SDK_BASE64 as _SDK_B64,
+)
 from image_generation_mcp.config import _ENV_PREFIX
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
@@ -33,6 +39,31 @@ logger = logging.getLogger(__name__)
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 _IMAGE_VIEWER_URI = "ui://image-viewer/view.html"
 _IMAGE_GALLERY_URI = "ui://image-gallery/view.html"
+
+# Import-map that resolves the bare specifier to the vendored SDK bundle,
+# eliminating the runtime CDN dependency on unpkg.com.
+_SDK_IMPORT_MAP = (
+    '  <script type="importmap">\n'
+    "  "
+    + json.dumps(
+        {
+            "imports": {
+                _SDK_SPECIFIER: f"data:text/javascript;base64,{_SDK_B64}",
+            }
+        }
+    )
+    + "\n  </script>\n"
+)
+
+
+def _inject_sdk(html: str) -> str:
+    """Insert the vendored SDK import-map before the module script tag."""
+    target = '  <script type="module">'
+    if target not in html:
+        msg = "HTML template missing expected module script tag"
+        raise ValueError(msg)
+    return html.replace(target, _SDK_IMPORT_MAP + target, 1)
+
 
 _PROMPT_GUIDE = """\
 # Image Generation Prompt Guide
@@ -359,7 +390,7 @@ _IMAGE_VIEWER_HTML = """\
 
   <script type="module">
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
-      from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.3.1/app-with-deps";
+      from "@modelcontextprotocol/ext-apps";
 
     const app = new App(
       { name: "Image Viewer", version: "2.0.0" },
@@ -903,7 +934,7 @@ _IMAGE_GALLERY_HTML = """\
 
   <script type="module">
     import { App, applyDocumentTheme, applyHostStyleVariables, applyHostFonts }
-      from "https://unpkg.com/@modelcontextprotocol/ext-apps@1.3.1/app-with-deps";
+      from "@modelcontextprotocol/ext-apps";
 
     const app = new App(
       { name: "Image Gallery", version: "1.0.0" },
@@ -1678,10 +1709,7 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource(
         _IMAGE_VIEWER_URI,
         description="Interactive image viewer for show_image results.",
-        app=AppConfig(
-            domain=app_domain,
-            csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
-        ),
+        app=AppConfig(domain=app_domain),
     )
     def image_viewer() -> str:
         """HTML viewer that renders images from show_image tool results.
@@ -1690,17 +1718,14 @@ def register_resources(mcp: FastMCP) -> None:
         sandboxed iframe.  Listens for tool results via the ext-apps SDK and
         displays the image with metadata.
         """
-        return _IMAGE_VIEWER_HTML
+        return _inject_sdk(_IMAGE_VIEWER_HTML)
 
     # -- MCP Apps: image gallery ------------------------------------------------
 
     @mcp.resource(
         _IMAGE_GALLERY_URI,
         description="Interactive gallery for browsing all generated images.",
-        app=AppConfig(
-            domain=app_domain,
-            csp=ResourceCSP(resourceDomains=["https://unpkg.com"]),
-        ),
+        app=AppConfig(domain=app_domain),
     )
     def image_gallery() -> str:
         """HTML gallery that renders a browsable grid of generated images.
@@ -1710,4 +1735,4 @@ def register_resources(mcp: FastMCP) -> None:
         ``browse_gallery`` tool result, then paginates via the ``gallery_page``
         app-only tool.
         """
-        return _IMAGE_GALLERY_HTML
+        return _inject_sdk(_IMAGE_GALLERY_HTML)

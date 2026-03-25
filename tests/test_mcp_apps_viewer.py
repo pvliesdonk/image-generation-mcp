@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from image_generation_mcp._server_resources import _inject_sdk
 from image_generation_mcp.mcp_server import create_server
 
 
@@ -34,6 +35,13 @@ class TestImageViewerResource:
         result = await server.read_resource("ui://image-viewer/view.html")
         text = result.contents[0].content
         assert "@modelcontextprotocol/ext-apps" in text
+
+    async def test_viewer_html_has_vendored_sdk(self, server) -> None:
+        """SDK must be inlined via import-map, not loaded from CDN."""
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        assert "importmap" in text
+        assert "unpkg.com" not in text
 
     async def test_viewer_html_has_ontoolresult_handler(self, server) -> None:
         result = await server.read_resource("ui://image-viewer/view.html")
@@ -275,6 +283,18 @@ class TestGenerateImageMetadataShape:
         # Read the source to verify no file_path in metadata dict
         source = inspect.getsource(_server_tools)
         assert "file_path" not in source
+
+
+# -- SDK injection -----------------------------------------------------------
+
+
+class TestInjectSdk:
+    """Unit tests for the _inject_sdk helper."""
+
+    def test_inject_sdk_raises_on_missing_script_tag(self) -> None:
+        """ValueError when HTML has no module script tag."""
+        with pytest.raises(ValueError, match="missing expected module script tag"):
+            _inject_sdk("<html><body>no script here</body></html>")
 
 
 # -- Read-only mode ----------------------------------------------------------

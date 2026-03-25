@@ -84,6 +84,13 @@ class TestGalleryResource:
         text = result.contents[0].content
         assert "@modelcontextprotocol/ext-apps" in text
 
+    async def test_gallery_html_has_vendored_sdk(self, server) -> None:
+        """SDK must be inlined via import-map, not loaded from CDN."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "importmap" in text
+        assert "unpkg.com" not in text
+
     async def test_gallery_html_has_lifecycle_handlers(self, server) -> None:
         """All required ext-apps lifecycle handlers must be present."""
         result = await server.read_resource("ui://image-gallery/view.html")
@@ -161,8 +168,10 @@ class TestGalleryResource:
             r for r in resources if str(r.uri) == "ui://image-gallery/view.html"
         )
         assert gallery.meta is not None
-        app_meta = gallery.meta.get("ui", {})
-        assert app_meta  # AppConfig must produce non-empty ui meta
+        # AppConfig must produce a "ui" key (may be empty dict when no
+        # domain or CSP is configured, e.g. in test/stdio setups).
+        assert "ui" in gallery.meta
+        assert isinstance(gallery.meta["ui"], dict)
 
     async def test_gallery_domain_omitted_without_base_url(self, server) -> None:
         resources = await server.list_resources()
