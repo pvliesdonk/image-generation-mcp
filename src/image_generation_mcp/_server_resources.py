@@ -1461,7 +1461,8 @@ def register_resources(mcp: FastMCP) -> None:
         "info://providers",
         description=(
             "Discover configured providers, available models, each "
-            "model's prompt_style, and supported aspect ratios."
+            "model's prompt_style, supported aspect ratios, and "
+            "quality levels."
         ),
         icons=[Icon(src=_LUCIDE.format("info"), mimeType="image/svg+xml")],
     )

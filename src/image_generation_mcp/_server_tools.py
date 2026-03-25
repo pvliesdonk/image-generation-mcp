@@ -548,8 +548,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         and ``content_type``.  Pending/generating items include ``status``,
         ``progress``, and ``progress_message`` instead of a thumbnail.
 
-        Use ``browse_gallery`` to see all images; use ``show_image`` with
-        a specific ``image_id`` to view one image at full resolution.
+        Use ``browse_gallery`` to see all images; use
+        ``show_image(uri=original_uri)`` to view one image at full
+        resolution.
 
         Returns:
             JSON with gallery data (total count, page metadata, thumbnail
