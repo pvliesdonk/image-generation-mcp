@@ -2,6 +2,102 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-03-25)
+
+### Bug Fixes
+
+- Address architect-reviewer findings
+  ([`aa1cb25`](https://github.com/pvliesdonk/image-generation-mcp/commit/aa1cb2517dfd96dbd8b1f614a6000f219092611a))
+
+- Improve critical LLM-facing tool descriptions (#146)
+  ([#146](https://github.com/pvliesdonk/image-generation-mcp/pull/146),
+  [`6eb63cb`](https://github.com/pvliesdonk/image-generation-mcp/commit/6eb63cbe8cf0dc1ad0482d65ea261b1b057baefa))
+
+- Polish secondary LLM-facing descriptions (#147)
+  ([#147](https://github.com/pvliesdonk/image-generation-mcp/pull/147),
+  [`aab9e79`](https://github.com/pvliesdonk/image-generation-mcp/commit/aab9e790437f568dbdffea42a303fd664cbe7fde))
+
+- **ci**: Ignore CVE-2026-4539 in pip-audit (pygments, no fix available)
+  ([`7e00d98`](https://github.com/pvliesdonk/image-generation-mcp/commit/7e00d98cd7f2e62a80278e466d7464f5051a9e02))
+
+- **gallery**: Disable autoResize, use sendSizeChanged for frame height (#148)
+  ([#148](https://github.com/pvliesdonk/image-generation-mcp/pull/148),
+  [`1d08f31`](https://github.com/pvliesdonk/image-generation-mcp/commit/1d08f31c06f1a40c453ae3edcc3128501288aafd))
+
+- **gallery**: Update callServerTool to {name,arguments} API, bump ext-apps to 1.3.1 (#140)
+  ([#140](https://github.com/pvliesdonk/image-generation-mcp/pull/140),
+  [`3516b77`](https://github.com/pvliesdonk/image-generation-mcp/commit/3516b77680b020cda681dfffc73ccbb82e6990c4))
+
+- **widget**: Auto-compute Claude sandbox domain from BASE_URL
+  ([`e0c69e3`](https://github.com/pvliesdonk/image-generation-mcp/commit/e0c69e32469811654115be3fcc39208b02a14897))
+
+- **widget**: Correct LRU eviction order and restore console.warn (#132)
+  ([#132](https://github.com/pvliesdonk/image-generation-mcp/pull/132),
+  [`de990fa`](https://github.com/pvliesdonk/image-generation-mcp/commit/de990fa8823b7258918ffaf885e9905034359f74))
+
+- **widget**: Derive MCP Apps domain from BASE_URL hostname (#127)
+  ([#127](https://github.com/pvliesdonk/image-generation-mcp/pull/127),
+  [`9f5c5d9`](https://github.com/pvliesdonk/image-generation-mcp/commit/9f5c5d928993a6ea5fde477bd3e043112f9cfeee))
+
+- **widget**: Drop host-specific domain, use APP_DOMAIN env var
+  ([`9922d7d`](https://github.com/pvliesdonk/image-generation-mcp/commit/9922d7dd0c54867aeea423bea8aad58a229a9592))
+
+### Chores
+
+- Update server.json to v1.3.0 [skip ci]
+  ([`1a41d8f`](https://github.com/pvliesdonk/image-generation-mcp/commit/1a41d8f66b442e1af20b9843cc3747cb13e0e0a1))
+
+### Documentation
+
+- Add APP_DOMAIN env var and Claude hash computation
+  ([`d8a4f24`](https://github.com/pvliesdonk/image-generation-mcp/commit/d8a4f246a83b103a8859a358fdb7fc9ce0a25e1e))
+
+### Features
+
+- Add server-level palette icon for MCP client UIs (#149)
+  ([#149](https://github.com/pvliesdonk/image-generation-mcp/pull/149),
+  [`a64e57e`](https://github.com/pvliesdonk/image-generation-mcp/commit/a64e57e8f47d0ae3d82765a2c285f46edbbfcf24))
+
+- **gallery**: Add browse_gallery tool, gallery_page app-only tool, and gallery HTML resource (#133)
+  ([#133](https://github.com/pvliesdonk/image-generation-mcp/pull/133),
+  [`733b45f`](https://github.com/pvliesdonk/image-generation-mcp/commit/733b45fab9fa9701a30bbc6756c3c9cc6647cbce))
+
+- **gallery**: Add delete_image tool and gallery delete buttons (#135)
+  ([#135](https://github.com/pvliesdonk/image-generation-mcp/pull/135),
+  [`68e20ea`](https://github.com/pvliesdonk/image-generation-mcp/commit/68e20ea632aa34b617b3d624fdcdb4e595b6d96e))
+
+- **gallery**: Add lightbox zoom view and gallery_full_image app-only tool (#134)
+  ([#134](https://github.com/pvliesdonk/image-generation-mcp/pull/134),
+  [`2c9fab0`](https://github.com/pvliesdonk/image-generation-mcp/commit/2c9fab0e173a6fdbc767dcbe5eae7817e2d824f3))
+
+- **gallery**: Add picture-in-picture (PiP) display mode (#142)
+  ([#142](https://github.com/pvliesdonk/image-generation-mcp/pull/142),
+  [`cdbbe3b`](https://github.com/pvliesdonk/image-generation-mcp/commit/cdbbe3ba53c450a0ec51df458f368f9940bc5d99))
+
+- **http**: Add JSON-RPC-aware request logging middleware
+  ([`5711c18`](https://github.com/pvliesdonk/image-generation-mcp/commit/5711c187e213b809e8f7b3097c3658f804d5f633))
+
+- **http**: Add persistent EventStore for HTTP session resumability (#138)
+  ([#138](https://github.com/pvliesdonk/image-generation-mcp/pull/138),
+  [`27f181f`](https://github.com/pvliesdonk/image-generation-mcp/commit/27f181f24bdc884aa0145c5b23b3950ed7b66fb5))
+
+- **http**: Log clientInfo, resource URIs, and User-Agent
+  ([`7d28114`](https://github.com/pvliesdonk/image-generation-mcp/commit/7d28114ae05252aebc228c9c846bcfcbb4018072))
+
+- **widget**: Add download button via ext-apps downloadFile API
+  ([`8261f26`](https://github.com/pvliesdonk/image-generation-mcp/commit/8261f265ef5669bef0a6b64193399c98d088ec6a))
+
+- **widget**: Redesign image viewer following ext-apps SDK patterns
+  ([`fc2028c`](https://github.com/pvliesdonk/image-generation-mcp/commit/fc2028c2086935a0f7e46681d7a6a49820615fee))
+
+- **widget**: Redesign MCP Apps image viewer with ext-apps SDK (#128)
+  ([#128](https://github.com/pvliesdonk/image-generation-mcp/pull/128),
+  [`213e058`](https://github.com/pvliesdonk/image-generation-mcp/commit/213e05887b6537a812dd42b265848cc79deb4e49))
+
+- **widget**: Show generating/failed status instead of empty frame
+  ([`5cf6a21`](https://github.com/pvliesdonk/image-generation-mcp/commit/5cf6a21cdcade993d46e1f47966cb696f636b79e))
+
+
 ## v1.3.0 (2026-03-24)
 
 ### Bug Fixes
