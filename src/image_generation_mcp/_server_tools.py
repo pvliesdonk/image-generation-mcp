@@ -138,10 +138,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 to the provider's configured model.
 
         Returns:
-            JSON metadata with ``status``, ``image_id``, and resource
-            URIs including ``original_uri``.  Call
-            ``show_image(uri=original_uri)`` to poll progress and
-            display the result.
+            JSON metadata with ``status``, ``original_uri``, and other
+            resource URIs.  Call ``show_image(uri=original_uri)`` to
+            poll progress and display the result.
         """
         if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
             msg = (

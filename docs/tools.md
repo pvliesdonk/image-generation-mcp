@@ -4,7 +4,7 @@ image-generation-mcp exposes four domain tools plus two auto-generated resource-
 
 ## generate_image
 
-Generate an image from a text prompt. Returns immediately with a `status: "generating"` response while the image is generated in the background. Call `show_image` with the returned `image_id` to check progress and display the result. Read `info://prompt-guide` for provider-specific prompt writing tips.
+Generate an image from a text prompt. Returns immediately with a `status: "generating"` response while the image is generated in the background. Call `show_image(uri=original_uri)` to check progress and display the result. Check each model's `prompt_style` in `list_providers` to choose CLIP tags vs. natural language prompts.
 
 | Property | Value |
 |----------|-------|
@@ -90,7 +90,7 @@ Tool call: generate_image
 
 Display a registered image with optional on-demand transforms, or poll for generation status. Accepts a full `image://` resource URI with transforms encoded in the query string.
 
-Also serves as the polling endpoint for fire-and-forget generation: after calling `generate_image`, call `show_image` with the returned `image_id` to check progress and display the result once ready.
+Also serves as the polling endpoint for fire-and-forget generation: after calling `generate_image`, call `show_image(uri=original_uri)` to check progress and display the result once ready.
 
 | Property | Value |
 |----------|-------|
