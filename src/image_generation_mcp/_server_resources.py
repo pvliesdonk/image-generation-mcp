@@ -726,6 +726,35 @@ _IMAGE_GALLERY_HTML = """\
       -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
 
+    /* PiP toolbar (top-right of grid) */
+    .pip-toolbar {
+      display: flex; justify-content: flex-end; margin-bottom: 6px;
+    }
+    .pip-btn {
+      display: none; /* shown via JS when host supports PiP */
+      background: var(--color-background-secondary, #f0f0f0);
+      border: 1px solid var(--color-border-primary, #ddd);
+      border-radius: var(--border-radius-sm, 4px);
+      padding: 3px 8px; cursor: pointer;
+      color: var(--color-text-secondary, #666);
+      font-size: var(--font-text-xs-size, 12px); line-height: 1;
+    }
+    .pip-btn:hover {
+      background: var(--color-background-tertiary, #e8e8e8);
+      color: var(--color-text-primary, #333);
+    }
+
+    /* PiP compact layout */
+    .main.pip-mode { padding: 4px; border-radius: 0; }
+    .main.pip-mode .pip-toolbar { margin-bottom: 2px; }
+    .main.pip-mode .gallery-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3px;
+    }
+    .main.pip-mode .card { aspect-ratio: 1; border-radius: 4px; }
+    .main.pip-mode .card-overlay { display: none; }
+    .main.pip-mode .pagination { display: none; }
+
     /* Pagination */
     .pagination {
       display: flex; align-items: center; justify-content: center;
@@ -829,6 +858,7 @@ _IMAGE_GALLERY_HTML = """\
       <div class="empty-sub">Use <code>generate_image</code> to create your first image.</div>
     </div>
     <div class="state-grid" id="grid-container">
+      <div class="pip-toolbar"><button class="pip-btn" id="pip-btn" title="Picture-in-picture">\u25a3</button></div>
       <div class="gallery-grid" id="gallery-grid"></div>
       <div class="pagination" id="pagination"></div>
     </div>
@@ -885,6 +915,8 @@ _IMAGE_GALLERY_HTML = """\
     const lbPromptEl = document.getElementById("lb-prompt");
     const lbInfoEl   = document.getElementById("lb-info");
 
+    const pipBtn    = document.getElementById("pip-btn");
+
     let currentPage = 1;
     let currentTotal = 0;
     let currentPageSize = 12;
@@ -895,6 +927,10 @@ _IMAGE_GALLERY_HTML = """\
     let lbIndex  = 0;       // index within lbPageItems
     let lbPageItems = [];   // completed items on current page (for lightbox nav)
     let lbFsAvailable = false;
+
+    // PiP state
+    let pipAvailable = false;
+    let pipActive = false;
 
     // --- Helpers ---
     function trunc(s, n) {
@@ -1017,6 +1053,62 @@ _IMAGE_GALLERY_HTML = """\
       else if (e.key === "ArrowRight") navigateLb(1);
     });
 
+    // --- PiP toggle ---
+    pipBtn.addEventListener("click", async () => {
+      const mode = pipActive ? "inline" : "pip";
+      try {
+        const res = await app.requestDisplayMode({ mode });
+        applyDisplayMode(res.mode);
+      } catch (e) { console.warn("requestDisplayMode failed", e); }
+    });
+
+    function applyDisplayMode(mode) {
+      const wasPip = pipActive;
+      pipActive = mode === "pip";
+      mainEl.classList.toggle("pip-mode", pipActive);
+      pipBtn.textContent = pipActive ? "\\u25a1" : "\\u25a3";
+      pipBtn.title = pipActive ? "Exit picture-in-picture" : "Picture-in-picture";
+      if (pipActive && lbPageItems.length > 0) {
+        renderPipStrip();
+      } else if (wasPip && !pipActive) {
+        // Exiting PiP — reload full grid for current page
+        goTo(currentPage);
+      }
+    }
+
+    function renderPipStrip() {
+      gridItems.innerHTML = "";
+      const items = lbPageItems.slice(0, 4);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const card = document.createElement("div");
+        card.className = "card";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        if (item.thumbnail_b64) {
+          const img = document.createElement("img");
+          img.src = "data:image/webp;base64," + item.thumbnail_b64;
+          img.alt = item.prompt || "Generated image";
+          card.appendChild(img);
+        }
+        const capturedIdx = i;
+        const activatePipCard = async () => {
+          try {
+            const res = await app.requestDisplayMode({ mode: "inline" });
+            applyDisplayMode(res.mode);
+            if (res.mode === "inline") openLightbox(capturedIdx);
+          } catch (e) { /* host denied — stay in PiP */ }
+        }
+        card.addEventListener("click", activatePipCard);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activatePipCard(); }
+        });
+        gridItems.appendChild(card);
+      }
+      // Hide pagination in PiP (also enforced by CSS)
+      pagEl.innerHTML = "";
+    }
+
     // --- Display states ---
     function show(which) {
       loadingEl.style.display = which === "loading" ? "flex" : "none";
@@ -1102,11 +1194,13 @@ _IMAGE_GALLERY_HTML = """\
       if (!items || items.length === 0) {
         if (total === 0) { show("empty"); return; }
         show("grid");
-        renderPagination();
+        if (!pipActive) renderPagination();
         return;
       }
 
       show("grid");
+      // In PiP mode, render compact strip instead of full grid
+      if (pipActive) { renderPipStrip(); return; }
       let lbIdx = 0;
       for (const item of items) {
         const card = makeCard(item);
@@ -1275,15 +1369,23 @@ _IMAGE_GALLERY_HTML = """\
       if (ctx.styles?.css?.fonts) applyHostFonts(ctx.styles.css.fonts);
       if (ctx.safeAreaInsets) {
         const { top, right, bottom, left } = ctx.safeAreaInsets;
-        mainEl.style.paddingTop    = (12 + top)    + "px";
-        mainEl.style.paddingRight  = (12 + right)  + "px";
-        mainEl.style.paddingBottom = (12 + bottom) + "px";
-        mainEl.style.paddingLeft   = (12 + left)   + "px";
+        const basePad = pipActive ? 4 : 12;
+        mainEl.style.paddingTop    = (basePad + top)    + "px";
+        mainEl.style.paddingRight  = (basePad + right)  + "px";
+        mainEl.style.paddingBottom = (basePad + bottom) + "px";
+        mainEl.style.paddingLeft   = (basePad + left)   + "px";
       }
       lbFsAvailable = ctx.availableDisplayModes?.includes("fullscreen") ?? false;
       if (lbActive) {
         if (lbFsAvailable) lbFsBtn.removeAttribute("hidden");
         else lbFsBtn.setAttribute("hidden", "");
+      }
+      // PiP availability
+      pipAvailable = ctx.availableDisplayModes?.includes("pip") ?? false;
+      pipBtn.style.display = pipAvailable ? "block" : "none";
+      // Respond to external display mode changes (e.g. host closes PiP)
+      if (ctx.displayMode && ctx.displayMode !== (pipActive ? "pip" : "inline")) {
+        applyDisplayMode(ctx.displayMode);
       }
     }
 
