@@ -1091,13 +1091,17 @@ _IMAGE_GALLERY_HTML = """\
           img.alt = item.prompt || "Generated image";
           card.appendChild(img);
         }
-        const capturedIdx = lbPageItems.indexOf(item);
-        card.addEventListener("click", async () => {
+        const capturedIdx = i;
+        async function activatePipCard() {
           try {
-            await app.requestDisplayMode({ mode: "inline" });
-            applyDisplayMode("inline");
-          } catch (e) { /* host may deny */ }
-          openLightbox(capturedIdx);
+            const res = await app.requestDisplayMode({ mode: "inline" });
+            applyDisplayMode(res.mode);
+            if (res.mode === "inline") openLightbox(capturedIdx);
+          } catch (e) { /* host denied — stay in PiP */ }
+        }
+        card.addEventListener("click", activatePipCard);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activatePipCard(); }
         });
         gridItems.appendChild(card);
       }
@@ -1380,7 +1384,7 @@ _IMAGE_GALLERY_HTML = """\
       pipAvailable = ctx.availableDisplayModes?.includes("pip") ?? false;
       pipBtn.style.display = pipAvailable ? "block" : "none";
       // Respond to external display mode changes (e.g. host closes PiP)
-      if (ctx.displayMode) {
+      if (ctx.displayMode && ctx.displayMode !== (pipActive ? "pip" : "inline")) {
         applyDisplayMode(ctx.displayMode);
       }
     }
