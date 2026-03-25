@@ -1143,7 +1143,8 @@ _IMAGE_GALLERY_HTML = """\
       loadingEl.style.display = which === "loading" ? "flex" : "none";
       emptyEl.style.display   = which === "empty"   ? "block" : "none";
       gridEl.style.display    = which === "grid"    ? "block" : "none";
-      updateSize();
+      // For "grid", renderGrid/renderPipStrip call updateSize after populating
+      if (which !== "grid") updateSize();
     }
 
     // --- Card builder ---
