@@ -185,7 +185,7 @@ jobs:
         run: uv export --all-extras --frozen --no-emit-project --no-hashes -o ${{ runner.temp }}/requirements.txt
 
       - name: Run pip-audit
-        run: uvx pip-audit --strict --progress-spinner off -r ${{ runner.temp }}/requirements.txt
+        run: uvx pip-audit --strict --progress-spinner off --ignore-vuln CVE-2026-4539 -r ${{ runner.temp }}/requirements.txt  # pygments 2.19.2, no fix available
 
   secrets:
     name: Secret Detection
