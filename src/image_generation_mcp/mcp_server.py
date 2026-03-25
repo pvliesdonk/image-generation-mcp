@@ -61,7 +61,9 @@ def _build_default_instructions(*, read_only: bool) -> str:
         "and a zero-cost placeholder). "
         f"{mode_line} "
         "Start by calling list_providers to see which providers are "
-        "configured, then use generate_image to create images."
+        "configured and check each model's prompt_style to choose "
+        "CLIP tags vs. natural language prompts, then use "
+        "generate_image to create images."
     )
 
 
