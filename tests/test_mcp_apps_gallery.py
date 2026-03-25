@@ -571,3 +571,80 @@ class TestLightboxHTML:
         # The lightbox code should reference thumbnail_b64 for preview
         lb_section = text[text.index("openLightbox") :]
         assert "thumbnail_b64" in lb_section
+
+
+# ---------------------------------------------------------------------------
+# PiP (picture-in-picture) mode HTML tests
+# ---------------------------------------------------------------------------
+
+
+class TestPipModeHTML:
+    """Gallery HTML must contain PiP button, CSS, and JS for mode switching."""
+
+    async def test_gallery_html_has_pip_button(self, server) -> None:
+        """PiP button element must exist, hidden by default (display:none via JS)."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "pip-btn" in text
+        assert 'id="pip-btn"' in text
+
+    async def test_gallery_html_pip_checks_available_display_modes(
+        self, server
+    ) -> None:
+        """handleHostContext must check availableDisplayModes for 'pip'."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert '"pip"' in text
+        # Must check availableDisplayModes for pip availability
+        assert "availableDisplayModes" in text
+
+    async def test_gallery_html_pip_request_enter(self, server) -> None:
+        """PiP button handler must call requestDisplayMode with mode 'pip'."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Toggle logic: pipActive ? "inline" : "pip" → feeds into requestDisplayMode
+        assert '"pip"' in text
+        assert "requestDisplayMode" in text
+
+    async def test_gallery_html_pip_request_exit(self, server) -> None:
+        """Exiting PiP must request inline mode."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The toggle logic: pipActive ? "inline" : "pip"
+        pip_section = text[text.index("pipActive") :]
+        assert '"inline"' in pip_section
+
+    async def test_gallery_html_pip_mode_css_class(self, server) -> None:
+        """CSS must define .pip-mode with compact layout styles."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert ".pip-mode" in text
+        assert "pip-mode" in text
+
+    async def test_gallery_html_pip_hides_pagination(self, server) -> None:
+        """PiP mode must hide pagination controls."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # CSS rule: .main.pip-mode .pagination { display: none; }
+        assert ".pip-mode .pagination" in text
+
+    async def test_gallery_html_pip_responds_to_display_mode_changes(
+        self, server
+    ) -> None:
+        """handleHostContext must respond to ctx.displayMode for layout switching."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "displayMode" in text
+        assert "applyDisplayMode" in text
+
+    async def test_gallery_html_pip_compact_grid(self, server) -> None:
+        """PiP CSS must use a fixed 4-column grid for compact thumbnails."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "repeat(4, 1fr)" in text
+
+    async def test_gallery_html_pip_strip_renderer(self, server) -> None:
+        """renderPipStrip must exist to render compact thumbnail strip."""
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "renderPipStrip" in text
