@@ -9,10 +9,13 @@ from PIL import Image
 
 from image_generation_mcp.processing import (
     convert_format,
+    crop_region,
     crop_to_dimensions,
+    flip_image,
     generate_thumbnail,
     optimize_png,
     resize_image,
+    rotate_image,
 )
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 
@@ -183,3 +186,93 @@ def test_invalid_format_convert_raises(png_256: bytes) -> None:
     """Invalid format in convert_format raises ValueError."""
     with pytest.raises(ValueError, match="Unsupported format"):
         convert_format(png_256, "tiff")
+
+
+# --- crop_region ---
+
+
+def test_crop_region_happy_path(png_640x360: bytes) -> None:
+    """crop_region extracts the specified box."""
+    data = crop_region(png_640x360, x=100, y=50, w=200, h=100)
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (200, 100)
+
+
+def test_crop_region_out_of_bounds(png_256: bytes) -> None:
+    """crop_region raises ValueError when box exceeds image dimensions."""
+    with pytest.raises(ValueError, match="does not fit"):
+        crop_region(png_256, x=200, y=200, w=200, h=200)
+
+
+def test_crop_region_preserves_format(png_256: bytes) -> None:
+    """crop_region preserves the source format."""
+    data = crop_region(png_256, x=0, y=0, w=100, h=100)
+    img = Image.open(io.BytesIO(data))
+    assert img.format == "PNG"
+
+
+# --- rotate_image ---
+
+
+def test_rotate_image_90(png_640x360: bytes) -> None:
+    """Rotate 90° swaps width and height."""
+    data = rotate_image(png_640x360, 90)
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (360, 640)
+
+
+def test_rotate_image_180(png_640x360: bytes) -> None:
+    """Rotate 180° preserves dimensions."""
+    data = rotate_image(png_640x360, 180)
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (640, 360)
+
+
+def test_rotate_image_270(png_640x360: bytes) -> None:
+    """Rotate 270° swaps width and height."""
+    data = rotate_image(png_640x360, 270)
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (360, 640)
+
+
+def test_rotate_image_invalid_degrees(png_256: bytes) -> None:
+    """rotate_image raises ValueError for unsupported rotation angles."""
+    with pytest.raises(ValueError, match="90, 180, or 270"):
+        rotate_image(png_256, 45)
+
+
+def test_rotate_image_preserves_format(png_256: bytes) -> None:
+    """rotate_image preserves the source format."""
+    data = rotate_image(png_256, 90)
+    img = Image.open(io.BytesIO(data))
+    assert img.format == "PNG"
+
+
+# --- flip_image ---
+
+
+def test_flip_image_horizontal(png_640x360: bytes) -> None:
+    """Horizontal flip preserves dimensions."""
+    data = flip_image(png_640x360, "horizontal")
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (640, 360)
+
+
+def test_flip_image_vertical(png_640x360: bytes) -> None:
+    """Vertical flip preserves dimensions."""
+    data = flip_image(png_640x360, "vertical")
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (640, 360)
+
+
+def test_flip_image_invalid_axis(png_256: bytes) -> None:
+    """flip_image raises ValueError for unknown axis."""
+    with pytest.raises(ValueError, match="'horizontal' or 'vertical'"):
+        flip_image(png_256, "diagonal")
+
+
+def test_flip_image_case_insensitive(png_256: bytes) -> None:
+    """flip_image accepts mixed-case axis names."""
+    data = flip_image(png_256, "Horizontal")
+    img = Image.open(io.BytesIO(data))
+    assert img.size == (256, 256)

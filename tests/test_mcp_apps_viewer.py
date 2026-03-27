@@ -37,11 +37,13 @@ class TestImageViewerResource:
         assert "@modelcontextprotocol/ext-apps" in text
 
     async def test_viewer_html_has_vendored_sdk(self, server) -> None:
-        """SDK must be inlined via import-map, not loaded from CDN."""
+        """Ext-apps SDK must be inlined via import-map, not loaded from CDN."""
         result = await server.read_resource("ui://image-viewer/view.html")
         text = result.contents[0].content
         assert "importmap" in text
-        assert "unpkg.com" not in text
+        # The ext-apps SDK itself must be bundled (data URI), not served from CDN
+        assert "@modelcontextprotocol/ext-apps" in text
+        assert "data:text/javascript;base64," in text
 
     async def test_viewer_html_has_ontoolresult_handler(self, server) -> None:
         result = await server.read_resource("ui://image-viewer/view.html")

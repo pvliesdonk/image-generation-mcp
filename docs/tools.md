@@ -41,7 +41,7 @@ Returns immediately with a `ToolResult` containing:
   "prompt_style": null,
   "original_uri": "image://a1b2c3d4e5f6/view",
   "metadata_uri": "image://a1b2c3d4e5f6/metadata",
-  "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality}"
+  "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}"
 }
 ```
 
@@ -149,6 +149,60 @@ show_image(uri="image://a1b2c3d4e5f6/view?format=webp&width=512")
 # Show center-cropped to 256x256
 show_image(uri="image://a1b2c3d4e5f6/view?width=256&height=256")
 ```
+
+---
+
+## edit_image
+
+Open an image for interactive editing (crop, rotate, flip) in the image viewer UI. The user edits in the viewer widget and saves as a new image. Always edits the original image — resource template transforms are ephemeral and LLM-facing; editor transforms are persistent and user-facing.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | *(none — read-only, always visible)* |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
+| **MCP App** | Opens `ui://image-viewer/view.html` widget |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `image_id` | str | *(required)* | ID of the image to edit. Use `image://list` to browse available image IDs. |
+
+### Return value
+
+Returns a `ToolResult` with:
+
+1. **TextContent** — JSON metadata with `editable: true` to activate the editor UI:
+
+```json
+{
+  "editable": true,
+  "image_id": "a1b2c3d4e5f6",
+  "content_type": "image/png",
+  "dimensions": [640, 360],
+  "prompt": "watercolor painting of a mountain landscape",
+  "provider": "openai"
+}
+```
+
+2. **ImageContent** — Full-resolution image as base64 (not a thumbnail). The viewer UI uses this to initialize the Cropper.js editor.
+
+### Editor UI
+
+When `editable: true` is received by the MCP Apps widget, it activates the Cropper.js-based editor with:
+
+- **Crop**: Interactive crop box with aspect ratio presets (Free, 1:1, 16:9, 4:3)
+- **Rotate**: 90° counter-clockwise / clockwise buttons (lossless)
+- **Flip**: Horizontal and vertical flip buttons (lossless)
+- **Reset**: Resets all pending edits
+- **Save as new image**: Applies transforms server-side and saves as a new image record with `source_image_id` provenance
+- **Cancel**: Returns to the waiting state
+
+Saving calls the internal `_save_edited_image` app-only tool and then shows the new image via `show_image`.
+
+### Saved image provenance
+
+Saved images include a `source_image_id` field in their sidecar JSON referencing the original. The `image://{id}/metadata` resource exposes this field.
 
 ---
 

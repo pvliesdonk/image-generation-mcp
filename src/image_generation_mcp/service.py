@@ -18,14 +18,17 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, TypeAlias
 
 from PIL import Image as PILImage
 
 from image_generation_mcp.processing import (
     convert_format,
+    crop_region,
     crop_to_dimensions,
+    flip_image,
     resize_image,
+    rotate_image,
 )
 from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
@@ -58,9 +61,13 @@ class ImageRecord:
         str, Any
     ]  # treat as read-only; frozen prevents reassignment
     created_at: float
+    source_image_id: str | None = None
 
 
 _PENDING_TTL_S = 600  # 10 minutes — clean up stale pending entries
+
+# Cache key: (image_id, format, width, height, quality, crop_x, crop_y, crop_w, crop_h, rotate, flip)
+_TransformCacheKey: TypeAlias = tuple[str, str, int, int, int, int, int, int, int, int, str]
 
 
 @dataclass
@@ -115,9 +122,7 @@ class ImageService:
         # (get_transformed_image, delete_image) are called via asyncio.to_thread,
         # so concurrent mutations are possible, but each individual op is atomic
         # under the GIL. Safe under CPython; revisit if moving to free-threading.
-        self._transform_cache: OrderedDict[
-            tuple[str, str, int, int, int], tuple[bytes, str]
-        ] = OrderedDict()
+        self._transform_cache: OrderedDict[_TransformCacheKey, tuple[bytes, str]] = OrderedDict()
         self._transform_cache_size = transform_cache_size
         self._pending: dict[str, PendingGeneration] = {}
 
@@ -488,6 +493,7 @@ class ImageService:
         quality: str = "standard",
         background: str = "opaque",
         image_id: str | None = None,
+        source_image_id: str | None = None,
     ) -> ImageRecord:
         """Register a generated image in the scratch directory.
 
@@ -538,6 +544,7 @@ class ImageService:
             original_dimensions=original_dimensions,
             provider_metadata=result.provider_metadata,
             created_at=time.time(),
+            source_image_id=source_image_id,
         )
 
         # Write sidecar JSON
@@ -556,6 +563,7 @@ class ImageService:
             "original_dimensions": list(record.original_dimensions),
             "provider_metadata": record.provider_metadata,
             "created_at": datetime.fromtimestamp(record.created_at, tz=UTC).isoformat(),
+            "source_image_id": record.source_image_id,
         }
         sidecar_path.write_text(json.dumps(sidecar_data, indent=2))
 
@@ -641,12 +649,20 @@ class ImageService:
         width: int = 0,
         height: int = 0,
         quality: int = 90,
+        crop_x: int = 0,
+        crop_y: int = 0,
+        crop_w: int = 0,
+        crop_h: int = 0,
+        rotate: int = 0,
+        flip: str = "",
     ) -> tuple[bytes, str]:
         """Return image bytes with optional transforms, using an LRU cache.
 
-        Requests with no transform parameters (``format`` empty and both
-        ``width`` and ``height`` zero) bypass the cache entirely and return
-        the original file bytes directly.
+        Requests with no transform parameters bypass the cache entirely and
+        return the original file bytes directly.
+
+        Transforms are applied in this order: crop-region → rotate → flip →
+        resize/crop → format conversion.
 
         Args:
             image_id: Image registry ID.
@@ -655,6 +671,12 @@ class ImageService:
             width: Target width in pixels, or ``0`` for original.
             height: Target height in pixels, or ``0`` for original.
             quality: Compression quality for lossy formats (1-100).
+            crop_x: Left edge of crop box in pixels (requires crop_w/crop_h).
+            crop_y: Top edge of crop box in pixels (requires crop_w/crop_h).
+            crop_w: Width of crop box in pixels (0 = no region crop).
+            crop_h: Height of crop box in pixels (0 = no region crop).
+            rotate: Rotation in degrees — 90, 180, or 270 (0 = no rotation).
+            flip: Flip axis — ``"horizontal"`` or ``"vertical"`` (empty = no flip).
 
         Returns:
             Tuple of ``(image_bytes, content_type)``.
@@ -665,10 +687,29 @@ class ImageService:
         record = self.get_image(image_id)
 
         # No-transform bypass: skip cache for plain original reads
-        if not format and width == 0 and height == 0:
+        if (
+            not format
+            and width == 0
+            and height == 0
+            and crop_w == 0
+            and not rotate
+            and not flip
+        ):
             return record.original_path.read_bytes(), record.content_type
 
-        key = (image_id, format, width, height, quality)
+        key = (
+            image_id,
+            format,
+            width,
+            height,
+            quality,
+            crop_x,
+            crop_y,
+            crop_w,
+            crop_h,
+            rotate,
+            flip,
+        )
 
         # Cache hit: move to end (most-recently-used) and return
         if key in self._transform_cache:
@@ -679,8 +720,19 @@ class ImageService:
         data = record.original_path.read_bytes()
         content_type = record.content_type
 
-        # Apply resize/crop first (always from original to prevent quality
-        # degradation — see ADR-0006)
+        # 1. Crop region (arbitrary box, always from original)
+        if crop_w > 0 and crop_h > 0:
+            data = crop_region(data, crop_x, crop_y, crop_w, crop_h)
+
+        # 2. Rotate (lossless 90° increments)
+        if rotate:
+            data = rotate_image(data, rotate)
+
+        # 3. Flip (lossless)
+        if flip:
+            data = flip_image(data, flip)
+
+        # 4. Resize/center-crop (existing behavior preserved)
         if width > 0 and height > 0:
             data = crop_to_dimensions(data, width, height)
         elif width > 0:
@@ -694,7 +746,7 @@ class ImageService:
             new_width = round(orig_w * ratio)
             data = resize_image(data, new_width, height)
 
-        # Apply format conversion last (one encode from spatial result)
+        # 5. Format conversion last
         if format:
             data, content_type = convert_format(data, format, quality=quality)
 
@@ -748,6 +800,7 @@ class ImageService:
                     original_dimensions=tuple(data["original_dimensions"]),
                     provider_metadata=data.get("provider_metadata", {}),
                     created_at=created_at,
+                    source_image_id=data.get("source_image_id"),
                 )
                 self._images[image_id] = record
                 count += 1

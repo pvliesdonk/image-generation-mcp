@@ -105,7 +105,7 @@ The `generate_image` tool description references this resource. LLM clients can 
 
 Image data with optional CDN-style transforms. This is a resource template (RFC 6570) with query parameters.
 
-**URI template:** `image://{image_id}/view{?format,width,height,quality}`
+**URI template:** `image://{image_id}/view{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}`
 
 **MIME type:** varies (depends on original format or requested format)
 
@@ -117,8 +117,16 @@ Image data with optional CDN-style transforms. This is a resource template (RFC 
 | `width` | int | *(original)* | Target width in pixels |
 | `height` | int | *(original)* | Target height in pixels |
 | `quality` | int | `90` | Compression quality for lossy formats (1-100) |
+| `crop_x` | int | `0` | Left edge of crop box in pixels |
+| `crop_y` | int | `0` | Top edge of crop box in pixels |
+| `crop_w` | int | `0` | Width of crop box in pixels (0 = no region crop) |
+| `crop_h` | int | `0` | Height of crop box in pixels (0 = no region crop) |
+| `rotate` | int | `0` | Rotation in degrees — 90, 180, or 270 (lossless) |
+| `flip` | str | *(none)* | Flip axis — `horizontal` or `vertical` (lossless) |
 
 ### Transform behavior
+
+Transforms are applied in this order: crop-region → rotate → flip → resize/crop → format conversion.
 
 | Parameters provided | Behavior |
 |--------------------|----------|
@@ -128,6 +136,9 @@ Image data with optional CDN-style transforms. This is a resource template (RFC 
 | `width` only | Proportional resize (height calculated from aspect ratio) |
 | `height` only | Proportional resize (width calculated from aspect ratio) |
 | `format` + dimensions | Convert and resize/crop |
+| `crop_x` + `crop_y` + `crop_w` + `crop_h` | Crop arbitrary rectangular region |
+| `rotate` | Rotate 90°, 180°, or 270° (lossless via `Image.transpose`) |
+| `flip` | Mirror horizontally or vertically (lossless via `Image.transpose`) |
 
 ### Examples
 
@@ -146,6 +157,15 @@ image://a1b2c3d4e5f6/view?width=256&height=256
 
 # Convert to JPEG at quality 85
 image://a1b2c3d4e5f6/view?format=jpeg&quality=85
+
+# Crop a 200x100 region starting at (50, 30)
+image://a1b2c3d4e5f6/view?crop_x=50&crop_y=30&crop_w=200&crop_h=100
+
+# Rotate 90 degrees clockwise
+image://a1b2c3d4e5f6/view?rotate=90
+
+# Flip horizontally
+image://a1b2c3d4e5f6/view?flip=horizontal
 ```
 
 ---

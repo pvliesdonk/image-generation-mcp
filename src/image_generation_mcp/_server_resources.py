@@ -355,6 +355,47 @@ _IMAGE_VIEWER_HTML = """\
       font-size: var(--font-text-sm-size, 13px);
       color: var(--color-text-tertiary, #999);
     }
+
+    /* --- Edit mode --- */
+    .state-editing { display: none; width: 100%; max-width: 640px; }
+    .edit-canvas-wrap { position: relative; width: 100%; background: #111; border-radius: var(--border-radius-md, 8px); overflow: hidden; }
+    .edit-canvas-wrap img { display: block; max-width: 100%; }
+    .edit-toolbar {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+      align-items: center;
+    }
+    .edit-toolbar select, .edit-toolbar button {
+      font-size: var(--font-text-xs-size, 12px);
+      padding: 4px 8px; border-radius: var(--border-radius-sm, 4px);
+      border: 1px solid var(--color-border-primary, #ccc);
+      background: var(--color-background-secondary, #f5f5f5);
+      color: var(--color-text-primary, #333);
+      cursor: pointer;
+    }
+    .edit-toolbar button:hover { background: var(--color-background-tertiary, #e8e8e8); }
+    .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .edit-save-btn {
+      flex: 1; padding: 8px 16px;
+      background: var(--color-text-secondary, #666);
+      color: #fff; border: none; border-radius: var(--border-radius-sm, 4px);
+      font-size: var(--font-text-sm-size, 13px); font-weight: 600;
+      cursor: pointer;
+    }
+    .edit-save-btn:hover { opacity: 0.85; }
+    .edit-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .edit-cancel-btn {
+      padding: 8px 16px;
+      background: none; border: 1px solid var(--color-border-primary, #ccc);
+      border-radius: var(--border-radius-sm, 4px);
+      font-size: var(--font-text-sm-size, 13px);
+      color: var(--color-text-secondary, #666);
+      cursor: pointer;
+    }
+    .edit-source-badge {
+      font-size: var(--font-text-xs-size, 12px);
+      color: var(--color-text-tertiary, #999);
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -371,12 +412,36 @@ _IMAGE_VIEWER_HTML = """\
       <div class="fail-detail" id="fail-detail"></div>
     </div>
     <div class="state-cancelled" id="cancelled">Cancelled</div>
+    <div class="state-editing" id="editing">
+      <div class="edit-canvas-wrap">
+        <img id="edit-img" alt="Image to edit">
+      </div>
+      <div class="edit-toolbar">
+        <label style="font-size:var(--font-text-xs-size,12px);color:var(--color-text-tertiary,#999)">Aspect:</label>
+        <select id="edit-aspect">
+          <option value="NaN">Free</option>
+          <option value="1">1:1</option>
+          <option value="1.7778">16:9</option>
+          <option value="1.3333">4:3</option>
+        </select>
+        <button id="edit-rot-ccw" title="Rotate 90\u00b0 counter-clockwise">\u21ba 90\u00b0</button>
+        <button id="edit-rot-cw" title="Rotate 90\u00b0 clockwise">\u21bb 90\u00b0</button>
+        <button id="edit-flip-h" title="Flip horizontal">\u21c4 H</button>
+        <button id="edit-flip-v" title="Flip vertical">\u21c5 V</button>
+        <button id="edit-reset" title="Reset all edits">Reset</button>
+      </div>
+      <div class="edit-actions">
+        <button class="edit-save-btn" id="edit-save">Save as new image</button>
+        <button class="edit-cancel-btn" id="edit-cancel">Cancel</button>
+      </div>
+    </div>
     <div class="state-completed" id="completed">
       <img id="image" alt="Generated image">
       <div class="meta">
         <div class="meta-text">
           <div class="meta-prompt" id="meta-prompt"></div>
           <div class="meta-details" id="meta-details"></div>
+          <div class="edit-source-badge" id="edit-source-badge" style="display:none"></div>
         </div>
         <button class="dl-btn" id="dl-btn" title="Download full-resolution image">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -412,6 +477,7 @@ _IMAGE_VIEWER_HTML = """\
       generating: document.getElementById("generating"),
       failed:     document.getElementById("failed"),
       cancelled:  document.getElementById("cancelled"),
+      editing:    document.getElementById("editing"),
       completed:  document.getElementById("completed"),
     };
 
@@ -573,6 +639,14 @@ _IMAGE_VIEWER_HTML = """\
         } catch (e) { /* not status JSON */ }
       }
 
+      // Edit mode
+      if (text && img) {
+        try {
+          const meta = JSON.parse(text.text);
+          if (meta.editable) { enterEditMode(meta, img); return; }
+        } catch (e) { /* not edit JSON */ }
+      }
+
       // Completed image
       renderCompleted(img, text);
       let key = imageKey;
@@ -641,6 +715,170 @@ _IMAGE_VIEWER_HTML = """\
           if (await tryOpenLink()) return;
         }
       } catch (e) { console.warn("Download failed", e); }
+    });
+
+    // --- Cropper.js (loaded on demand) ---
+    let cropperLoaded = false;
+    let cropper = null;
+    let pendingRotate = 0;
+    let pendingFlipH = false;
+    let pendingFlipV = false;
+    let editMeta = null;
+
+    async function loadCropper() {
+      if (cropperLoaded) return;
+      // Load Cropper.js CSS
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/cropperjs/dist/cropper.min.css";
+      document.head.appendChild(link);
+      // Load Cropper.js script
+      await new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://unpkg.com/cropperjs/dist/cropper.min.js";
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      cropperLoaded = true;
+    }
+
+    function destroyCropper() {
+      if (cropper) { cropper.destroy(); cropper = null; }
+    }
+
+    function initCropper(imgEl, aspectRatio) {
+      destroyCropper();
+      cropper = new Cropper(imgEl, {
+        viewMode: 1,
+        autoCropArea: 1,
+        aspectRatio: isNaN(aspectRatio) ? NaN : aspectRatio,
+        responsive: true,
+        background: false,
+      });
+    }
+
+    async function enterEditMode(meta, imgItem) {
+      pendingRotate = 0;
+      pendingFlipH = false;
+      pendingFlipV = false;
+      editMeta = meta;
+      currentMeta = meta;
+
+      const editImg = document.getElementById("edit-img");
+      editImg.src = "data:" + imgItem.mimeType + ";base64," + imgItem.data;
+
+      show("editing");
+
+      await loadCropper();
+      const aspect = parseFloat(document.getElementById("edit-aspect").value);
+      initCropper(editImg, aspect);
+    }
+
+    document.getElementById("edit-aspect").addEventListener("change", (e) => {
+      if (!cropper) return;
+      const v = parseFloat(e.target.value);
+      cropper.setAspectRatio(isNaN(v) ? NaN : v);
+    });
+
+    document.getElementById("edit-rot-ccw").addEventListener("click", () => {
+      if (!cropper) return;
+      pendingRotate = (pendingRotate + 270) % 360;
+      cropper.rotate(-90);
+    });
+
+    document.getElementById("edit-rot-cw").addEventListener("click", () => {
+      if (!cropper) return;
+      pendingRotate = (pendingRotate + 90) % 360;
+      cropper.rotate(90);
+    });
+
+    document.getElementById("edit-flip-h").addEventListener("click", () => {
+      if (!cropper) return;
+      pendingFlipH = !pendingFlipH;
+      cropper.scaleX(pendingFlipH ? -1 : 1);
+    });
+
+    document.getElementById("edit-flip-v").addEventListener("click", () => {
+      if (!cropper) return;
+      pendingFlipV = !pendingFlipV;
+      cropper.scaleY(pendingFlipV ? -1 : 1);
+    });
+
+    document.getElementById("edit-reset").addEventListener("click", () => {
+      if (!cropper) return;
+      pendingRotate = 0;
+      pendingFlipH = false;
+      pendingFlipV = false;
+      cropper.reset();
+      cropper.scaleX(1);
+      cropper.scaleY(1);
+    });
+
+    document.getElementById("edit-cancel").addEventListener("click", () => {
+      destroyCropper();
+      show("waiting");
+      updateSize();
+    });
+
+    document.getElementById("edit-save").addEventListener("click", async () => {
+      if (!cropper) return;
+      const saveBtn = document.getElementById("edit-save");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving\\u2026";
+
+      try {
+        const cropData = cropper.getData(true);
+        const imgData = cropper.getImageData();
+        const args = { source_image_id: editMeta?.image_id };
+
+        const isFullImage = (
+          cropData.x <= 0 && cropData.y <= 0 &&
+          cropData.width >= imgData.naturalWidth &&
+          cropData.height >= imgData.naturalHeight
+        );
+        if (!isFullImage) {
+          args.crop = { x: cropData.x, y: cropData.y, w: cropData.width, h: cropData.height };
+        }
+        if (pendingRotate) args.rotate = pendingRotate;
+        if (pendingFlipH) args.flip_horizontal = true;
+        if (pendingFlipV) args.flip_vertical = true;
+
+        const result = await app.callServerTool({ name: "_save_edited_image", arguments: args });
+        if (result.isError) {
+          alert("Save failed: " + JSON.stringify(result.content));
+          return;
+        }
+        const textItem = result.content?.find(c => c.type === "text");
+        if (!textItem) { alert("Save failed: empty response"); return; }
+        const saved = JSON.parse(textItem.text);
+
+        destroyCropper();
+
+        const showResult = await app.callServerTool({
+          name: "show_image",
+          arguments: { uri: "image://" + saved.image_id + "/view" }
+        });
+        if (!showResult.isError) {
+          const showImg  = showResult.content?.find(c => c.type === "image");
+          const showText = showResult.content?.find(c => c.type === "text");
+          renderCompleted(showImg, showText);
+          document.getElementById("edit-source-badge").style.display = "block";
+          document.getElementById("edit-source-badge").textContent =
+            "Edited from " + saved.source_image_id;
+        } else {
+          show("completed");
+          document.getElementById("edit-source-badge").style.display = "block";
+          document.getElementById("edit-source-badge").textContent =
+            "Edited from " + saved.source_image_id;
+        }
+        updateSize();
+      } catch (e) {
+        alert("Save failed: " + e.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save as new image";
+      }
     });
 
     await app.connect();
@@ -1549,12 +1787,13 @@ def register_resources(mcp: FastMCP) -> None:
         )
 
     @mcp.resource(
-        "image://{image_id}/view{?format,width,height,quality}",
+        "image://{image_id}/view{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}",
         mime_type="application/octet-stream",
         description=(
             "Retrieve a generated image with optional transforms. "
             "No query params returns the original. Add format, width, "
-            "height, or quality params to transform on the fly."
+            "height, quality, crop_x/y/w/h, rotate, or flip params to "
+            "transform on the fly."
         ),
         icons=[Icon(src=_LUCIDE.format("scan-eye"), mimeType="image/svg+xml")],
     )
@@ -1564,16 +1803,27 @@ def register_resources(mcp: FastMCP) -> None:
         width: int = 0,
         height: int = 0,
         quality: int = 90,
+        crop_x: int = 0,
+        crop_y: int = 0,
+        crop_w: int = 0,
+        crop_h: int = 0,
+        rotate: int = 0,
+        flip: str = "",
         service: ImageService = Depends(get_service),
     ) -> ResourceResult:
         """Retrieve an image with optional format conversion and resize.
 
         No parameters returns the original bytes unchanged. Set ``format``
-        for conversion, ``width``/``height`` for resize or crop.
+        for conversion, ``width``/``height`` for resize or crop,
+        ``crop_x``/``crop_y``/``crop_w``/``crop_h`` for region crop,
+        ``rotate`` for 90° rotation, or ``flip`` for mirroring.
 
         Both width and height → center-crop to exact dimensions.
         Only width → proportional resize by width.
         Only height → proportional resize by height.
+        crop_x/y/w/h → crop an arbitrary rectangular region.
+        rotate → rotate 90, 180, or 270 degrees (lossless).
+        flip → mirror horizontally or vertically (lossless).
 
         Args:
             image_id: Image registry ID.
@@ -1582,12 +1832,28 @@ def register_resources(mcp: FastMCP) -> None:
             width: Target width in pixels, or 0 for original.
             height: Target height in pixels, or 0 for original.
             quality: Compression quality for lossy formats (1-100).
+            crop_x: Left edge of crop box in pixels.
+            crop_y: Top edge of crop box in pixels.
+            crop_w: Width of crop box in pixels (0 = no region crop).
+            crop_h: Height of crop box in pixels (0 = no region crop).
+            rotate: Rotation in degrees — 90, 180, or 270 (0 = no rotation).
+            flip: Flip axis — ``"horizontal"`` or ``"vertical"`` (empty = no flip).
 
         Returns:
             Image bytes with appropriate MIME type.
         """
         data, content_type = service.get_transformed_image(
-            image_id, format=format, width=width, height=height, quality=quality
+            image_id,
+            format=format,
+            width=width,
+            height=height,
+            quality=quality,
+            crop_x=crop_x,
+            crop_y=crop_y,
+            crop_w=crop_w,
+            crop_h=crop_h,
+            rotate=rotate,
+            flip=flip,
         )
         return ResourceResult([ResourceContent(content=data, mime_type=content_type)])
 
@@ -1663,7 +1929,7 @@ def register_resources(mcp: FastMCP) -> None:
                 "original_uri": f"image://{img.id}/view",
                 "metadata_uri": f"image://{img.id}/metadata",
                 "resource_template": (
-                    f"image://{img.id}/view{{?format,width,height,quality}}"
+                    f"image://{img.id}/view{{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}}"
                 ),
                 "prompt": img.prompt,
                 "created_at": datetime.fromtimestamp(
@@ -1685,7 +1951,7 @@ def register_resources(mcp: FastMCP) -> None:
                     "progress_message": pending.progress_message,
                     "original_uri": f"image://{pending.id}/view",
                     "resource_template": (
-                        f"image://{pending.id}/view{{?format,width,height,quality}}"
+                        f"image://{pending.id}/view{{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}}"
                     ),
                     "created_at": datetime.fromtimestamp(
                         pending.created_at, tz=UTC

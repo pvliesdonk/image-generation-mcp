@@ -9,6 +9,8 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
+import json
+
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageProviderError
 from image_generation_mcp.service import ImageService
@@ -89,3 +91,37 @@ class TestGenerate:
         assert name == "placeholder"
         # Placeholder ignores model, result is still valid
         assert result.image_data
+
+
+# ---------------------------------------------------------------------------
+# ImageRecord.source_image_id
+# ---------------------------------------------------------------------------
+
+
+async def test_source_image_id_defaults_none(tmp_path: Path) -> None:
+    """ImageRecord.source_image_id defaults to None for normal images."""
+    provider = PlaceholderImageProvider()
+    result = await provider.generate("test", aspect_ratio="1:1")
+    svc = ImageService(scratch_dir=tmp_path)
+    record = svc.register_image(result, "placeholder", prompt="test")
+    assert record.source_image_id is None
+
+
+async def test_source_image_id_persisted_in_sidecar(tmp_path: Path) -> None:
+    """source_image_id is written to and read back from the sidecar JSON."""
+    provider = PlaceholderImageProvider()
+    result = await provider.generate("test", aspect_ratio="1:1")
+    svc = ImageService(scratch_dir=tmp_path)
+    record = svc.register_image(
+        result, "placeholder", prompt="test", source_image_id="abc123"
+    )
+    assert record.source_image_id == "abc123"
+
+    # Check sidecar
+    sidecar = json.loads((tmp_path / f"{record.id}.json").read_text())
+    assert sidecar["source_image_id"] == "abc123"
+
+    # Reload from disk
+    svc2 = ImageService(scratch_dir=tmp_path)
+    reloaded = svc2.get_image(record.id)
+    assert reloaded.source_image_id == "abc123"

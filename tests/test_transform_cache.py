@@ -65,7 +65,7 @@ def test_transform_populates_cache(image_id: tuple[ImageService, str]) -> None:
     service.get_transformed_image(img_id, format="webp")
 
     assert len(service._transform_cache) == 1
-    key = (img_id, "webp", 0, 0, 90)
+    key = (img_id, "webp", 0, 0, 90, 0, 0, 0, 0, 0, "")
     assert key in service._transform_cache
 
 
@@ -110,7 +110,7 @@ def test_cache_evicts_oldest_when_full(image_id: tuple[ImageService, str]) -> No
     keys = []
     for q in (70, 75, 80, 85):
         service.get_transformed_image(img_id, format="jpeg", quality=q)
-        keys.append((img_id, "jpeg", 0, 0, q))
+        keys.append((img_id, "jpeg", 0, 0, q, 0, 0, 0, 0, 0, ""))
 
     assert len(service._transform_cache) == 4
 
@@ -118,7 +118,7 @@ def test_cache_evicts_oldest_when_full(image_id: tuple[ImageService, str]) -> No
     service.get_transformed_image(img_id, format="jpeg", quality=90)
     assert len(service._transform_cache) == 4
     assert keys[0] not in service._transform_cache
-    assert (img_id, "jpeg", 0, 0, 90) in service._transform_cache
+    assert (img_id, "jpeg", 0, 0, 90, 0, 0, 0, 0, 0, "") in service._transform_cache
 
 
 def test_cache_hit_moves_to_end_preventing_eviction(
@@ -133,14 +133,14 @@ def test_cache_hit_moves_to_end_preventing_eviction(
         service.get_transformed_image(img_id, format="jpeg", quality=q)
 
     # Re-access the oldest entry to promote it
-    oldest_key = (img_id, "jpeg", 0, 0, 70)
+    oldest_key = (img_id, "jpeg", 0, 0, 70, 0, 0, 0, 0, 0, "")
     service.get_transformed_image(img_id, format="jpeg", quality=70)
 
     # Now add a new entry — the second-oldest (q=75) should be evicted, not q=70
     service.get_transformed_image(img_id, format="jpeg", quality=90)
 
     assert oldest_key in service._transform_cache
-    evicted_key = (img_id, "jpeg", 0, 0, 75)
+    evicted_key = (img_id, "jpeg", 0, 0, 75, 0, 0, 0, 0, 0, "")
     assert evicted_key not in service._transform_cache
 
 
@@ -217,3 +217,48 @@ class TestTransformCacheTransforms:
         service, img_id = image_id
         data, _ct = service.get_transformed_image(img_id, width=64, height=64)
         assert len(data) > 0
+
+
+# ---------------------------------------------------------------------------
+# New transform params: crop_region, rotate, flip
+# ---------------------------------------------------------------------------
+
+
+def test_crop_region_cached(image_id: tuple[ImageService, str]) -> None:
+    """crop_region transform is cached with its own key."""
+    service, img_id = image_id
+    record = service.get_image(img_id)
+    w, h = record.original_dimensions
+    data, _ = service.get_transformed_image(
+        img_id, crop_x=0, crop_y=0, crop_w=w // 2, crop_h=h // 2
+    )
+    assert len(data) > 0
+    key = (img_id, "", 0, 0, 90, 0, 0, w // 2, h // 2, 0, "")
+    assert key in service._transform_cache
+
+
+def test_rotate_cached(image_id: tuple[ImageService, str]) -> None:
+    """rotate transform is cached separately from no-rotate."""
+    service, img_id = image_id
+    service.get_transformed_image(img_id, rotate=90)
+    service.get_transformed_image(img_id, rotate=180)
+    assert len(service._transform_cache) == 2
+
+
+def test_flip_cached(image_id: tuple[ImageService, str]) -> None:
+    """flip transform produces its own cache entry."""
+    service, img_id = image_id
+    service.get_transformed_image(img_id, flip="horizontal")
+    service.get_transformed_image(img_id, flip="vertical")
+    assert len(service._transform_cache) == 2
+
+
+def test_different_new_params_separate_entries(
+    image_id: tuple[ImageService, str],
+) -> None:
+    """Different new transform param combinations are cached separately."""
+    service, img_id = image_id
+    service.get_transformed_image(img_id, rotate=90)
+    service.get_transformed_image(img_id, rotate=90, flip="horizontal")
+    service.get_transformed_image(img_id, format="webp", rotate=90)
+    assert len(service._transform_cache) == 3
