@@ -900,7 +900,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     )
     async def _save_edited_image(
         source_image_id: str,
-        crop: dict | None = None,
+        crop: dict[str, int] | None = None,
         rotate: int | None = None,
         flip_horizontal: bool = False,
         flip_vertical: bool = False,
@@ -912,7 +912,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         Applies the transforms server-side via Pillow and persists the
         result as a new image with ``source_image_id`` provenance.
 
-        Parameters:
+        Args:
             source_image_id: ID of the original image being edited.
             crop: Optional crop box as ``{"x": int, "y": int, "w": int,
                 "h": int}``.
@@ -929,13 +929,17 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             data = record.original_path.read_bytes()
 
             if crop:
-                data = crop_region(
-                    data,
-                    int(crop["x"]),
-                    int(crop["y"]),
-                    int(crop["w"]),
-                    int(crop["h"]),
-                )
+                try:
+                    cx, cy, cw, ch = (
+                        int(crop["x"]),
+                        int(crop["y"]),
+                        int(crop["w"]),
+                        int(crop["h"]),
+                    )
+                except (KeyError, TypeError, ValueError) as exc:
+                    msg = f"crop must have integer keys x, y, w, h; got {crop!r}"
+                    raise ValueError(msg) from exc
+                data = crop_region(data, cx, cy, cw, ch)
             if rotate:
                 data = rotate_image(data, int(rotate))
             if flip_horizontal:

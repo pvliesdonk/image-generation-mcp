@@ -44,6 +44,8 @@ class TestImageViewerResource:
         # The ext-apps SDK itself must be bundled (data URI), not served from CDN
         assert "@modelcontextprotocol/ext-apps" in text
         assert "data:text/javascript;base64," in text
+        # Only Cropper.js (CSS + JS) may load from CDN — exactly 2 references
+        assert text.count("unpkg.com") == 2
 
     async def test_viewer_html_has_ontoolresult_handler(self, server) -> None:
         result = await server.read_resource("ui://image-viewer/view.html")

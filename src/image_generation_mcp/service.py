@@ -67,7 +67,9 @@ class ImageRecord:
 _PENDING_TTL_S = 600  # 10 minutes — clean up stale pending entries
 
 # Cache key: (image_id, format, width, height, quality, crop_x, crop_y, crop_w, crop_h, rotate, flip)
-_TransformCacheKey: TypeAlias = tuple[str, str, int, int, int, int, int, int, int, int, str]
+_TransformCacheKey: TypeAlias = tuple[
+    str, str, int, int, int, int, int, int, int, int, str
+]
 
 
 @dataclass
@@ -122,7 +124,9 @@ class ImageService:
         # (get_transformed_image, delete_image) are called via asyncio.to_thread,
         # so concurrent mutations are possible, but each individual op is atomic
         # under the GIL. Safe under CPython; revisit if moving to free-threading.
-        self._transform_cache: OrderedDict[_TransformCacheKey, tuple[bytes, str]] = OrderedDict()
+        self._transform_cache: OrderedDict[_TransformCacheKey, tuple[bytes, str]] = (
+            OrderedDict()
+        )
         self._transform_cache_size = transform_cache_size
         self._pending: dict[str, PendingGeneration] = {}
 
@@ -691,11 +695,17 @@ class ImageService:
             not format
             and width == 0
             and height == 0
-            and crop_w == 0
+            and not (crop_w > 0 and crop_h > 0)
             and not rotate
             and not flip
         ):
             return record.original_path.read_bytes(), record.content_type
+
+        # Normalize crop_x/y to 0 when no crop is applied so that
+        # (id, "", 0, 0, 80, 5, 5, 0, 0, 0, "") and
+        # (id, "", 0, 0, 80, 0, 0, 0, 0, 0, "") share the same cache entry.
+        norm_crop_x = crop_x if crop_w > 0 and crop_h > 0 else 0
+        norm_crop_y = crop_y if crop_w > 0 and crop_h > 0 else 0
 
         key = (
             image_id,
@@ -703,8 +713,8 @@ class ImageService:
             width,
             height,
             quality,
-            crop_x,
-            crop_y,
+            norm_crop_x,
+            norm_crop_y,
             crop_w,
             crop_h,
             rotate,

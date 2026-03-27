@@ -724,6 +724,8 @@ _IMAGE_VIEWER_HTML = """\
     let pendingFlipH = false;
     let pendingFlipV = false;
     let editMeta = null;
+    let priorEditImg = null;   // img content to restore on cancel
+    let priorEditText = null;  // text content to restore on cancel
 
     async function loadCropper() {
       if (cropperLoaded) return;
@@ -764,6 +766,9 @@ _IMAGE_VIEWER_HTML = """\
       pendingFlipV = false;
       editMeta = meta;
       currentMeta = meta;
+      // Save content refs so cancel can restore the completed view
+      priorEditImg = imgItem;
+      priorEditText = { type: "text", text: JSON.stringify(meta) };
 
       const editImg = document.getElementById("edit-img");
       editImg.src = "data:" + imgItem.mimeType + ";base64," + imgItem.data;
@@ -817,7 +822,14 @@ _IMAGE_VIEWER_HTML = """\
 
     document.getElementById("edit-cancel").addEventListener("click", () => {
       destroyCropper();
-      show("waiting");
+      // Restore the image that was displayed before edit mode was entered
+      if (priorEditImg) {
+        renderCompleted(priorEditImg, priorEditText);
+      } else {
+        show("waiting");
+      }
+      priorEditImg = null;
+      priorEditText = null;
       updateSize();
     });
 

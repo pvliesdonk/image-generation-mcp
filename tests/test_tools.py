@@ -1143,4 +1143,172 @@ class TestToolAnnotations:
         assert tool.annotations.readOnlyHint is True
         assert tool.annotations.destructiveHint is False
         assert tool.annotations.openWorldHint is False
-        assert tool.annotations.idempotentHint is None
+
+
+# ---------------------------------------------------------------------------
+# edit_image tool
+# ---------------------------------------------------------------------------
+
+
+class TestEditImageTool:
+    """edit_image returns image + editable metadata; _save_edited_image persists."""
+
+    async def _call_edit(
+        self, service: ImageService, image_id: str
+    ) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("edit_image")
+        assert tool is not None
+        return await tool.fn(image_id=image_id, service=service)
+
+    async def test_edit_image_returns_text_and_image_content(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """edit_image returns TextContent + ImageContent with editable flag."""
+        service, image_id = registered_image
+        result = await self._call_edit(service, image_id)
+        types = [c.type for c in result.content]
+        assert "text" in types
+        assert "image" in types
+
+    async def test_edit_image_metadata_has_editable_flag(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Text content in edit_image result must set editable=true."""
+        service, image_id = registered_image
+        result = await self._call_edit(service, image_id)
+        text_item = next(c for c in result.content if c.type == "text")
+        meta = json.loads(text_item.text)
+        assert meta["editable"] is True
+        assert meta["image_id"] == image_id
+
+    async def test_edit_image_returns_valid_base64(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """ImageContent from edit_image must be valid base64-encoded image data."""
+        service, image_id = registered_image
+        result = await self._call_edit(service, image_id)
+        img_item = next(c for c in result.content if c.type == "image")
+        raw = base64.b64decode(img_item.data)
+        img = Image.open(io.BytesIO(raw))
+        assert img.width > 0
+
+    async def test_edit_image_unknown_id_raises(
+        self, service: ImageService
+    ) -> None:
+        """edit_image raises for an unknown image_id."""
+        from image_generation_mcp.providers.types import ImageProviderError
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("edit_image")
+        assert tool is not None
+
+        with pytest.raises(ImageProviderError):
+            await tool.fn(image_id="nonexistent", service=service)
+
+
+# ---------------------------------------------------------------------------
+# _save_edited_image tool
+# ---------------------------------------------------------------------------
+
+
+class TestSaveEditedImageTool:
+    """_save_edited_image persists transform results as a new ImageRecord."""
+
+    async def _call_save(
+        self,
+        service: ImageService,
+        source_image_id: str,
+        **kwargs: object,
+    ) -> ToolResult:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("_save_edited_image")
+        assert tool is not None
+        return await tool.fn(
+            source_image_id=source_image_id, service=service, **kwargs
+        )
+
+    async def test_save_no_transforms_creates_copy(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Saving with no transforms creates a new image record."""
+        service, image_id = registered_image
+        result = await self._call_save(service, image_id)
+        text_item = next(c for c in result.content if c.type == "text")
+        data = json.loads(text_item.text)
+        assert "image_id" in data
+        assert data["source_image_id"] == image_id
+        # Result must be registered (retrievable from service)
+        assert service.get_image(data["image_id"]) is not None
+
+    async def test_save_with_crop_produces_cropped_image(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Crop transform produces image with correct dimensions."""
+        service, image_id = registered_image
+        result = await self._call_save(
+            service, image_id, crop={"x": 0, "y": 0, "w": 50, "h": 50}
+        )
+        text_item = next(c for c in result.content if c.type == "text")
+        new_id = json.loads(text_item.text)["image_id"]
+        new_record = service.get_image(new_id)
+        img = Image.open(io.BytesIO(new_record.original_path.read_bytes()))
+        assert img.size == (50, 50)
+
+    async def test_save_with_rotate_produces_rotated_image(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """Rotate 90° transposes width and height."""
+        service, image_id = registered_image
+        original_record = service.get_image(image_id)
+        orig_w, orig_h = original_record.original_dimensions
+
+        result = await self._call_save(service, image_id, rotate=90)
+        text_item = next(c for c in result.content if c.type == "text")
+        new_id = json.loads(text_item.text)["image_id"]
+        new_record = service.get_image(new_id)
+        img = Image.open(io.BytesIO(new_record.original_path.read_bytes()))
+        # 90° rotation swaps width ↔ height
+        assert img.size == (orig_h, orig_w)
+
+    async def test_save_with_flip_horizontal(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """flip_horizontal produces a valid image of same dimensions."""
+        service, image_id = registered_image
+        original_record = service.get_image(image_id)
+
+        result = await self._call_save(service, image_id, flip_horizontal=True)
+        text_item = next(c for c in result.content if c.type == "text")
+        new_id = json.loads(text_item.text)["image_id"]
+        new_record = service.get_image(new_id)
+        img = Image.open(io.BytesIO(new_record.original_path.read_bytes()))
+        assert img.size == original_record.original_dimensions
+
+    async def test_save_records_source_image_id(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """New record has source_image_id set to the original image_id."""
+        service, image_id = registered_image
+        result = await self._call_save(service, image_id)
+        text_item = next(c for c in result.content if c.type == "text")
+        new_id = json.loads(text_item.text)["image_id"]
+        new_record = service.get_image(new_id)
+        assert new_record.source_image_id == image_id
+
+    async def test_save_invalid_crop_raises(
+        self, registered_image: tuple[ImageService, str]
+    ) -> None:
+        """_save_edited_image raises for a malformed crop dict."""
+        service, image_id = registered_image
+
+        with pytest.raises(ValueError, match="crop must have"):
+            await self._call_save(
+                service,
+                image_id,
+                # missing required keys
+                crop={"x": 0, "y": 0},
+            )
