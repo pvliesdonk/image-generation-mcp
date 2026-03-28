@@ -701,11 +701,14 @@ class ImageService:
         ):
             return record.original_path.read_bytes(), record.content_type
 
-        # Normalize crop_x/y to 0 when no crop is applied so that
-        # (id, "", 0, 0, 80, 5, 5, 0, 0, 0, "") and
-        # (id, "", 0, 0, 80, 0, 0, 0, 0, 0, "") share the same cache entry.
-        norm_crop_x = crop_x if crop_w > 0 and crop_h > 0 else 0
-        norm_crop_y = crop_y if crop_w > 0 and crop_h > 0 else 0
+        # Normalize all crop params to 0 when the effective crop is skipped
+        # (crop_w=0 or crop_h=0) so that nonsensical half-zero combinations
+        # share the same cache entry as a genuine no-crop request.
+        _crop_active = crop_w > 0 and crop_h > 0
+        norm_crop_x = crop_x if _crop_active else 0
+        norm_crop_y = crop_y if _crop_active else 0
+        norm_crop_w = crop_w if _crop_active else 0
+        norm_crop_h = crop_h if _crop_active else 0
 
         key = (
             image_id,
@@ -715,8 +718,8 @@ class ImageService:
             quality,
             norm_crop_x,
             norm_crop_y,
-            crop_w,
-            crop_h,
+            norm_crop_w,
+            norm_crop_h,
             rotate,
             flip,
         )

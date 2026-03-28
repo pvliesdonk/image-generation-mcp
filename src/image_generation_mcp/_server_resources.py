@@ -729,15 +729,19 @@ _IMAGE_VIEWER_HTML = """\
 
     async function loadCropper() {
       if (cropperLoaded) return;
-      // Load Cropper.js CSS
+      // Load Cropper.js CSS (version-pinned with SRI)
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "https://unpkg.com/cropperjs/dist/cropper.min.css";
+      link.href = "https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css";
+      link.integrity = "sha384-6LFfkTKLRlzFtgx8xsWyBdKGpcMMQTkv+dB7rAbugeJAu1Ym2q1Aji1cjHBG12Xh";
+      link.crossOrigin = "anonymous";
       document.head.appendChild(link);
-      // Load Cropper.js script
+      // Load Cropper.js script (version-pinned with SRI)
       await new Promise((resolve, reject) => {
         const s = document.createElement("script");
-        s.src = "https://unpkg.com/cropperjs/dist/cropper.min.js";
+        s.src = "https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js";
+        s.integrity = "sha384-jrOgQzBlDeUNdmQn3rUt/PZD+pdcRBdWd/HWRqRo+n2OR2QtGyjSaJC0GiCeH+ir";
+        s.crossOrigin = "anonymous";
         s.onload = resolve;
         s.onerror = reject;
         document.head.appendChild(s);
