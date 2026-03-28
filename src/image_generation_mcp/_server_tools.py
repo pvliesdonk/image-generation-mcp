@@ -41,9 +41,12 @@ from ._server_resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
 from .config import ServerConfig
 from .processing import (
     convert_format,
+    crop_region,
     crop_to_dimensions,
+    flip_image,
     generate_thumbnail,
     resize_image,
+    rotate_image,
 )
 from .providers.types import (
     SUPPORTED_ASPECT_RATIOS,
@@ -51,6 +54,7 @@ from .providers.types import (
     SUPPORTED_QUALITY_LEVELS,
     ImageContentPolicyError,
     ImageProviderConnectionError,
+    ImageResult,
 )
 from .service import ImageRecord, ImageService, PendingGeneration
 
@@ -311,7 +315,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "original_uri": f"image://{image_id}/view",
             "metadata_uri": f"image://{image_id}/metadata",
             "resource_template": (
-                f"image://{image_id}/view{{?format,width,height,quality}}"
+                f"image://{image_id}/view{{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}}"
             ),
         }
 
@@ -830,6 +834,148 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "providers": providers,
         }
         return json.dumps(result, indent=2)
+
+    @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        icons=[Icon(src=_LUCIDE.format("crop"), mimeType="image/svg+xml")],
+        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
+    )
+    async def edit_image(
+        image_id: str,
+        service: ImageService = Depends(get_service),
+    ) -> ToolResult:
+        """Open an image for interactive editing (crop, rotate, flip).
+
+        The user edits in the viewer UI and saves as a new image. Always
+        edits the original image — resource template transforms are
+        ephemeral and LLM-facing; editor transforms are persistent and
+        user-facing.
+
+        Args:
+            image_id: ID of the image to edit. Use ``image://list`` to
+                browse available image IDs.
+
+        Returns:
+            Full-resolution image as base64 plus JSON metadata with
+            ``editable: true`` to activate the editor UI.
+        """
+        record = await asyncio.to_thread(service.get_image, image_id)
+        image_data = await asyncio.to_thread(record.original_path.read_bytes)
+        b64 = base64.b64encode(image_data).decode()
+
+        metadata = json.dumps(
+            {
+                "editable": True,
+                "image_id": image_id,
+                "content_type": record.content_type,
+                "dimensions": list(record.original_dimensions),
+                "prompt": record.prompt,
+                "provider": record.provider,
+            }
+        )
+
+        return ToolResult(
+            content=[
+                TextContent(type="text", text=metadata),
+                ImageContent(
+                    type="image",
+                    data=b64,
+                    mimeType=record.content_type,
+                ),
+            ]
+        )
+
+    @mcp.tool(
+        tags={"write"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        app=AppConfig(visibility=["app"]),
+    )
+    async def _save_edited_image(
+        source_image_id: str,
+        crop: dict[str, int] | None = None,
+        rotate: int | None = None,
+        flip_horizontal: bool = False,
+        flip_vertical: bool = False,
+        service: ImageService = Depends(get_service),
+    ) -> ToolResult:
+        """Save an edited image as a new first-class image record.
+
+        Called by the image editor UI after the user confirms their edits.
+        Applies the transforms server-side via Pillow and persists the
+        result as a new image with ``source_image_id`` provenance.
+
+        Args:
+            source_image_id: ID of the original image being edited.
+            crop: Optional crop box as ``{"x": int, "y": int, "w": int,
+                "h": int}``.
+            rotate: Optional rotation in degrees — 90, 180, or 270.
+            flip_horizontal: Mirror the image left-right.
+            flip_vertical: Mirror the image top-bottom.
+
+        Returns:
+            JSON with the new ``image_id`` and resource URI.
+        """
+
+        def _save() -> ImageRecord:
+            record = service.get_image(source_image_id)
+            data = record.original_path.read_bytes()
+
+            if crop:
+                try:
+                    cx, cy, cw, ch = (
+                        int(crop["x"]),
+                        int(crop["y"]),
+                        int(crop["w"]),
+                        int(crop["h"]),
+                    )
+                except (KeyError, TypeError, ValueError) as exc:
+                    msg = f"crop must have integer keys x, y, w, h; got {crop!r}"
+                    raise ValueError(msg) from exc
+                data = crop_region(data, cx, cy, cw, ch)
+            if rotate:
+                data = rotate_image(data, int(rotate))
+            if flip_horizontal:
+                data = flip_image(data, "horizontal")
+            if flip_vertical:
+                data = flip_image(data, "vertical")
+
+            result = ImageResult(
+                image_data=data,
+                content_type=record.content_type,
+                provider_metadata={},
+            )
+            new_record = service.register_image(
+                result,
+                "edited",
+                prompt=record.prompt,
+                source_image_id=source_image_id,
+            )
+            return new_record
+
+        new_record = await asyncio.to_thread(_save)
+
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=json.dumps(
+                        {
+                            "image_id": new_record.id,
+                            "source_image_id": source_image_id,
+                            "original_uri": f"image://{new_record.id}/view",
+                        }
+                    ),
+                )
+            ]
+        )
 
     # create_download_link is only available on HTTP transports —
     # stdio has no HTTP server to host the artifact endpoint.

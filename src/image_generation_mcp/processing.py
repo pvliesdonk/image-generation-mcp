@@ -14,6 +14,17 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+_ROTATE_TRANSPOSE_MAP: dict[int, Image.Transpose] = {
+    90: Image.Transpose.ROTATE_90,
+    180: Image.Transpose.ROTATE_180,
+    270: Image.Transpose.ROTATE_270,
+}
+
+_FLIP_TRANSPOSE_MAP: dict[str, Image.Transpose] = {
+    "horizontal": Image.Transpose.FLIP_LEFT_RIGHT,
+    "vertical": Image.Transpose.FLIP_TOP_BOTTOM,
+}
+
 _FORMAT_TO_MIME: dict[str, str] = {
     "png": "image/png",
     "webp": "image/webp",
@@ -174,6 +185,109 @@ def crop_to_dimensions(image_data: bytes, width: int, height: int) -> bytes:
     left = (src_w - width) // 2
     top = (src_h - height) // 2
     img = img.crop((left, top, left + width, top + height))
+
+    buf = io.BytesIO()
+    img.save(buf, format=src_format)
+    return buf.getvalue()
+
+
+def crop_region(image_data: bytes, x: int, y: int, w: int, h: int) -> bytes:
+    """Crop an arbitrary rectangular region from an image.
+
+    Args:
+        image_data: Source image bytes.
+        x: Left edge of the crop box in pixels.
+        y: Top edge of the crop box in pixels.
+        w: Width of the crop box in pixels.
+        h: Height of the crop box in pixels.
+
+    Returns:
+        Cropped image bytes in the same format as the source.
+
+    Raises:
+        ValueError: If the crop box extends outside the image dimensions.
+    """
+    img: Image.Image = Image.open(io.BytesIO(image_data))
+    src_format = img.format
+    if not src_format:
+        msg = "Could not determine source image format."
+        raise ValueError(msg)
+    src_w, src_h = img.size
+
+    if x < 0 or y < 0 or w <= 0 or h <= 0 or x + w > src_w or y + h > src_h:
+        msg = (
+            f"Crop box ({x}, {y}, {w}x{h}) does not fit within "
+            f"image dimensions {src_w}x{src_h}."
+        )
+        raise ValueError(msg)
+
+    img = img.crop((x, y, x + w, y + h))
+
+    buf = io.BytesIO()
+    img.save(buf, format=src_format)
+    return buf.getvalue()
+
+
+def rotate_image(image_data: bytes, degrees: int) -> bytes:
+    """Rotate an image by a multiple of 90 degrees (lossless).
+
+    Uses ``Image.transpose()`` for lossless 90° rotations.
+
+    Args:
+        image_data: Source image bytes.
+        degrees: Rotation amount — must be 90, 180, or 270.
+
+    Returns:
+        Rotated image bytes in the same format as the source.
+
+    Raises:
+        ValueError: If *degrees* is not 90, 180, or 270.
+    """
+    if degrees not in _ROTATE_TRANSPOSE_MAP:
+        msg = f"rotate_image only supports 90, 180, or 270 degrees; got {degrees!r}."
+        raise ValueError(msg)
+
+    img: Image.Image = Image.open(io.BytesIO(image_data))
+    src_format = img.format
+    if not src_format:
+        msg = "Could not determine source image format."
+        raise ValueError(msg)
+
+    img = img.transpose(_ROTATE_TRANSPOSE_MAP[degrees])
+
+    buf = io.BytesIO()
+    img.save(buf, format=src_format)
+    return buf.getvalue()
+
+
+def flip_image(image_data: bytes, axis: str) -> bytes:
+    """Flip an image horizontally or vertically.
+
+    Uses ``Image.transpose()`` for lossless flipping.
+
+    Args:
+        image_data: Source image bytes.
+        axis: ``"horizontal"`` (left-right mirror) or ``"vertical"``
+            (top-bottom mirror).
+
+    Returns:
+        Flipped image bytes in the same format as the source.
+
+    Raises:
+        ValueError: If *axis* is not ``"horizontal"`` or ``"vertical"``.
+    """
+    axis_lower = axis.lower()
+    if axis_lower not in _FLIP_TRANSPOSE_MAP:
+        msg = f"flip_image axis must be 'horizontal' or 'vertical'; got {axis!r}."
+        raise ValueError(msg)
+
+    img: Image.Image = Image.open(io.BytesIO(image_data))
+    src_format = img.format
+    if not src_format:
+        msg = "Could not determine source image format."
+        raise ValueError(msg)
+
+    img = img.transpose(_FLIP_TRANSPOSE_MAP[axis_lower])
 
     buf = io.BytesIO()
     img.save(buf, format=src_format)
