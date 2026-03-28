@@ -1153,9 +1153,7 @@ class TestToolAnnotations:
 class TestEditImageTool:
     """edit_image returns image + editable metadata; _save_edited_image persists."""
 
-    async def _call_edit(
-        self, service: ImageService, image_id: str
-    ) -> ToolResult:
+    async def _call_edit(self, service: ImageService, image_id: str) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("edit_image")
@@ -1194,9 +1192,7 @@ class TestEditImageTool:
         img = Image.open(io.BytesIO(raw))
         assert img.width > 0
 
-    async def test_edit_image_unknown_id_raises(
-        self, service: ImageService
-    ) -> None:
+    async def test_edit_image_unknown_id_raises(self, service: ImageService) -> None:
         """edit_image raises for an unknown image_id."""
         from image_generation_mcp.providers.types import ImageProviderError
 
@@ -1227,9 +1223,7 @@ class TestSaveEditedImageTool:
         register_tools(mcp)
         tool = await mcp.get_tool("_save_edited_image")
         assert tool is not None
-        return await tool.fn(
-            source_image_id=source_image_id, service=service, **kwargs
-        )
+        return await tool.fn(source_image_id=source_image_id, service=service, **kwargs)
 
     async def test_save_no_transforms_creates_copy(
         self, registered_image: tuple[ImageService, str]
