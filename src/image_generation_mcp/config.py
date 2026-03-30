@@ -50,6 +50,7 @@ def _parse_bool(value: str) -> bool:
 
 
 _DEFAULT_SCRATCH_DIR = Path.home() / ".image-generation-mcp" / "images"
+_DEFAULT_STYLES_DIR = Path.home() / ".image-generation-mcp" / "styles"
 
 
 @dataclass
@@ -81,6 +82,7 @@ class ServerConfig:
     transform_cache_size: int = 64
     base_url: str | None = None
     paid_providers: frozenset[str] = frozenset({"openai"})
+    styles_dir: Path = field(default_factory=lambda: _DEFAULT_STYLES_DIR)
 
 
 def load_config() -> ServerConfig:
@@ -101,6 +103,8 @@ def load_config() -> ServerConfig:
       artifact download links.
     - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list of provider
       names that cost money; default ``"openai"``.
+    - ``IMAGE_GENERATION_MCP_STYLES_DIR``: directory for style preset files;
+      default ``~/.image-generation-mcp/styles/``.
 
     Returns:
         A populated :class:`ServerConfig` instance.
@@ -156,6 +160,9 @@ def load_config() -> ServerConfig:
 
     if base_url := _env("BASE_URL"):
         kwargs["base_url"] = base_url.rstrip("/")
+
+    if raw_styles := _env("STYLES_DIR"):
+        kwargs["styles_dir"] = Path(raw_styles)
 
     raw_paid = _env("PAID_PROVIDERS")
     if raw_paid is not None:

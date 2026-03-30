@@ -1977,6 +1977,93 @@ def register_resources(mcp: FastMCP) -> None:
 
         return json.dumps(result, indent=2)
 
+    # -- Style library resources -----------------------------------------------
+
+    @mcp.resource(
+        "style://list",
+        mime_type="application/json",
+        description=(
+            "List all available style presets with their names, tags, "
+            "and default parameters. Use to browse styles before "
+            "applying one via the apply_style prompt."
+        ),
+        icons=[
+            Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")
+        ],
+    )
+    async def style_list(
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """List all loaded style presets.
+
+        Returns:
+            JSON array of style summaries.
+        """
+        styles = service.list_styles()
+        result = []
+        for s in styles:
+            # Use first non-empty line of body as description
+            desc = ""
+            for line in s.body.splitlines():
+                line = line.strip()
+                if line:
+                    desc = line
+                    break
+            result.append(
+                {
+                    "name": s.name,
+                    "tags": list(s.tags),
+                    "description": desc,
+                    "provider": s.provider,
+                    "aspect_ratio": s.aspect_ratio,
+                    "quality": s.quality,
+                }
+            )
+        return json.dumps(result, indent=2)
+
+    @mcp.resource(
+        "style://{name}",
+        mime_type="text/markdown",
+        description=(
+            "Read the full content of a style preset. Returns the "
+            "complete markdown file including frontmatter defaults "
+            "and creative brief body."
+        ),
+        icons=[
+            Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")
+        ],
+    )
+    async def style_detail(
+        name: str,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Return the full markdown content of a style file.
+
+        Args:
+            name: Style identifier.
+
+        Returns:
+            The raw markdown content of the style file.
+
+        Raises:
+            ImageProviderError: If the style is not found.
+        """
+        entry = service.get_style(name)
+        if entry is None:
+            raise ImageProviderError(
+                "server",
+                f"Style not found: '{name}'. "
+                "Use style://list to see available styles.",
+            )
+        try:
+            return entry.file_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            raise ImageProviderError(
+                "server",
+                f"Style file missing on disk for '{name}'. "
+                "The file may have been deleted externally.",
+            ) from None
+
     # -- MCP Apps: image viewer -------------------------------------------------
 
     # Resolve the MCP Apps sandbox domain.  Priority:

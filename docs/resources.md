@@ -101,6 +101,70 @@ The `generate_image` tool description references this resource. LLM clients can 
 
 ---
 
+## style://list
+
+List all available style presets with their names, tags, and default parameters.
+
+**MIME type:** `application/json`
+
+### Response
+
+```json
+[
+  {
+    "name": "website",
+    "tags": ["brand", "web", "modern"],
+    "description": "Minimalist flat illustration. Geometric shapes, clean lines.",
+    "provider": "auto",
+    "aspect_ratio": "16:9",
+    "quality": "hd"
+  },
+  {
+    "name": "social-media",
+    "tags": ["social", "photography"],
+    "description": "Vibrant, eye-catching photography style.",
+    "provider": null,
+    "aspect_ratio": "1:1",
+    "quality": "hd"
+  }
+]
+```
+
+The `description` field is the first non-empty line of the style's body text. Styles are loaded from the styles directory at server startup.
+
+---
+
+## style://{name}
+
+Read the full content of a style preset, including YAML frontmatter and creative brief body.
+
+**URI template:** `style://{name}`
+
+**MIME type:** `text/markdown`
+
+### Response
+
+Returns the raw markdown file content:
+
+```markdown
+---
+name: website
+tags: [brand, web, modern]
+provider: auto
+aspect_ratio: "16:9"
+quality: hd
+---
+
+Minimalist flat illustration. Geometric shapes, clean lines.
+Brand palette: deep teal (#0D4F4F), warm cream (#F5F0E8), coral accent (#FF6B5E).
+Plenty of negative space. No photorealism, no gradients, no text in image.
+Suitable for hero banners and section dividers.
+```
+
+Returns an error if the style name is not found.
+
+---
+
 ## image://{id}/view
 
 Image data with optional CDN-style transforms. This is a resource template (RFC 6570) with query parameters.

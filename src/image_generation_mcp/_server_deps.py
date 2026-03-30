@@ -104,6 +104,9 @@ def make_service_lifespan(config: ServerConfig) -> Any:
         # Discover capabilities for all registered providers
         await service.discover_all_capabilities()
 
+        # Load style library
+        service.load_styles(config.styles_dir)
+
         # Populate module-level store for artifact handler access
         _service_store = service
 

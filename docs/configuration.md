@@ -9,6 +9,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Directory for saved generated images. Created automatically on first use. |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When `true`, write-tagged tools (`generate_image`) are hidden from clients. Set to `false` to enable image generation. |
 | `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `openai`, `sd_webui`, `placeholder`. |
+| `IMAGE_GENERATION_MCP_STYLES_DIR` | Path | `~/.image-generation-mcp/styles/` | Directory for style preset files (`.md` with YAML frontmatter). Created automatically if it does not exist. See the [Style Library Guide](guides/styles.md). |
 
 ## Providers
 

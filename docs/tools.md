@@ -314,6 +314,81 @@ Raises an error if the image ID is not found.
 
 ---
 
+## save_style
+
+Save a reusable style preset as a markdown file. Styles are creative briefs that the LLM interprets per-provider — not prompt fragments. Use to capture a visual direction for reuse across conversations.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: false` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | str | *(required)* | Style identifier — used as the filename (`{name}.md`). Alphanumeric, hyphens, and underscores only. |
+| `body` | str | *(required)* | Markdown prose describing the visual direction (the creative brief) |
+| `tags` | list[str] | `null` | Optional categorization tags for browsing/filtering |
+| `provider` | str | `null` | Suggested provider (`auto`, `openai`, `sd_webui`) |
+| `aspect_ratio` | str | `null` | Default aspect ratio (e.g. `16:9`) |
+| `quality` | str | `null` | Default quality level (`standard` or `hd`) |
+
+### Return value
+
+```json
+{
+  "name": "website",
+  "created": true
+}
+```
+
+`created` is `true` for new styles, `false` when overwriting an existing style.
+
+### Example
+
+```
+User: Save this as my website style
+
+Tool call: save_style
+  name: "website"
+  body: "Minimalist flat illustration. Geometric shapes, clean lines.
+         Brand palette: deep teal, warm cream, coral accent."
+  tags: ["brand", "web"]
+  aspect_ratio: "16:9"
+  quality: "hd"
+```
+
+---
+
+## delete_style
+
+Delete a style preset from disk. Permanently removes the style file and its in-memory entry. Hidden in read-only mode.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: true`, `openWorldHint: false` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | str | *(required)* | Style identifier to delete |
+
+### Return value
+
+```json
+{
+  "name": "website",
+  "deleted": true
+}
+```
+
+Raises an error if the style is not found.
+
+---
+
 ## list_providers
 
 List available image generation providers and their status.
