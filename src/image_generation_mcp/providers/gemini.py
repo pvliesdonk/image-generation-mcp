@@ -103,7 +103,7 @@ class GeminiImageProvider:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
-        progress_callback: ProgressCallback | None = None,
+        progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image using the Gemini generateContent API.
 

@@ -120,6 +120,10 @@ no_implicit_optional = true
 module = ["fastmcp", "fastmcp.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["google", "google.genai", "google.genai.*"]
+ignore_missing_imports = true
+
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
 commit_parser = "angular"

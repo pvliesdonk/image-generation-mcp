@@ -30,11 +30,10 @@ def provider() -> GeminiImageProvider:
         "google.genai.types": mock_types,
     }
 
-    with patch.dict(sys.modules, modules):
-        with patch(
-            "image_generation_mcp.providers.gemini.GeminiImageProvider._create_client"
-        ):
-            return GeminiImageProvider(api_key="AIza-test")
+    with patch.dict(sys.modules, modules), patch(
+        "image_generation_mcp.providers.gemini.GeminiImageProvider._create_client"
+    ):
+        return GeminiImageProvider(api_key="AIza-test")
 
 
 class TestDiscoverCapabilities:

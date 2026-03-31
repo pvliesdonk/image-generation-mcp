@@ -35,11 +35,10 @@ def _mock_genai():
         "google.genai.types": mock_types,
     }
 
-    with patch.dict(sys.modules, modules):
-        with patch(
-            "image_generation_mcp.providers.gemini.GeminiImageProvider._create_client"
-        ):
-            yield
+    with patch.dict(sys.modules, modules), patch(
+        "image_generation_mcp.providers.gemini.GeminiImageProvider._create_client"
+    ):
+        yield
 
 
 @pytest.mark.usefixtures("_mock_genai")
