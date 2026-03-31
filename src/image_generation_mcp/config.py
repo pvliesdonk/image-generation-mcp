@@ -61,6 +61,7 @@ class ServerConfig:
         read_only: When ``True`` (default), write-tagged tools are hidden.
         scratch_dir: Directory for saving generated images.
         openai_api_key: OpenAI API key for gpt-image-1 / dall-e-3.
+        google_api_key: Google API key for Gemini image generation.
         sd_webui_host: SD WebUI base URL (A1111/Forge/reForge/Forge-neo).
         default_provider: Default provider for generation (``"auto"``
             selects based on prompt analysis).
@@ -76,6 +77,7 @@ class ServerConfig:
     read_only: bool = True
     scratch_dir: Path = field(default_factory=lambda: _DEFAULT_SCRATCH_DIR)
     openai_api_key: str | None = None
+    google_api_key: str | None = None
     sd_webui_host: str | None = None
     sd_webui_model: str | None = None
     default_provider: str = "auto"
@@ -93,6 +95,7 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GENERATION_MCP_READ_ONLY``: disable write tools; default ``true``.
     - ``IMAGE_GENERATION_MCP_SCRATCH_DIR``: image save directory.
     - ``IMAGE_GENERATION_MCP_OPENAI_API_KEY``: OpenAI API key.
+    - ``IMAGE_GENERATION_MCP_GOOGLE_API_KEY``: Google API key; enables Gemini provider.
     - ``IMAGE_GENERATION_MCP_SD_WEBUI_HOST``: SD WebUI URL (also accepts
       deprecated ``A1111_HOST``).
     - ``IMAGE_GENERATION_MCP_SD_WEBUI_MODEL``: SD WebUI checkpoint name for
@@ -123,6 +126,9 @@ def load_config() -> ServerConfig:
 
     if key := _env("OPENAI_API_KEY"):
         kwargs["openai_api_key"] = key
+
+    if key := _env("GOOGLE_API_KEY"):
+        kwargs["google_api_key"] = key
 
     if host := _env("SD_WEBUI_HOST"):
         kwargs["sd_webui_host"] = host

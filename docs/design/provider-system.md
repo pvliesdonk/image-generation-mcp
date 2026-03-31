@@ -40,13 +40,13 @@ MCP Client (Claude)
 |  - register_image() -> saves + indexes       |
 |  - get_image() / list_images()               |
 |  - _load_registry() -> rebuilds from disk    |
-+------+----------+----------+----------------+
-       |          |          |
-       v          v          v
-  +---------+ +----------+ +--------------+
-  | OpenAI  | | SD WebUI | | Placeholder  |
-  |Provider | | Provider | | Provider     |
-  +---------+ +----------+ +--------------+
++------+----------+----------+----------+----------------+
+       |          |          |          |
+       v          v          v          v
+  +---------+ +--------+ +----------+ +--------------+
+  | OpenAI  | | Gemini | | SD WebUI | | Placeholder  |
+  |Provider | |Provider| | Provider | | Provider     |
+  +---------+ +--------+ +----------+ +--------------+
 ```
 
 ## ImageProvider Protocol
@@ -126,6 +126,7 @@ At startup, after all providers are registered, the server calls
 |----------|-----------------|-------|
 | **Placeholder** | Static return | Hardcoded capabilities, always succeeds |
 | **OpenAI** | `client.models.list()` | Filters to known image models (gpt-image-1, dall-e-3, dall-e-2) |
+| **Gemini** | Static return | Returns known image models (`_KNOWN_IMAGE_MODELS`); `models.list()` doesn't filter image-generation models |
 | **SD WebUI** | `GET /sdapi/v1/sd-models` + `/sdapi/v1/options` | Maps checkpoints to architecture-specific capabilities |
 
 ### Degraded Mode
@@ -153,6 +154,19 @@ not excluded. Keywords remain the primary selection mechanism.
 - **Aspect ratios:** Maps to pixel sizes (256x256, 640x360, etc.)
 - **Background:** Supports transparent (RGBA PNG with alpha=0)
 - **Always registered** -- no API key or service needed
+
+### Gemini Provider
+
+- **Models:** `gemini-2.5-flash-image` (default), `gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`
+- **API:** Gemini native `generateContent` with `responseModalities=["IMAGE"]` via `google-genai` SDK
+- **Negative prompt:** Appended as `"\n\nAvoid: {negative_prompt}"` (no native support)
+- **Quality:** Accepted and recorded in `provider_metadata`; `generateContent` has no quality/resolution parameter (unlike Imagen), so the value is not sent to the API
+- **Aspect ratios:** All 5 project ratios passed through directly (all natively supported)
+- **Background:** Not supported — ignored; debug log emitted
+- **Discovery:** Returns static list of known image models; `models.list()` does not reliably filter image-generation models
+- **Error handling:** Converts safety/policy errors to `ImageContentPolicyError`; connection errors to `ImageProviderConnectionError`
+- **Watermark:** All outputs include Google's SynthID invisible watermark (automatic, cannot be disabled)
+- **Registered when:** `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` is set
 
 ### OpenAI Provider
 
@@ -193,12 +207,12 @@ the prompt using keyword matching with word boundaries:
 
 | Prompt Keywords | Preferred Provider Chain |
 |----------------|------------------------|
-| realistic, photo, photography, headshot, portrait photo, product shot | sd_webui -> openai |
-| text, logo, typography, poster, banner, signage, lettering, font | openai |
+| realistic, photo, photography, headshot, portrait photo, product shot | sd_webui -> gemini -> openai |
+| text, logo, typography, poster, banner, signage, lettering, font | openai -> gemini |
 | quick, draft, test, placeholder, mock | placeholder |
-| art, painting, illustration, watercolor, oil painting, sketch, drawing | sd_webui -> openai |
-| anime, manga, kawaii, chibi | sd_webui -> openai |
-| *(no match)* | openai -> sd_webui -> placeholder |
+| art, painting, illustration, watercolor, oil painting, sketch, drawing | sd_webui -> gemini -> openai |
+| anime, manga, kawaii, chibi | sd_webui -> gemini -> openai |
+| *(no match)* | gemini -> openai -> sd_webui -> placeholder |
 
 First matching rule wins. Within a rule, the first available provider is selected.
 If no rule matches, the default fallback chain is used. If no provider in the
@@ -249,7 +263,8 @@ Registration happens in `_server_deps.py` during server startup:
 
 1. **Placeholder** -- always registered (zero cost, no API key)
 2. **OpenAI** -- registered if `config.openai_api_key` is set
-3. **SD WebUI** -- registered if `config.sd_webui_host` is set
+3. **Gemini** -- registered if `config.google_api_key` is set
+4. **SD WebUI** -- registered if `config.sd_webui_host` is set
 
 After all providers are registered, `discover_all_capabilities()` is called.
 This introspects each provider and caches the results for the server lifetime.
@@ -337,13 +352,14 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Scratch directory for saved images |
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | *(none)* | OpenAI API key; enables OpenAI provider |
+| `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | str | *(none)* | Google API key; enables Gemini provider |
 | `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | *(none)* | SD WebUI URL; enables SD WebUI provider (deprecated alias: `A1111_HOST`) |
-| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `openai`, `sd_webui`, `placeholder`) |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `gemini`, `openai`, `sd_webui`, `placeholder`) |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When true, hides write-tagged tools |
 
 ## Future Work
 
-- **More providers:** BFL/FLUX, Stability, Ideogram, FAL, Gemini, Replicate
+- **More providers:** BFL/FLUX, Stability, Ideogram, FAL, Replicate
 - **ComfyUI provider:** Workflow-based API with CLIP text encode nodes
 - **Image editing:** Masks, inpainting, background removal
 - **Rate limiting:** Per-provider request throttling

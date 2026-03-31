@@ -92,6 +92,15 @@ class TestLoadConfigEnvVars:
         config = load_config()
         assert config.openai_api_key == "sk-test-key"
 
+    def test_google_api_key_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_GOOGLE_API_KEY", "AIza-test")
+        config = load_config()
+        assert config.google_api_key == "AIza-test"
+
+    def test_google_api_key_unset(self) -> None:
+        config = load_config()
+        assert config.google_api_key is None
+
     def test_sd_webui_host_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(
             "IMAGE_GENERATION_MCP_SD_WEBUI_HOST", "http://localhost:7860"

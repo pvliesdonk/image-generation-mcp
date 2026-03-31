@@ -22,6 +22,23 @@ Add a `.mcp.json` file to your project root:
 }
 ```
 
+### With Gemini
+
+```json
+{
+  "mcpServers": {
+    "image-gen": {
+      "command": "image-generation-mcp",
+      "args": ["serve"],
+      "env": {
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_GOOGLE_API_KEY": "AIza..."
+      }
+    }
+  }
+}
+```
+
 ### With OpenAI
 
 ```json
@@ -49,6 +66,7 @@ Add a `.mcp.json` file to your project root:
       "args": ["serve"],
       "env": {
         "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_GOOGLE_API_KEY": "AIza...",
         "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-...",
         "IMAGE_GENERATION_MCP_SD_WEBUI_HOST": "http://localhost:7860"
       }

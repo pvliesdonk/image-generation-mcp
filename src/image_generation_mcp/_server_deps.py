@@ -90,6 +90,15 @@ def make_service_lifespan(config: ServerConfig) -> Any:
                 OpenAIImageProvider(api_key=config.openai_api_key),
             )
 
+        # Register Gemini if API key is configured
+        if config.google_api_key:
+            from image_generation_mcp.providers.gemini import GeminiImageProvider
+
+            service.register_provider(
+                "gemini",
+                GeminiImageProvider(api_key=config.google_api_key),
+            )
+
         # Register SD WebUI if host is configured
         if config.sd_webui_host:
             from image_generation_mcp.providers.sd_webui import SdWebuiImageProvider

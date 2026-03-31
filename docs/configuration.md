@@ -8,7 +8,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_SCRATCH_DIR` | Path | `~/.image-generation-mcp/images/` | Directory for saved generated images. Created automatically on first use. |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When `true`, write-tagged tools (`generate_image`) are hidden from clients. Set to `false` to enable image generation. |
-| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `openai`, `sd_webui`, `placeholder`. |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `gemini`, `openai`, `sd_webui`, `placeholder`. |
 | `IMAGE_GENERATION_MCP_STYLES_DIR` | Path | `~/.image-generation-mcp/styles/` | Directory for style preset files (`.md` with YAML frontmatter). Created automatically if it does not exist. See the [Style Library Guide](guides/styles.md). |
 
 ## Providers
@@ -16,6 +16,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | -- | OpenAI API key. Enables the OpenAI provider (gpt-image-1, dall-e-3) when set. |
+| `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | str | -- | Google API key. Enables the Gemini provider (gemini-2.5-flash-image and others) when set. Get a key at [Google AI Studio](https://aistudio.google.com/apikey). |
 | `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | -- | SD WebUI base URL (e.g. `http://localhost:7860`). Enables the SD WebUI provider when set. Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_HOST`. |
 | `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | str | -- | SD WebUI checkpoint name. Used for model-aware preset detection (SD 1.5 vs SDXL vs Lightning) and checkpoint override. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_MODEL`. |
 
@@ -106,10 +107,18 @@ IMAGE_GENERATION_MCP_READ_ONLY=false
 IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
 ```
 
+### Gemini
+
+```bash
+IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_GOOGLE_API_KEY=AIza...
+```
+
 ### All providers
 
 ```bash
 IMAGE_GENERATION_MCP_READ_ONLY=false
+IMAGE_GENERATION_MCP_GOOGLE_API_KEY=AIza...
 IMAGE_GENERATION_MCP_OPENAI_API_KEY=sk-...
 IMAGE_GENERATION_MCP_SD_WEBUI_HOST=http://localhost:7860
 IMAGE_GENERATION_MCP_SD_WEBUI_MODEL=realisticVisionV60B1_v51VAE.safetensors

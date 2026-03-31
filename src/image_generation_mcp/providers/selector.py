@@ -2,7 +2,7 @@
 
 Analyzes prompts to select the best image generation provider,
 inspired by the claude-skills provider selector but simplified
-for the current provider set (OpenAI, SD WebUI, Placeholder).
+for the current provider set (Gemini, OpenAI, SD WebUI, Placeholder).
 
 Capabilities (when available) act as a secondary filter — providers
 without a required capability are deprioritized but not excluded.
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Keyword → preferred provider order
 _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
-    # Photorealism — SD excels at this
+    # Photorealism — SD excels at this; Gemini as second cloud option
     (
         [
             "realistic",
@@ -33,9 +33,9 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "portrait photo",
             "product shot",
         ],
-        ["sd_webui", "openai"],
+        ["sd_webui", "gemini", "openai"],
     ),
-    # Text rendering / logos — OpenAI is best
+    # Text rendering / logos — OpenAI is best; Gemini as fallback
     (
         [
             "text",
@@ -47,14 +47,14 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "lettering",
             "font",
         ],
-        ["openai"],
+        ["openai", "gemini"],
     ),
     # Quick draft / testing
     (
         ["quick", "draft", "test", "placeholder", "mock"],
         ["placeholder"],
     ),
-    # Artistic / illustration — SD has great models for this
+    # Artistic / illustration — SD has great models; Gemini as second cloud
     (
         [
             "art",
@@ -65,17 +65,17 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
             "sketch",
             "drawing",
         ],
-        ["sd_webui", "openai"],
+        ["sd_webui", "gemini", "openai"],
     ),
     # Anime / manga
     (
         ["anime", "manga", "kawaii", "chibi"],
-        ["sd_webui", "openai"],
+        ["sd_webui", "gemini", "openai"],
     ),
 ]
 
-# Default fallback chain when no keywords match
-_DEFAULT_CHAIN = ["openai", "sd_webui", "placeholder"]
+# Default fallback chain — Gemini first (free tier), then OpenAI, then SD WebUI
+_DEFAULT_CHAIN = ["gemini", "openai", "sd_webui", "placeholder"]
 
 
 def select_provider(
