@@ -378,10 +378,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         pending = service.get_pending(image_id)
 
         if pending is None:
-            # No pending entry — either already completed or unknown
+            # No pending entry — either already completed or unknown.
+            # get_image is a dict lookup (no file I/O).
             try:
                 await asyncio.to_thread(service.get_image, image_id)
-                return json.dumps({"status": "completed", "image_id": image_id})
             except ImageProviderError:
                 return json.dumps(
                     {
@@ -390,6 +390,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                         "error": "No pending or completed image with this ID.",
                     }
                 )
+            return json.dumps({"status": "completed", "image_id": image_id})
 
         if pending.status == "generating":
             return json.dumps(
