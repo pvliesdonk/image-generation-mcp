@@ -66,7 +66,6 @@ _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
 _GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
-_INLINE_WAIT_S = 40.0  # max seconds to wait inline before falling back
 
 
 def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
@@ -101,13 +100,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         config: ServerConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
-        """Generate an image and return the result with a thumbnail preview.
+        """Generate an image and return metadata with resource URIs.
 
-        Waits for the image to be generated (up to ~40 s) and returns the
-        completed image inline with a thumbnail and metadata.  If the
-        generation takes longer, returns ``{"status": "generating"}`` —
-        call ``show_image(uri=original_uri)`` to retrieve the result
-        later.  Most providers complete well within the timeout.
+        Returns immediately with ``{"status": "generating",
+        "original_uri": "image://…/original"}`` while the image is
+        generated in the background.  Call
+        ``show_image(uri=original_uri)`` to check progress and display
+        the result once ready.
 
         Call list_providers first to see available providers and model IDs.
         Check each model's ``prompt_style`` in list_providers to choose the
@@ -219,23 +218,23 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             model=model,
         )
 
-        # Progress callback updates PendingGeneration so show_image
-        # polling returns step-level detail for SD WebUI.
-        pending = service.get_pending(image_id)
-        if pending is None:
-            logger.warning(
-                "get_pending(%s) returned None; progress updates will be lost",
-                image_id,
-            )
-
-        def _on_progress(fraction: float, message: str) -> None:
-            if pending is not None:
-                pending.progress = fraction
-                pending.progress_message = message
-
         # Spawn background generation task
         async def _background_generate() -> None:
             try:
+                # Progress callback updates PendingGeneration so show_image
+                # polling returns step-level detail for SD WebUI.
+                pending = service.get_pending(image_id)
+                if pending is None:
+                    logger.warning(
+                        "get_pending(%s) returned None; progress updates will be lost",
+                        image_id,
+                    )
+
+                def _on_progress(fraction: float, message: str) -> None:
+                    if pending is not None:
+                        pending.progress = fraction
+                        pending.progress_message = message
+
                 provider_name, result = await service.generate(
                     prompt,
                     provider=resolved_name,
@@ -295,19 +294,6 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         _BACKGROUND_TASKS.add(task)
         task.add_done_callback(_BACKGROUND_TASKS.discard)
 
-        # Try to await completion within timeout.  MCP clients (Claude)
-        # enforce a hard ~45 s tool-call timeout, so we wait up to 40 s
-        # for the image.  If the generation finishes in time, return the
-        # completed image inline — no polling required.  Otherwise fall
-        # back to "generating" status so the client can poll via
-        # show_image (rare for most providers).
-        try:
-            await asyncio.wait_for(asyncio.shield(task), timeout=_INLINE_WAIT_S)
-        except TimeoutError:
-            pass  # generation still running — fall through to pending response
-        except Exception:
-            pass  # error already handled inside _background_generate
-
         # Resolve prompt_style from capabilities for the response
         prompt_style = None
         caps = service.capabilities.get(resolved_name)
@@ -320,49 +306,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             elif len(caps.models) == 1:
                 prompt_style = caps.models[0].prompt_style
 
-        # Check if the generation completed (or failed) in time
-        completed_pending = service.get_pending(image_id)
-
-        if completed_pending is not None and completed_pending.status == "failed":
-            error = completed_pending.error or "Unknown error"
-            service.cleanup_pending(image_id)
-            return ToolResult(
-                content=[
-                    TextContent(
-                        type="text",
-                        text=json.dumps(
-                            {
-                                "status": "failed",
-                                "image_id": image_id,
-                                "error": error,
-                            },
-                            indent=2,
-                        ),
-                    )
-                ],
-            )
-
-        if completed_pending is None or completed_pending.status == "completed":
-            # Generation completed — return the image inline
-            if completed_pending is not None:
-                service.cleanup_pending(image_id)
-            try:
-                record = await asyncio.to_thread(service.get_image, image_id)
-            except Exception:
-                # Edge case: completed_pending was cleaned up but image
-                # not yet registered. Fall through to pending response.
-                pass
-            else:
-                return await _build_completed_response(
-                    record=record,
-                    image_id=image_id,
-                    prompt=prompt,
-                    provider_name=resolved_name,
-                    prompt_style=prompt_style,
-                    config=config,
-                )
-
-        # Generation still in progress — return pending status
+        # Return immediately with pending status
         metadata = {
             "status": "generating",
             "image_id": image_id,
@@ -390,78 +334,6 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             ]
         )
 
-    async def _build_completed_response(
-        *,
-        record: ImageRecord,
-        image_id: str,
-        prompt: str,
-        provider_name: str,
-        prompt_style: str | None,
-        config: ServerConfig,
-    ) -> ToolResult:
-        """Build the completed-image ToolResult with thumbnail + metadata."""
-        data = await asyncio.to_thread(record.original_path.read_bytes)
-
-        def _make_thumb(src: bytes) -> tuple[bytes, str, tuple[int, int]]:
-            td, tm = generate_thumbnail(src, _THUMBNAIL_MAX_PX, "webp", 80)
-            tw, th = PILImage.open(io.BytesIO(td)).size
-            return td, tm, (tw, th)
-
-        thumb_data, thumb_mime, thumb_dims = await asyncio.to_thread(
-            _make_thumb, data
-        )
-        thumb_b64 = base64.b64encode(thumb_data).decode("ascii")
-        original_stat = await asyncio.to_thread(record.original_path.stat)
-
-        metadata: dict[str, object] = {
-            "status": "completed",
-            "image_id": image_id,
-            "prompt": prompt,
-            "provider": provider_name,
-            "prompt_style": prompt_style,
-            "model": record.provider_metadata.get("model"),
-            "dimensions": list(record.original_dimensions),
-            "thumbnail_dimensions": list(thumb_dims),
-            "original_size_bytes": original_stat.st_size,
-            "original_uri": f"image://{image_id}/view",
-            "metadata_uri": f"image://{image_id}/metadata",
-            "resource_template": (
-                f"image://{image_id}/view{{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}}"
-            ),
-        }
-
-        base_url = (config.base_url or "").rstrip("/")
-        if base_url:
-            from .artifacts import get_artifact_store
-
-            try:
-                store = get_artifact_store()
-                token = store.create_token(
-                    f"image://{image_id}/view", ttl_seconds=300
-                )
-                metadata["download_url"] = f"{base_url}/artifacts/{token}"
-            except RuntimeError:
-                pass
-
-        return ToolResult(
-            content=[
-                ImageContent(
-                    type="image",
-                    data=thumb_b64,
-                    mimeType=thumb_mime,
-                ),
-                TextContent(
-                    type="text",
-                    text=json.dumps(metadata, indent=2),
-                ),
-                ResourceLink(
-                    type="resource_link",
-                    uri=AnyUrl(f"image://{image_id}/view"),
-                    name="Generated image",
-                ),
-            ]
-        )
-
     @mcp.tool(
         annotations={
             "readOnlyHint": True,
@@ -479,10 +351,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     ) -> ToolResult:
         """Display a registered image with optional on-demand transforms.
 
-        Normally ``generate_image`` returns the completed image directly.
-        Use ``show_image`` only when you need to apply transforms (resize,
-        crop, format conversion) via the URI query string, or as a
-        fallback if ``generate_image`` returned ``status="generating"``:
+        Also serves as the polling endpoint for fire-and-forget generation.
+        After calling ``generate_image``, call
+        ``show_image(uri=original_uri)`` to check progress:
+
+        - ``{"status": "generating", ...}`` — image is still being generated
+        - ``{"status": "failed", "error": "..."}`` — generation failed
+        - Image thumbnail + metadata — generation complete
 
         Accepts a full ``image://`` resource URI (e.g.
         ``image://abc123/view`` or

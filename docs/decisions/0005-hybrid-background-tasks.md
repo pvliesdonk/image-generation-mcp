@@ -1,8 +1,8 @@
-# ADR-0005: Inline-Wait Image Generation with Background Fallback
+# ADR-0005: Fire-and-Forget Image Generation
 
 ## Status
 
-Accepted — supersedes the original fire-and-forget decision.
+Accepted — supersedes the original hybrid background task decision.
 
 ## Context
 
@@ -17,47 +17,41 @@ that no server-side mechanism can extend:
 | Claude Code | Configurable, `resetTimeoutOnProgress=True` | **Yes** |
 | Claude Android | ~45s hard tool + ~25s SSE idle | No / Yes (keepalive) |
 
-The previous fire-and-forget approach returned immediately and required the
-LLM to poll via `show_image`.  In practice this created multiple visible
-tool-call cards in the UI (e.g. "Generating (22s)", "Generating (25s)")
-which was disruptive to the user experience.
+The original Option 3 (hybrid foreground progress + background tasks) was
+implemented but live testing on 2026-03-23 confirmed that progress notifications
+do not reset the timeout on any client except Claude Code. Both SD WebUI
+(Flux/60-120s) and OpenAI gpt-image-1 (consistently >45s) time out every time
+on Claude.ai, Claude Desktop, and Claude Android.
 
 ## Decision Drivers
 
-- **Minimal visible tool calls** -- one tool call should produce the result
 - **Universal compatibility** -- must work on all MCP clients without configuration
-- **Respect client timeouts** -- must not exceed the ~45s hard limit
+- **Sub-second tool response** -- tool must return before the shortest client timeout
 - **Zero mandatory infrastructure** -- no Redis, no message queue
+- **Polling via existing tools** -- clients poll with `show_image`, no new protocol
 
 ## Decision
 
-**Inline wait with background fallback.** The `generate_image` tool:
+**Fire-and-forget with polling.** The `generate_image` tool:
 
 1. Validates inputs and resolves the provider (synchronous, <1s)
 2. Pre-allocates an `image_id` and registers a `PendingGeneration`
 3. Spawns the provider call as a background `asyncio.create_task`
-4. **Waits up to 40 seconds** for the task to complete (using
-   `asyncio.wait_for(asyncio.shield(task), timeout=40)`)
-5. If the task completes in time, returns the **completed image inline**
-   (thumbnail + metadata) in a single tool response
-6. If the task times out, returns `{"status": "generating"}` and the
-   background task continues -- client can poll via `show_image`
+4. Returns immediately with `{"status": "generating", "image_id": "..."}`
+
+The client then polls with `show_image(uri="image://{image_id}/view")`:
+
+- `{"status": "generating", "progress": 0.3, ...}` -- still in progress
+- `{"status": "failed", "error": "..."}` -- generation failed
+- Image thumbnail + metadata -- generation complete (normal `show_image` response)
 
 ### Key properties
 
-- **Most providers complete within 40s** -- OpenAI (5-15s), placeholder
-  (instant), SD WebUI standard quality (<30s) all return inline
-- **Only very slow generations fall back to polling** -- HD SD WebUI
-  with complex prompts may exceed 40s
-- **Single tool call for the common case** -- no visible polling cards
-- **Background tasks are in-process `asyncio.Task`s** -- no external
-  infrastructure
-- **`asyncio.shield` prevents task cancellation on timeout** -- the task
-  continues running even when the wait times out
-- **`image://list` includes pending generations** -- clients can discover
-  in-progress work
-- **Cleanup is automatic** -- completed/failed entries expire after TTL
-  (10 min)
+- **All providers use the same path** -- no provider-specific branching
+- **The tool function returns in <1s** -- well within all client timeouts
+- **Background tasks are in-process `asyncio.Task`s** -- no external infrastructure
+- **`image://list` includes pending generations** -- clients can discover in-progress work
+- **Cleanup is automatic** -- completed/failed entries expire after TTL (10 min)
 
 ### Service layer API
 
@@ -74,25 +68,25 @@ service.register_image(..., image_id=...)    # accepts pre-allocated ID
 ### Synchronous callers
 
 `service.generate()` remains a normal async method that blocks until the image
-is ready. Only the MCP tool layer adds the timeout wrapper. Direct callers of
-the service (tests, CLI) get synchronous behavior unchanged.
+is ready. Only the MCP tool layer uses fire-and-forget. Direct callers of the
+service (tests, CLI) get synchronous behavior unchanged.
 
 ## Consequences
 
 ### Positive
 
-- One tool call = one result for the vast majority of generations
-- No visible polling cards cluttering the conversation UI
-- Works on every MCP client without timeout issues (40s < 45s limit)
-- Errors from fast providers surface directly in the tool response
-- Progress info (from SD WebUI `/sdapi/v1/progress`) is still stored in
-  `PendingGeneration` for the rare polling fallback case
+- Works on every MCP client without timeout issues
+- Single code path for all providers
+- `show_image` doubles as both display tool and polling endpoint -- no new tools
+- Progress info (from SD WebUI `/sdapi/v1/progress`) can be stored in
+  `PendingGeneration` and returned via `show_image` polling
+- Background failures are captured and surfaced, not silently lost
 
 ### Negative
 
-- For very slow generations (>40s), client must still call `show_image`
-  to retrieve the result (two tool calls minimum)
-- In-process tasks are lost on server restart (acceptable -- no persistence
-  needed for ephemeral image generation)
-- The `task=True` decorator is retained for forward compatibility but the
-  tool's inline wait handles most cases before MCP task mode activates
+- Client must call `show_image` at least once to see the result (not automatic)
+- Two tool calls minimum (generate + show) vs. one in the old foreground mode
+- In-process tasks are lost on server restart (acceptable -- no persistence needed
+  for ephemeral image generation)
+- The `task=True` decorator is retained for forward compatibility but the tool
+  no longer blocks long enough for MCP background task mode to be useful

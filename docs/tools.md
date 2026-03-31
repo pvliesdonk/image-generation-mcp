@@ -4,14 +4,14 @@ image-generation-mcp exposes four domain tools plus two auto-generated resource-
 
 ## generate_image
 
-Generate an image from a text prompt. Waits for completion (up to ~40s) and returns the image inline with a thumbnail preview and metadata. If generation takes longer, returns `status: "generating"` — call `show_image(uri=original_uri)` to retrieve the result later. Check each model's `prompt_style` in `list_providers` to choose CLIP tags vs. natural language prompts.
+Generate an image from a text prompt. Returns immediately with a `status: "generating"` response while the image is generated in the background. Call `show_image(uri=original_uri)` to check progress and display the result. Check each model's `prompt_style` in `list_providers` to choose CLIP tags vs. natural language prompts.
 
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
 | **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
-| **Task** | `task=True` (retained for forward compatibility) |
-| **Pattern** | Inline wait (up to 40s) with background fallback |
+| **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
+| **Pattern** | Fire-and-forget — returns in &lt;1s, client polls `show_image` |
 
 ### Parameters
 
@@ -27,46 +27,36 @@ Generate an image from a text prompt. Waits for completion (up to ~40s) and retu
 
 ### Return value
 
-Returns a `ToolResult` containing:
+Returns immediately with a `ToolResult` containing:
 
-**When completed inline (most cases):**
-
-1. **ImageContent** -- WebP thumbnail (max 512px, <1MB)
-2. **TextContent** -- JSON metadata with `status: "completed"`
-3. **ResourceLink** -- URI reference to `image://{id}/view`
+1. **TextContent** -- JSON metadata with `status: "generating"`:
+2. **ResourceLink** -- URI reference to `image://{id}/view` (image pending)
 
 ```json
 {
-  "status": "completed",
+  "status": "generating",
   "image_id": "a1b2c3d4e5f6",
   "prompt": "watercolor painting of a mountain landscape at sunset",
   "provider": "openai",
-  "model": "gpt-image-1",
-  "dimensions": [1024, 1024],
+  "prompt_style": null,
   "original_uri": "image://a1b2c3d4e5f6/view",
   "metadata_uri": "image://a1b2c3d4e5f6/metadata",
   "resource_template": "image://a1b2c3d4e5f6/view{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}"
 }
 ```
 
-**When generation exceeds 40s (rare):**
+Call `show_image` with the `original_uri` to poll for completion and display the image once ready.
 
-1. **TextContent** -- JSON metadata with `status: "generating"`
-2. **ResourceLink** -- URI reference to `image://{id}/view` (image pending)
+### Fire-and-forget workflow
 
-Call `show_image` with the `original_uri` to retrieve the result once ready.
+The tool uses a fire-and-forget pattern to avoid client tool-execution timeouts (~45s on Claude.ai/Desktop/Android):
 
-### Inline wait with background fallback
-
-The tool waits up to 40 seconds for the image to be generated. Most providers complete well within this window:
-
-- **Placeholder**: instant
-- **OpenAI**: 5-15s
-- **SD WebUI (standard)**: 10-30s
-
-If generation completes within the timeout, the result is returned directly — **one tool call, one result, no polling**. This avoids the disruptive pattern of multiple visible tool-call cards in the conversation UI.
-
-For very slow generations (>40s, e.g., HD SD WebUI with complex prompts), the tool falls back to returning `status: "generating"`. The background task continues running and the client can poll via `show_image`.
+1. **`generate_image`** returns in &lt;1s with `"status": "generating"` and a pre-allocated `image_id`
+2. **Background task** generates the image and registers it in the scratch directory
+3. **`show_image`** polls for status:
+    - `{"status": "generating", "progress": 0.3, "progress_message": "Step 9/30 (ETA 12s)", ...}` -- still in progress (SD WebUI reports step-level detail; other providers report `0.0` until complete)
+    - `{"status": "failed", "error": "..."}` -- generation failed
+    - Image thumbnail + metadata -- generation complete
 
 The `image://list` resource also includes pending generations with their status.
 
@@ -98,9 +88,9 @@ Tool call: generate_image
 
 ## show_image
 
-Display a registered image with optional on-demand transforms. Accepts a full `image://` resource URI with transforms encoded in the query string.
+Display a registered image with optional on-demand transforms, or poll for generation status. Accepts a full `image://` resource URI with transforms encoded in the query string.
 
-Normally `generate_image` returns the completed image directly. Use `show_image` when you need to apply transforms (resize, crop, format conversion) or as a fallback if `generate_image` returned `status: "generating"`.
+Also serves as the polling endpoint for fire-and-forget generation: after calling `generate_image`, call `show_image(uri=original_uri)` to check progress and display the result once ready.
 
 | Property | Value |
 |----------|-------|
