@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # All 5 project aspect ratios are natively supported by Gemini — direct pass-through.
+# The identity mapping is intentional: kept consistent with other providers that
+# may need to remap ratios, and allows per-ratio overrides if Gemini ever diverges.
 _ASPECT_RATIOS: dict[str, str] = {
     "1:1": "1:1",
     "16:9": "16:9",
@@ -37,19 +39,11 @@ _ASPECT_RATIOS: dict[str, str] = {
     "2:3": "2:3",
 }
 
-# quality -> Gemini image_size
-_QUALITY_SIZES: dict[str, str] = {
-    "standard": "1K",
-    "hd": "2K",
-}
-
 # Known Gemini image-capable models in preference order.
 # Discovery returns this static list — models.list() does not reliably filter
 # image-generation models, so we maintain the known set here.
 _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
     ("gemini-2.5-flash-image", "Gemini 2.5 Flash Image"),
-    ("gemini-3.1-flash-image-preview", "Gemini 3.1 Flash Image Preview"),
-    ("gemini-3-pro-image-preview", "Gemini 3 Pro Image Preview"),
 ]
 
 _SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = ("1:1", "16:9", "9:16", "3:2", "2:3")
@@ -112,8 +106,8 @@ class GeminiImageProvider:
             negative_prompt: Appended as ``"\\n\\nAvoid: {negative_prompt}"``
                 (Gemini has no native negative prompt support).
             aspect_ratio: One of the 5 supported ratios.
-            quality: ``"standard"`` maps to ``image_size="1K"``,
-                ``"hd"`` maps to ``image_size="2K"``.
+            quality: Recorded in metadata; Gemini's generateContent API does not
+                expose a resolution/quality parameter (unlike Imagen).
             background: Ignored — Gemini does not support transparent backgrounds.
             model: Override the default model for this call.
             progress_callback: Ignored — Gemini does not report progress.
@@ -136,7 +130,6 @@ class GeminiImageProvider:
             )
 
         effective_model = model or self._model
-        image_size = _QUALITY_SIZES.get(quality, "1K")
 
         full_prompt = prompt
         if negative_prompt:
@@ -152,7 +145,6 @@ class GeminiImageProvider:
             response_modalities=["IMAGE"],
             image_config=types.ImageConfig(
                 aspect_ratio=_ASPECT_RATIOS[aspect_ratio],
-                image_size=image_size,
             ),
         )
 
@@ -165,18 +157,19 @@ class GeminiImageProvider:
         except Exception as exc:
             self._handle_error(exc)
 
-        for part in response.parts:
+        for part in response.parts or []:
             if part.inline_data is not None:
-                return ImageResult(
-                    image_data=part.inline_data.data,
-                    content_type=part.inline_data.mime_type or "image/png",
-                    provider_metadata={
-                        "model": effective_model,
-                        "quality": quality,
-                        "image_size": image_size,
-                        "aspect_ratio": aspect_ratio,
-                    },
-                )
+                data = part.inline_data.data
+                if isinstance(data, bytes):
+                    return ImageResult(
+                        image_data=data,
+                        content_type=part.inline_data.mime_type or "image/png",
+                        provider_metadata={
+                            "model": effective_model,
+                            "quality": quality,
+                            "aspect_ratio": aspect_ratio,
+                        },
+                    )
 
         raise ImageProviderError("gemini", "No image in response")
 
@@ -232,10 +225,12 @@ class GeminiImageProvider:
         exc_str = str(exc).lower()
         if any(kw in exc_str for kw in ("safety", "policy", "blocked", "harm")):
             raise ImageContentPolicyError("gemini", str(exc)) from exc
+        # httpx is a direct dependency — check concrete types first.
+        # Then fall back to a name-based check to catch google-genai transport
+        # errors (e.g. google.api_core.exceptions.ServiceUnavailable) without
+        # importing google packages at the top level.
         if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
             raise ImageProviderConnectionError("gemini", str(exc)) from exc
-
-        # Detect connection-like errors by type name (without hard google import)
         exc_type = type(exc).__name__.lower()
         if "connection" in exc_type or "timeout" in exc_type:
             raise ImageProviderConnectionError("gemini", str(exc)) from exc

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import sys
 import time
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -15,32 +13,13 @@ from image_generation_mcp.providers.gemini import (
 )
 
 
-@pytest.fixture
-def provider() -> GeminiImageProvider:
-    """GeminiImageProvider with google-genai patched out."""
-    mock_types = MagicMock()
-    mock_genai = MagicMock()
-    mock_genai.types = mock_types
-    mock_google = MagicMock()
-    mock_google.genai = mock_genai
-
-    modules = {
-        "google": mock_google,
-        "google.genai": mock_genai,
-        "google.genai.types": mock_types,
-    }
-
-    with patch.dict(sys.modules, modules), patch(
-        "image_generation_mcp.providers.gemini.GeminiImageProvider._create_client"
-    ):
-        return GeminiImageProvider(api_key="AIza-test")
-
-
 class TestDiscoverCapabilities:
     """Tests for discover_capabilities()."""
 
-    async def test_returns_known_models(self, provider: GeminiImageProvider) -> None:
-        caps = await provider.discover_capabilities()
+    async def test_returns_known_models(
+        self, gemini_provider: GeminiImageProvider
+    ) -> None:
+        caps = await gemini_provider.discover_capabilities()
 
         assert isinstance(caps, ProviderCapabilities)
         assert caps.provider_name == "gemini"
@@ -48,63 +27,65 @@ class TestDiscoverCapabilities:
         assert len(caps.models) == len(_KNOWN_IMAGE_MODELS)
 
     async def test_model_ids_match_known_list(
-        self, provider: GeminiImageProvider
+        self, gemini_provider: GeminiImageProvider
     ) -> None:
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
 
         model_ids = {m.model_id for m in caps.models}
         expected = {mid for mid, _ in _KNOWN_IMAGE_MODELS}
         assert model_ids == expected
 
     async def test_models_support_all_aspect_ratios(
-        self, provider: GeminiImageProvider
+        self, gemini_provider: GeminiImageProvider
     ) -> None:
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
 
         for model in caps.models:
             for ratio in ("1:1", "16:9", "9:16", "3:2", "2:3"):
                 assert ratio in model.supported_aspect_ratios
 
     async def test_models_have_no_background_support(
-        self, provider: GeminiImageProvider
+        self, gemini_provider: GeminiImageProvider
     ) -> None:
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
 
         for model in caps.models:
             assert model.supports_background is False
 
     async def test_models_have_no_negative_prompt_support(
-        self, provider: GeminiImageProvider
+        self, gemini_provider: GeminiImageProvider
     ) -> None:
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
 
         for model in caps.models:
             assert model.supports_negative_prompt is False
 
     async def test_models_use_natural_language_style(
-        self, provider: GeminiImageProvider
+        self, gemini_provider: GeminiImageProvider
     ) -> None:
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
 
         for model in caps.models:
             assert model.prompt_style == "natural_language"
 
-    async def test_default_model_is_first(self, provider: GeminiImageProvider) -> None:
-        caps = await provider.discover_capabilities()
+    async def test_default_model_is_first(
+        self, gemini_provider: GeminiImageProvider
+    ) -> None:
+        caps = await gemini_provider.discover_capabilities()
 
         assert caps.models[0].model_id == "gemini-2.5-flash-image"
 
     async def test_discovered_at_is_recent(
-        self, provider: GeminiImageProvider
+        self, gemini_provider: GeminiImageProvider
     ) -> None:
         before = time.time()
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
         after = time.time()
 
         assert before <= caps.discovered_at <= after
 
     async def test_degraded_on_unexpected_exception(
-        self, provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch
+        self, gemini_provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """If _KNOWN_IMAGE_MODELS is broken, returns degraded caps."""
         import image_generation_mcp.providers.gemini as gemini_mod
@@ -115,7 +96,7 @@ class TestDiscoverCapabilities:
             None,  # type: ignore[arg-type]
         )
 
-        caps = await provider.discover_capabilities()
+        caps = await gemini_provider.discover_capabilities()
 
         assert caps.degraded is True
         assert caps.provider_name == "gemini"

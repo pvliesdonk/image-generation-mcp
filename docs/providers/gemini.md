@@ -17,8 +17,6 @@ The provider registers automatically when this variable is set. Get a key at [Go
 | Model | Notes |
 |-------|-------|
 | `gemini-2.5-flash-image` | Default — fast, high-volume, stable |
-| `gemini-3.1-flash-image-preview` | Latest, speed-optimised |
-| `gemini-3-pro-image-preview` | Studio-quality, best for complex scenes |
 
 Use `list_providers` to see which models are available on your API key.
 
@@ -36,10 +34,9 @@ All five project aspect ratios are natively supported:
 
 ## Quality levels
 
-| Quality param | Gemini `image_size` |
-|---------------|-------------------|
-| `standard` | `1K` |
-| `hd` | `2K` |
+The `quality` parameter is accepted and recorded in metadata, but Gemini's
+`generateContent` API does not expose a resolution or quality parameter (unlike
+the Imagen API). All images are generated at Gemini's default resolution.
 
 ## Negative prompts
 
@@ -71,7 +68,7 @@ Avoid CLIP-style tag lists (those work better with Stable Diffusion).
 The `model` parameter on `generate_image` overrides the provider's default model for a single request:
 
 ```
-generate_image(prompt="...", provider="gemini", model="gemini-3-pro-image-preview")
+generate_image(prompt="...", provider="gemini", model="gemini-2.5-flash-image")
 ```
 
 Use `list_providers` to discover available models and their capabilities.

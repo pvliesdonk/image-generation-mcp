@@ -7,7 +7,7 @@ image-generation-mcp supports multiple image generation providers. Each provider
 | | Gemini | OpenAI | SD WebUI (Stable Diffusion) | Placeholder |
 |---|--------|--------|----------------------------|-------------|
 | **Best for** | General-purpose, free tier | Text, logos, typography | Photorealism, portraits, anime, artistic styles | Testing, drafts, CI |
-| **Models** | gemini-2.5-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image-preview | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | -- |
+| **Models** | gemini-2.5-flash-image | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | -- |
 | **Quality** | High | High | Varies by model and steps | N/A (solid color) |
 | **Speed** | 5-15s | 5-15s | 10-60s (depends on GPU) | Instant |
 | **Cost** | Free tier available | Per-image API pricing | Self-hosted (GPU cost) | Free |
@@ -59,6 +59,6 @@ When `background="transparent"` is requested, providers with transparent backgro
 Providers are registered automatically at startup based on environment variables:
 
 1. **Placeholder** -- always registered (zero cost, no configuration)
-2. **Gemini** -- registered when `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` is set
-3. **OpenAI** -- registered when `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
+2. **OpenAI** -- registered when `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
+3. **Gemini** -- registered when `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` is set
 4. **SD WebUI** -- registered when `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set

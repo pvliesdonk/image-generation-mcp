@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from image_generation_mcp.providers.gemini import (
     _ASPECT_RATIOS,
-    _QUALITY_SIZES,
     GeminiImageProvider,
 )
 from image_generation_mcp.providers.types import (
@@ -18,27 +16,6 @@ from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
 )
-
-
-@pytest.fixture
-def _mock_genai():
-    """Patch genai imports so tests don't need the real package installed."""
-    mock_types = MagicMock()
-    mock_genai = MagicMock()
-    mock_genai.types = mock_types
-    mock_google = MagicMock()
-    mock_google.genai = mock_genai
-
-    modules = {
-        "google": mock_google,
-        "google.genai": mock_genai,
-        "google.genai.types": mock_types,
-    }
-
-    with patch.dict(sys.modules, modules), patch(
-        "image_generation_mcp.providers.gemini.GeminiImageProvider._create_client"
-    ):
-        yield
 
 
 @pytest.mark.usefixtures("_mock_genai")
@@ -62,10 +39,6 @@ class TestGeminiProvider:
     def test_aspect_ratio_table_complete(self) -> None:
         for ratio in ("1:1", "16:9", "9:16", "3:2", "2:3"):
             assert ratio in _ASPECT_RATIOS
-
-    def test_quality_sizes(self) -> None:
-        assert _QUALITY_SIZES["standard"] == "1K"
-        assert _QUALITY_SIZES["hd"] == "2K"
 
     async def test_generate_success(self) -> None:
         provider = GeminiImageProvider(api_key="AIza-test")
@@ -92,7 +65,6 @@ class TestGeminiProvider:
         assert result.content_type == "image/png"
         assert result.provider_metadata["model"] == "gemini-2.5-flash-image"
         assert result.provider_metadata["quality"] == "standard"
-        assert result.provider_metadata["image_size"] == "1K"
 
     async def test_generate_hd_quality(self) -> None:
         provider = GeminiImageProvider(api_key="AIza-test")
@@ -115,7 +87,6 @@ class TestGeminiProvider:
 
         result = await provider.generate("a cat", quality="hd")
 
-        assert result.provider_metadata["image_size"] == "2K"
         assert result.provider_metadata["quality"] == "hd"
 
     async def test_generate_uses_model_override(self) -> None:
@@ -194,6 +165,21 @@ class TestGeminiProvider:
 
         mock_response = MagicMock()
         mock_response.parts = []
+
+        provider._client = MagicMock()
+        provider._client.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        with pytest.raises(ImageProviderError, match="No image in response"):
+            await provider.generate("test")
+
+    async def test_none_parts_raises(self) -> None:
+        """response.parts=None (possible from SDK) raises ImageProviderError."""
+        provider = GeminiImageProvider(api_key="AIza-test")
+
+        mock_response = MagicMock()
+        mock_response.parts = None
 
         provider._client = MagicMock()
         provider._client.aio.models.generate_content = AsyncMock(
