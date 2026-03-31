@@ -39,11 +39,12 @@ on Claude.ai, Claude Desktop, and Claude Android.
 3. Spawns the provider call as a background `asyncio.create_task`
 4. Returns immediately with `{"status": "generating", "image_id": "..."}`
 
-The client then polls with `show_image(uri="image://{image_id}/view")`:
+The client polls with `check_generation_status(image_id)` (lightweight, no UI
+card), then calls `show_image` **once** when status is `"completed"`:
 
 - `{"status": "generating", "progress": 0.3, ...}` -- still in progress
+- `{"status": "completed"}` -- ready to display
 - `{"status": "failed", "error": "..."}` -- generation failed
-- Image thumbnail + metadata -- generation complete (normal `show_image` response)
 
 ### Key properties
 
@@ -77,15 +78,20 @@ service (tests, CLI) get synchronous behavior unchanged.
 
 - Works on every MCP client without timeout issues
 - Single code path for all providers
-- `show_image` doubles as both display tool and polling endpoint -- no new tools
+- `check_generation_status` is a lightweight polling tool that returns minimal
+  JSON — no image thumbnail, no AppConfig viewer card.  This prevents the
+  distracting stack of "Image Generation" cards that appeared when the LLM
+  polled via `show_image`
+- `show_image` is called only once for the completed image
 - Progress info (from SD WebUI `/sdapi/v1/progress`) can be stored in
-  `PendingGeneration` and returned via `show_image` polling
+  `PendingGeneration` and returned via `check_generation_status` polling
 - Background failures are captured and surfaced, not silently lost
 
 ### Negative
 
-- Client must call `show_image` at least once to see the result (not automatic)
-- Two tool calls minimum (generate + show) vs. one in the old foreground mode
+- Client must call `check_generation_status` + `show_image` to see the result
+- Three tool calls minimum (generate + check + show) vs. one in the old
+  foreground mode
 - In-process tasks are lost on server restart (acceptable -- no persistence needed
   for ephemeral image generation)
 - The `task=True` decorator is retained for forward compatibility but the tool
