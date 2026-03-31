@@ -354,7 +354,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | *(none)* | OpenAI API key; enables OpenAI provider |
 | `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | str | *(none)* | Google API key; enables Gemini provider |
 | `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | *(none)* | SD WebUI URL; enables SD WebUI provider (deprecated alias: `A1111_HOST`) |
-| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `openai`, `sd_webui`, `placeholder`) |
+| `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `"auto"` | Default provider (`auto`, `gemini`, `openai`, `sd_webui`, `placeholder`) |
 | `IMAGE_GENERATION_MCP_READ_ONLY` | bool | `true` | When true, hides write-tagged tools |
 
 ## Future Work
