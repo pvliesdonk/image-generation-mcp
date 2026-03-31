@@ -223,6 +223,160 @@ async def test_show_image_returns_generating_for_in_progress(
     await asyncio.sleep(0.6)
 
 
+async def test_check_generation_status_returns_generating(
+    tmp_path: Path,
+) -> None:
+    """check_generation_status returns 'generating' while task is running."""
+    svc = ImageService(scratch_dir=tmp_path)
+
+    original_provider = PlaceholderImageProvider()
+    original_generate = original_provider.generate
+
+    async def slow_generate(*args: object, **kwargs: object) -> object:
+        await asyncio.sleep(0.5)
+        return await original_generate(*args, **kwargs)  # type: ignore[arg-type]
+
+    original_provider.generate = slow_generate  # type: ignore[assignment]
+    svc.register_provider("placeholder", original_provider)
+
+    mcp = FastMCP("test")
+    register_tools(mcp)
+    gen_tool = await mcp.get_tool("generate_image")
+    check_tool = await mcp.get_tool("check_generation_status")
+    assert gen_tool is not None
+    assert check_tool is not None
+
+    ctx = MagicMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
+    cfg = MagicMock()
+    cfg.paid_providers = frozenset()
+
+    result = await gen_tool.fn(
+        prompt="status check test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    image_id = json.loads(text_items[0].text)["image_id"]
+
+    # Check immediately — should be generating
+    status_json = await check_tool.fn(image_id=image_id, service=svc)
+    status = json.loads(status_json)
+    assert status["status"] == "generating"
+    assert status["image_id"] == image_id
+    assert "elapsed_seconds" in status
+
+    # Wait for completion and check again
+    await asyncio.sleep(0.6)
+    status_json = await check_tool.fn(image_id=image_id, service=svc)
+    status = json.loads(status_json)
+    assert status["status"] == "completed"
+
+
+async def test_check_generation_status_returns_completed(
+    tmp_path: Path,
+) -> None:
+    """check_generation_status returns 'completed' for finished images."""
+    svc = ImageService(scratch_dir=tmp_path)
+    svc.register_provider("placeholder", PlaceholderImageProvider())
+
+    mcp = FastMCP("test")
+    register_tools(mcp)
+    gen_tool = await mcp.get_tool("generate_image")
+    check_tool = await mcp.get_tool("check_generation_status")
+    assert gen_tool is not None
+    assert check_tool is not None
+
+    ctx = MagicMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
+    cfg = MagicMock()
+    cfg.paid_providers = frozenset()
+
+    result = await gen_tool.fn(
+        prompt="completed check test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    image_id = json.loads(text_items[0].text)["image_id"]
+
+    # Placeholder is near-instant
+    await asyncio.sleep(0.1)
+    status_json = await check_tool.fn(image_id=image_id, service=svc)
+    status = json.loads(status_json)
+    assert status["status"] == "completed"
+
+
+async def test_check_generation_status_returns_failed(
+    tmp_path: Path,
+) -> None:
+    """check_generation_status returns 'failed' with error for failed generations."""
+    svc = ImageService(scratch_dir=tmp_path)
+
+    from image_generation_mcp.providers.types import ImageContentPolicyError
+
+    async def _always_raise(*_args: object, **_kwargs: object) -> None:
+        raise ImageContentPolicyError("placeholder", "blocked")
+
+    svc.generate = _always_raise  # type: ignore[assignment]
+    svc.register_provider("placeholder", PlaceholderImageProvider())
+
+    mcp = FastMCP("test")
+    register_tools(mcp)
+    gen_tool = await mcp.get_tool("generate_image")
+    check_tool = await mcp.get_tool("check_generation_status")
+    assert gen_tool is not None
+    assert check_tool is not None
+
+    ctx = MagicMock()
+    ctx.report_progress = AsyncMock()
+    ctx.info = AsyncMock()
+    ctx.session.check_client_capability.return_value = False
+    cfg = MagicMock()
+    cfg.paid_providers = frozenset()
+
+    result = await gen_tool.fn(
+        prompt="fail check test",
+        provider="placeholder",
+        service=svc,
+        config=cfg,
+        ctx=ctx,
+    )
+    text_items = [c for c in result.content if isinstance(c, TextContent)]
+    image_id = json.loads(text_items[0].text)["image_id"]
+
+    # Let the background task fail
+    await asyncio.sleep(0.1)
+    status_json = await check_tool.fn(image_id=image_id, service=svc)
+    status = json.loads(status_json)
+    assert status["status"] == "failed"
+    assert "error" in status
+
+
+async def test_check_generation_status_unknown_id(
+    tmp_path: Path,
+) -> None:
+    """check_generation_status returns 'unknown' for non-existent image_id."""
+    svc = ImageService(scratch_dir=tmp_path)
+
+    mcp = FastMCP("test")
+    register_tools(mcp)
+    check_tool = await mcp.get_tool("check_generation_status")
+    assert check_tool is not None
+
+    status_json = await check_tool.fn(image_id="nonexistent", service=svc)
+    status = json.loads(status_json)
+    assert status["status"] == "unknown"
+
+
 async def test_image_list_includes_pending_generation(
     tmp_path: Path,
 ) -> None:

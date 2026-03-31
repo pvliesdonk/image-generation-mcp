@@ -4,14 +4,14 @@ image-generation-mcp exposes four domain tools plus two auto-generated resource-
 
 ## generate_image
 
-Generate an image from a text prompt. Returns immediately with a `status: "generating"` response while the image is generated in the background. Call `show_image(uri=original_uri)` to check progress and display the result. Check each model's `prompt_style` in `list_providers` to choose CLIP tags vs. natural language prompts.
+Generate an image from a text prompt. Returns immediately with a `status: "generating"` response while the image is generated in the background (typically 30-90 seconds). Use `check_generation_status(image_id)` to wait for completion, then call `show_image(uri=original_uri)` **once** to display the result. Check each model's `prompt_style` in `list_providers` to choose CLIP tags vs. natural language prompts.
 
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
 | **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
 | **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
-| **Pattern** | Fire-and-forget — returns in &lt;1s, client polls `show_image` |
+| **Pattern** | Fire-and-forget — returns in &lt;1s, poll via `check_generation_status`, display via `show_image` |
 
 ### Parameters
 
@@ -45,7 +45,7 @@ Returns immediately with a `ToolResult` containing:
 }
 ```
 
-Call `show_image` with the `original_uri` to poll for completion and display the image once ready.
+Use `check_generation_status(image_id)` to poll for completion, then call `show_image(uri=original_uri)` **once** to display the finished image.
 
 ### Fire-and-forget workflow
 
@@ -53,12 +53,16 @@ The tool uses a fire-and-forget pattern to avoid client tool-execution timeouts 
 
 1. **`generate_image`** returns in &lt;1s with `"status": "generating"` and a pre-allocated `image_id`
 2. **Background task** generates the image and registers it in the scratch directory
-3. **`show_image`** polls for status:
-    - `{"status": "generating", "progress": 0.3, "progress_message": "Step 9/30 (ETA 12s)", ...}` -- still in progress (SD WebUI reports step-level detail; other providers report `0.0` until complete)
+3. **`check_generation_status`** polls for status (lightweight, no UI card):
+    - `{"status": "generating", "progress": 0.3, "progress_message": "Step 9/30 (ETA 12s)", ...}` -- still in progress
+    - `{"status": "completed"}` -- ready to display
     - `{"status": "failed", "error": "..."}` -- generation failed
-    - Image thumbnail + metadata -- generation complete
+4. **`show_image`** displays the finished image **once** when status is `"completed"`
 
 The `image://list` resource also includes pending generations with their status.
+
+!!! note "Why a separate polling tool?"
+    `show_image` renders a full image viewer card with thumbnail — calling it repeatedly to poll creates a distracting stack of cards in the conversation UI. `check_generation_status` returns minimal JSON text, keeping polling invisible to the user.
 
 ### Cost confirmation (elicitation)
 
@@ -88,9 +92,37 @@ Tool call: generate_image
 
 ## show_image
 
-Display a registered image with optional on-demand transforms, or poll for generation status. Accepts a full `image://` resource URI with transforms encoded in the query string.
+## check_generation_status
 
-Also serves as the polling endpoint for fire-and-forget generation: after calling `generate_image`, call `show_image(uri=original_uri)` to check progress and display the result once ready.
+Lightweight status check for background image generation. Returns a short JSON string with `status`, `image_id`, and progress info — no image data, no heavy UI card.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | *(none)* — always visible |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`, `idempotentHint: true` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `image_id` | str | *(required)* | The `image_id` returned by `generate_image` |
+
+### Return values
+
+| Status | Meaning | Next step |
+|--------|---------|-----------|
+| `"generating"` | Still in progress | Wait and check again |
+| `"completed"` | Image ready | Call `show_image(uri=original_uri)` |
+| `"failed"` | Generation failed | Report `error` to the user |
+| `"unknown"` | ID not found | Invalid or expired `image_id` |
+
+---
+
+## show_image
+
+Display a completed image with optional on-demand transforms. Accepts a full `image://` resource URI with transforms encoded in the query string.
+
+**Only call this for completed images** — use `check_generation_status` to poll, then call `show_image` once when status is `"completed"`.
 
 | Property | Value |
 |----------|-------|

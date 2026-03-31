@@ -100,13 +100,23 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         config: ServerConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
-        """Generate an image and return metadata with resource URIs.
+        """Generate an image in the background and return metadata.
 
-        Returns immediately with ``{"status": "generating",
-        "original_uri": "image://…/original"}`` while the image is
-        generated in the background.  Call
-        ``show_image(uri=original_uri)`` to check progress and display
-        the result once ready.
+        Returns immediately while the image generates in the background
+        (typically 30-90 seconds).
+
+        **After calling this tool:**
+
+        1. Tell the user the image is being generated.
+        2. Call ``check_generation_status(image_id)`` to wait for
+           completion.  It returns ``"completed"``, ``"generating"``,
+           or ``"failed"``.
+        3. Only when status is ``"completed"``, call
+           ``show_image(uri=original_uri)`` **once** to display the
+           finished image.
+
+        **Do NOT call show_image to poll** — it renders a heavy UI
+        card each time.  Use ``check_generation_status`` instead.
 
         Call list_providers first to see available providers and model IDs.
         Check each model's ``prompt_style`` in list_providers to choose the
@@ -143,9 +153,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 to the provider's configured model.
 
         Returns:
-            JSON metadata with ``status``, ``original_uri``, and other
-            resource URIs.  Call ``show_image(uri=original_uri)`` to
-            poll progress and display the result.
+            JSON metadata with ``status``, ``image_id``, and
+            ``original_uri``.  Use ``check_generation_status(image_id)``
+            to wait, then ``show_image(uri=original_uri)`` once ready.
         """
         if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
             msg = (
@@ -339,6 +349,69 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "readOnlyHint": True,
             "destructiveHint": False,
             "openWorldHint": False,
+            "idempotentHint": True,
+        },
+    )
+    async def check_generation_status(
+        image_id: str,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Check whether a background image generation has finished.
+
+        Call this after ``generate_image`` to wait for completion.
+        Returns a short JSON status — no image data, no heavy UI.
+
+        - ``"completed"`` → call ``show_image(uri=original_uri)`` to
+          display the finished image.
+        - ``"generating"`` → wait and check again.
+        - ``"failed"`` → report the error to the user.
+
+        Args:
+            image_id: The ``image_id`` returned by ``generate_image``.
+
+        Returns:
+            JSON with ``status`` and, for failed generations, ``error``.
+        """
+        pending = service.get_pending(image_id)
+
+        if pending is None:
+            # No pending entry — either already completed or unknown
+            try:
+                await asyncio.to_thread(service.get_image, image_id)
+                return json.dumps({"status": "completed", "image_id": image_id})
+            except Exception:
+                return json.dumps(
+                    {"status": "unknown", "image_id": image_id,
+                     "error": "No pending or completed image with this ID."}
+                )
+
+        if pending.status == "generating":
+            return json.dumps({
+                "status": "generating",
+                "image_id": image_id,
+                "progress": pending.progress,
+                "progress_message": pending.progress_message,
+                "elapsed_seconds": round(time.time() - pending.created_at, 1),
+            })
+
+        if pending.status == "failed":
+            error = pending.error or "Unknown error"
+            service.cleanup_pending(image_id)
+            return json.dumps({
+                "status": "failed",
+                "image_id": image_id,
+                "error": error,
+            })
+
+        # completed
+        service.cleanup_pending(image_id)
+        return json.dumps({"status": "completed", "image_id": image_id})
+
+    @mcp.tool(
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "openWorldHint": False,
         },
         icons=[Icon(src=_LUCIDE.format("eye"), mimeType="image/svg+xml")],
         app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
@@ -349,15 +422,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         service: ImageService = Depends(get_service),
         config: ServerConfig = Depends(get_config),
     ) -> ToolResult:
-        """Display a registered image with optional on-demand transforms.
+        """Display a completed image with optional on-demand transforms.
 
-        Also serves as the polling endpoint for fire-and-forget generation.
-        After calling ``generate_image``, call
-        ``show_image(uri=original_uri)`` to check progress:
-
-        - ``{"status": "generating", ...}`` — image is still being generated
-        - ``{"status": "failed", "error": "..."}`` — generation failed
-        - Image thumbnail + metadata — generation complete
+        **Only call this for completed images** — use
+        ``check_generation_status`` to poll, then call this once when
+        ``status`` is ``"completed"``.
 
         Accepts a full ``image://`` resource URI (e.g.
         ``image://abc123/view`` or
@@ -398,7 +467,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         quality = int(qs.get("quality", ["90"])[0])
         quality = max(1, min(100, quality))
 
-        # Check for pending (fire-and-forget) generation
+        # Check for pending (fire-and-forget) generation — delegate
+        # to check_generation_status for the lightweight response.
         pending = service.get_pending(image_id)
         if pending is not None and pending.status == "generating":
             meta = {
