@@ -15,6 +15,7 @@ import base64
 import io
 import json
 import logging
+import re
 import time
 from datetime import UTC, datetime
 from urllib.parse import parse_qs, urlparse
@@ -1073,4 +1074,115 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
             ttl_seconds,
             download_url,
         )
+        return json.dumps(result, indent=2)
+
+    # -- Style library tools ---------------------------------------------------
+
+    _VALID_STYLE_NAME_RE = re.compile(r"\A[a-zA-Z0-9][a-zA-Z0-9_-]*\Z")
+
+    @mcp.tool(
+        name="save_style",
+        description=(
+            "Save a reusable style preset as a markdown file. "
+            "Styles are creative briefs that the LLM interprets "
+            "per-provider — not prompt fragments. Use to capture "
+            "a visual direction for reuse across conversations."
+        ),
+        tags={"write"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        icons=[Icon(src=_LUCIDE.format("save"), mimeType="image/svg+xml")],
+    )
+    async def save_style(
+        name: str,
+        body: str,
+        tags: list[str] | None = None,
+        provider: str | None = None,
+        aspect_ratio: str | None = None,
+        quality: str | None = None,
+        service: ImageService = Depends(get_service),
+        config: ServerConfig = Depends(get_config),
+    ) -> str:
+        """Save a style preset to the styles directory.
+
+        Args:
+            name: Style identifier — used as the filename (``{name}.md``).
+                Alphanumeric, hyphens, and underscores only.
+            body: Markdown prose describing the visual direction (the creative
+                brief). This is what the LLM reads when applying the style.
+            tags: Optional categorization tags for browsing/filtering.
+            provider: Suggested provider (``"auto"``, ``"openai"``,
+                ``"sd_webui"``). Leave empty for auto-selection.
+            aspect_ratio: Default aspect ratio (e.g. ``"16:9"``).
+            quality: Default quality level (``"standard"`` or ``"hd"``).
+
+        Returns:
+            JSON confirmation with style name, file path, and whether
+            it was newly created or overwrote an existing style.
+        """
+        if not _VALID_STYLE_NAME_RE.match(name):
+            msg = (
+                f"Invalid style name: {name!r}. "
+                "Use only alphanumeric characters, hyphens, and underscores. "
+                "Must start with an alphanumeric character."
+            )
+            raise ValueError(msg)
+
+        existed = service.get_style(name) is not None
+
+        entry = await asyncio.to_thread(
+            service.save_style,
+            name,
+            body,
+            config.styles_dir,
+            tags=tags,
+            provider=provider,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+        )
+
+        result = {
+            "name": entry.name,
+            "created": not existed,
+        }
+        return json.dumps(result, indent=2)
+
+    @mcp.tool(
+        name="delete_style",
+        description=(
+            "Delete a style preset from disk. "
+            "Permanently removes the style file and its in-memory entry."
+        ),
+        tags={"write"},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": True,
+            "openWorldHint": False,
+        },
+        icons=[Icon(src=_LUCIDE.format("trash-2"), mimeType="image/svg+xml")],
+    )
+    async def delete_style(
+        name: str,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Delete a style preset by name.
+
+        Args:
+            name: Style identifier to delete.
+
+        Returns:
+            JSON confirmation with the deleted style name.
+        """
+        try:
+            await asyncio.to_thread(service.delete_style, name)
+        except KeyError:
+            msg = (
+                f"Style not found: '{name}'. Use style://list to see available styles."
+            )
+            raise ValueError(msg) from None
+
+        result = {"name": name, "deleted": True}
         return json.dumps(result, indent=2)

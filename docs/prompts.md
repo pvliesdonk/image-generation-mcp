@@ -53,3 +53,50 @@ soft lighting, detailed face, masterpiece, best quality
 ```
 
 See the [Prompt Writing Guide](guides/prompt-writing.md) for more detailed examples and tips.
+
+---
+
+## apply_style
+
+Apply a saved style preset to an image generation request. Loads the style's creative brief and instructs the LLM to interpret it per-provider — not copy it verbatim.
+
+### When to use
+
+Use when a user references a saved style (e.g. "use the website style") or you want to apply consistent visual direction across multiple generations.
+
+### Arguments
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `style_name` | str | Yes | Name of the style preset to apply |
+| `user_request` | str | Yes | The user's image generation request |
+
+### Behavior
+
+The prompt:
+
+1. Loads the style's full creative brief from the style library
+2. Presents the style body and frontmatter defaults to the LLM
+3. Instructs the LLM to interpret the style as creative direction, not a prompt template
+4. Provides provider-specific adaptation guidance:
+    - **OpenAI** — compose in natural language
+    - **SD WebUI (SD 1.5/SDXL)** — compose as CLIP tags with negative prompts
+    - **SD WebUI (Flux)** — compose in natural language
+5. Uses frontmatter defaults (provider, aspect_ratio, quality) unless the user overrides
+
+### Example
+
+```
+User: Create a hero banner using my website style
+
+Prompt: apply_style
+  style_name: "website"
+  user_request: "hero banner for the landing page"
+
+→ LLM receives the style brief + adaptation instructions,
+  then calls generate_image with a provider-appropriate prompt
+```
+
+If the style is not found, returns an error message suggesting `style://list` to browse available styles.
+
+See the [Style Library Guide](guides/styles.md) for more details on creating and managing styles.

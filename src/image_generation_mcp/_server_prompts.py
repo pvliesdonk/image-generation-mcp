@@ -9,8 +9,17 @@ See https://gofastmcp.com/servers/prompts for the full prompt API.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from fastmcp import FastMCP
+from fastmcp.dependencies import Depends
 from mcp.types import Icon
+
+from image_generation_mcp._server_deps import get_service
+
+if TYPE_CHECKING:
+    from image_generation_mcp.service import ImageService
+    from image_generation_mcp.styles import StyleEntry
 
 _SELECT_PROVIDER_PROMPT = """\
 You have access to an image generation MCP server with multiple providers.
@@ -215,6 +224,70 @@ generate_image(
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
 
 
+def _build_apply_style_text(entry: StyleEntry, user_request: str) -> str:
+    """Build the combined prompt text for applying a style.
+
+    Extracted as a module-level function for testability.
+
+    Args:
+        entry: The style to apply.
+        user_request: The user's image generation request.
+
+    Returns:
+        Combined text with style body, defaults, and adaptation instructions.
+    """
+    defaults = []
+    if entry.provider:
+        defaults.append(f"- Suggested provider: {entry.provider}")
+    if entry.aspect_ratio:
+        defaults.append(f"- Aspect ratio: {entry.aspect_ratio}")
+    if entry.quality:
+        defaults.append(f"- Quality: {entry.quality}")
+    if entry.tags:
+        defaults.append(f"- Tags: {', '.join(entry.tags)}")
+
+    defaults_text = "\n".join(defaults) if defaults else "- (no defaults set)"
+
+    return f"""\
+# Apply Style: {entry.name}
+
+## User Request
+
+{user_request}
+
+## Style Creative Brief
+
+{entry.body}
+
+## Style Defaults
+
+{defaults_text}
+
+## Instructions
+
+You are applying the style "{entry.name}" to the user's request above.
+
+**Important: Styles are creative briefs, not prompt fragments.**
+
+1. Read the style's creative brief above and extract the visual direction:
+   palette, composition, mood, medium, constraints.
+2. Combine that direction with the user's specific request.
+3. Compose a provider-appropriate prompt for `generate_image`:
+   - **For OpenAI:** Compose in natural language. Describe the scene
+     incorporating the style's visual direction.
+   - **For SD WebUI (SD 1.5/SDXL):** Compose as comma-separated CLIP tags.
+     Translate the style's concepts into appropriate tags. Include a
+     negative prompt based on the style's constraints.
+   - **For SD WebUI (Flux):** Compose in natural language, similar to OpenAI.
+   - Check `list_providers` for each model's `prompt_style` field.
+4. **Do NOT copy the style text verbatim into the prompt.** Interpret and
+   adapt it for the target provider's format.
+5. Use the style's frontmatter defaults (provider, aspect_ratio, quality)
+   as starting parameters, unless the user explicitly overrides them.
+6. Use `select_provider` guidance for provider choice when provider is
+   "auto" or not specified in the style."""
+
+
 def register_prompts(mcp: FastMCP) -> None:
     """Register all MCP prompts on *mcp*.
 
@@ -245,3 +318,37 @@ def register_prompts(mcp: FastMCP) -> None:
     def sd_prompt_guide() -> str:
         """Return Stable Diffusion prompt writing guide."""
         return _SD_PROMPT_GUIDE
+
+    @mcp.prompt(
+        name="apply_style",
+        description=(
+            "Apply a saved style preset to an image generation request. "
+            "Loads the style's creative brief and instructs the LLM to "
+            "interpret it per-provider — not copy it verbatim."
+        ),
+        icons=[Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")],
+    )
+    def apply_style(
+        style_name: str,
+        user_request: str,
+        service: ImageService = Depends(get_service),
+    ) -> str:
+        """Return combined prompt text for applying a style to a request.
+
+        Args:
+            style_name: Name of the style preset to apply.
+            user_request: The user's image generation request.
+
+        Returns:
+            Combined text with style body, defaults, and adaptation
+            instructions for the LLM.
+        """
+        entry = service.get_style(style_name)
+        if entry is None:
+            return (
+                f"Style '{style_name}' not found. "
+                "Use style://list to browse available styles, "
+                "or save_style to create a new one."
+            )
+
+        return _build_apply_style_text(entry, user_request)

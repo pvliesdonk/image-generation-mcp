@@ -68,6 +68,7 @@ plugins:
         Guides:
           - guides/authentication.md: Authentication modes -- bearer, OIDC, multi-auth
           - guides/prompt-writing.md: Provider-specific prompt writing tips
+          - guides/styles.md: Style library -- reusable creative briefs for consistent generation
         Deployment:
           - deployment/docker.md: Docker Compose, Traefik, volumes
           - deployment/systemd.md: Systemd service, .deb/.rpm packages, security hardening
@@ -124,6 +125,7 @@ nav:
       - Client Compatibility: guides/client-compatibility.md
       - Prompt Writing: guides/prompt-writing.md
       - Image Assets: guides/image-assets.md
+      - Style Library: guides/styles.md
   - Deployment:
       - Docker: deployment/docker.md
       - Systemd: deployment/systemd.md

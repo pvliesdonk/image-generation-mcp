@@ -12,6 +12,7 @@ import hashlib
 import io
 import json
 import logging
+import tempfile
 import time
 import uuid
 from collections import OrderedDict
@@ -40,6 +41,7 @@ from image_generation_mcp.providers.types import (
     ImageResult,
     ProgressCallback,
 )
+from image_generation_mcp.styles import StyleEntry, scan_styles
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +131,7 @@ class ImageService:
         )
         self._transform_cache_size = transform_cache_size
         self._pending: dict[str, PendingGeneration] = {}
+        self._styles: dict[str, StyleEntry] = {}
 
         # Rebuild registry from existing sidecar files
         self._load_registry()
@@ -142,6 +145,123 @@ class ImageService:
     def providers(self) -> dict[str, ImageProvider]:
         """Registered providers (read-only view)."""
         return self._providers
+
+    # --- Style library ---------------------------------------------------
+
+    def load_styles(self, styles_dir: Path) -> None:
+        """Scan a directory for style files and populate the in-memory dict.
+
+        Args:
+            styles_dir: Path to the styles directory.
+        """
+        self._styles = scan_styles(styles_dir)
+
+    def get_style(self, name: str) -> StyleEntry | None:
+        """Return a style by name, or ``None`` if not found.
+
+        Args:
+            name: Style identifier.
+        """
+        return self._styles.get(name)
+
+    def list_styles(self) -> list[StyleEntry]:
+        """Return all styles sorted by name.
+
+        Returns:
+            List of :class:`StyleEntry` instances, sorted alphabetically.
+        """
+        return sorted(self._styles.values(), key=lambda s: s.name)
+
+    def save_style(
+        self,
+        name: str,
+        body: str,
+        styles_dir: Path,
+        *,
+        tags: list[str] | None = None,
+        provider: str | None = None,
+        aspect_ratio: str | None = None,
+        quality: str | None = None,
+    ) -> StyleEntry:
+        """Write a style file to disk and update the in-memory dict.
+
+        Uses an atomic write pattern: write to a temp file then rename.
+
+        Args:
+            name: Style identifier (used as filename ``{name}.md``).
+            body: Markdown prose — the creative brief.
+            styles_dir: Directory to write the style file into.
+            tags: Optional categorization tags.
+            provider: Optional suggested provider.
+            aspect_ratio: Optional default aspect ratio.
+            quality: Optional default quality level.
+
+        Returns:
+            The newly created :class:`StyleEntry`.
+        """
+        styles_dir.mkdir(parents=True, exist_ok=True)
+        file_path = styles_dir / f"{name}.md"
+
+        # Build YAML frontmatter
+        lines = ["---"]
+        lines.append(f"name: {name}")
+        if tags:
+            tag_items = ", ".join(f'"{t}"' for t in tags)
+            lines.append(f"tags: [{tag_items}]")
+        if provider:
+            lines.append(f"provider: {provider}")
+        if aspect_ratio:
+            lines.append(f'aspect_ratio: "{aspect_ratio}"')
+        if quality:
+            lines.append(f"quality: {quality}")
+        lines.append("---")
+        lines.append("")
+        lines.append(body)
+
+        content = "\n".join(lines) + "\n"
+
+        # Atomic write: temp file in same dir, then rename
+        fd, tmp_path = tempfile.mkstemp(
+            dir=styles_dir, suffix=".tmp", prefix=f".{name}_"
+        )
+        try:
+            with open(fd, "w", encoding="utf-8") as f:  # noqa: PTH123 — fd not a path
+                f.write(content)
+            Path(tmp_path).replace(file_path)
+        except BaseException:
+            Path(tmp_path).unlink(missing_ok=True)
+            raise
+
+        entry = StyleEntry(
+            name=name,
+            tags=tuple(tags) if tags else (),
+            provider=provider,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            body=body.strip(),
+            file_path=file_path.resolve(),
+        )
+        self._styles[name] = entry
+        logger.info("Saved style '%s' to %s", name, file_path)
+        return entry
+
+    def delete_style(self, name: str) -> None:
+        """Delete a style file from disk and remove from in-memory dict.
+
+        Args:
+            name: Style identifier.
+
+        Raises:
+            KeyError: If the style is not found.
+        """
+        entry = self._styles.get(name)
+        if entry is None:
+            msg = f"Style not found: {name!r}"
+            raise KeyError(msg)
+
+        entry.file_path.unlink(missing_ok=True)
+        del self._styles[name]
+        logger.info("Deleted style '%s'", name)
 
     async def aclose(self) -> None:
         """Close all providers that support async cleanup."""
