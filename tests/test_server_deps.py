@@ -231,3 +231,25 @@ class TestMakeServiceLifespanSdWebuiRegistration:
             async with lifespan_fn(server) as ctx:
                 service = ctx["service"]
                 assert "sd_webui" in service.providers
+
+
+class TestMakeServiceLifespanGeminiRegistration:
+    """Tests that Gemini provider registration path is exercised."""
+
+    async def test_gemini_provider_registered(self, tmp_path: Path) -> None:
+        """When google_api_key is set, 'gemini' appears in service.providers."""
+        from fastmcp import FastMCP
+
+        config = ServerConfig(scratch_dir=tmp_path, google_api_key="AIza-fake-key")
+        server = FastMCP("test-gemini")
+        lifespan_fn = make_service_lifespan(config)
+
+        mock_provider = _make_mock_provider()
+
+        with patch(
+            "image_generation_mcp.providers.gemini.GeminiImageProvider",
+            return_value=mock_provider,
+        ):
+            async with lifespan_fn(server) as ctx:
+                service = ctx["service"]
+                assert "gemini" in service.providers

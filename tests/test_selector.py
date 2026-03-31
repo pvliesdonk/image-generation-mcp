@@ -91,6 +91,33 @@ class TestSelectProvider:
         # "signage" should match text-rendering rule
         assert select_provider("neon signage on brick wall", available) == "openai"
 
+    # -- Gemini in selection chains ----------------------------------------
+
+    def test_default_fallback_prefers_gemini_when_available(self) -> None:
+        """No keyword match → default chain starts with gemini."""
+        available = {"gemini", "openai", "sd_webui", "placeholder"}
+        assert select_provider("a purple dinosaur", available) == "gemini"
+
+    def test_photorealism_falls_back_to_gemini_before_openai(self) -> None:
+        """When sd_webui unavailable, photorealism falls back to gemini."""
+        available = {"gemini", "openai", "placeholder"}
+        assert select_provider("realistic portrait photo", available) == "gemini"
+
+    def test_text_rendering_falls_back_to_gemini_when_no_openai(self) -> None:
+        """When openai unavailable, text rendering falls back to gemini."""
+        available = {"gemini", "sd_webui", "placeholder"}
+        assert select_provider("logo with typography", available) == "gemini"
+
+    def test_artistic_falls_back_to_gemini_before_openai(self) -> None:
+        """When sd_webui unavailable, art falls back to gemini."""
+        available = {"gemini", "openai", "placeholder"}
+        assert select_provider("watercolor painting of a sunset", available) == "gemini"
+
+    def test_anime_falls_back_to_gemini_before_openai(self) -> None:
+        """When sd_webui unavailable, anime falls back to gemini."""
+        available = {"gemini", "openai", "placeholder"}
+        assert select_provider("anime girl with sword", available) == "gemini"
+
     # -- Word boundary matching --------------------------------------------
 
     def test_word_boundary_no_false_positive(self) -> None:
