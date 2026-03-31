@@ -56,6 +56,7 @@ plugins:
           - getting-started/claude-code.md: Claude Code MCP configuration
         Providers:
           - providers/index.md: Provider comparison and selection guide
+          - providers/gemini.md: Gemini provider setup and capabilities
           - providers/openai.md: OpenAI provider setup and capabilities
           - providers/sd-webui.md: SD WebUI (Stable Diffusion WebUI) setup
           - providers/placeholder.md: Zero-cost placeholder for testing
@@ -112,6 +113,7 @@ nav:
       - Claude Code: getting-started/claude-code.md
   - Providers:
       - Overview: providers/index.md
+      - Gemini: providers/gemini.md
       - OpenAI: providers/openai.md
       - SD WebUI (Stable Diffusion): providers/sd-webui.md
       - Placeholder: providers/placeholder.md

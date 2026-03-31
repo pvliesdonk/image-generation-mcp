@@ -42,6 +42,41 @@ Edit your Claude Desktop MCP configuration file:
 }
 ```
 
+### With Gemini
+
+```json
+{
+  "mcpServers": {
+    "image-gen": {
+      "command": "image-generation-mcp",
+      "args": ["serve"],
+      "env": {
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_GOOGLE_API_KEY": "AIza..."
+      }
+    }
+  }
+}
+```
+
+### With Gemini + OpenAI
+
+```json
+{
+  "mcpServers": {
+    "image-gen": {
+      "command": "image-generation-mcp",
+      "args": ["serve"],
+      "env": {
+        "IMAGE_GENERATION_MCP_READ_ONLY": "false",
+        "IMAGE_GENERATION_MCP_GOOGLE_API_KEY": "AIza...",
+        "IMAGE_GENERATION_MCP_OPENAI_API_KEY": "sk-..."
+      }
+    }
+  }
+}
+```
+
 ### With OpenAI + SD WebUI
 
 ```json
@@ -106,6 +141,7 @@ After restarting Claude Desktop:
 ### Generation fails
 
 - Check the provider is available: ask Claude to run `list_providers`
+- For Gemini: verify your API key is valid and has Gemini API access enabled in [Google AI Studio](https://aistudio.google.com/apikey)
 - For OpenAI: verify your API key is valid and has image generation access
 - For SD WebUI: verify the WebUI is running and accessible at the configured host
 
