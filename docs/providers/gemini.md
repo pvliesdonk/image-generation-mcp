@@ -16,7 +16,9 @@ The provider registers automatically when this variable is set. Get a key at [Go
 
 | Model | Notes |
 |-------|-------|
-| `gemini-2.5-flash-image` | Default — fast, high-volume, stable |
+| `gemini-2.5-flash-image` | Default — stable GA release |
+| `gemini-3.1-flash-image-preview` | Preview — successor to 2.5 flash; faster |
+| `gemini-3-pro-image-preview` | Preview — highest quality; best for complex scenes |
 
 Use `list_providers` to see which models are available on your API key.
 

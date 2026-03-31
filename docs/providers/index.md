@@ -7,7 +7,7 @@ image-generation-mcp supports multiple image generation providers. Each provider
 | | Gemini | OpenAI | SD WebUI (Stable Diffusion) | Placeholder |
 |---|--------|--------|----------------------------|-------------|
 | **Best for** | General-purpose, free tier | Text, logos, typography | Photorealism, portraits, anime, artistic styles | Testing, drafts, CI |
-| **Models** | gemini-2.5-flash-image | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | -- |
+| **Models** | gemini-2.5-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image-preview | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | -- |
 | **Quality** | High | High | Varies by model and steps | N/A (solid color) |
 | **Speed** | 5-15s | 5-15s | 10-60s (depends on GPU) | Instant |
 | **Cost** | Free tier available | Per-image API pricing | Self-hosted (GPU cost) | Free |

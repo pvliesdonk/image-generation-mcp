@@ -269,3 +269,41 @@ class TestGeminiProvider:
 
         with pytest.raises(ImageProviderConnectionError):
             await provider.generate("test")
+
+    async def test_non_bytes_inline_data_skipped(self) -> None:
+        """If inline_data.data is not bytes, the part is skipped → no image error."""
+        provider = GeminiImageProvider(api_key="AIza-test")
+
+        mock_inline = MagicMock()
+        mock_inline.data = None  # not bytes
+        mock_inline.mime_type = "image/png"
+
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+
+        provider._client = MagicMock()
+        provider._client.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        with pytest.raises(ImageProviderError, match="No image in response"):
+            await provider.generate("test")
+
+    async def test_connection_error_by_type_name(self) -> None:
+        """Errors with 'connection' or 'timeout' in the type name are connection errors."""
+
+        class FakeTimeoutError(Exception):
+            pass
+
+        provider = GeminiImageProvider(api_key="AIza-test")
+
+        provider._client = MagicMock()
+        provider._client.aio.models.generate_content = AsyncMock(
+            side_effect=FakeTimeoutError("deadline exceeded")
+        )
+
+        with pytest.raises(ImageProviderConnectionError):
+            await provider.generate("test")

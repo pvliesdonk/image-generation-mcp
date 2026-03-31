@@ -44,6 +44,8 @@ _ASPECT_RATIOS: dict[str, str] = {
 # image-generation models, so we maintain the known set here.
 _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
     ("gemini-2.5-flash-image", "Gemini 2.5 Flash Image"),
+    ("gemini-3.1-flash-image-preview", "Gemini 3.1 Flash Image Preview"),
+    ("gemini-3-pro-image-preview", "Gemini 3 Pro Image Preview"),
 ]
 
 _SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = ("1:1", "16:9", "9:16", "3:2", "2:3")
@@ -84,9 +86,9 @@ class GeminiImageProvider:
         Returns:
             Initialised ``genai.Client``.
         """
-        from google import genai
+        from google import genai  # pragma: no cover
 
-        return genai.Client(api_key=api_key)
+        return genai.Client(api_key=api_key)  # pragma: no cover
 
     async def generate(
         self,

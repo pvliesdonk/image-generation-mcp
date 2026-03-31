@@ -2,7 +2,7 @@
 
 Analyzes prompts to select the best image generation provider,
 inspired by the claude-skills provider selector but simplified
-for the current provider set (OpenAI, SD WebUI, Placeholder).
+for the current provider set (Gemini, OpenAI, SD WebUI, Placeholder).
 
 Capabilities (when available) act as a secondary filter — providers
 without a required capability are deprioritized but not excluded.

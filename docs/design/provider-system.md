@@ -160,7 +160,7 @@ not excluded. Keywords remain the primary selection mechanism.
 - **Models:** `gemini-2.5-flash-image` (default), `gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`
 - **API:** Gemini native `generateContent` with `responseModalities=["IMAGE"]` via `google-genai` SDK
 - **Negative prompt:** Appended as `"\n\nAvoid: {negative_prompt}"` (no native support)
-- **Quality mapping:** `"standard"` → `image_size="1K"`, `"hd"` → `image_size="2K"`
+- **Quality:** Accepted and recorded in `provider_metadata`; `generateContent` has no quality/resolution parameter (unlike Imagen), so the value is not sent to the API
 - **Aspect ratios:** All 5 project ratios passed through directly (all natively supported)
 - **Background:** Not supported — ignored; debug log emitted
 - **Discovery:** Returns static list of known image models; `models.list()` does not reliably filter image-generation models
