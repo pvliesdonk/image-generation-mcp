@@ -73,12 +73,15 @@ _PROMPT_GUIDE = """\
 **Aspect ratio:** Choose based on content — `16:9` for landscapes and banners,
 `9:16` for portraits and mobile, `3:2` for photos, `1:1` for icons and avatars.
 
-**Quality levels:** Use `standard` for drafts and iteration. Use `hd` for final
-output (only affects OpenAI — SD WebUI and placeholder ignore this parameter).
+**Quality levels:** Use `standard` for fast drafts and iteration. Use `hd` for
+final output — on **Gemini**, enables model reasoning (thinking) and 2K
+resolution for significantly better composition; on **OpenAI**, selects the
+`high` quality tier. SD WebUI and placeholder ignore this parameter.
 
 **Negative prompts:** Use them when you want to explicitly exclude unwanted
-elements. Most effective on SD WebUI (native CLIP support). On OpenAI, they are
-appended as an "Avoid:" clause with weaker effect. Placeholder ignores them.
+elements. Most effective on SD WebUI (native CLIP support). On OpenAI and
+Gemini, they are appended as an "Avoid:" clause with weaker effect. Placeholder
+ignores them.
 
 **Background:** Set `background="transparent"` when generating assets for
 compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
@@ -104,8 +107,27 @@ Also strong at general-purpose generation and following complex instructions.
 `'a coffee shop sign that says "OPEN"'`. Specify font style if needed:
 "bold sans-serif", "handwritten", "neon sign lettering".
 
-**Quality levels:** `standard` and `hd` are both supported. `gpt-image-1`
-maps both to its highest quality tier.
+**Quality levels:** `standard` maps to OpenAI's `auto` quality (lets the model
+choose). `hd` maps to `high` for maximum detail.
+
+## Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview)
+
+Natural language descriptions work best — similar to OpenAI prompting style.
+
+**Strengths:** Complex scenes, infographics, multi-element compositions, and
+detailed layouts. The `hd` quality level activates model reasoning (thinking)
+which plans composition before rendering — especially effective for complex
+prompts with multiple elements.
+
+**Quality levels:** `standard` generates at 1K resolution with minimal thinking
+(fast, free tier). `hd` enables thinking (High), 2K resolution, and text+image
+response modalities for significantly better output quality and prompt adherence.
+Note: `hd` uses thinking tokens which are billed.
+
+**Aspect ratios:** Gemini supports 14 aspect ratios including ultra-wide options
+(`4:1`, `8:1`, `21:9`) useful for banners and panoramas.
+
+**Negative prompts:** Appended as an "Avoid:" clause (same as OpenAI).
 
 ## SD WebUI / Stable Diffusion
 

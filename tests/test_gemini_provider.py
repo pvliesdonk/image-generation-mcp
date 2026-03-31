@@ -8,6 +8,7 @@ import pytest
 
 from image_generation_mcp.providers.gemini import (
     _ASPECT_RATIOS,
+    _THINKING_MODELS,
     GeminiImageProvider,
 )
 from image_generation_mcp.providers.types import (
@@ -37,7 +38,22 @@ class TestGeminiProvider:
         assert provider._model == "gemini-3-pro-image-preview"
 
     def test_aspect_ratio_table_complete(self) -> None:
-        for ratio in ("1:1", "16:9", "9:16", "3:2", "2:3"):
+        for ratio in (
+            "1:1",
+            "16:9",
+            "9:16",
+            "3:2",
+            "2:3",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "4:1",
+            "1:4",
+            "8:1",
+            "1:8",
+            "21:9",
+        ):
             assert ratio in _ASPECT_RATIOS
 
     async def test_generate_success(self) -> None:
@@ -67,7 +83,10 @@ class TestGeminiProvider:
         assert result.provider_metadata["quality"] == "standard"
 
     async def test_generate_hd_quality(self) -> None:
-        provider = GeminiImageProvider(api_key="AIza-test")
+        """hd quality on a thinking model enables thinking, 2K, and TEXT+IMAGE."""
+        provider = GeminiImageProvider(
+            api_key="AIza-test", model="gemini-3.1-flash-image-preview"
+        )
         fake_image_bytes = b"fake-png-data"
 
         mock_inline = MagicMock()
@@ -88,6 +107,101 @@ class TestGeminiProvider:
         result = await provider.generate("a cat", quality="hd")
 
         assert result.provider_metadata["quality"] == "hd"
+
+        # Verify the config passed to generate_content
+        from google.genai import types
+
+        # response_modalities should be TEXT+IMAGE for hd
+        types.GenerateContentConfig.assert_called_once()
+        config_kwargs = types.GenerateContentConfig.call_args.kwargs
+        assert config_kwargs["response_modalities"] == ["TEXT", "IMAGE"]
+
+        # thinking_config should be set
+        assert "thinking_config" in config_kwargs
+        types.ThinkingConfig.assert_called_once_with(thinking_level="High")
+
+        # image_size should be 2K
+        types.ImageConfig.assert_called_once()
+        image_config_kwargs = types.ImageConfig.call_args.kwargs
+        assert image_config_kwargs["image_size"] == "2K"
+
+    async def test_generate_standard_quality_config(self) -> None:
+        """standard quality uses IMAGE-only, 1K, no thinking."""
+        provider = GeminiImageProvider(
+            api_key="AIza-test", model="gemini-3.1-flash-image-preview"
+        )
+        fake_image_bytes = b"fake-png-data"
+
+        mock_inline = MagicMock()
+        mock_inline.data = fake_image_bytes
+        mock_inline.mime_type = "image/png"
+
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+
+        provider._client = MagicMock()
+        provider._client.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        await provider.generate("a cat", quality="standard")
+
+        from google.genai import types
+
+        config_kwargs = types.GenerateContentConfig.call_args.kwargs
+        assert config_kwargs["response_modalities"] == ["IMAGE"]
+
+        # No thinking_config for standard
+        assert "thinking_config" not in config_kwargs
+
+        # image_size should be 1K
+        image_config_kwargs = types.ImageConfig.call_args.kwargs
+        assert image_config_kwargs["image_size"] == "1K"
+
+    async def test_hd_no_thinking_for_flash_image(self) -> None:
+        """gemini-2.5-flash-image does not support thinking — hd skips it."""
+        provider = GeminiImageProvider(
+            api_key="AIza-test", model="gemini-2.5-flash-image"
+        )
+        fake_image_bytes = b"fake-png-data"
+
+        mock_inline = MagicMock()
+        mock_inline.data = fake_image_bytes
+        mock_inline.mime_type = "image/png"
+
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+
+        provider._client = MagicMock()
+        provider._client.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        result = await provider.generate("a cat", quality="hd")
+        assert result.provider_metadata["quality"] == "hd"
+
+        from google.genai import types
+
+        config_kwargs = types.GenerateContentConfig.call_args.kwargs
+        # Still gets TEXT+IMAGE and 2K for hd
+        assert config_kwargs["response_modalities"] == ["TEXT", "IMAGE"]
+        # But no thinking_config since model doesn't support it
+        assert "thinking_config" not in config_kwargs
+
+        image_config_kwargs = types.ImageConfig.call_args.kwargs
+        assert image_config_kwargs["image_size"] == "2K"
+
+    async def test_thinking_models_set(self) -> None:
+        """Verify the thinking models set is correct."""
+        assert "gemini-3.1-flash-image-preview" in _THINKING_MODELS
+        assert "gemini-3-pro-image-preview" in _THINKING_MODELS
+        assert "gemini-2.5-flash-image" not in _THINKING_MODELS
 
     async def test_generate_uses_model_override(self) -> None:
         provider = GeminiImageProvider(api_key="AIza-test")

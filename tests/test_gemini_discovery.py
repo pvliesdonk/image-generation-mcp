@@ -40,8 +40,24 @@ class TestDiscoverCapabilities:
     ) -> None:
         caps = await gemini_provider.discover_capabilities()
 
+        expected_ratios = (
+            "1:1",
+            "16:9",
+            "9:16",
+            "3:2",
+            "2:3",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "4:1",
+            "1:4",
+            "8:1",
+            "1:8",
+            "21:9",
+        )
         for model in caps.models:
-            for ratio in ("1:1", "16:9", "9:16", "3:2", "2:3"):
+            for ratio in expected_ratios:
                 assert ratio in model.supported_aspect_ratios
 
     async def test_models_have_no_background_support(

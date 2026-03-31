@@ -50,7 +50,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | str | `openai` | Comma-separated list of provider names that cost money. When the MCP client supports [elicitation](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/elicitation), `generate_image` asks for confirmation before using these providers. Set to empty string to disable confirmation. |
+| `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | str | `openai` | Comma-separated list of provider names that cost money. When the MCP client supports [elicitation](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/elicitation), `generate_image` asks for confirmation before using these providers. Set to empty string to disable confirmation. **Note:** Gemini `quality="hd"` uses thinking tokens which are billed — consider adding `gemini` if you use `hd` quality frequently. |
 
 ## Performance
 
