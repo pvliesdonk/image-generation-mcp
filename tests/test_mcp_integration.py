@@ -38,9 +38,11 @@ async def _generate_and_wait(
     provider: str = "placeholder",
     **kwargs: str,
 ) -> str:
-    """Generate an image via fire-and-forget and wait for completion.
+    """Generate an image and return the image_id.
 
-    Returns the image_id once the image is ready.
+    With the inline-wait behaviour, generate_image returns the completed
+    image directly for fast providers like placeholder.  Falls back to
+    polling via show_image only if the tool returned ``status="generating"``.
 
     Args:
         client: An active FastMCP Client.
@@ -59,9 +61,12 @@ async def _generate_and_wait(
     text_items = [c for c in result.content if isinstance(c, TextContent)]
     metadata = json.loads(text_items[0].text)
     image_id = metadata["image_id"]
-    assert metadata["status"] == "generating"
 
-    # Poll until complete (placeholder is near-instant)
+    # If inline wait succeeded, image is already completed
+    if metadata["status"] == "completed":
+        return image_id
+
+    # Fallback: poll until complete (rare — only for slow providers)
     for _ in range(50):
         await asyncio.sleep(0.05)
         show = await client.call_tool("show_image", {"uri": f"image://{image_id}/view"})
@@ -128,7 +133,7 @@ class TestGenerateImageThroughClient:
         assert "resource_template" in metadata
         assert metadata["original_uri"].startswith("image://")
         assert "{?format" in metadata["resource_template"]
-        assert metadata["status"] == "generating"
+        assert metadata["status"] == "completed"
 
     async def test_returns_resource_link(self, rw_server) -> None:
         """Result contains a ResourceLink with an image:// URI."""
@@ -142,19 +147,19 @@ class TestGenerateImageThroughClient:
         link_items = [c for c in result.content if isinstance(c, ResourceLink)]
         assert len(link_items) == 1
         assert str(link_items[0].uri).startswith("image://")
-        assert link_items[0].name == "Generated image (generating)"
+        assert link_items[0].name == "Generated image"
 
-    async def test_no_image_content_in_result(self, rw_server) -> None:
-        """generate_image must not return ImageContent (thumbnail is in show_image)."""
+    async def test_returns_image_content_inline(self, rw_server) -> None:
+        """generate_image returns ImageContent inline for fast providers."""
         async with Client(rw_server) as client:
             result = await client.call_tool(
                 "generate_image",
-                {"prompt": "no image content test", "provider": "placeholder"},
+                {"prompt": "inline image test", "provider": "placeholder"},
             )
 
         assert not result.is_error
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
-        assert image_items == [], "generate_image must not return ImageContent"
+        assert len(image_items) == 1, "generate_image should return ImageContent inline"
 
     async def test_resource_link_uri_matches_image_id(self, rw_server) -> None:
         """ResourceLink URI matches the image_id from the TextContent metadata."""

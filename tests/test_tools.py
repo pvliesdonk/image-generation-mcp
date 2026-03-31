@@ -81,7 +81,7 @@ def large_registered_image(service: ImageService) -> tuple[ImageService, str]:
 
 
 class TestGenerateImageReturnShape:
-    """generate_image must return TextContent + ResourceLink, no ImageContent."""
+    """generate_image waits for completion and returns image inline."""
 
     async def _call_generate(self, service: ImageService) -> ToolResult:
         mcp = FastMCP("test")
@@ -94,6 +94,7 @@ class TestGenerateImageReturnShape:
         ctx.info = AsyncMock()
         cfg = MagicMock()
         cfg.paid_providers = frozenset()
+        cfg.base_url = None
 
         return await tool.fn(
             prompt="test image",
@@ -110,21 +111,21 @@ class TestGenerateImageReturnShape:
         metadata = json.loads(text_items[0].text)
         assert "image_id" in metadata
         assert "original_uri" in metadata
-        assert metadata["status"] == "generating"
-        assert "dimensions" not in metadata
-        assert "original_size_bytes" not in metadata
+        assert metadata["status"] == "completed"
+        assert "dimensions" in metadata
+        assert "original_size_bytes" in metadata
 
     async def test_returns_resource_link(self, service: ImageService) -> None:
         result = await self._call_generate(service)
         link_items = [c for c in result.content if isinstance(c, ResourceLink)]
         assert len(link_items) == 1
         assert str(link_items[0].uri).startswith("image://")
-        assert link_items[0].name == "Generated image (generating)"
+        assert link_items[0].name == "Generated image"
 
-    async def test_no_image_content_in_result(self, service: ImageService) -> None:
+    async def test_returns_image_content(self, service: ImageService) -> None:
         result = await self._call_generate(service)
         image_items = [c for c in result.content if isinstance(c, ImageContent)]
-        assert image_items == [], "generate_image must not return ImageContent"
+        assert len(image_items) == 1, "generate_image should return ImageContent inline"
 
     async def test_no_thumbnail_size_bytes_in_metadata(
         self, service: ImageService
@@ -526,6 +527,7 @@ class TestElicitationPaidProviders:
 
         cfg = MagicMock()
         cfg.paid_providers = paid_providers
+        cfg.base_url = None
 
         return await tool.fn(
             prompt="test image",
@@ -817,15 +819,15 @@ class TestGenerateImageParameterValidation:
 
 
 class TestGenerateImageErrorHandling:
-    """generate_image errors surface through show_image in fire-and-forget mode."""
+    """generate_image errors are returned directly (inline wait catches them)."""
 
     async def _call_generate_failing(
         self, service: ImageService, side_effect: Exception
-    ) -> str:
-        """Call generate_image with a provider that raises, wait for failure.
+    ) -> ToolResult:
+        """Call generate_image with a provider that raises.
 
-        Permanently replaces service.generate with a raising coroutine so the
-        patch stays active when the background task runs.  Returns image_id.
+        Permanently replaces service.generate with a raising coroutine.
+        Returns the ToolResult directly (errors surface inline).
         """
 
         async def _always_raise(*_args: object, **_kwargs: object) -> None:
@@ -844,8 +846,9 @@ class TestGenerateImageErrorHandling:
         ctx.session.check_client_capability.return_value = False
         cfg = MagicMock()
         cfg.paid_providers = frozenset()
+        cfg.base_url = None
 
-        result = await tool.fn(
+        return await tool.fn(
             prompt="test image",
             provider="placeholder",
             service=service,
@@ -853,67 +856,38 @@ class TestGenerateImageErrorHandling:
             ctx=ctx,
         )
 
-        text_items = [c for c in result.content if isinstance(c, TextContent)]
-        return json.loads(text_items[0].text)["image_id"]
-
-    async def test_content_policy_error_surfaces_in_show_image(
+    async def test_content_policy_error_surfaces_directly(
         self, service: ImageService
     ) -> None:
-        """ImageContentPolicyError in background task surfaces as 'failed' in show_image."""
+        """ImageContentPolicyError surfaces as 'failed' directly from generate_image."""
         from image_generation_mcp.providers.types import ImageContentPolicyError
 
-        image_id = await self._call_generate_failing(
+        result = await self._call_generate_failing(
             service, ImageContentPolicyError("placeholder", "blocked")
         )
 
-        # Let the background task run and fail
-        await asyncio.sleep(0.1)
-
-        mcp = FastMCP("test")
-        register_tools(mcp)
-        show_tool = await mcp.get_tool("show_image")
-        assert show_tool is not None
-        show_cfg = MagicMock()
-        show_cfg.base_url = None
-        show_result = await show_tool.fn(
-            uri=f"image://{image_id}/view",
-            service=service,
-            config=show_cfg,
-        )
-        show_text = [c for c in show_result.content if isinstance(c, TextContent)]
-        meta = json.loads(show_text[0].text)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
         assert meta["status"] == "failed"
         assert "error" in meta
+        assert meta["status"] == "failed"  # error surfaced inline
 
-    async def test_connection_error_surfaces_in_show_image(
+    async def test_connection_error_surfaces_directly(
         self, service: ImageService
     ) -> None:
-        """ImageProviderConnectionError in background task surfaces as 'failed' in show_image."""
+        """ImageProviderConnectionError surfaces as 'failed' directly from generate_image."""
         from image_generation_mcp.providers.types import ImageProviderConnectionError
 
-        image_id = await self._call_generate_failing(
+        result = await self._call_generate_failing(
             service,
             ImageProviderConnectionError("placeholder", "connection refused"),
         )
 
-        # Let the background task run and fail
-        await asyncio.sleep(0.1)
-
-        mcp = FastMCP("test")
-        register_tools(mcp)
-        show_tool = await mcp.get_tool("show_image")
-        assert show_tool is not None
-        show_cfg = MagicMock()
-        show_cfg.base_url = None
-        show_result = await show_tool.fn(
-            uri=f"image://{image_id}/view",
-            service=service,
-            config=show_cfg,
-        )
-        show_text = [c for c in show_result.content if isinstance(c, TextContent)]
-        meta = json.loads(show_text[0].text)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
         assert meta["status"] == "failed"
         assert "error" in meta
+        assert meta["status"] == "failed"  # error surfaced inline
 
 
 # ---------------------------------------------------------------------------
@@ -942,6 +916,7 @@ class TestElicitationCapabilityCheckFailure:
         cfg = MagicMock()
         # placeholder is in paid_providers to trigger elicitation path
         cfg.paid_providers = frozenset({"placeholder"})
+        cfg.base_url = None
 
         result = await tool.fn(
             prompt="test image",
