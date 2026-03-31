@@ -65,7 +65,7 @@ tags: [test]
 Body without a name field.
 """
 
-_INVALID_YAML = """\
+_UNCLOSED_TAG_LIST = """\
 ---
 name: broken
 tags: [unclosed
@@ -139,6 +139,23 @@ class TestParseStyle:
         entry = parse_style(path)
         assert entry is not None
         assert entry.tags == ()
+
+    def test_unclosed_tag_list_parsed_as_scalar(self, styles_dir: Path) -> None:
+        # An unclosed bracket falls through to the bare-scalar path and
+        # is returned as a plain string, which then results in a 1-tuple tag.
+        path = _write_style(styles_dir, "broken.md", _UNCLOSED_TAG_LIST)
+        entry = parse_style(path)
+        # The file has a valid name, so parsing succeeds — tags just gets an
+        # unexpected value (treated as a bare string), not None.
+        assert entry is not None
+        assert entry.name == "broken"
+
+    def test_tags_with_comma_in_quoted_item(self, styles_dir: Path) -> None:
+        content = '---\nname: test\ntags: [brand, "web, modern"]\n---\n\nBody.\n'
+        path = _write_style(styles_dir, "test.md", content)
+        entry = parse_style(path)
+        assert entry is not None
+        assert entry.tags == ("brand", "web, modern")
 
 
 # ---------------------------------------------------------------------------

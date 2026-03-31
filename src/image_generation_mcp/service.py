@@ -12,6 +12,7 @@ import hashlib
 import io
 import json
 import logging
+import tempfile
 import time
 import uuid
 from collections import OrderedDict
@@ -198,8 +199,6 @@ class ImageService:
         Returns:
             The newly created :class:`StyleEntry`.
         """
-        import tempfile
-
         styles_dir.mkdir(parents=True, exist_ok=True)
         file_path = styles_dir / f"{name}.md"
 
@@ -207,7 +206,7 @@ class ImageService:
         lines = ["---"]
         lines.append(f"name: {name}")
         if tags:
-            tag_items = ", ".join(tags)
+            tag_items = ", ".join(f'"{t}"' for t in tags)
             lines.append(f"tags: [{tag_items}]")
         if provider:
             lines.append(f"provider: {provider}")

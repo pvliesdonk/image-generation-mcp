@@ -148,8 +148,8 @@ work across providers with incompatible prompt formats.
 
 ### Negative
 
-- YAML frontmatter parsing adds a dependency (Python stdlib `yaml` or
-  equivalent via `pyyaml`-free approach using regex/manual parsing)
+- YAML frontmatter parsing requires either `pyyaml` (third-party dependency)
+  or a custom regex/manual parser to avoid adding a new dependency
 - Style quality depends on LLM interpretation quality
 - No schema enforcement on body content (by design — creative briefs are
   free-form)

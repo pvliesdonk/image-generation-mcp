@@ -1180,8 +1180,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
             await asyncio.to_thread(service.delete_style, name)
         except KeyError:
             msg = (
-                f"Style not found: '{name}'. "
-                "Use style://list to see available styles."
+                f"Style not found: '{name}'. Use style://list to see available styles."
             )
             raise ValueError(msg) from None
 

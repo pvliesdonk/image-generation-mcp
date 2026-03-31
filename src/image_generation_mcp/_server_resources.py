@@ -1987,9 +1987,7 @@ def register_resources(mcp: FastMCP) -> None:
             "and default parameters. Use to browse styles before "
             "applying one via the apply_style prompt."
         ),
-        icons=[
-            Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")
-        ],
+        icons=[Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")],
     )
     async def style_list(
         service: ImageService = Depends(get_service),
@@ -2002,13 +2000,9 @@ def register_resources(mcp: FastMCP) -> None:
         styles = service.list_styles()
         result = []
         for s in styles:
-            # Use first non-empty line of body as description
-            desc = ""
-            for line in s.body.splitlines():
-                line = line.strip()
-                if line:
-                    desc = line
-                    break
+            desc = next(
+                (line.strip() for line in s.body.splitlines() if line.strip()), ""
+            )
             result.append(
                 {
                     "name": s.name,
@@ -2029,9 +2023,7 @@ def register_resources(mcp: FastMCP) -> None:
             "complete markdown file including frontmatter defaults "
             "and creative brief body."
         ),
-        icons=[
-            Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")
-        ],
+        icons=[Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")],
     )
     async def style_detail(
         name: str,
@@ -2052,8 +2044,7 @@ def register_resources(mcp: FastMCP) -> None:
         if entry is None:
             raise ImageProviderError(
                 "server",
-                f"Style not found: '{name}'. "
-                "Use style://list to see available styles.",
+                f"Style not found: '{name}'. Use style://list to see available styles.",
             )
         try:
             return entry.file_path.read_text(encoding="utf-8")

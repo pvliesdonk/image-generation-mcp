@@ -75,13 +75,28 @@ def _parse_yaml_value(raw: str) -> Any:
         if not inner.strip():
             return []
         items = []
-        for item in inner.split(","):
-            item = item.strip()
-            # Strip quotes from list items
-            if len(item) >= 2 and item[0] == item[-1] and item[0] in ('"', "'"):
-                item = item[1:-1]
-            if item:
-                items.append(item)
+        # Walk character by character to handle commas inside quoted strings
+        current: list[str] = []
+        in_quote: str | None = None
+        for ch in inner:
+            if in_quote:
+                if ch == in_quote:
+                    in_quote = None
+                else:
+                    current.append(ch)
+            elif ch in ('"', "'"):
+                in_quote = ch
+            elif ch == ",":
+                token = "".join(current).strip()
+                if token:
+                    items.append(token)
+                current = []
+            else:
+                current.append(ch)
+        # Final token
+        token = "".join(current).strip()
+        if token:
+            items.append(token)
         return items
 
     # Quoted string
@@ -159,8 +174,8 @@ def parse_style(path: Path) -> StyleEntry | None:
         tags = ()
 
     provider = fm.get("provider")
-    if isinstance(provider, str) and provider in ("auto", "null", "~"):
-        provider = None if provider in ("null", "~") else provider
+    if not isinstance(provider, str):
+        provider = None
 
     aspect_ratio = fm.get("aspect_ratio")
     if aspect_ratio is not None:
@@ -200,6 +215,13 @@ def scan_styles(directory: Path) -> dict[str, StyleEntry]:
     for path in sorted(directory.glob("*.md")):
         entry = parse_style(path)
         if entry is not None:
+            if entry.name in styles:
+                logger.warning(
+                    "Style name collision: '%s' in %s overrides %s",
+                    entry.name,
+                    path,
+                    styles[entry.name].file_path,
+                )
             styles[entry.name] = entry
 
     logger.info("Scanned %d style(s) from %s", len(styles), directory)
