@@ -856,10 +856,10 @@ class TestGenerateImageErrorHandling:
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         return json.loads(text_items[0].text)["image_id"]
 
-    async def test_content_policy_error_surfaces_in_show_image(
+    async def test_content_policy_error_redirects_in_show_image(
         self, service: ImageService
     ) -> None:
-        """ImageContentPolicyError in background task surfaces as 'failed' in show_image."""
+        """ImageContentPolicyError: show_image redirects to check_generation_status."""
         from image_generation_mcp.providers.types import ImageContentPolicyError
 
         image_id = await self._call_generate_failing(
@@ -883,12 +883,12 @@ class TestGenerateImageErrorHandling:
         show_text = [c for c in show_result.content if isinstance(c, TextContent)]
         meta = json.loads(show_text[0].text)
         assert meta["status"] == "failed"
-        assert "error" in meta
+        assert "check_generation_status" in meta["error"]
 
-    async def test_connection_error_surfaces_in_show_image(
+    async def test_connection_error_redirects_in_show_image(
         self, service: ImageService
     ) -> None:
-        """ImageProviderConnectionError in background task surfaces as 'failed' in show_image."""
+        """ImageProviderConnectionError: show_image redirects to check_generation_status."""
         from image_generation_mcp.providers.types import ImageProviderConnectionError
 
         image_id = await self._call_generate_failing(
@@ -913,7 +913,7 @@ class TestGenerateImageErrorHandling:
         show_text = [c for c in show_result.content if isinstance(c, TextContent)]
         meta = json.loads(show_text[0].text)
         assert meta["status"] == "failed"
-        assert "error" in meta
+        assert "check_generation_status" in meta["error"]
 
 
 # ---------------------------------------------------------------------------

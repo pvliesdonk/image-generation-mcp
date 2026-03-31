@@ -55,6 +55,7 @@ from .providers.types import (
     SUPPORTED_QUALITY_LEVELS,
     ImageContentPolicyError,
     ImageProviderConnectionError,
+    ImageProviderError,
     ImageResult,
 )
 from .service import ImageRecord, ImageService, PendingGeneration
@@ -370,7 +371,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             image_id: The ``image_id`` returned by ``generate_image``.
 
         Returns:
-            JSON with ``status`` and, for failed generations, ``error``.
+            JSON with ``status``, ``image_id``, and optional
+            ``progress``, ``progress_message``, ``elapsed_seconds``,
+            or ``error``.
         """
         pending = service.get_pending(image_id)
 
@@ -379,29 +382,36 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             try:
                 await asyncio.to_thread(service.get_image, image_id)
                 return json.dumps({"status": "completed", "image_id": image_id})
-            except Exception:
+            except ImageProviderError:
                 return json.dumps(
-                    {"status": "unknown", "image_id": image_id,
-                     "error": "No pending or completed image with this ID."}
+                    {
+                        "status": "unknown",
+                        "image_id": image_id,
+                        "error": "No pending or completed image with this ID.",
+                    }
                 )
 
         if pending.status == "generating":
-            return json.dumps({
-                "status": "generating",
-                "image_id": image_id,
-                "progress": pending.progress,
-                "progress_message": pending.progress_message,
-                "elapsed_seconds": round(time.time() - pending.created_at, 1),
-            })
+            return json.dumps(
+                {
+                    "status": "generating",
+                    "image_id": image_id,
+                    "progress": pending.progress,
+                    "progress_message": pending.progress_message,
+                    "elapsed_seconds": round(time.time() - pending.created_at, 1),
+                }
+            )
 
         if pending.status == "failed":
             error = pending.error or "Unknown error"
             service.cleanup_pending(image_id)
-            return json.dumps({
-                "status": "failed",
-                "image_id": image_id,
-                "error": error,
-            })
+            return json.dumps(
+                {
+                    "status": "failed",
+                    "image_id": image_id,
+                    "error": error,
+                }
+            )
 
         # completed
         service.cleanup_pending(image_id)
@@ -467,34 +477,27 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         quality = int(qs.get("quality", ["90"])[0])
         quality = max(1, min(100, quality))
 
-        # Check for pending (fire-and-forget) generation — delegate
-        # to check_generation_status for the lightweight response.
+        # If image is still generating or failed, redirect to the
+        # lightweight polling tool instead of rendering a heavy card.
         pending = service.get_pending(image_id)
-        if pending is not None and pending.status == "generating":
-            meta = {
-                "status": "generating",
-                "image_id": image_id,
-                "prompt": pending.prompt,
-                "provider": pending.provider,
-                "progress": pending.progress,
-                "progress_message": pending.progress_message,
-                "elapsed_seconds": round(time.time() - pending.created_at, 1),
-            }
+        if pending is not None and pending.status in ("generating", "failed"):
             return ToolResult(
-                content=[TextContent(type="text", text=json.dumps(meta, indent=2))]
-            )
-
-        if pending is not None and pending.status == "failed":
-            meta = {
-                "status": "failed",
-                "image_id": image_id,
-                "prompt": pending.prompt,
-                "provider": pending.provider,
-                "error": pending.error,
-            }
-            service.cleanup_pending(image_id)
-            return ToolResult(
-                content=[TextContent(type="text", text=json.dumps(meta, indent=2))]
+                content=[
+                    TextContent(
+                        type="text",
+                        text=json.dumps(
+                            {
+                                "status": pending.status,
+                                "image_id": image_id,
+                                "error": (
+                                    "Image not ready. Use "
+                                    "check_generation_status(image_id) to poll."
+                                ),
+                            },
+                            indent=2,
+                        ),
+                    )
+                ]
             )
 
         # Completed pending — clean up and fall through to normal display
