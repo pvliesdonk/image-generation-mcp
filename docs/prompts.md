@@ -1,6 +1,6 @@
 # MCP Prompts
 
-image-generation-mcp provides two prompts that give LLM clients guidance on provider selection and prompt formatting.
+image-generation-mcp provides three prompts that give LLM clients guidance on provider selection, prompt formatting, and style application.
 
 ## select_provider
 
