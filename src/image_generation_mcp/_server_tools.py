@@ -129,11 +129,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         Args:
             prompt: Text description of the desired image.
             provider: Which provider to use. ``"auto"`` (default) selects
-                based on prompt analysis. ``"openai"`` — best for text,
-                logos, and general-purpose. ``"gemini"`` — best for
-                complex scenes with reasoning; generous free tier at
-                standard quality. ``"sd_webui"`` — best for
-                photorealism, portraits, and artistic styles.
+                based on prompt analysis. ``"openai"`` — best for text
+                rendering, logos, photorealistic still life, and
+                transparent backgrounds. ``"gemini"`` — best for
+                infographics, diagrams, complex illustrations, and
+                visual storytelling; use ``quality="hd"`` for best
+                results. ``"sd_webui"`` — best for photorealism,
+                portraits, and artistic styles.
                 ``"placeholder"`` — instant zero-cost solid-color PNG
                 for testing.
             negative_prompt: Things to avoid in the image. SD WebUI
