@@ -2,6 +2,56 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-04-01)
+
+### Chores
+
+- Update server.json to v1.4.0 [skip ci]
+  ([`e551b01`](https://github.com/pvliesdonk/image-generation-mcp/commit/e551b01f2becbec5b4a3764a0b6a438c11501a52))
+
+- **deps**: Bump fastmcp from 3.1.1 to 3.2.0 (#166)
+  ([#166](https://github.com/pvliesdonk/image-generation-mcp/pull/166),
+  [`8a98e85`](https://github.com/pvliesdonk/image-generation-mcp/commit/8a98e852e617628787264bfa031b05411e3e3b09))
+
+- **deps**: Bump requests from 2.32.5 to 2.33.0 (#155)
+  ([#155](https://github.com/pvliesdonk/image-generation-mcp/pull/155),
+  [`7ef4557`](https://github.com/pvliesdonk/image-generation-mcp/commit/7ef45574d67165e69fe0992af99023a61bdc64f0))
+
+### Documentation
+
+- Fix prompts.md intro to count all three prompts (#163)
+  ([#163](https://github.com/pvliesdonk/image-generation-mcp/pull/163),
+  [`a205f03`](https://github.com/pvliesdonk/image-generation-mcp/commit/a205f038f0918731d24603288d51f525ab4fd41a))
+
+- Update provider selection with live test findings (#167)
+  ([#167](https://github.com/pvliesdonk/image-generation-mcp/pull/167),
+  [`cd1ce26`](https://github.com/pvliesdonk/image-generation-mcp/commit/cd1ce262dfd2138c003c84b9afe6621655b0cad9))
+
+### Features
+
+- Add check_generation_status tool to avoid polling UI clutter (#161)
+  ([#161](https://github.com/pvliesdonk/image-generation-mcp/pull/161),
+  [`3065742`](https://github.com/pvliesdonk/image-generation-mcp/commit/306574217991987cd5240e8bc8357b89fc308e28))
+
+- Gemini image generation provider (#160)
+  ([#160](https://github.com/pvliesdonk/image-generation-mcp/pull/160),
+  [`f4b463c`](https://github.com/pvliesdonk/image-generation-mcp/commit/f4b463c6d23323013fec75a1ea11862d5b326d58))
+
+- Image transforms (crop/rotate/flip) + interactive editor (#156)
+  ([#156](https://github.com/pvliesdonk/image-generation-mcp/pull/156),
+  [`a621d12`](https://github.com/pvliesdonk/image-generation-mcp/commit/a621d12a302688044f06229e72064a15bdd9f83a))
+
+- Wire up quality parameter to real API behavior (Gemini + OpenAI) (#165)
+  ([#165](https://github.com/pvliesdonk/image-generation-mcp/pull/165),
+  [`6031224`](https://github.com/pvliesdonk/image-generation-mcp/commit/60312246ec7e3089b45b386f79ad102e89900b8d))
+
+### Performance Improvements
+
+- Bundle ext-apps SDK to eliminate CDN dependency (#153)
+  ([#153](https://github.com/pvliesdonk/image-generation-mcp/pull/153),
+  [`e3c030e`](https://github.com/pvliesdonk/image-generation-mcp/commit/e3c030eca6a6728d0a3ed7e15ee8ce895130f936))
+
+
 ## v1.4.0 (2026-03-25)
 
 ### Bug Fixes
