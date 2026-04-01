@@ -33,7 +33,7 @@ Choose the best provider for the user's request based on these guidelines:
 - **Supports:** Negative prompt (as "Avoid:" clause), quality levels (`standard`=auto, `hd`=high)
 - **Prompt style:** Natural language descriptions work well
 
-### Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview)
+### Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview)
 - **Best for:** Complex scenes, infographics, multi-element compositions
 - **Good at:** Reasoning about layout and composition before rendering
 - **Supports:** `quality="hd"` enables model reasoning (thinking) and 2K resolution for significantly better output on complex prompts

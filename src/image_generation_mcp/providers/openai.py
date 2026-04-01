@@ -302,6 +302,8 @@ class OpenAIImageProvider:
                 )
             )
 
+        # NOTE: capabilities for these models are assumed to match
+        # gpt-image-1 — update once officially documented by OpenAI.
         for mini_model_id, mini_display in (
             ("gpt-image-1-mini", "GPT Image 1 Mini"),
             ("gpt-image-1.5", "GPT Image 1.5"),

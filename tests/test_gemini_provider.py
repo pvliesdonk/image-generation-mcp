@@ -155,7 +155,7 @@ class TestGeminiProvider:
         assert config_kwargs["response_modalities"] == ["IMAGE"]
 
         # No thinking_config for standard
-        assert "thinking_config" not in config_kwargs
+        assert config_kwargs["thinking_config"] is None
 
         # image_size should be 1K
         image_config_kwargs = types.ImageConfig.call_args.kwargs
@@ -189,10 +189,10 @@ class TestGeminiProvider:
         from google.genai import types
 
         config_kwargs = types.GenerateContentConfig.call_args.kwargs
-        # Still gets TEXT+IMAGE and 2K for hd
-        assert config_kwargs["response_modalities"] == ["TEXT", "IMAGE"]
-        # But no thinking_config since model doesn't support it
-        assert "thinking_config" not in config_kwargs
+        # IMAGE-only since model doesn't support thinking
+        assert config_kwargs["response_modalities"] == ["IMAGE"]
+        # thinking_config should be None since model doesn't support it
+        assert config_kwargs["thinking_config"] is None
 
         image_config_kwargs = types.ImageConfig.call_args.kwargs
         assert image_config_kwargs["image_size"] == "2K"

@@ -126,9 +126,10 @@ class GeminiImageProvider:
                 (Gemini has no native negative prompt support).
             aspect_ratio: One of the supported ratios (14 total).
             quality: ``"standard"`` uses default settings (1K, minimal
-                thinking). ``"hd"`` enables higher resolution (2K),
-                model reasoning (thinking_level=High), and text+image
-                response modalities for improved composition.
+                thinking). ``"hd"`` enables higher resolution (2K).
+                On thinking-capable models, also enables
+                thinking_level=High and text+image response modalities
+                for improved composition.
             background: Ignored — Gemini does not support transparent backgrounds.
             model: Override the default model for this call.
             progress_callback: Ignored — Gemini does not report progress.
@@ -165,21 +166,19 @@ class GeminiImageProvider:
         is_hd = quality == "hd"
         use_thinking = is_hd and effective_model in _THINKING_MODELS
 
+        thinking_config = (
+            types.ThinkingConfig(thinking_level="High")
+            if use_thinking
+            else None
+        )
+
         config = types.GenerateContentConfig(
-            response_modalities=["TEXT", "IMAGE"] if is_hd else ["IMAGE"],
+            response_modalities=["TEXT", "IMAGE"] if use_thinking else ["IMAGE"],
             image_config=types.ImageConfig(
                 aspect_ratio=_ASPECT_RATIOS[aspect_ratio],
                 image_size="2K" if is_hd else "1K",
             ),
-            **(
-                {
-                    "thinking_config": types.ThinkingConfig(
-                        thinking_level="High",
-                    )
-                }
-                if use_thinking
-                else {}
-            ),
+            thinking_config=thinking_config,
         )
 
         try:
