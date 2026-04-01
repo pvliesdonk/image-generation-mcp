@@ -21,8 +21,8 @@ from datetime import UTC, datetime
 from urllib.parse import parse_qs, urlparse
 
 from fastmcp import FastMCP
+from fastmcp.apps import AppConfig
 from fastmcp.dependencies import CurrentContext, Depends
-from fastmcp.server.apps import AppConfig
 from fastmcp.server.context import Context
 from fastmcp.server.elicitation import AcceptedElicitation
 from fastmcp.tools import ToolResult

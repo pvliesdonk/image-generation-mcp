@@ -19,6 +19,13 @@ from image_generation_mcp.service import ImageRecord, ImageService, PendingGener
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from fastmcp.tools import Tool
+
+
+async def _get_tool(mcp: FastMCP, name: str) -> Tool | None:
+    """Get a tool by name, including app-only tools hidden in fastmcp >=3.2."""
+    return await super(type(mcp), mcp).get_tool(name)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -338,13 +345,9 @@ class TestGalleryPage:
 
     async def test_gallery_page_is_app_only(self, server) -> None:
         """gallery_page must carry visibility=["app"] in its app meta."""
-        mcp = FastMCP("test")
-        register_tools(mcp)
-        tool = await mcp.get_tool("gallery_page")
-        assert tool is not None
-        # Check via server.list_tools() which returns all tools including app-only
-        tools = await server.list_tools()
-        gp = next((t for t in tools if t.name == "gallery_page"), None)
+        # App-only tools are hidden from list_tools/get_tool in fastmcp >=3.2;
+        # use the parent class method to access all registered tools.
+        gp = await _get_tool(server, "gallery_page")
         assert gp is not None, "gallery_page must be registered"
         assert gp.meta is not None, "gallery_page must have meta"
         app_meta = gp.meta.get("ui", {})
@@ -361,7 +364,7 @@ class TestGalleryPage:
             _add_image(service, i)
 
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_page")
+        tool = await _get_tool(mcp, "gallery_page")
         assert tool is not None
 
         result = await tool.fn(page=1, page_size=9, service=service)
@@ -383,7 +386,7 @@ class TestGalleryPage:
             _add_image(service, i)
 
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_page")
+        tool = await _get_tool(mcp, "gallery_page")
         assert tool is not None
 
         r1 = await tool.fn(page=1, page_size=3, service=service)
@@ -404,7 +407,7 @@ class TestGalleryPage:
 
     async def test_gallery_page_empty_returns_zero(self, service: ImageService) -> None:
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_page")
+        tool = await _get_tool(mcp, "gallery_page")
         assert tool is not None
 
         result = await tool.fn(page=1, page_size=9, service=service)
@@ -415,7 +418,7 @@ class TestGalleryPage:
     async def test_gallery_page_clamps_page_size(self, service: ImageService) -> None:
         """page_size is clamped to max 24."""
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_page")
+        tool = await _get_tool(mcp, "gallery_page")
         assert tool is not None
 
         result = await tool.fn(page=1, page_size=999, service=service)
@@ -437,7 +440,7 @@ class TestGalleryPage:
         service._pending["pend001"] = pend
 
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_page")
+        tool = await _get_tool(mcp, "gallery_page")
         assert tool is not None
 
         result = await tool.fn(page=1, page_size=9, service=service)
@@ -465,8 +468,9 @@ class TestGalleryFullImage:
 
     async def test_gallery_full_image_is_app_only(self, server) -> None:
         """gallery_full_image must carry visibility=["app"] in its app meta."""
-        tools = await server.list_tools()
-        tool = next((t for t in tools if t.name == "gallery_full_image"), None)
+        # App-only tools are hidden from list_tools in fastmcp >=3.2;
+        # use the parent class method to access all registered tools.
+        tool = await _get_tool(server, "gallery_full_image")
         assert tool is not None
         assert tool.meta is not None, "gallery_full_image must have app meta"
         app_meta = tool.meta.get("ui", {})
@@ -481,7 +485,7 @@ class TestGalleryFullImage:
         record = _add_image(service, 0)
 
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_full_image")
+        tool = await _get_tool(mcp, "gallery_full_image")
         assert tool is not None
 
         result = await tool.fn(image_id=record.id, service=service)
@@ -499,7 +503,7 @@ class TestGalleryFullImage:
         record = _add_image(service, 0)
 
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_full_image")
+        tool = await _get_tool(mcp, "gallery_full_image")
         assert tool is not None
 
         result = await tool.fn(image_id=record.id, service=service)
@@ -517,7 +521,7 @@ class TestGalleryFullImage:
     ) -> None:
         """gallery_full_image must raise for unknown image IDs."""
         mcp = self._mcp()
-        tool = await mcp.get_tool("gallery_full_image")
+        tool = await _get_tool(mcp, "gallery_full_image")
         assert tool is not None
 
         from image_generation_mcp.providers.types import ImageProviderError
