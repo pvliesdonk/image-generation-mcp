@@ -28,16 +28,33 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# All 5 project aspect ratios are natively supported by Gemini — direct pass-through.
-# The identity mapping is intentional: kept consistent with other providers that
-# may need to remap ratios, and allows per-ratio overrides if Gemini ever diverges.
+# All Gemini-supported aspect ratios — direct pass-through identity mapping.
+# Kept consistent with other providers that may need to remap ratios.
 _ASPECT_RATIOS: dict[str, str] = {
     "1:1": "1:1",
     "16:9": "16:9",
     "9:16": "9:16",
     "3:2": "3:2",
     "2:3": "2:3",
+    "3:4": "3:4",
+    "4:3": "4:3",
+    "4:5": "4:5",
+    "5:4": "5:4",
+    "4:1": "4:1",
+    "1:4": "1:4",
+    "8:1": "8:1",
+    "1:8": "1:8",
+    "21:9": "21:9",
 }
+
+# Models that support thinking_config (reasoning before image generation).
+# gemini-2.5-flash-image does NOT support thinking.
+_THINKING_MODELS: frozenset[str] = frozenset(
+    {
+        "gemini-3.1-flash-image-preview",
+        "gemini-3-pro-image-preview",
+    }
+)
 
 # Known Gemini image-capable models in preference order.
 # Discovery returns this static list — models.list() does not reliably filter
@@ -48,7 +65,7 @@ _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
     ("gemini-3-pro-image-preview", "Gemini 3 Pro Image Preview"),
 ]
 
-_SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = ("1:1", "16:9", "9:16", "3:2", "2:3")
+_SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = tuple(_ASPECT_RATIOS)
 _SUPPORTED_QUALITIES: tuple[str, ...] = ("standard", "hd")
 
 
@@ -107,9 +124,12 @@ class GeminiImageProvider:
             prompt: Positive text prompt.
             negative_prompt: Appended as ``"\\n\\nAvoid: {negative_prompt}"``
                 (Gemini has no native negative prompt support).
-            aspect_ratio: One of the 5 supported ratios.
-            quality: Recorded in metadata; Gemini's generateContent API does not
-                expose a resolution/quality parameter (unlike Imagen).
+            aspect_ratio: One of the supported ratios (14 total).
+            quality: ``"standard"`` uses default settings (1K, minimal
+                thinking). ``"hd"`` enables higher resolution (2K).
+                On thinking-capable models, also enables
+                thinking_level=High and text+image response modalities
+                for improved composition.
             background: Ignored — Gemini does not support transparent backgrounds.
             model: Override the default model for this call.
             progress_callback: Ignored — Gemini does not report progress.
@@ -143,11 +163,22 @@ class GeminiImageProvider:
                 "background parameter ignored"
             )
 
+        is_hd = quality == "hd"
+        use_thinking = is_hd and effective_model in _THINKING_MODELS
+
+        thinking_config = (
+            types.ThinkingConfig(thinking_level=types.ThinkingLevel.HIGH)
+            if use_thinking
+            else None
+        )
+
         config = types.GenerateContentConfig(
-            response_modalities=["IMAGE"],
+            response_modalities=["TEXT", "IMAGE"] if use_thinking else ["IMAGE"],
             image_config=types.ImageConfig(
                 aspect_ratio=_ASPECT_RATIOS[aspect_ratio],
+                image_size="2K" if is_hd else "1K",
             ),
+            thinking_config=thinking_config,
         )
 
         try:

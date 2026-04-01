@@ -130,19 +130,24 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             prompt: Text description of the desired image.
             provider: Which provider to use. ``"auto"`` (default) selects
                 based on prompt analysis. ``"openai"`` — best for text,
-                logos, and general-purpose. ``"sd_webui"`` — best for
+                logos, and general-purpose. ``"gemini"`` — best for
+                complex scenes with reasoning; generous free tier at
+                standard quality. ``"sd_webui"`` — best for
                 photorealism, portraits, and artistic styles.
                 ``"placeholder"`` — instant zero-cost solid-color PNG
                 for testing.
             negative_prompt: Things to avoid in the image. SD WebUI
                 supports this natively for SD 1.5/SDXL (CLIP-based) but
-                NOT for Flux models. OpenAI appends as an "Avoid:" clause
-                (weaker effect). Placeholder ignores it.
+                NOT for Flux models. OpenAI and Gemini append as an
+                "Avoid:" clause (weaker effect). Placeholder ignores it.
             aspect_ratio: Desired ratio (``1:1``, ``16:9``, ``9:16``,
-                ``3:2``, ``2:3``).
-            quality: Quality level. ``"hd"`` vs ``"standard"`` only
-                affects OpenAI (gpt-image-1 maps both to its highest
-                tier). SD WebUI and placeholder ignore this parameter.
+                ``3:2``, ``2:3``). Gemini supports additional ratios
+                (``3:4``, ``4:3``, ``4:1``, ``1:4``, etc.).
+            quality: Quality level. ``"standard"`` uses default settings
+                (fast, lower cost). ``"hd"`` enables higher quality:
+                on **Gemini**, activates model reasoning (thinking) and
+                2K resolution; on **OpenAI**, selects the ``"high"``
+                quality tier. SD WebUI and placeholder ignore this.
             background: Background transparency. ``"opaque"`` (default)
                 generates a solid background. ``"transparent"`` requests
                 an image with a transparent background. Supported by

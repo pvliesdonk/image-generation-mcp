@@ -45,7 +45,7 @@ The provider registers automatically when this variable is set.
 
 | Quality param | gpt-image-1 API value | dall-e-3 API value |
 |---------------|----------------------|-------------------|
-| `standard` | `high` | `standard` |
+| `standard` | `auto` (lets OpenAI choose) | `standard` |
 | `hd` | `high` | `hd` |
 
 ## Negative prompts
@@ -103,7 +103,7 @@ Use `list_providers` to discover available models.
 
 ## Capability discovery
 
-At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-1`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).
+At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-1`, `gpt-image-1-mini`, `gpt-image-1.5`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).
 
 If the API call fails (network error, invalid key), the provider is marked as **degraded** -- it remains available for generation but with an empty model list in the capabilities response.
 

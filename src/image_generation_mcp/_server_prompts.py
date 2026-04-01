@@ -30,8 +30,16 @@ Choose the best provider for the user's request based on these guidelines:
 ### OpenAI (gpt-image-1 / dall-e-3)
 - **Best for:** Text rendering, logos, typography, posters, banners, signs
 - **Good at:** General-purpose generation, following complex instructions
-- **Supports:** Negative prompt (as "Avoid:" clause), multiple quality levels
+- **Supports:** Negative prompt (as "Avoid:" clause), quality levels (`standard`=auto, `hd`=high)
 - **Prompt style:** Natural language descriptions work well
+
+### Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview)
+- **Best for:** Complex scenes, infographics, multi-element compositions
+- **Good at:** Reasoning about layout and composition before rendering
+- **Supports:** `quality="hd"` enables model reasoning (thinking) and 2K resolution for significantly better output on complex prompts
+- **Cost:** Generous free tier at `standard` quality; `hd` uses thinking tokens (billed)
+- **Prompt style:** Natural language descriptions work well
+- **Extra aspect ratios:** Supports 14 ratios including ultra-wide (21:9, 4:1, 8:1)
 
 ### SD WebUI (Stable Diffusion WebUI)
 - **Best for:** Photorealism, portraits, product shots, artistic styles
@@ -51,10 +59,11 @@ Choose the best provider for the user's request based on these guidelines:
 ## Selection Rules
 
 1. If the request involves **text, logos, or typography** → use **openai**
-2. If the request involves **photorealism, portraits, or product shots** → prefer **sd_webui** (fall back to openai)
-3. If the request involves **art, illustration, anime, or painting** → prefer **sd_webui** (fall back to openai)
-4. If the request is a **quick test or placeholder** → use **placeholder**
-5. For **general requests** → default to **openai** (most versatile)
+2. If the request involves **complex scenes, infographics, or multi-element compositions** → use **gemini** with `quality="hd"` for best results
+3. If the request involves **photorealism, portraits, or product shots** → prefer **sd_webui** (fall back to openai)
+4. If the request involves **art, illustration, anime, or painting** → prefer **sd_webui** (fall back to openai)
+5. If the request is a **quick test or placeholder** → use **placeholder**
+6. For **general requests** → default to **openai** (most versatile)
 
 ## Usage
 

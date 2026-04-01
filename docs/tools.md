@@ -20,8 +20,8 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 | `prompt` | str | *(required)* | Text description of the desired image |
 | `provider` | str | `"auto"` | Provider name (`openai`, `sd_webui`, `placeholder`) or `"auto"` for keyword-based selection |
 | `negative_prompt` | str | `null` | Things to avoid in the image. Native support on SD WebUI (SD 1.5/SDXL only — Flux models do NOT support negative prompts); appended as "Avoid:" on OpenAI. |
-| `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3` |
-| `quality` | str | `"standard"` | Quality level: `standard` or `hd` |
+| `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`. Gemini additionally supports: `3:4`, `4:3`, `4:5`, `5:4`, `4:1`, `1:4`, `8:1`, `1:8`, `21:9` |
+| `quality` | str | `"standard"` | Quality level: `standard` (fast, lower cost) or `hd` (higher quality — enables model reasoning + 2K on Gemini, `high` tier on OpenAI) |
 | `background` | str | `"opaque"` | Background mode: `opaque` or `transparent`. Supported by OpenAI (gpt-image-1) and Placeholder. SD WebUI ignores this parameter. |
 | `model` | str | `null` | Specific model to use (e.g., an SD WebUI checkpoint name or `"dall-e-3"` for OpenAI). Overrides the provider's default. Use `list_providers` to see available model IDs. |
 

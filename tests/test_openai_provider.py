@@ -117,7 +117,7 @@ class TestOpenAIProvider:
         assert result.content_type == "image/png"
         assert result.provider_metadata["model"] == "gpt-image-1"
         assert result.provider_metadata["quality"] == "standard"
-        assert result.provider_metadata["api_quality"] == "high"
+        assert result.provider_metadata["api_quality"] == "auto"
         assert result.provider_metadata["revised_prompt"] == "enhanced prompt"
 
     async def test_negative_prompt_appended(self) -> None:
@@ -153,7 +153,8 @@ class TestOpenAIProvider:
         with pytest.raises(ImageProviderError, match="Empty response"):
             await provider.generate("test")
 
-    async def test_quality_mapping_for_gpt_image(self) -> None:
+    async def test_quality_mapping_standard_maps_to_auto(self) -> None:
+        """gpt-image-1 standard quality maps to OpenAI's 'auto'."""
         provider = OpenAIImageProvider(api_key="sk-test")
 
         b64_image = base64.b64encode(b"data").decode()
@@ -168,6 +169,26 @@ class TestOpenAIProvider:
         provider._client.images.generate = AsyncMock(return_value=mock_response)
 
         await provider.generate("test", quality="standard")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["quality"] == "auto"
+
+    async def test_quality_mapping_hd_maps_to_high(self) -> None:
+        """gpt-image-1 hd quality maps to OpenAI's 'high'."""
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", quality="hd")
 
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["quality"] == "high"

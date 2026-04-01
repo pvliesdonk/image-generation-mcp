@@ -24,21 +24,37 @@ Use `list_providers` to see which models are available on your API key.
 
 ## Aspect ratios and sizes
 
-All five project aspect ratios are natively supported:
+Gemini natively supports 14 aspect ratios — all are passed through directly:
 
-| Aspect ratio | Gemini parameter |
-|-------------|-----------------|
-| `1:1` | `1:1` |
-| `16:9` | `16:9` |
-| `9:16` | `9:16` |
-| `3:2` | `3:2` |
-| `2:3` | `2:3` |
+| Aspect ratio | Notes |
+|-------------|-------|
+| `1:1` | Square (default) |
+| `16:9` | Landscape |
+| `9:16` | Portrait |
+| `3:2` | Photo landscape |
+| `2:3` | Photo portrait |
+| `3:4` | Portrait |
+| `4:3` | Landscape |
+| `4:5` | Portrait |
+| `5:4` | Landscape |
+| `4:1` | Ultra-wide banner |
+| `1:4` | Ultra-tall banner |
+| `8:1` | Extreme panorama |
+| `1:8` | Extreme vertical |
+| `21:9` | Cinematic ultra-wide |
 
 ## Quality levels
 
-The `quality` parameter is accepted and recorded in metadata, but Gemini's
-`generateContent` API does not expose a resolution or quality parameter (unlike
-the Imagen API). All images are generated at Gemini's default resolution.
+The `quality` parameter controls resolution, model reasoning, and response modalities:
+
+| Quality | Image size | Thinking | Response modalities | Cost |
+|---------|-----------|----------|-------------------|------|
+| `standard` | 1K | Minimal (default) | Image only | Free tier |
+| `hd` | 2K | High (model reasons about composition before rendering) | Text + Image | Thinking tokens billed |
+
+**How `hd` works:** When `quality="hd"` is set, the provider enables `thinking_level="High"` on supported models (`gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`). The model reasons through the prompt, plans composition, and may generate interim images before producing the final result. This significantly improves output quality for complex prompts with multiple elements, layouts, or text.
+
+**Note:** `gemini-2.5-flash-image` does not support thinking — `hd` still increases resolution to 2K but skips the thinking configuration for this model.
 
 ## Negative prompts
 

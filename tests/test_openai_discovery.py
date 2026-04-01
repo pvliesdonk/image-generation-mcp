@@ -249,3 +249,72 @@ class TestDiscoverDalle2Fields:
         assert m.supported_formats == ("png",)
         assert m.supported_qualities == ("standard",)
         assert m.max_resolution == 1024
+
+
+class TestDiscoverNewGptImageModels:
+    """Verify discovery of gpt-image-1-mini and gpt-image-1.5."""
+
+    async def test_gpt_image_1_mini_discovered(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """gpt-image-1-mini is discovered with correct fields."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model("gpt-image-1-mini")
+        )
+
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1
+        m = caps.models[0]
+        assert m.model_id == "gpt-image-1-mini"
+        assert m.display_name == "GPT Image 1 Mini"
+        assert m.can_generate is True
+        assert m.can_edit is True
+        assert m.supports_background is True
+        assert "png" in m.supported_formats
+        assert "jpeg" in m.supported_formats
+        assert "webp" in m.supported_formats
+
+    async def test_gpt_image_1_5_discovered(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """gpt-image-1.5 is discovered with correct fields."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model("gpt-image-1.5")
+        )
+
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1
+        m = caps.models[0]
+        assert m.model_id == "gpt-image-1.5"
+        assert m.display_name == "GPT Image 1.5"
+        assert m.can_generate is True
+
+    async def test_all_five_models_discovered(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """All five known models are discovered when present."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model(
+                "gpt-image-1",
+                "gpt-image-1-mini",
+                "gpt-image-1.5",
+                "dall-e-3",
+                "dall-e-2",
+            )
+        )
+
+        caps = await provider.discover_capabilities()
+
+        model_ids = {m.model_id for m in caps.models}
+        assert model_ids == {
+            "gpt-image-1",
+            "gpt-image-1-mini",
+            "gpt-image-1.5",
+            "dall-e-3",
+            "dall-e-2",
+        }

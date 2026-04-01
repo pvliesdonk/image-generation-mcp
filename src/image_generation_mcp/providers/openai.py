@@ -52,7 +52,15 @@ _FORMAT_TO_CONTENT_TYPE: dict[str, str] = {
 
 _DALLE3_FORMATS: frozenset[str] = frozenset({"png"})
 
-_KNOWN_IMAGE_MODELS: frozenset[str] = frozenset({"gpt-image-1", "dall-e-3", "dall-e-2"})
+_KNOWN_IMAGE_MODELS: frozenset[str] = frozenset(
+    {
+        "gpt-image-1",
+        "gpt-image-1-mini",
+        "gpt-image-1.5",
+        "dall-e-3",
+        "dall-e-2",
+    }
+)
 
 
 def _is_gpt_image_model(model: str) -> bool:
@@ -124,7 +132,8 @@ class OpenAIImageProvider:
             prompt: Positive text prompt.
             negative_prompt: Appended as ``"Avoid: ..."`` clause.
             aspect_ratio: Maps to OpenAI size parameter.
-            quality: Quality level.
+            quality: ``"standard"`` maps to ``"auto"`` for gpt-image-1
+                (lets OpenAI choose). ``"hd"`` maps to ``"high"``.
             background: Background transparency (``opaque``, ``transparent``).
                 Only supported for gpt-image-1; ignored for dall-e-3.
             model: Specific model to use for this call (e.g., ``"dall-e-3"``).
@@ -154,7 +163,7 @@ class OpenAIImageProvider:
 
         api_quality = quality
         if is_gpt_image:
-            api_quality = {"standard": "high", "hd": "high"}.get(quality, quality)
+            api_quality = {"standard": "auto", "hd": "high"}.get(quality, quality)
 
         size = sizes.get(aspect_ratio)
         if size is None:
@@ -292,6 +301,29 @@ class OpenAIImageProvider:
                     max_resolution=1536,
                 )
             )
+
+        # NOTE: capabilities for these models are assumed to match
+        # gpt-image-1 — update once officially documented by OpenAI.
+        for mini_model_id, mini_display in (
+            ("gpt-image-1-mini", "GPT Image 1 Mini"),
+            ("gpt-image-1.5", "GPT Image 1.5"),
+        ):
+            if mini_model_id in model_ids:
+                model_caps.append(
+                    ModelCapabilities(
+                        model_id=mini_model_id,
+                        display_name=mini_display,
+                        can_generate=True,
+                        can_edit=True,
+                        supports_mask=True,
+                        supports_background=True,
+                        supports_negative_prompt=False,
+                        supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
+                        supported_formats=("png", "jpeg", "webp"),
+                        supported_qualities=("standard", "hd"),
+                        max_resolution=1536,
+                    )
+                )
 
         if "dall-e-3" in model_ids:
             model_caps.append(
