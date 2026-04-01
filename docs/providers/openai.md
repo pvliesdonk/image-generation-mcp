@@ -17,6 +17,8 @@ The provider registers automatically when this variable is set.
 | Model | Status | Formats | Notes |
 |-------|--------|---------|-------|
 | `gpt-image-1` | Current (default) | PNG, JPEG, WebP | Best quality, native format selection |
+| `gpt-image-1.5` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
+| `gpt-image-1-mini` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
 | `dall-e-3` | Legacy | PNG only | Deprecated May 2026 |
 
 ## Aspect ratios and sizes

@@ -64,7 +64,7 @@ Choose the best provider for the user's request based on these guidelines:
 2. If the request involves **transparent backgrounds** (icons, stickers) → use **openai** (gpt-image-1)
 3. If the request involves **infographics, diagrams, or structured layouts** → use **gemini** with `quality="hd"`
 4. If the request involves **complex illustrations, visual storytelling, or multi-element compositions** → use **gemini** with `quality="hd"`
-5. If the request involves **photorealism, still life, or product shots** → prefer **sd_webui**, fall back to **openai** (strong material fidelity)
+5. If the request involves **photorealism, still life, or product shots** → prefer **sd_webui**, fall back to **gemini** then **openai**
 6. If the request involves **anime, manga, or painting styles** → prefer **sd_webui** (fall back to gemini)
 7. If the request is a **quick draft or iteration** → use **gemini** at `standard` quality (fast, free tier)
 8. If the request is a **quick test or placeholder** → use **placeholder**

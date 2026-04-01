@@ -49,9 +49,14 @@ _SELECTION_RULES: list[tuple[list[str], list[str]]] = [
         ],
         ["openai", "gemini"],
     ),
-    # Quick draft / testing
+    # Quick drafts / iteration — Gemini standard is fast and free
     (
-        ["quick", "draft", "test", "placeholder", "mock"],
+        ["draft", "iterate", "iteration"],
+        ["gemini", "openai"],
+    ),
+    # Explicit test / placeholder requests
+    (
+        ["quick", "test", "placeholder", "mock"],
         ["placeholder"],
     ),
     # Artistic / illustration — SD has great models; Gemini as second cloud

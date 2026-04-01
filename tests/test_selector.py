@@ -33,6 +33,16 @@ class TestSelectProvider:
         available = {"openai", "sd_webui", "placeholder"}
         assert select_provider("quick test image", available) == "placeholder"
 
+    def test_draft_routes_to_gemini(self) -> None:
+        """'draft' prompts route to gemini for fast iteration, not placeholder."""
+        available = {"gemini", "openai", "placeholder"}
+        assert select_provider("draft of a landscape", available) == "gemini"
+
+    def test_draft_falls_back_to_openai(self) -> None:
+        """When gemini unavailable, drafts fall back to openai."""
+        available = {"openai", "placeholder"}
+        assert select_provider("draft of a landscape", available) == "openai"
+
     def test_artistic_prefers_sd_webui(self) -> None:
         available = {"openai", "sd_webui", "placeholder"}
         assert (
