@@ -243,7 +243,7 @@ a three-quarter angle with professional studio lighting and crisp focus
 
 ## Placeholder
 
-Use for quick testing, mock-ups, and zero-cost drafts. The placeholder
+Use for quick testing, mock-ups, and zero-cost placeholders. The placeholder
 provider produces solid-color PNG images — the color is selected from a
 6-color palette via SHA-256 hash of the prompt text, so the same prompt
 always produces the same color. Supports `background="transparent"` for

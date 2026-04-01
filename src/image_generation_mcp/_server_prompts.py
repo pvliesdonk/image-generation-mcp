@@ -54,7 +54,7 @@ Choose the best provider for the user's request based on these guidelines:
 - Check `list_providers` for each model's `prompt_style` field
 
 ### Placeholder
-- **Best for:** Quick drafts, testing, mock-ups
+- **Best for:** Testing, mock-ups, zero-cost placeholders
 - **Produces:** Solid-color PNG images (no real generation)
 - **Use when:** You need a fast placeholder without API costs
 
@@ -68,7 +68,7 @@ Choose the best provider for the user's request based on these guidelines:
 6. If the request involves **anime, manga, or painting styles** → prefer **sd_webui** (fall back to gemini)
 7. If the request is a **quick draft or iteration** → use **gemini** at `standard` quality (fast, free tier)
 8. If the request is a **quick test or placeholder** → use **placeholder**
-9. For **general requests** → default to **openai** (most versatile)
+9. For **general requests** → default to **gemini** when available, then **openai**
 
 ## Usage
 
