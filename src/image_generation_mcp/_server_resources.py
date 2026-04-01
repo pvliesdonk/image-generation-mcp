@@ -87,7 +87,7 @@ ignores them.
 compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
 placeholder. SD WebUI ignores this parameter.
 
-## OpenAI (gpt-image-1 / dall-e-3)
+## OpenAI (gpt-image-1 / gpt-image-1.5 / dall-e-3)
 
 Natural language descriptions work well — write prompts as you would describe a
 scene to a person. No need for comma-separated tags.
@@ -96,8 +96,9 @@ scene to a person. No need for comma-separated tags.
 e.g. `"Avoid: blurry, low resolution, watermark"`. The effect is weaker than
 native negative prompt support.
 
-**Strengths:** Text rendering, logos, typography, posters, banners, signs.
-Also strong at general-purpose generation and following complex instructions.
+**Strengths:** Text rendering, logos, typography, transparent backgrounds.
+Also excels at photorealistic still life with high material fidelity (glass,
+metal, fabric) and precise text on objects. Strong general-purpose generation.
 
 **Style keywords:** Include style direction in natural language — "photorealistic",
 "cinematic", "watercolor", "digital art", "minimalist", "flat design", "isometric",
@@ -110,14 +111,15 @@ Also strong at general-purpose generation and following complex instructions.
 **Quality levels:** `standard` maps to OpenAI's `auto` quality (lets the model
 choose). `hd` maps to `high` for maximum detail.
 
-## Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview)
+## Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview)
 
 Natural language descriptions work best — similar to OpenAI prompting style.
 
-**Strengths:** Complex scenes, infographics, multi-element compositions, and
-detailed layouts. The `hd` quality level activates model reasoning (thinking)
-which plans composition before rendering — especially effective for complex
-prompts with multiple elements.
+**Strengths:** Infographics, diagrams, structured layouts, complex
+illustrations, and visual storytelling. Excels at character consistency, colour
+palette adherence, and multi-element compositions. The `hd` quality level
+activates model reasoning (thinking) which plans composition before rendering —
+dramatically improves output on complex prompts.
 
 **Quality levels:** `standard` generates at 1K resolution with minimal thinking
 (fast, free tier). `hd` enables thinking (High), 2K resolution, and text+image
@@ -241,7 +243,7 @@ a three-quarter angle with professional studio lighting and crisp focus
 
 ## Placeholder
 
-Use for quick testing, mock-ups, and zero-cost drafts. The placeholder
+Use for quick testing, mock-ups, and zero-cost placeholders. The placeholder
 provider produces solid-color PNG images — the color is selected from a
 6-color palette via SHA-256 hash of the prompt text, so the same prompt
 always produces the same color. Supports `background="transparent"` for

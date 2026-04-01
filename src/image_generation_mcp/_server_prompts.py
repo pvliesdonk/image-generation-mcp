@@ -27,16 +27,18 @@ Choose the best provider for the user's request based on these guidelines:
 
 ## Provider Strengths
 
-### OpenAI (gpt-image-1 / dall-e-3)
-- **Best for:** Text rendering, logos, typography, posters, banners, signs
+### OpenAI (gpt-image-1 / gpt-image-1.5 / dall-e-3)
+- **Best for:** Text rendering, logos, typography, transparent backgrounds
+- **Also strong at:** Photorealistic still life, material fidelity (glass, metal, fabric), precise text on objects
 - **Good at:** General-purpose generation, following complex instructions
 - **Supports:** Negative prompt (as "Avoid:" clause), quality levels (`standard`=auto, `hd`=high)
 - **Prompt style:** Natural language descriptions work well
 
 ### Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview)
-- **Best for:** Complex scenes, infographics, multi-element compositions
+- **Best for:** Infographics, diagrams, structured layouts, complex illustrations, visual storytelling
+- **Also strong at:** Character consistency, colour palette adherence, multi-element compositions
 - **Good at:** Reasoning about layout and composition before rendering
-- **Supports:** `quality="hd"` enables model reasoning (thinking) and 2K resolution for significantly better output on complex prompts
+- **Supports:** `quality="hd"` enables model reasoning (thinking) and 2K resolution — dramatically improves output on complex prompts (10s → 55s)
 - **Cost:** Generous free tier at `standard` quality; `hd` uses thinking tokens (billed)
 - **Prompt style:** Natural language descriptions work well
 - **Extra aspect ratios:** Supports 14 ratios including ultra-wide (21:9, 4:1, 8:1)
@@ -52,18 +54,21 @@ Choose the best provider for the user's request based on these guidelines:
 - Check `list_providers` for each model's `prompt_style` field
 
 ### Placeholder
-- **Best for:** Quick drafts, testing, mock-ups
+- **Best for:** Testing, mock-ups, zero-cost placeholders
 - **Produces:** Solid-color PNG images (no real generation)
 - **Use when:** You need a fast placeholder without API costs
 
 ## Selection Rules
 
-1. If the request involves **text, logos, or typography** → use **openai**
-2. If the request involves **complex scenes, infographics, or multi-element compositions** → use **gemini** with `quality="hd"` for best results
-3. If the request involves **photorealism, portraits, or product shots** → prefer **sd_webui** (fall back to openai)
-4. If the request involves **art, illustration, anime, or painting** → prefer **sd_webui** (fall back to openai)
-5. If the request is a **quick test or placeholder** → use **placeholder**
-6. For **general requests** → default to **openai** (most versatile)
+1. If the request involves **text rendering, logos, or typography** → use **openai**
+2. If the request involves **transparent backgrounds** (icons, stickers) → use **openai** (gpt-image-1)
+3. If the request involves **infographics, diagrams, or structured layouts** → use **gemini** with `quality="hd"`
+4. If the request involves **complex illustrations, visual storytelling, or multi-element compositions** → use **gemini** with `quality="hd"`
+5. If the request involves **photorealism, still life, or product shots** → prefer **sd_webui**, fall back to **gemini** then **openai**
+6. If the request involves **anime, manga, or painting styles** → prefer **sd_webui** (fall back to gemini)
+7. If the request is a **quick draft or iteration** → use **gemini** at `standard` quality (fast, free tier)
+8. If the request is a **quick test or placeholder** → use **placeholder**
+9. For **general requests** → default to **gemini** when available, then **openai**
 
 ## Usage
 
