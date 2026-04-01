@@ -167,7 +167,7 @@ class GeminiImageProvider:
         use_thinking = is_hd and effective_model in _THINKING_MODELS
 
         thinking_config = (
-            types.ThinkingConfig(thinking_level="High")
+            types.ThinkingConfig(thinking_level=types.ThinkingLevel.HIGH)
             if use_thinking
             else None
         )

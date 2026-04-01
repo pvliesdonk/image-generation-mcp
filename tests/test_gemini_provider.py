@@ -118,7 +118,9 @@ class TestGeminiProvider:
 
         # thinking_config should be set
         assert "thinking_config" in config_kwargs
-        types.ThinkingConfig.assert_called_once_with(thinking_level="High")
+        types.ThinkingConfig.assert_called_once_with(
+            thinking_level=types.ThinkingLevel.HIGH
+        )
 
         # image_size should be 2K
         types.ImageConfig.assert_called_once()
