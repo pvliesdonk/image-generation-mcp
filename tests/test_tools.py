@@ -34,6 +34,7 @@ from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageResult
 from image_generation_mcp.service import ImageService
+from tests._helpers import get_tool_including_app_only
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -1221,7 +1222,7 @@ class TestSaveEditedImageTool:
     ) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
-        tool = await mcp.get_tool("_save_edited_image")
+        tool = await get_tool_including_app_only(mcp, "_save_edited_image")
         assert tool is not None
         return await tool.fn(source_image_id=source_image_id, service=service, **kwargs)
 

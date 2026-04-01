@@ -13,9 +13,9 @@ import os
 from datetime import UTC, datetime
 
 from fastmcp import FastMCP
+from fastmcp.apps import AppConfig
 from fastmcp.dependencies import Depends
 from fastmcp.resources import ResourceContent, ResourceResult
-from fastmcp.server.apps import AppConfig
 from mcp.types import Icon
 
 from image_generation_mcp._server_deps import get_service
