@@ -25,8 +25,6 @@ import pytest
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-    from fastmcp.tools import Tool
 from fastmcp import FastMCP
 from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, ResourceLink, TextContent
@@ -36,12 +34,7 @@ from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageResult
 from image_generation_mcp.service import ImageService
-
-
-async def _get_tool(mcp: FastMCP, name: str) -> Tool | None:
-    """Get a tool by name, including app-only tools hidden in fastmcp >=3.2."""
-    return await super(type(mcp), mcp).get_tool(name)
-
+from tests._helpers import get_tool_including_app_only
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -1229,7 +1222,7 @@ class TestSaveEditedImageTool:
     ) -> ToolResult:
         mcp = FastMCP("test")
         register_tools(mcp)
-        tool = await _get_tool(mcp, "_save_edited_image")
+        tool = await get_tool_including_app_only(mcp, "_save_edited_image")
         assert tool is not None
         return await tool.fn(source_image_id=source_image_id, service=service, **kwargs)
 

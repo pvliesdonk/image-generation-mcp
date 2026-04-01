@@ -418,15 +418,18 @@ async def test_image_list_includes_pending_generation(
 
     config = ServerConfig(scratch_dir=tmp_path, read_only=False)
 
-    # Patch PlaceholderImageProvider to be slow so generation stays pending
+    # Use an Event to block generation until we've read the pending list.
+    # This replaces the previous asyncio.sleep(0.5) approach which was racy
+    # on Python 3.14 where the event loop is faster.
+    gate = asyncio.Event()
     original_provider = PlaceholderImageProvider()
     original_generate = original_provider.generate
 
-    async def slow_generate(*args: object, **kwargs: object) -> object:
-        await asyncio.sleep(0.5)
+    async def gated_generate(*args: object, **kwargs: object) -> object:
+        await gate.wait()
         return await original_generate(*args, **kwargs)  # type: ignore[arg-type]
 
-    original_provider.generate = slow_generate  # type: ignore[assignment]
+    original_provider.generate = gated_generate  # type: ignore[assignment]
 
     mcp = FastMCP("test-list-pending", lifespan=make_service_lifespan(config))
     register_tools(mcp)
@@ -440,7 +443,7 @@ async def test_image_list_includes_pending_generation(
         text = next(c for c in gen_result.content if c.type == "text")
         image_id = json.loads(text.text)["image_id"]
 
-        # Read image://list while generation is still pending
+        # Read image://list while generation is guaranteed to be pending
         list_result = await client.read_resource("image://list")
         items = json.loads(list_result[0].text)  # type: ignore[union-attr]
         pending_items = [i for i in items if i.get("status") == "generating"]
@@ -452,5 +455,6 @@ async def test_image_list_includes_pending_generation(
         assert "progress" in pending_match[0]
         assert "progress_message" in pending_match[0]
 
-        # Wait for background task to finish to avoid warnings
-        await asyncio.sleep(0.8)
+        # Release the gate so the background task can finish
+        gate.set()
+        await asyncio.sleep(0.3)
