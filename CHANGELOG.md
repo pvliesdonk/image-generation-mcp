@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.7.0-rc.1 (2026-04-21)
+
+### Bug Fixes
+
+- **packaging**: Add mcpb bundle files (unblocks rc) (#184)
+  ([#184](https://github.com/pvliesdonk/image-generation-mcp/pull/184),
+  [`0008d24`](https://github.com/pvliesdonk/image-generation-mcp/commit/0008d24330f96cfe65778ac16309a22ea5f5ca27))
+
+
 ## v1.6.0-rc.1 (2026-04-21)
 
 ### Chores
