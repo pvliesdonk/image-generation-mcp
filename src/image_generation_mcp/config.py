@@ -32,6 +32,7 @@ class ProjectConfig:
 
     # CONFIG-FIELDS-START — image-generation domain fields; kept across copier update
     server: ServerConfig = field(default_factory=ServerConfig)
+    server_name: str | None = None
     read_only: bool = True
     scratch_dir: Path = field(default_factory=lambda: _DEFAULT_SCRATCH_DIR)
     openai_api_key: str | None = None
@@ -71,6 +72,7 @@ def load_config() -> ProjectConfig:
     server = ServerConfig.from_env(env_prefix=_ENV_PREFIX)
 
     # CONFIG-FROM-ENV-START — image-generation domain reads; kept across copier update
+    server_name = env(_ENV_PREFIX, "SERVER_NAME")
     read_only = parse_bool(env(_ENV_PREFIX, "READ_ONLY", "true"))
 
     scratch_dir = Path(env(_ENV_PREFIX, "SCRATCH_DIR") or _DEFAULT_SCRATCH_DIR)
@@ -122,6 +124,7 @@ def load_config() -> ProjectConfig:
 
     config = ProjectConfig(
         server=server,
+        server_name=server_name,
         read_only=read_only,
         scratch_dir=scratch_dir,
         openai_api_key=openai_api_key,

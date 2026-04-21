@@ -36,6 +36,7 @@ def _normalise_http_path(path: str | None) -> str:
 def _cmd_serve(args: argparse.Namespace) -> None:
     """Run the MCP server."""
     try:
+        from image_generation_mcp.config import load_config
         from image_generation_mcp.mcp_server import create_server
     except ImportError:
         logger.error(
@@ -44,7 +45,8 @@ def _cmd_serve(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     transport = args.transport
-    server = create_server(transport=transport)
+    config = load_config()
+    server = create_server(transport=transport, config=config)
     env_http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH")
     http_path = _normalise_http_path(args.path or env_http_path)
     if transport != "http" and (
@@ -57,11 +59,7 @@ def _cmd_serve(args: argparse.Namespace) -> None:
         from image_generation_mcp._http_logging import mcp_request_logging_middleware
         from image_generation_mcp.mcp_server import build_event_store
 
-        # EVENT_STORE_URL is intentionally read here rather than in config.py:
-        # it is transport-layer configuration specific to HTTP mode and has no
-        # meaning for stdio/sse transports, so it does not belong in ServerConfig.
-        event_store_url = os.environ.get(f"{_ENV_PREFIX}_EVENT_STORE_URL")
-        event_store = build_event_store(event_store_url)
+        event_store = build_event_store(config.server.event_store_url)
 
         app = server.http_app(
             path=http_path,

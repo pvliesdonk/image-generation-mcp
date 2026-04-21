@@ -8,7 +8,6 @@ server surface and the fastmcp-pvl-core README for the helpers used here.
 from __future__ import annotations
 
 import logging
-import os
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 
@@ -151,7 +150,7 @@ def make_server(
     except PackageNotFoundError:
         pkg_ver = "unknown"
 
-    server_name = os.environ.get(f"{_ENV_PREFIX}_SERVER_NAME", _DEFAULT_SERVER_NAME)
+    server_name = config.server_name or _DEFAULT_SERVER_NAME
 
     logger.info(
         "Server config: name=%s version=%s auth=%s mode=%s",
