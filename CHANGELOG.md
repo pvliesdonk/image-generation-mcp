@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.5.1 (2026-04-21)
+
+### Bug Fixes
+
+- **ci**: Docs concurrency collision on release + document tag-push intent (#186)
+  ([#186](https://github.com/pvliesdonk/image-generation-mcp/pull/186),
+  [`f525258`](https://github.com/pvliesdonk/image-generation-mcp/commit/f52525832fbf5e5b988391e6dfaa88811527bceb))
+
+- **ci**: Trigger docs workflow on v* tag pushes (#185)
+  ([#185](https://github.com/pvliesdonk/image-generation-mcp/pull/185),
+  [`9f28b5a`](https://github.com/pvliesdonk/image-generation-mcp/commit/9f28b5a0a0a7d2b647450b234af4c503bbea8646))
+
+
 ## v1.7.0-rc.1 (2026-04-21)
 
 ### Bug Fixes
