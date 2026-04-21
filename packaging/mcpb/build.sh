@@ -5,6 +5,13 @@
 #   VERSION=1.6.0 ./packaging/mcpb/build.sh
 #
 # With no VERSION set, builds a "dev" bundle for validation only.
+#
+# Note on scaffold drift:
+#   packaging/mcpb/{manifest.json.in,pyproject.toml.in,src/server.py,build.sh}
+#   are in the template's _skip_if_exists list, so future ``copier update``
+#   runs will NOT re-render them.  When mcpb bumps manifest_version, when
+#   the project changes license, or when the mcpb CLI version is bumped
+#   upstream, update these files manually.
 set -euo pipefail
 
 VERSION="${VERSION:-dev}"
@@ -13,9 +20,12 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BUILD_DIR="${REPO_ROOT}/packaging/mcpb/build"
 DIST_DIR="${REPO_ROOT}/packaging/mcpb/dist"
 
+# renovate: datasource=npm depName=@anthropic-ai/mcpb
+MCPB_VERSION="2.1.2"
+
 command -v mcpb >/dev/null 2>&1 || {
   echo "error: mcpb CLI not found. Install with:" >&2
-  echo "  npm install -g @anthropic-ai/mcpb@2.1.2" >&2
+  echo "  npm install -g @anthropic-ai/mcpb@${MCPB_VERSION}" >&2
   exit 1
 }
 
