@@ -21,6 +21,7 @@ htmlcov/
 site/
 .mcpregistry_*
 .worktrees/
+docs/superpowers/
 
 # Claude Code local overrides (scope narrowly so project-shared assets
 # under .claude/ — hooks, custom commands, agents — stay committable)
