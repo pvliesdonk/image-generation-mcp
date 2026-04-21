@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.7.0-rc.2 (2026-04-21)
+
+### Chores
+
+- **deps**: Bump pygments from 2.19.2 to 2.20.0 (#157)
+  ([#157](https://github.com/pvliesdonk/image-generation-mcp/pull/157),
+  [`eebef07`](https://github.com/pvliesdonk/image-generation-mcp/commit/eebef07c0d7bc003d1836e400ffb49fad0981541))
+
+- **deps**: Drop redundant httpx + uvicorn deps (#188)
+  ([#188](https://github.com/pvliesdonk/image-generation-mcp/pull/188),
+  [`97f566b`](https://github.com/pvliesdonk/image-generation-mcp/commit/97f566ba06f11b18296f52fbe6073bb0997b17be))
+
+
 ## v1.5.1 (2026-04-21)
 
 ### Bug Fixes
