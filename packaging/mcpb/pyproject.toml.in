@@ -1,0 +1,8 @@
+# Rendered at build time by envsubst. ${VERSION} matches the package release.
+[project]
+name = "image-generation-mcp-mcpb"
+version = "${VERSION}"
+requires-python = ">=3.11"
+dependencies = [
+  "image-generation-mcp[all]==${VERSION}",
+]
