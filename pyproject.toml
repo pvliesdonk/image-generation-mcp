@@ -139,6 +139,15 @@ pythonVersion = "3.11"
 version_toml = ["pyproject.toml:project.version"]
 commit_parser = "angular"
 tag_format = "v{version}"
+# Bump the versioned server.json manifest inside the release commit rather
+# than in a follow-up commit + force-retag.
+build_command = "python scripts/bump_manifests.py"
+# PSR stages and commits files listed in `assets` together with pyproject.toml
+# and CHANGELOG.md, so the release tag points at a single commit containing
+# all version-coupled files.
+assets = [
+    "server.json",
+]
 
 [tool.semantic_release.changelog]
 changelog_file = "CHANGELOG.md"
