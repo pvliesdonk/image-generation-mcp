@@ -8,6 +8,7 @@ server surface and the fastmcp-pvl-core README for the helpers used here.
 from __future__ import annotations
 
 import logging
+import os
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 
@@ -33,12 +34,12 @@ from image_generation_mcp._server_deps import make_service_lifespan
 from image_generation_mcp._server_prompts import register_prompts
 from image_generation_mcp._server_resources import register_resources
 from image_generation_mcp._server_tools import register_tools
-from image_generation_mcp.config import ProjectConfig
+from image_generation_mcp.config import _ENV_PREFIX, ProjectConfig
 
 logger = logging.getLogger(__name__)
 
-_ENV_PREFIX = "IMAGE_GENERATION_MCP"
 _LUCIDE = "https://unpkg.com/lucide-static/icons/{}.svg"
+_DEFAULT_SERVER_NAME = "image-generation-mcp"
 
 
 def _load_server_config() -> ServerConfig:
@@ -150,15 +151,18 @@ def make_server(
     except PackageNotFoundError:
         pkg_ver = "unknown"
 
+    server_name = os.environ.get(f"{_ENV_PREFIX}_SERVER_NAME", _DEFAULT_SERVER_NAME)
+
     logger.info(
-        "Server config: name=image-generation-mcp version=%s auth=%s mode=%s",
+        "Server config: name=%s version=%s auth=%s mode=%s",
+        server_name,
         pkg_ver,
         auth_mode,
         "read-only" if config.read_only else "read-write",
     )
 
     mcp = FastMCP(
-        name="image-generation-mcp",
+        name=server_name,
         instructions=build_instructions(
             read_only=config.read_only,
             env_prefix=_ENV_PREFIX,
