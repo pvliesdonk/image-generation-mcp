@@ -2,6 +2,18 @@
 
 <!-- version list -->
 
+## v1.6.0-rc.1 (2026-04-21)
+
+### Chores
+
+- Adopt fastmcp-server-template v1.0.0 + fastmcp-pvl-core (#175)
+  ([#175](https://github.com/pvliesdonk/image-generation-mcp/pull/175),
+  [`e313d75`](https://github.com/pvliesdonk/image-generation-mcp/commit/e313d757cb4f5383c6b4b6f5203dd0b4ca2bd257))
+
+- Update server.json to v1.5.0 [skip ci]
+  ([`1d24411`](https://github.com/pvliesdonk/image-generation-mcp/commit/1d24411d5d9cfb0d39c6701e323c1a22d525f3ba))
+
+
 ## v1.5.0 (2026-04-01)
 
 ### Chores
