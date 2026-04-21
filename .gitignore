@@ -20,6 +20,9 @@ htmlcov/
 *.npz
 site/
 .mcpregistry_*
+.worktrees/
 
-# Claude Code local settings
-.claude/
+# Claude Code local overrides (scope narrowly so project-shared assets
+# under .claude/ — hooks, custom commands, agents — stay committable)
+.claude/worktrees/
+.claude/settings.local.json
