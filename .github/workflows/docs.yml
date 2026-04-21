@@ -3,6 +3,10 @@ name: Documentation
 on:
   push:
     branches: [main]
+    # Tag-push is a SMOKE TEST: it runs `build` only (confirms docs still
+    # compile against a release tag) — the `upload-artifact` and `deploy`
+    # steps below are gated on `github.event_name == 'release'`, so actual
+    # GitHub Pages deployment still only happens via the release event.
     tags: ["v*"]
   pull_request:
     branches: [main]
@@ -13,8 +17,13 @@ on:
 permissions:
   contents: read
 
+# Include github.event_name so tag-push and release runs don't share a
+# concurrency key — without this, the tag-push run fired by ``git push``
+# and the release run fired by ``release:published`` collide on the same
+# ref+workflow key and `cancel-in-progress: true` cancels whichever
+# arrived first (usually the one carrying the deployment).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
