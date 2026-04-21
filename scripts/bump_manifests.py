@@ -54,12 +54,26 @@ def main() -> int:
         )
         return 1
     server = _load(server_path)
+    if not isinstance(server, dict):
+        print(
+            f"{server_path} must contain a JSON object (top-level)",
+            file=sys.stderr,
+        )
+        return 1
     server["version"] = version
-    for pkg in server.get("packages", []):
+    packages = server.get("packages", [])
+    if not isinstance(packages, list):
+        packages = []
+    for pkg in packages:
+        if not isinstance(pkg, dict):
+            continue
         if pkg.get("registryType") == "pypi":
             pkg["version"] = version
         elif pkg.get("registryType") == "oci":
-            identifier = pkg.get("identifier", "")
+            # ``or ""`` covers both the absent-key and the JSON-null cases;
+            # ``dict.get(key, default)`` only returns default when the key
+            # is absent, not when the value is None.
+            identifier = pkg.get("identifier") or ""
             new_id, n = re.subn(r":v[^:]+$", f":v{version}", identifier)
             if n == 0:
                 print(
