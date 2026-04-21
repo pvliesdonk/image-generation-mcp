@@ -47,15 +47,30 @@ def main() -> int:
     # Replace only the ``:v<old>`` suffix of the OCI identifier so forks/renames
     # keep their own ``ghcr.io/<owner>/<image>`` base.
     server_path = Path("server.json")
+    if not server_path.exists():
+        print(
+            f"server.json not found in {Path.cwd()} — run from repo root",
+            file=sys.stderr,
+        )
+        return 1
     server = _load(server_path)
     server["version"] = version
     for pkg in server.get("packages", []):
         if pkg.get("registryType") == "pypi":
             pkg["version"] = version
         elif pkg.get("registryType") == "oci":
-            pkg["identifier"] = re.sub(r":v[^:]+$", f":v{version}", pkg["identifier"])
+            identifier = pkg.get("identifier", "")
+            new_id, n = re.subn(r":v[^:]+$", f":v{version}", identifier)
+            if n == 0:
+                print(
+                    f"WARNING: OCI identifier {identifier!r} has no ':v<tag>' "
+                    "suffix to bump — left unchanged",
+                    file=sys.stderr,
+                )
+            pkg["identifier"] = new_id
     _dump(server_path, server)
 
+    print(f"bump_manifests: server.json → {version}")
     return 0
 
 
