@@ -72,6 +72,8 @@ def load_config() -> ProjectConfig:
     server = ServerConfig.from_env(env_prefix=_ENV_PREFIX)
 
     # CONFIG-FROM-ENV-START — image-generation domain reads; kept across copier update
+    # SERVER_NAME is an IG-domain field — core's ServerConfig does not carry it,
+    # so this is the only place it's read.
     server_name = env(_ENV_PREFIX, "SERVER_NAME")
     read_only = parse_bool(env(_ENV_PREFIX, "READ_ONLY", "true"))
 

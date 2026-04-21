@@ -18,9 +18,37 @@ if TYPE_CHECKING:
 
 
 class TestBuildEventStoreURLParsing:
-    def test_none_url_returns_file_backed_store(self, tmp_path: Path) -> None:
-        """No URL falls back to the core default file-backed store."""
-        store = build_event_store(f"file://{tmp_path / 'events'}")
+    def test_none_url_falls_back_to_default_dir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``build_event_store(None)`` delegates to core, which falls back
+        to the default event-store directory.  We monkeypatch the default
+        so the test doesn't try to mkdir under ``/data/state/events``.
+        """
+        target = tmp_path / "default-events"
+        monkeypatch.setattr(
+            "fastmcp_pvl_core._factory._DEFAULT_EVENT_STORE_DIR", str(target)
+        )
+
+        store = build_event_store(None)
+
+        assert target.exists()
+        from fastmcp.server.event_store import EventStore
+
+        assert isinstance(store, EventStore)
+
+    def test_empty_string_url_falls_back_to_default_dir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """``build_event_store("")`` hits the same fallback branch as ``None``."""
+        target = tmp_path / "default-events"
+        monkeypatch.setattr(
+            "fastmcp_pvl_core._factory._DEFAULT_EVENT_STORE_DIR", str(target)
+        )
+
+        store = build_event_store("")
+
+        assert target.exists()
         from fastmcp.server.event_store import EventStore
 
         assert isinstance(store, EventStore)
@@ -48,13 +76,6 @@ class TestBuildEventStoreURLParsing:
 
         store = build_event_store(f"file://{target}")
 
-        from fastmcp.server.event_store import EventStore
-
-        assert isinstance(store, EventStore)
-
-    def test_empty_string_url_returns_file_backed_store(self, tmp_path: Path) -> None:
-        """Empty string hits the same 'if not url' branch as None."""
-        store = build_event_store(f"file://{tmp_path / 'events'}")
         from fastmcp.server.event_store import EventStore
 
         assert isinstance(store, EventStore)
