@@ -56,7 +56,7 @@
     "read_only": {
       "type": "boolean",
       "title": "Read-only mode",
-      "description": "When true, image-generation tools are hidden (only list_providers / show_image remain).",
+      "description": "When true, image-generation tools are hidden (only list_providers / show_image remain). Defaults to FALSE for MCPB bundles (desktop/local use → interactive generation is the primary use case), in contrast to the stdio/uvx/Docker default which is TRUE (servers are read-only unless explicitly opted in).",
       "required": false,
       "default": false
     },

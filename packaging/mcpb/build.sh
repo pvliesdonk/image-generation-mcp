@@ -28,6 +28,12 @@ command -v mcpb >/dev/null 2>&1 || {
   echo "  npm install -g @anthropic-ai/mcpb@${MCPB_VERSION}" >&2
   exit 1
 }
+command -v envsubst >/dev/null 2>&1 || {
+  echo "error: envsubst not found (part of gettext). Install with:" >&2
+  echo "  brew install gettext     # macOS" >&2
+  echo "  apt install gettext-base # Debian/Ubuntu" >&2
+  exit 1
+}
 
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}/src" "${DIST_DIR}"
