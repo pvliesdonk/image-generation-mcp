@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 import pytest
 from fastmcp import Client
 
 from image_generation_mcp.mcp_server import create_server
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestResourcesAsToolsRegistration:
@@ -68,13 +72,16 @@ class TestResourcesAsToolsReadOnly:
 class TestResourcesAsToolsEndToEnd:
     """End-to-end wiring: read_resource executes the underlying resource."""
 
-    async def test_read_resource_tool_returns_image_list(self) -> None:
+    async def test_read_resource_tool_returns_image_list(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Calling read_resource with image://list returns valid JSON.
 
         Exercises the full wiring: ResourcesAsTools tool -> server lifespan ->
-        image_list resource -> ImageService.list_images(). No images have been
-        generated, so the result is an empty JSON array.
+        image_list resource -> ImageService.list_images(). Uses an isolated
+        scratch dir so the result is a deterministic empty JSON array.
         """
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
         server = create_server()
         async with Client(server) as client:
             result = await client.call_tool("read_resource", {"uri": "image://list"})
@@ -85,4 +92,4 @@ class TestResourcesAsToolsEndToEnd:
         assert len(result.content) == 1
         parsed = json.loads(result.content[0].text)
         assert isinstance(parsed, list)
-        assert parsed == []  # no images generated in this session
+        assert parsed == []  # isolated scratch dir, no images

@@ -1,52 +1,20 @@
-"""Configuration loading from environment variables.
+"""Project configuration for image-generation-mcp.
 
-All environment variables share the ``IMAGE_GENERATION_MCP_`` prefix (controlled by
-:data:`_ENV_PREFIX`).  Add your domain-specific configuration fields to
-:class:`ServerConfig` and read them in :func:`load_config`.
+Composes ``fastmcp_pvl_core.ServerConfig`` for transport/auth/event-store
+fields; adds image-generation domain fields below.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+
+from fastmcp_pvl_core import ServerConfig, env, parse_bool, parse_list
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Change this to match your service.  All env vars will be prefixed with it.
-# e.g. _ENV_PREFIX = "WEATHER_MCP" → WEATHER_MCP_READ_ONLY, WEATHER_MCP_PORT …
-# ---------------------------------------------------------------------------
 _ENV_PREFIX = "IMAGE_GENERATION_MCP"
-
-
-def _env(name: str, default: str | None = None) -> str | None:
-    """Return the value of ``{_ENV_PREFIX}_{name}`` from the environment.
-
-    Args:
-        name: Suffix after the prefix (e.g. ``"READ_ONLY"``).
-        default: Fallback when the variable is unset.
-
-    Returns:
-        The environment variable value, or *default*.
-    """
-    return os.environ.get(f"{_ENV_PREFIX}_{name}", default)
-
-
-def _parse_bool(value: str) -> bool:
-    """Parse a boolean from an environment variable string.
-
-    Treats ``"true"``, ``"1"``, and ``"yes"`` (case-insensitive) as ``True``.
-
-    Args:
-        value: Raw environment variable string.
-
-    Returns:
-        ``True`` for truthy strings, ``False`` otherwise.
-    """
-    return value.strip().lower() in ("true", "1", "yes")
 
 
 _DEFAULT_SCRATCH_DIR = Path.home() / ".image-generation-mcp" / "images"
@@ -54,26 +22,17 @@ _DEFAULT_STYLES_DIR = Path.home() / ".image-generation-mcp" / "styles"
 
 
 @dataclass
-class ServerConfig:
-    """Server configuration loaded from environment variables.
+class ProjectConfig:
+    """Image-generation-mcp configuration loaded from environment variables.
 
-    Attributes:
-        read_only: When ``True`` (default), write-tagged tools are hidden.
-        scratch_dir: Directory for saving generated images.
-        openai_api_key: OpenAI API key for gpt-image-1 / dall-e-3.
-        google_api_key: Google API key for Gemini image generation.
-        sd_webui_host: SD WebUI base URL (A1111/Forge/reForge/Forge-neo).
-        default_provider: Default provider for generation (``"auto"``
-            selects based on prompt analysis).
-        transform_cache_size: Maximum number of transformed image results
-            to keep in the in-memory LRU cache.
-        base_url: Public base URL of the server.  Required for OIDC and
-            for constructing artifact download links.
-        paid_providers: Set of provider names that cost money.  When
-            elicitation is supported, ``generate_image`` asks for
-            confirmation before using these providers.
+    The ``server`` field carries generic FastMCP server config (transport,
+    auth, event store). Domain fields (provider keys, scratch dir, etc.)
+    live directly on this dataclass.
     """
 
+    # CONFIG-FIELDS-START — image-generation domain fields; kept across copier update
+    server: ServerConfig = field(default_factory=ServerConfig)
+    server_name: str | None = None
     read_only: bool = True
     scratch_dir: Path = field(default_factory=lambda: _DEFAULT_SCRATCH_DIR)
     openai_api_key: str | None = None
@@ -82,12 +41,12 @@ class ServerConfig:
     sd_webui_model: str | None = None
     default_provider: str = "auto"
     transform_cache_size: int = 64
-    base_url: str | None = None
     paid_providers: frozenset[str] = frozenset({"openai"})
     styles_dir: Path = field(default_factory=lambda: _DEFAULT_STYLES_DIR)
+    # CONFIG-FIELDS-END
 
 
-def load_config() -> ServerConfig:
+def load_config() -> ProjectConfig:
     """Load configuration from environment variables.
 
     Reads:
@@ -95,87 +54,91 @@ def load_config() -> ServerConfig:
     - ``IMAGE_GENERATION_MCP_READ_ONLY``: disable write tools; default ``true``.
     - ``IMAGE_GENERATION_MCP_SCRATCH_DIR``: image save directory.
     - ``IMAGE_GENERATION_MCP_OPENAI_API_KEY``: OpenAI API key.
-    - ``IMAGE_GENERATION_MCP_GOOGLE_API_KEY``: Google API key; enables Gemini provider.
-    - ``IMAGE_GENERATION_MCP_SD_WEBUI_HOST``: SD WebUI URL (also accepts
-      deprecated ``A1111_HOST``).
-    - ``IMAGE_GENERATION_MCP_SD_WEBUI_MODEL``: SD WebUI checkpoint name for
-      preset detection (also accepts deprecated ``A1111_MODEL``).
+    - ``IMAGE_GENERATION_MCP_GOOGLE_API_KEY``: Google API key (Gemini).
+    - ``IMAGE_GENERATION_MCP_SD_WEBUI_HOST``: SD WebUI URL (also accepts deprecated ``A1111_HOST``).
+    - ``IMAGE_GENERATION_MCP_SD_WEBUI_MODEL``: SD WebUI checkpoint name (also accepts deprecated ``A1111_MODEL``).
     - ``IMAGE_GENERATION_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
     - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
-    - ``IMAGE_GENERATION_MCP_BASE_URL``: public base URL, required for OIDC and
-      artifact download links.
-    - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list of provider
-      names that cost money; default ``"openai"``.
-    - ``IMAGE_GENERATION_MCP_STYLES_DIR``: directory for style preset files;
-      default ``~/.image-generation-mcp/styles/``.
+    - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list; default ``"openai"``.
+    - ``IMAGE_GENERATION_MCP_STYLES_DIR``: style preset dir; default ``~/.image-generation-mcp/styles/``.
+
+    Plus all generic ``ServerConfig`` env vars (BASE_URL, BEARER_TOKEN,
+    OIDC_*, EVENT_STORE_URL, SERVER_NAME, INSTRUCTIONS) — see
+    ``fastmcp_pvl_core.ServerConfig.from_env``.
 
     Returns:
-        A populated :class:`ServerConfig` instance.
+        A populated :class:`ProjectConfig` instance.
     """
-    raw_read_only = _env("READ_ONLY")
+    server = ServerConfig.from_env(env_prefix=_ENV_PREFIX)
 
-    # Build kwargs — only set values that are explicitly configured,
-    # letting ServerConfig dataclass defaults apply for the rest.
-    kwargs: dict[str, Any] = {}
+    # CONFIG-FROM-ENV-START — image-generation domain reads; kept across copier update
+    # SERVER_NAME is an IG-domain field — core's ServerConfig does not carry it,
+    # so this is the only place it's read.
+    server_name = env(_ENV_PREFIX, "SERVER_NAME")
+    read_only = parse_bool(env(_ENV_PREFIX, "READ_ONLY", "true"))
 
-    if raw_read_only is not None:
-        kwargs["read_only"] = _parse_bool(raw_read_only)
+    scratch_dir = Path(env(_ENV_PREFIX, "SCRATCH_DIR") or _DEFAULT_SCRATCH_DIR)
 
-    if raw_scratch := _env("SCRATCH_DIR"):
-        kwargs["scratch_dir"] = Path(raw_scratch)
+    openai_api_key = env(_ENV_PREFIX, "OPENAI_API_KEY")
+    google_api_key = env(_ENV_PREFIX, "GOOGLE_API_KEY")
 
-    if key := _env("OPENAI_API_KEY"):
-        kwargs["openai_api_key"] = key
-
-    if key := _env("GOOGLE_API_KEY"):
-        kwargs["google_api_key"] = key
-
-    if host := _env("SD_WEBUI_HOST"):
-        kwargs["sd_webui_host"] = host
-    elif host := _env("A1111_HOST"):
+    sd_webui_host = env(_ENV_PREFIX, "SD_WEBUI_HOST")
+    if not sd_webui_host and (legacy := env(_ENV_PREFIX, "A1111_HOST")):
         logger.warning(
             "IMAGE_GENERATION_MCP_A1111_HOST is deprecated — "
             "use IMAGE_GENERATION_MCP_SD_WEBUI_HOST instead"
         )
-        kwargs["sd_webui_host"] = host
+        sd_webui_host = legacy
 
-    if model := _env("SD_WEBUI_MODEL"):
-        kwargs["sd_webui_model"] = model
-    elif model := _env("A1111_MODEL"):
+    sd_webui_model = env(_ENV_PREFIX, "SD_WEBUI_MODEL")
+    if not sd_webui_model and (legacy := env(_ENV_PREFIX, "A1111_MODEL")):
         logger.warning(
             "IMAGE_GENERATION_MCP_A1111_MODEL is deprecated — "
             "use IMAGE_GENERATION_MCP_SD_WEBUI_MODEL instead"
         )
-        kwargs["sd_webui_model"] = model
+        sd_webui_model = legacy
 
-    if provider := _env("DEFAULT_PROVIDER"):
-        if provider == "a1111":
-            logger.warning(
-                "DEFAULT_PROVIDER='a1111' is deprecated — use 'sd_webui' instead"
-            )
-            provider = "sd_webui"
-        kwargs["default_provider"] = provider
+    default_provider = env(_ENV_PREFIX, "DEFAULT_PROVIDER") or "auto"
+    if default_provider == "a1111":
+        logger.warning(
+            "DEFAULT_PROVIDER='a1111' is deprecated — use 'sd_webui' instead"
+        )
+        default_provider = "sd_webui"
 
-    if raw_cache_size := _env("TRANSFORM_CACHE_SIZE"):
+    raw_cache = env(_ENV_PREFIX, "TRANSFORM_CACHE_SIZE")
+    transform_cache_size = 64
+    if raw_cache:
         try:
-            kwargs["transform_cache_size"] = int(raw_cache_size)
+            transform_cache_size = int(raw_cache)
         except ValueError:
             logger.warning(
-                "Invalid TRANSFORM_CACHE_SIZE=%r — using default 64", raw_cache_size
+                "Invalid TRANSFORM_CACHE_SIZE=%r — using default 64", raw_cache
             )
 
-    if base_url := _env("BASE_URL"):
-        kwargs["base_url"] = base_url.rstrip("/")
+    raw_paid = env(_ENV_PREFIX, "PAID_PROVIDERS")
+    paid_providers = (
+        frozenset(p.lower() for p in parse_list(raw_paid))
+        if raw_paid is not None
+        else frozenset({"openai"})
+    )
 
-    if raw_styles := _env("STYLES_DIR"):
-        kwargs["styles_dir"] = Path(raw_styles)
+    styles_dir = Path(env(_ENV_PREFIX, "STYLES_DIR") or _DEFAULT_STYLES_DIR)
 
-    raw_paid = _env("PAID_PROVIDERS")
-    if raw_paid is not None:
-        kwargs["paid_providers"] = frozenset(
-            p.strip().lower() for p in raw_paid.split(",") if p.strip()
-        )
+    config = ProjectConfig(
+        server=server,
+        server_name=server_name,
+        read_only=read_only,
+        scratch_dir=scratch_dir,
+        openai_api_key=openai_api_key,
+        google_api_key=google_api_key,
+        sd_webui_host=sd_webui_host,
+        sd_webui_model=sd_webui_model,
+        default_provider=default_provider,
+        transform_cache_size=transform_cache_size,
+        paid_providers=paid_providers,
+        styles_dir=styles_dir,
+    )
+    # CONFIG-FROM-ENV-END
 
-    config = ServerConfig(**kwargs)
-    logger.debug("load_config: read_only=%s (raw=%r)", config.read_only, raw_read_only)
+    logger.debug("load_config: read_only=%s", config.read_only)
     return config

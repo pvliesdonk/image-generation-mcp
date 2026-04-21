@@ -20,3 +20,6 @@ htmlcov/
 *.npz
 site/
 .mcpregistry_*
+
+# Claude Code local settings
+.claude/

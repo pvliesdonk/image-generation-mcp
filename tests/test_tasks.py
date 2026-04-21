@@ -414,9 +414,9 @@ async def test_image_list_includes_pending_generation(
 
     from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp._server_resources import register_resources
-    from image_generation_mcp.config import ServerConfig
+    from image_generation_mcp.config import ProjectConfig
 
-    config = ServerConfig(scratch_dir=tmp_path, read_only=False)
+    config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
 
     # Use an Event to block generation until we've read the pending list.
     # This replaces the previous asyncio.sleep(0.5) approach which was racy

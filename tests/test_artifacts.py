@@ -186,8 +186,10 @@ class TestCreateDownloadLinkTool:
         ttl_seconds: int = 300,
         base_url: str = "https://mcp.example.com",
     ) -> str:
+        from fastmcp_pvl_core import ServerConfig
+
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
-        from image_generation_mcp.config import ServerConfig
+        from image_generation_mcp.config import ProjectConfig
 
         set_artifact_store(ArtifactStore())
 
@@ -196,7 +198,7 @@ class TestCreateDownloadLinkTool:
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-        config = ServerConfig(base_url=base_url)
+        config = ProjectConfig(server=ServerConfig(base_url=base_url))
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             ttl_seconds=ttl_seconds,
@@ -244,8 +246,10 @@ class TestCreateDownloadLinkTool:
     async def test_raises_on_missing_base_url(
         self, registered_image: tuple[ImageService, str]
     ) -> None:
+        from fastmcp_pvl_core import ServerConfig
+
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
-        from image_generation_mcp.config import ServerConfig
+        from image_generation_mcp.config import ProjectConfig
 
         set_artifact_store(ArtifactStore())
         service, image_id = registered_image
@@ -254,7 +258,7 @@ class TestCreateDownloadLinkTool:
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-        config = ServerConfig(base_url=None)
+        config = ProjectConfig(server=ServerConfig(base_url=None))
         with pytest.raises(ValueError, match="IMAGE_GENERATION_MCP_BASE_URL"):
             await tool.fn(
                 uri=f"image://{image_id}/view",
@@ -264,8 +268,10 @@ class TestCreateDownloadLinkTool:
 
     async def test_raises_on_unknown_image_id(self, service: ImageService) -> None:
         """Tool must raise when the image_id is not in the registry."""
+        from fastmcp_pvl_core import ServerConfig
+
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
-        from image_generation_mcp.config import ServerConfig
+        from image_generation_mcp.config import ProjectConfig
 
         set_artifact_store(ArtifactStore())
         mcp = FastMCP("test")
@@ -275,7 +281,7 @@ class TestCreateDownloadLinkTool:
 
         from image_generation_mcp.providers.types import ImageProviderError
 
-        config = ServerConfig(base_url="https://mcp.example.com")
+        config = ProjectConfig(server=ServerConfig(base_url="https://mcp.example.com"))
         with pytest.raises(ImageProviderError):
             await tool.fn(
                 uri="image://nonexistent123/view",
@@ -285,8 +291,10 @@ class TestCreateDownloadLinkTool:
 
     async def test_raises_on_invalid_uri(self, service: ImageService) -> None:
         """Tool raises on a URI with no image_id."""
+        from fastmcp_pvl_core import ServerConfig
+
         from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
-        from image_generation_mcp.config import ServerConfig
+        from image_generation_mcp.config import ProjectConfig
 
         set_artifact_store(ArtifactStore())
         mcp = FastMCP("test")
@@ -294,7 +302,7 @@ class TestCreateDownloadLinkTool:
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-        config = ServerConfig(base_url="https://mcp.example.com")
+        config = ProjectConfig(server=ServerConfig(base_url="https://mcp.example.com"))
         with pytest.raises(ValueError, match="Invalid image URI"):
             await tool.fn(
                 uri="notanuri",

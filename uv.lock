@@ -760,6 +760,18 @@ tasks = [
 ]
 
 [[package]]
+name = "fastmcp-pvl-core"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastmcp" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/20/e8/19d9736dd16b366fcad897c3b305588c6e79d989caa296d0116f1625eb44/fastmcp_pvl_core-1.0.0.tar.gz", hash = "sha256:01a37c824a8929c6267d54ec570d5f6b1639e6c133eb6c36f1ee03ac216603f8", size = 144843, upload-time = "2026-04-20T15:57:19.215Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0d/d8/f79abe84d1dbe4be2165755de52b50fae365f5c4a096eea49e97ac12c948/fastmcp_pvl_core-1.0.0-py3-none-any.whl", hash = "sha256:a19e24ec387ae792e62781edbbc8a986545b5eb33eb01580ed707edbbea77e39", size = 18410, upload-time = "2026-04-20T15:57:17.835Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.25.2"
 source = { registry = "https://pypi.org/simple" }
@@ -885,9 +897,10 @@ wheels = [
 
 [[package]]
 name = "image-generation-mcp"
-version = "1.4.0"
+version = "1.5.0"
 source = { editable = "." }
 dependencies = [
+    { name = "fastmcp-pvl-core" },
     { name = "httpx" },
     { name = "pillow" },
 ]
@@ -933,6 +946,7 @@ requires-dist = [
     { name = "diff-cover", marker = "extra == 'dev'", specifier = ">=9.0" },
     { name = "fastmcp", extras = ["tasks"], marker = "extra == 'all'", specifier = ">=3.0,<4" },
     { name = "fastmcp", extras = ["tasks"], marker = "extra == 'mcp'", specifier = ">=3.0,<4" },
+    { name = "fastmcp-pvl-core", specifier = ">=1.0,<2" },
     { name = "google-genai", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "google-genai", marker = "extra == 'google-genai'", specifier = ">=1.0" },
     { name = "httpx", specifier = ">=0.27" },

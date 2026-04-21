@@ -228,7 +228,7 @@ class TestShowImageBasic:
         tool = await mcp.get_tool("show_image")
         assert tool is not None
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             service=service,
@@ -283,7 +283,7 @@ class TestShowImageFormatConversion:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view?{query}",
             service=service,
@@ -338,7 +338,7 @@ class TestShowImageResize:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view?{query}",
             service=service,
@@ -416,7 +416,7 @@ class TestShowImageThumbnailCap:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             service=service,
@@ -635,7 +635,7 @@ class TestShowImageModelField:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view",
             service=service,
@@ -690,7 +690,7 @@ class TestShowImageDownloadUrl:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         cfg = MagicMock()
-        cfg.base_url = base_url
+        cfg.server.base_url = base_url
         return await tool.fn(
             uri=f"image://{image_id}/view",
             with_link=with_link,
@@ -875,7 +875,7 @@ class TestGenerateImageErrorHandling:
         show_tool = await mcp.get_tool("show_image")
         assert show_tool is not None
         show_cfg = MagicMock()
-        show_cfg.base_url = None
+        show_cfg.server.base_url = None
         show_result = await show_tool.fn(
             uri=f"image://{image_id}/view",
             service=service,
@@ -905,7 +905,7 @@ class TestGenerateImageErrorHandling:
         show_tool = await mcp.get_tool("show_image")
         assert show_tool is not None
         show_cfg = MagicMock()
-        show_cfg.base_url = None
+        show_cfg.server.base_url = None
         show_result = await show_tool.fn(
             uri=f"image://{image_id}/view",
             service=service,
@@ -973,7 +973,7 @@ class TestShowImageInvalidScheme:
         assert tool is not None
 
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
 
         with pytest.raises(ValueError, match="Expected an image://"):
             await tool.fn(
@@ -1003,7 +1003,7 @@ class TestShowImageQualityTransform:
         assert tool is not None
 
         cfg = MagicMock()
-        cfg.base_url = None
+        cfg.server.base_url = None
 
         result = await tool.fn(
             uri=f"image://{image_id}/view?format=jpeg&quality=75",

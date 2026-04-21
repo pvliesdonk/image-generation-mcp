@@ -21,15 +21,16 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
+from fastmcp_pvl_core import parse_bool as _parse_bool
+
 from image_generation_mcp.config import (
     _DEFAULT_SCRATCH_DIR,
-    _parse_bool,
     load_config,
 )
 
 
 class TestParseBool:
-    """Tests for _parse_bool helper."""
+    """Tests for the shared parse_bool helper (re-exported from fastmcp-pvl-core)."""
 
     @pytest.mark.parametrize("value", ["true", "True", "TRUE", "1", "yes", "YES"])
     def test_truthy_values(self, value: str) -> None:
@@ -41,7 +42,7 @@ class TestParseBool:
 
 
 class TestLoadConfigDefaults:
-    """load_config() with no env vars uses ServerConfig defaults."""
+    """load_config() with no env vars uses ProjectConfig defaults."""
 
     def test_read_only_default(self) -> None:
         config = load_config()
@@ -135,18 +136,23 @@ class TestLoadConfigEnvVars:
     def test_base_url_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://mcp.example.com/")
         config = load_config()
-        # trailing slash is stripped
-        assert config.base_url == "https://mcp.example.com"
+        # core's ServerConfig preserves the trailing slash — consumers strip it
+        # at use (e.g. create_download_link in _server_tools.py).
+        assert config.server.base_url == "https://mcp.example.com/"
 
     def test_paid_providers_custom(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "openai,sd_webui")
         config = load_config()
         assert config.paid_providers == frozenset({"openai", "sd_webui"})
 
-    def test_paid_providers_empty_clears(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_paid_providers_empty_falls_back_to_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # core's env() treats empty string as unset, so the default kicks in.
+        # To explicitly clear the set, point at the "none" marker below.
         monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", "")
         config = load_config()
-        assert config.paid_providers == frozenset()
+        assert config.paid_providers == frozenset({"openai"})
 
     def test_paid_providers_with_spaces(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_PAID_PROVIDERS", " openai , sd_webui ")

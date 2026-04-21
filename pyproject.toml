@@ -1,11 +1,11 @@
 [project]
 name = "image-generation-mcp"
 version = "1.5.0"
-description = "FastMCP server template — replace this with your description"
+description = "MCP server for AI image generation via OpenAI, Google GenAI, or Stable Diffusion WebUI"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-authors = [{ name = "Your Name" }]
+authors = [{ name = "Peter van Liesdonk" }]
 keywords = ["mcp", "image-generation-mcp", "model-context-protocol", "fastmcp"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -16,7 +16,11 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
 ]
-dependencies = ["httpx>=0.27", "Pillow>=10.0"]
+dependencies = [
+    "fastmcp-pvl-core>=1.0,<2",
+    "httpx>=0.27",
+    "Pillow>=10.0",
+]
 
 [project.optional-dependencies]
 mcp = ["fastmcp[tasks]>=3.0,<4", "uvicorn>=0.20"]
@@ -69,7 +73,7 @@ ignore = ["E501"]
 # Depends() and CurrentContext() calls in argument defaults are the standard
 # FastMCP dependency injection pattern — B008 is a false positive here.
 # Context/FastMCP imports must stay runtime (not TYPE_CHECKING) for DI.
-"src/image_generation_mcp/mcp_server.py" = ["B008", "TCH002"]
+"src/image_generation_mcp/mcp_server.py" = ["B008", "TCH002", "TC001"]
 "src/image_generation_mcp/_server_deps.py" = ["B008", "TCH002"]
 "src/image_generation_mcp/_server_tools.py" = ["B008", "TCH001", "TCH002"]
 "src/image_generation_mcp/_server_resources.py" = ["B008", "TCH001", "TCH002"]
@@ -123,6 +127,13 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["google", "google.genai", "google.genai.*"]
 ignore_missing_imports = true
+
+[tool.pyright]
+# Point Pyright at the uv-managed venv so editor diagnostics resolve
+# imports the same way as our CLI tools (mypy/ruff/pytest run via uv).
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.11"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]

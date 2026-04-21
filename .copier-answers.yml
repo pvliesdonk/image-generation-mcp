@@ -1,0 +1,12 @@
+# Changes here will be overwritten by `copier update`.
+_commit: v1.0.0
+_src_path: https://github.com/pvliesdonk/fastmcp-server-template
+docker_registry: ghcr.io/pvliesdonk
+domain_description: MCP server for AI image generation via OpenAI, Google GenAI, or
+    Stable Diffusion WebUI
+env_prefix: IMAGE_GENERATION_MCP
+github_org: pvliesdonk
+human_name: Image Generation MCP
+project_name: image-generation-mcp
+pypi_name: image-generation-mcp
+python_module: image_generation_mcp
