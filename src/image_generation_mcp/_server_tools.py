@@ -39,7 +39,7 @@ from pydantic import AnyUrl
 
 from ._server_deps import get_config, get_service
 from ._server_resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
-from .config import ServerConfig
+from .config import ProjectConfig
 from .processing import (
     convert_format,
     crop_region,
@@ -98,7 +98,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         background: str = "opaque",
         model: str | None = None,
         service: ImageService = Depends(get_service),
-        config: ServerConfig = Depends(get_config),
+        config: ProjectConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
     ) -> ToolResult:
         """Generate an image in the background and return metadata.
@@ -438,7 +438,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         uri: str,
         with_link: bool = True,
         service: ImageService = Depends(get_service),
-        config: ServerConfig = Depends(get_config),
+        config: ProjectConfig = Depends(get_config),
     ) -> ToolResult:
         """Display a completed image with optional on-demand transforms.
 
@@ -585,7 +585,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # Auto-generate a download link when on HTTP transport with
         # BASE_URL configured and with_link is True.
         if with_link:
-            base_url = (config.base_url or "").rstrip("/")
+            base_url = (config.server.base_url or "").rstrip("/")
             if base_url:
                 from .artifacts import get_artifact_store
 
@@ -1087,7 +1087,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
         uri: str,
         ttl_seconds: int = 300,
         service: ImageService = Depends(get_service),
-        config: ServerConfig = Depends(get_config),
+        config: ProjectConfig = Depends(get_config),
     ) -> str:
         """Create a one-time download URL for an image.
 
@@ -1119,7 +1119,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
         from urllib.parse import urlparse
 
         # Validate BASE_URL is configured
-        base_url = (config.base_url or "").rstrip("/")
+        base_url = (config.server.base_url or "").rstrip("/")
         if not base_url:
             msg = (
                 "IMAGE_GENERATION_MCP_BASE_URL is required for download links. "
@@ -1185,7 +1185,7 @@ def _register_download_link_tool(mcp: FastMCP) -> None:
         aspect_ratio: str | None = None,
         quality: str | None = None,
         service: ImageService = Depends(get_service),
-        config: ServerConfig = Depends(get_config),
+        config: ProjectConfig = Depends(get_config),
     ) -> str:
         """Save a style preset to the styles directory.
 

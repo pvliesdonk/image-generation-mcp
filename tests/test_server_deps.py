@@ -26,7 +26,7 @@ from image_generation_mcp._server_deps import (
     get_service,
     make_service_lifespan,
 )
-from image_generation_mcp.config import ServerConfig
+from image_generation_mcp.config import ProjectConfig
 from image_generation_mcp.service import ImageService
 
 # ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ class TestGetConfig:
 
     def test_returns_config_from_context(self) -> None:
         """Returns config from lifespan context."""
-        cfg = ServerConfig()
+        cfg = ProjectConfig()
         ctx = MagicMock()
         ctx.lifespan_context = {"config": cfg}
         result = get_config(ctx)
@@ -125,7 +125,7 @@ class TestGetConfig:
 class TestMakeServiceLifespan:
     """Tests for make_service_lifespan() provider initialization logic."""
 
-    async def _run_lifespan(self, config: ServerConfig) -> ImageService:
+    async def _run_lifespan(self, config: ProjectConfig) -> ImageService:
         """Run lifespan as async context manager and return the service from context."""
         from fastmcp import FastMCP
 
@@ -137,20 +137,20 @@ class TestMakeServiceLifespan:
 
     async def test_placeholder_always_registered(self, tmp_path: Path) -> None:
         """Placeholder provider is always registered."""
-        config = ServerConfig(scratch_dir=tmp_path)
+        config = ProjectConfig(scratch_dir=tmp_path)
         service = await self._run_lifespan(config)
         assert service is not None
         assert "placeholder" in service.providers
 
     async def test_openai_not_registered_without_key(self, tmp_path: Path) -> None:
         """OpenAI provider is NOT registered when openai_api_key is None."""
-        config = ServerConfig(scratch_dir=tmp_path, openai_api_key=None)
+        config = ProjectConfig(scratch_dir=tmp_path, openai_api_key=None)
         service = await self._run_lifespan(config)
         assert "openai" not in service.providers
 
     async def test_sd_webui_not_registered_without_host(self, tmp_path: Path) -> None:
         """SD WebUI provider is NOT registered when sd_webui_host is None."""
-        config = ServerConfig(scratch_dir=tmp_path, sd_webui_host=None)
+        config = ProjectConfig(scratch_dir=tmp_path, sd_webui_host=None)
         service = await self._run_lifespan(config)
         assert "sd_webui" not in service.providers
 
@@ -158,7 +158,7 @@ class TestMakeServiceLifespan:
         """Module-level _service_store is cleared to None after lifespan exits."""
         from fastmcp import FastMCP
 
-        config = ServerConfig(scratch_dir=tmp_path)
+        config = ProjectConfig(scratch_dir=tmp_path)
         server = FastMCP("test-cleanup")
         lifespan_fn = make_service_lifespan(config)
 
@@ -188,7 +188,7 @@ class TestMakeServiceLifespanOpenAIRegistration:
         """When openai_api_key is set, 'openai' appears in service.providers."""
         from fastmcp import FastMCP
 
-        config = ServerConfig(scratch_dir=tmp_path, openai_api_key="sk-fake-key")
+        config = ProjectConfig(scratch_dir=tmp_path, openai_api_key="sk-fake-key")
         server = FastMCP("test-openai")
         lifespan_fn = make_service_lifespan(config)
 
@@ -212,7 +212,7 @@ class TestMakeServiceLifespanSdWebuiRegistration:
         """When sd_webui_host is set, 'sd_webui' appears in service.providers."""
         from fastmcp import FastMCP
 
-        config = ServerConfig(
+        config = ProjectConfig(
             scratch_dir=tmp_path,
             sd_webui_host="http://localhost:7860",
             sd_webui_model="dreamshaper",
@@ -240,7 +240,7 @@ class TestMakeServiceLifespanGeminiRegistration:
         """When google_api_key is set, 'gemini' appears in service.providers."""
         from fastmcp import FastMCP
 
-        config = ServerConfig(scratch_dir=tmp_path, google_api_key="AIza-fake-key")
+        config = ProjectConfig(scratch_dir=tmp_path, google_api_key="AIza-fake-key")
         server = FastMCP("test-gemini")
         lifespan_fn = make_service_lifespan(config)
 

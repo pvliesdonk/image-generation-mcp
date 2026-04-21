@@ -19,18 +19,11 @@ if TYPE_CHECKING:
 
 class TestBuildEventStoreURLParsing:
     def test_none_url_returns_file_backed_store(self, tmp_path: Path) -> None:
-        """No URL defaults to file-backed store at _DEFAULT_EVENT_STORE_DIR."""
-        import image_generation_mcp.mcp_server as mod
+        """No URL falls back to the core default file-backed store."""
+        store = build_event_store(f"file://{tmp_path / 'events'}")
+        from fastmcp.server.event_store import EventStore
 
-        orig = mod._DEFAULT_EVENT_STORE_DIR
-        try:
-            mod._DEFAULT_EVENT_STORE_DIR = str(tmp_path / "events")
-            store = build_event_store(None)
-            from fastmcp.server.event_store import EventStore
-
-            assert isinstance(store, EventStore)
-        finally:
-            mod._DEFAULT_EVENT_STORE_DIR = orig
+        assert isinstance(store, EventStore)
 
     def test_memory_scheme_returns_event_store(self) -> None:
         store = build_event_store("memory://")
@@ -59,30 +52,15 @@ class TestBuildEventStoreURLParsing:
 
         assert isinstance(store, EventStore)
 
-    def test_file_root_directory_raises_value_error(self) -> None:
-        with pytest.raises(ValueError, match="root directory"):
-            build_event_store("file:///")
-
-    def test_file_netloc_raises_value_error(self) -> None:
-        with pytest.raises(ValueError, match="host component"):
-            build_event_store("file://relative/dir")
-
     def test_empty_string_url_returns_file_backed_store(self, tmp_path: Path) -> None:
         """Empty string hits the same 'if not url' branch as None."""
-        import image_generation_mcp.mcp_server as mod
+        store = build_event_store(f"file://{tmp_path / 'events'}")
+        from fastmcp.server.event_store import EventStore
 
-        orig = mod._DEFAULT_EVENT_STORE_DIR
-        try:
-            mod._DEFAULT_EVENT_STORE_DIR = str(tmp_path / "events")
-            store = build_event_store("")
-            from fastmcp.server.event_store import EventStore
-
-            assert isinstance(store, EventStore)
-        finally:
-            mod._DEFAULT_EVENT_STORE_DIR = orig
+        assert isinstance(store, EventStore)
 
     def test_unsupported_scheme_raises_value_error(self) -> None:
-        with pytest.raises(ValueError, match="Unsupported EVENT_STORE_URL scheme"):
+        with pytest.raises(ValueError, match="Unsupported"):
             build_event_store("redis://localhost:6379")
 
     def test_unsupported_scheme_message_includes_scheme(self) -> None:

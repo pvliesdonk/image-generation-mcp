@@ -333,18 +333,20 @@ class TestMain:
     """Tests for the main() entry point."""
 
     def test_main_serve_verbose(self) -> None:
-        """main with --verbose sets DEBUG log level and calls configure_logging."""
+        """main with --verbose calls configure_logging_from_env(verbose=True)."""
         mock_server = MagicMock()
         mock_create = MagicMock(return_value=mock_server)
 
         with (
             patch("image_generation_mcp.mcp_server.create_server", mock_create),
             patch("sys.argv", ["image-generation-mcp", "--verbose", "serve"]),
-            patch("image_generation_mcp.cli.configure_logging") as mock_cfg_log,
+            patch(
+                "image_generation_mcp.cli.configure_logging_from_env"
+            ) as mock_cfg_log,
         ):
             main()
 
-        mock_cfg_log.assert_called_once_with("DEBUG")
+        mock_cfg_log.assert_called_once_with(verbose=True)
         mock_server.run.assert_called_once()
 
     def test_main_no_verbose_info_level(self) -> None:

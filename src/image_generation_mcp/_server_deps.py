@@ -23,7 +23,7 @@ from image_generation_mcp.service import ImageService
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from image_generation_mcp.config import ServerConfig
+    from image_generation_mcp.config import ProjectConfig
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +49,11 @@ def _get_service_from_store() -> ImageService:
     return _service_store
 
 
-def make_service_lifespan(config: ServerConfig) -> Any:
+def make_service_lifespan(config: ProjectConfig) -> Any:
     """Create a lifespan function that closes over a pre-loaded config.
 
     Args:
-        config: A fully-loaded :class:`~image_generation_mcp.config.ServerConfig`
+        config: A fully-loaded :class:`~image_generation_mcp.config.ProjectConfig`
             instance produced by a single :func:`load_config` call in
             :func:`~image_generation_mcp.mcp_server.create_server`.
 
@@ -150,18 +150,18 @@ def get_service(ctx: Context = CurrentContext()) -> ImageService:
     return service
 
 
-def get_config(ctx: Context = CurrentContext()) -> ServerConfig:
-    """Resolve the ServerConfig from lifespan context.
+def get_config(ctx: Context = CurrentContext()) -> ProjectConfig:
+    """Resolve the ProjectConfig from lifespan context.
 
     Used as a ``Depends()`` default in tool/resource/prompt signatures.
 
     Raises:
         RuntimeError: If the server lifespan has not run.
     """
-    from image_generation_mcp.config import ServerConfig
+    from image_generation_mcp.config import ProjectConfig
 
     config = ctx.lifespan_context.get("config")
-    if not isinstance(config, ServerConfig):
+    if not isinstance(config, ProjectConfig):
         msg = "Config not initialised — server lifespan has not run"
         raise RuntimeError(msg)
     return config

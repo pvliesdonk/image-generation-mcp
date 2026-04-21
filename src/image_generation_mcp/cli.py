@@ -11,7 +11,7 @@ import logging
 import os
 import sys
 
-from fastmcp.utilities.logging import configure_logging
+from fastmcp_pvl_core import configure_logging_from_env, normalise_http_path
 
 from image_generation_mcp.config import _ENV_PREFIX
 
@@ -24,19 +24,13 @@ _DEFAULT_HTTP_PATH = "/mcp"
 def _normalise_http_path(path: str | None) -> str:
     """Normalise an HTTP endpoint path for FastMCP streamable HTTP transport.
 
-    Ensures a leading slash and removes a trailing slash (except for root ``/``).
-    Empty values fall back to ``/mcp``.
+    Thin wrapper preserving IG's semantics (fallback to ``/mcp``) while
+    delegating the heavy lifting to :func:`fastmcp_pvl_core.normalise_http_path`.
+    Kept as a module-private symbol so existing test imports still work.
     """
-    if path is None:
+    if path is None or not path.strip():
         return _DEFAULT_HTTP_PATH
-    normalised = path.strip()
-    if not normalised:
-        return _DEFAULT_HTTP_PATH
-    if not normalised.startswith("/"):
-        normalised = f"/{normalised}"
-    if len(normalised) > 1:
-        normalised = normalised.rstrip("/")
-    return normalised
+    return normalise_http_path(path)
 
 
 def _cmd_serve(args: argparse.Namespace) -> None:
@@ -87,7 +81,10 @@ def _build_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         prog=_PROG,
-        description="FastMCP server — replace this description",
+        description=(
+            "MCP server for AI image generation via OpenAI, Google GenAI, "
+            "or Stable Diffusion WebUI"
+        ),
     )
     parser.add_argument(
         "-v",
@@ -140,7 +137,7 @@ def main() -> None:
 
     # App loggers (image_generation_mcp.*) propagate to root; FastMCP
     # loggers (fastmcp.*) have propagate=False and are configured via
-    # FASTMCP_LOG_LEVEL at import time.  -v overrides both to DEBUG.
+    # FASTMCP_LOG_LEVEL.  -v also overrides the FastMCP tree to DEBUG.
     level = logging.DEBUG if args.verbose else logging.INFO
     root = logging.getLogger()
     root.setLevel(level)
@@ -148,8 +145,8 @@ def main() -> None:
     handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
     root.addHandler(handler)
 
+    configure_logging_from_env(verbose=args.verbose)
     if args.verbose:
-        configure_logging("DEBUG")
         # httpx is noisy at DEBUG — keep it at WARNING.
         logging.getLogger("httpx").setLevel(logging.WARNING)
         logging.getLogger("httpcore").setLevel(logging.WARNING)

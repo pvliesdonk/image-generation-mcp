@@ -27,8 +27,7 @@ from pathlib import Path
 
 SDK_VERSION = "1.3.1"
 SDK_URL = (
-    "https://unpkg.com/"
-    f"@modelcontextprotocol/ext-apps@{SDK_VERSION}/app-with-deps"
+    f"https://unpkg.com/@modelcontextprotocol/ext-apps@{SDK_VERSION}/app-with-deps"
 )
 SDK_SHA256 = "36495489aa8939e4eb7421c8a03c220b9f502d79e87895f88599eb6c02377fdd"
 SDK_IMPORT_SPECIFIER = "@modelcontextprotocol/ext-apps"
@@ -122,9 +121,7 @@ def main() -> int:
     try:
         raw.decode("utf-8")
     except UnicodeDecodeError as exc:
-        raise SystemExit(
-            f"ERROR: SDK download is not valid UTF-8: {exc}"
-        ) from exc
+        raise SystemExit(f"ERROR: SDK download is not valid UTF-8: {exc}") from exc
 
     b64 = base64.b64encode(raw).decode("ascii")
 

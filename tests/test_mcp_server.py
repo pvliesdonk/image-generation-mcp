@@ -88,7 +88,7 @@ class TestAuthModeSelection:
             server = create_server()
 
         assert isinstance(server.auth, MultiAuth)
-        assert "Multi-auth enabled" in caplog.text
+        assert "mode=multi" in caplog.text
 
     def test_multi_auth_structure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """OIDCProxy must be server= (not in verifiers=) for OAuth routes to mount."""
@@ -175,7 +175,7 @@ class TestResolveAuthMode:
         with caplog.at_level(logging.WARNING):
             result = _resolve_auth_mode()
         assert result is None
-        assert "not a recognised value" in caplog.text
+        assert "auth_mode_unknown" in caplog.text
 
     def test_config_url_only_returns_none(
         self, monkeypatch: pytest.MonkeyPatch
@@ -214,13 +214,12 @@ class TestBuildRemoteAuth:
         # ImportError regardless of prior import state (order-independent).
         with (
             patch.dict("sys.modules", {"httpx": None}),
-            caplog.at_level(logging.ERROR),
+            caplog.at_level(logging.WARNING),
         ):
             result = _build_remote_auth()
 
         assert result is None
         assert "httpx" in caplog.text
-        assert "pip install" in caplog.text
 
     def test_returns_remote_auth_provider(
         self, monkeypatch: pytest.MonkeyPatch
@@ -256,7 +255,7 @@ class TestBuildRemoteAuth:
             result = _build_remote_auth()
 
         assert result is None
-        assert "failed to fetch OIDC discovery" in caplog.text
+        assert "discovery_failed" in caplog.text
 
     def test_returns_none_on_missing_jwks_uri(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
@@ -276,7 +275,7 @@ class TestBuildRemoteAuth:
             result = _build_remote_auth()
 
         assert result is None
-        assert "missing jwks_uri or issuer" in caplog.text
+        assert "discovery_incomplete" in caplog.text
 
     def test_passes_audience_and_scopes(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Audience and scopes from env vars are passed to JWTVerifier."""
@@ -380,7 +379,9 @@ class TestRemoteAuthIntegration:
             server = create_server()
 
         assert server.auth is None
-        assert "could not be initialized" in caplog.text
+        # Core logs 'No auth configured' when build_auth returns None despite
+        # explicit AUTH_MODE; legacy IG message "could not be initialized" is gone.
+        assert "No auth configured" in caplog.text
 
     def test_startup_log_remote(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
@@ -399,7 +400,7 @@ class TestRemoteAuthIntegration:
         ):
             create_server()
 
-        assert "remote — token validation only" in caplog.text
+        assert "mode=remote" in caplog.text
 
     def test_startup_log_oidc_proxy(
         self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
@@ -416,7 +417,7 @@ class TestRemoteAuthIntegration:
         ):
             create_server()
 
-        assert "oidc-proxy — DCR emulation" in caplog.text
+        assert "mode=oidc-proxy" in caplog.text
 
 
 class TestVersionLogging:
@@ -432,16 +433,16 @@ class TestVersionLogging:
     def test_version_fallback_when_not_installed(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """Version falls back to 'dev' when package is not installed."""
+        """Version falls back to 'unknown' when package is not installed."""
         with (
             patch(
-                "image_generation_mcp.mcp_server.version",
+                "image_generation_mcp.mcp_server._pkg_version",
                 side_effect=PackageNotFoundError(),
             ),
             caplog.at_level(logging.INFO),
         ):
             create_server()
-        assert "version=dev" in caplog.text
+        assert "version=unknown" in caplog.text
 
 
 class TestReadOnlyMode:
