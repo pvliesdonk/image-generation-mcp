@@ -12,8 +12,8 @@ from fastmcp import FastMCP
 from PIL import Image as PILImage
 
 from image_generation_mcp._server_tools import register_tools
-from image_generation_mcp.mcp_server import create_server
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
+from image_generation_mcp.server import make_server
 from image_generation_mcp.service import ImageRecord, ImageService, PendingGeneration
 from tests._helpers import get_tool_including_app_only
 
@@ -59,7 +59,7 @@ def service(tmp_path: Path) -> ImageService:
 def server(monkeypatch: pytest.MonkeyPatch):
     """Server with no read-only restriction."""
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-    return create_server()
+    return make_server()
 
 
 # ---------------------------------------------------------------------------

@@ -205,5 +205,4 @@ def make_server(
     return mcp
 
 
-# Backward-compat alias: existing callers import `create_server` from this module.
-create_server = make_server
+# Backward-compat alias: existing callers import `make_server` from this module.

@@ -55,7 +55,7 @@ def make_service_lifespan(config: ProjectConfig) -> Any:
     Args:
         config: A fully-loaded :class:`~image_generation_mcp.config.ProjectConfig`
             instance produced by a single :func:`load_config` call in
-            :func:`~image_generation_mcp.mcp_server.create_server`.
+            :func:`~image_generation_mcp.server.make_server`.
 
     Returns:
         A FastMCP lifespan coroutine that initialises the service object and

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from image_generation_mcp.mcp_server import build_event_store
+from image_generation_mcp.server import build_event_store
 
 if TYPE_CHECKING:
     from pathlib import Path

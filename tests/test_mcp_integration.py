@@ -29,7 +29,7 @@ from fastmcp import Client
 from mcp.types import ImageContent, ResourceLink, TextContent
 from PIL import Image as PILImage
 
-from image_generation_mcp.mcp_server import create_server
+from image_generation_mcp.server import make_server
 
 
 async def _generate_and_wait(
@@ -89,7 +89,7 @@ def rw_server(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
     monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
-    return create_server()
+    return make_server()
 
 
 @pytest.fixture
@@ -100,7 +100,7 @@ def ro_server(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "true")
     monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
-    return create_server()
+    return make_server()
 
 
 # ---------------------------------------------------------------------------

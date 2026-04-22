@@ -37,7 +37,7 @@ def _cmd_serve(args: argparse.Namespace) -> None:
     """Run the MCP server."""
     try:
         from image_generation_mcp.config import load_config
-        from image_generation_mcp.mcp_server import create_server
+        from image_generation_mcp.server import make_server
     except ImportError:
         logger.error(
             "FastMCP is not installed. Install with: pip install image-generation-mcp[mcp]"
@@ -46,7 +46,7 @@ def _cmd_serve(args: argparse.Namespace) -> None:
 
     transport = args.transport
     config = load_config()
-    server = create_server(transport=transport, config=config)
+    server = make_server(transport=transport, config=config)
     env_http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH")
     http_path = _normalise_http_path(args.path or env_http_path)
     if transport != "http" and (
@@ -57,7 +57,7 @@ def _cmd_serve(args: argparse.Namespace) -> None:
         import uvicorn
 
         from image_generation_mcp._http_logging import mcp_request_logging_middleware
-        from image_generation_mcp.mcp_server import build_event_store
+        from image_generation_mcp.server import build_event_store
 
         event_store = build_event_store(config.server.event_store_url)
 

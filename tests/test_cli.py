@@ -150,7 +150,7 @@ class TestCmdServe:
         mock_server = MagicMock()
         mock_create = MagicMock(return_value=mock_server)
 
-        with patch("image_generation_mcp.mcp_server.create_server", mock_create):
+        with patch("image_generation_mcp.server.make_server", mock_create):
             args = argparse.Namespace(
                 transport="stdio",
                 host="0.0.0.0",
@@ -168,9 +168,9 @@ class TestCmdServe:
         mock_event_store = MagicMock()
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch("image_generation_mcp.server.make_server", mock_create),
             patch(
-                "image_generation_mcp.mcp_server.build_event_store",
+                "image_generation_mcp.server.build_event_store",
                 return_value=mock_event_store,
             ),
             patch("uvicorn.run") as mock_uvicorn_run,
@@ -201,9 +201,9 @@ class TestCmdServe:
         mock_create = MagicMock(return_value=mock_server)
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch("image_generation_mcp.server.make_server", mock_create),
             patch(
-                "image_generation_mcp.mcp_server.build_event_store",
+                "image_generation_mcp.server.build_event_store",
                 return_value=MagicMock(),
             ),
             patch("uvicorn.run") as mock_uvicorn_run,
@@ -235,9 +235,9 @@ class TestCmdServe:
         mock_create = MagicMock(return_value=mock_server)
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch("image_generation_mcp.server.make_server", mock_create),
             patch(
-                "image_generation_mcp.mcp_server.build_event_store",
+                "image_generation_mcp.server.build_event_store",
                 return_value=MagicMock(),
             ),
             patch("uvicorn.run") as mock_uvicorn_run,
@@ -266,10 +266,10 @@ class TestCmdServe:
 
         with (
             patch(
-                "image_generation_mcp.mcp_server.create_server",
+                "image_generation_mcp.server.make_server",
                 return_value=mock_server,
             ),
-            patch("image_generation_mcp.mcp_server.build_event_store", mock_build),
+            patch("image_generation_mcp.server.build_event_store", mock_build),
             patch("uvicorn.run"),
         ):
             args = argparse.Namespace(
@@ -292,7 +292,7 @@ class TestCmdServe:
         mock_create = MagicMock(return_value=mock_server)
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch("image_generation_mcp.server.make_server", mock_create),
             caplog.at_level(logging.WARNING, logger="image_generation_mcp._cli_impl"),
         ):
             args = argparse.Namespace(
@@ -306,11 +306,11 @@ class TestCmdServe:
         assert "--host, --port and --path" in caplog.text
 
     def test_cmd_serve_import_error_exits(self) -> None:
-        """ImportError from create_server triggers sys.exit(1)."""
+        """ImportError from make_server triggers sys.exit(1)."""
         import sys
 
         with (
-            patch.dict(sys.modules, {"image_generation_mcp.mcp_server": None}),
+            patch.dict(sys.modules, {"image_generation_mcp.server": None}),
             pytest.raises(SystemExit) as exc_info,
         ):
             args = argparse.Namespace(
@@ -338,7 +338,7 @@ class TestMain:
         mock_create = MagicMock(return_value=mock_server)
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch("image_generation_mcp.server.make_server", mock_create),
             patch("sys.argv", ["image-generation-mcp", "--verbose", "serve"]),
             patch(
                 "image_generation_mcp._cli_impl.configure_logging_from_env"
@@ -359,7 +359,7 @@ class TestMain:
             mock_server = MagicMock()
             mock_create = MagicMock(return_value=mock_server)
             with (
-                patch("image_generation_mcp.mcp_server.create_server", mock_create),
+                patch("image_generation_mcp.server.make_server", mock_create),
                 patch("sys.argv", ["image-generation-mcp", "serve"]),
             ):
                 main()
@@ -374,7 +374,7 @@ class TestMain:
         mock_create = MagicMock(return_value=mock_server)
 
         with (
-            patch("image_generation_mcp.mcp_server.create_server", mock_create),
+            patch("image_generation_mcp.server.make_server", mock_create),
             patch("sys.argv", ["image-generation-mcp", "serve"]),
             pytest.raises(SystemExit) as exc_info,
         ):

@@ -6,7 +6,7 @@ FastMCP server scaffold. See [TEMPLATE.md](TEMPLATE.md) for customisation guide.
 
 ```
 src/image_generation_mcp/
-  mcp_server.py        -- FastMCP server factory + auth wiring (don't modify)
+  server.py            -- FastMCP server factory (make_server) + auth wiring
   config.py            -- env var loading; add domain config fields here
   cli.py               -- CLI entry point (serve command)
   _server_deps.py      -- lifespan + Depends() DI; replace placeholder service
@@ -29,7 +29,7 @@ src/image_generation_mcp/
 
 - Library is sync; MCP layer uses `asyncio.to_thread()` for blocking calls
 - Write tools tagged `tags={"write"}`, hidden via `mcp.disable(tags={"write"})` in read-only mode
-- Auth: `_build_bearer_auth()` + `_build_oidc_auth()` called in `create_server()`; MultiAuth when both set
+- Auth: composed via `fastmcp_pvl_core.build_auth()` inside `make_server()`; MultiAuth assembled automatically when both bearer + OIDC are configured
 - `_ENV_PREFIX` in `config.py` controls all env var names — change once, affects everything
 
 ## Documentation

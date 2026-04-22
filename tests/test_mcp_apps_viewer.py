@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 from image_generation_mcp._server_resources import _inject_sdk
-from image_generation_mcp.mcp_server import create_server
+from image_generation_mcp.server import make_server
 
 
 @pytest.fixture
 def server(monkeypatch: pytest.MonkeyPatch):
     """Create a read-write server so generate_image is visible."""
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-    return create_server()
+    return make_server()
 
 
 # -- Resource registration ---------------------------------------------------
@@ -159,7 +159,7 @@ class TestImageViewerResource:
             "IMAGE_GENERATION_MCP_APP_DOMAIN",
             "abcdef01234567890abcdef012345678.claudemcpcontent.com",
         )
-        srv = create_server()
+        srv = make_server()
         resources = await srv.list_resources()
         viewer = next(
             r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
@@ -176,7 +176,7 @@ class TestImageViewerResource:
         """When BASE_URL is set but APP_DOMAIN is not, domain is auto-computed."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
         monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://example.com")
-        srv = create_server()
+        srv = make_server()
         resources = await srv.list_resources()
         viewer = next(
             r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
@@ -196,7 +196,7 @@ class TestImageViewerResource:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
         monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://example.com")
         monkeypatch.setenv("IMAGE_GENERATION_MCP_HTTP_PATH", "custom/")
-        srv = create_server()
+        srv = make_server()
         resources = await srv.list_resources()
         viewer = next(
             r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
@@ -219,7 +219,7 @@ class TestImageViewerResource:
             "IMAGE_GENERATION_MCP_APP_DOMAIN",
             "custom-domain.example.com",
         )
-        srv = create_server()
+        srv = make_server()
         resources = await srv.list_resources()
         viewer = next(
             r for r in resources if str(r.uri) == "ui://image-viewer/view.html"
@@ -308,7 +308,7 @@ class TestViewerInReadOnlyMode:
     """Verify viewer resource is still available in read-only mode."""
 
     async def test_viewer_resource_available_in_read_only(self) -> None:
-        server = create_server()  # read-only by default
+        server = make_server()  # read-only by default
         resources = await server.list_resources()
         uris = [str(r.uri) for r in resources]
         assert "ui://image-viewer/view.html" in uris

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Remove all IMAGE_GENERATION_MCP_* env vars before each test.
 
-    Prevents env var leakage between tests that call :func:`create_server`.
+    Prevents env var leakage between tests that call :func:`make_server`.
     """
     import os
 

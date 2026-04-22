@@ -10,9 +10,9 @@ from fastmcp import FastMCP
 from PIL import Image as PILImage
 
 from image_generation_mcp._server_tools import register_tools
-from image_generation_mcp.mcp_server import create_server
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageProviderError, ImageResult
+from image_generation_mcp.server import make_server
 from image_generation_mcp.service import ImageRecord, ImageService
 
 if TYPE_CHECKING:
@@ -47,13 +47,13 @@ def service(tmp_path: Path) -> ImageService:
 @pytest.fixture
 def server(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-    return create_server()
+    return make_server()
 
 
 @pytest.fixture
 def server_readonly(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "true")
-    return create_server()
+    return make_server()
 
 
 # ---------------------------------------------------------------------------
