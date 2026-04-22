@@ -80,7 +80,7 @@ ignore = ["E501"]
 # Depends() and CurrentContext() calls in argument defaults are the standard
 # FastMCP dependency injection pattern — B008 is a false positive here.
 # Context/FastMCP imports must stay runtime (not TYPE_CHECKING) for DI.
-"src/image_generation_mcp/mcp_server.py" = ["B008", "TCH002", "TC001"]
+"src/image_generation_mcp/server.py" = ["B008", "TCH002", "TC001", "TC002"]
 "src/image_generation_mcp/_server_deps.py" = ["B008", "TCH002"]
 "src/image_generation_mcp/_server_tools.py" = ["B008", "TCH001", "TCH002"]
 "src/image_generation_mcp/_server_resources.py" = ["B008", "TCH001", "TCH002"]

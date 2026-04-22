@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 from image_generation_mcp._server_resources import _PROMPT_GUIDE
-from image_generation_mcp.mcp_server import create_server
+from image_generation_mcp.server import make_server
 
 
 @pytest.fixture
 def server(monkeypatch: pytest.MonkeyPatch):
     """Create a read-write server so generate_image is visible."""
     monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-    return create_server()
+    return make_server()
 
 
 # -- _PROMPT_GUIDE constant content ------------------------------------------
@@ -68,7 +68,7 @@ class TestPromptGuideResourceRegistration:
     ) -> None:
         """info://prompt-guide must be accessible in read-only mode."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "true")
-        server = create_server()
+        server = make_server()
         resources = await server.list_resources()
         uris = [str(r.uri) for r in resources]
         assert "info://prompt-guide" in uris

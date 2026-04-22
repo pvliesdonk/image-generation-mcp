@@ -203,7 +203,3 @@ def make_server(
         mcp.disable(tags={"write"})
 
     return mcp
-
-
-# Backward-compat alias: existing callers import `create_server` from this module.
-create_server = make_server

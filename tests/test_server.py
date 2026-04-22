@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from image_generation_mcp.mcp_server import (
+from image_generation_mcp.server import (
     _build_remote_auth,
     _resolve_auth_mode,
-    create_server,
+    make_server,
 )
 
 # OIDC vars required by _build_oidc_auth()
@@ -38,7 +38,7 @@ _DISCOVERY_RESPONSE = {
 
 
 class TestAuthModeSelection:
-    """Tests for create_server() auth mode selection.
+    """Tests for make_server() auth mode selection.
 
     Covers all four modes: multi (both configured), bearer-only,
     OIDC-only, and none.
@@ -46,7 +46,7 @@ class TestAuthModeSelection:
 
     def test_no_auth_when_nothing_configured(self) -> None:
         """Default: no auth when no auth env vars are set."""
-        server = create_server()
+        server = make_server()
         assert server.auth is None
 
     def test_bearer_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -54,7 +54,7 @@ class TestAuthModeSelection:
         from fastmcp.server.auth import StaticTokenVerifier
 
         monkeypatch.setenv("IMAGE_GENERATION_MCP_BEARER_TOKEN", "my-secret-token")
-        server = create_server()
+        server = make_server()
         assert isinstance(server.auth, StaticTokenVerifier)
 
     def test_oidc_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -65,7 +65,7 @@ class TestAuthModeSelection:
         mock_oidc = MagicMock()
         mock_cls = MagicMock(return_value=mock_oidc)
         with patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls):
-            server = create_server()
+            server = make_server()
 
         assert server.auth is mock_oidc
 
@@ -85,7 +85,7 @@ class TestAuthModeSelection:
             patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls),
             caplog.at_level(logging.INFO),
         ):
-            server = create_server()
+            server = make_server()
 
         assert isinstance(server.auth, MultiAuth)
         assert "mode=multi" in caplog.text
@@ -101,7 +101,7 @@ class TestAuthModeSelection:
         mock_oidc = MagicMock()
         mock_cls = MagicMock(return_value=mock_oidc)
         with patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls):
-            server = create_server()
+            server = make_server()
 
         assert isinstance(server.auth, MultiAuth)
         # OIDCProxy is an OAuthProvider — must be server=, not in verifiers=,
@@ -122,7 +122,7 @@ class TestAuthModeSelection:
         mock_oidc = MagicMock()
         mock_cls = MagicMock(return_value=mock_oidc)
         with patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls):
-            server = create_server()
+            server = make_server()
 
         from fastmcp.server.auth import MultiAuth
 
@@ -310,7 +310,7 @@ class TestBuildRemoteAuth:
 
 
 class TestRemoteAuthIntegration:
-    """Integration tests: create_server() with remote auth mode."""
+    """Integration tests: make_server() with remote auth mode."""
 
     def test_remote_only(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Remote mode: RemoteAuthProvider when only BASE_URL + CONFIG_URL are set."""
@@ -324,7 +324,7 @@ class TestRemoteAuthIntegration:
         mock_resp.raise_for_status = MagicMock()
 
         with patch("httpx.get", return_value=mock_resp):
-            server = create_server()
+            server = make_server()
 
         assert isinstance(server.auth, RemoteAuthProvider)
 
@@ -345,7 +345,7 @@ class TestRemoteAuthIntegration:
         mock_resp.raise_for_status = MagicMock()
 
         with patch("httpx.get", return_value=mock_resp):
-            server = create_server()
+            server = make_server()
 
         assert isinstance(server.auth, MultiAuth)
         assert isinstance(server.auth.server, RemoteAuthProvider)
@@ -367,7 +367,7 @@ class TestRemoteAuthIntegration:
         mock_resp.raise_for_status = MagicMock()
 
         with patch("httpx.get", return_value=mock_resp):
-            server = create_server()
+            server = make_server()
 
         assert isinstance(server.auth, RemoteAuthProvider)
 
@@ -380,7 +380,7 @@ class TestRemoteAuthIntegration:
             monkeypatch.setenv(var, val)
 
         with caplog.at_level(logging.WARNING):
-            server = create_server()
+            server = make_server()
 
         assert server.auth is None
         # Core logs 'No auth configured' when build_auth returns None despite
@@ -402,7 +402,7 @@ class TestRemoteAuthIntegration:
             patch("httpx.get", return_value=mock_resp),
             caplog.at_level(logging.INFO),
         ):
-            create_server()
+            make_server()
 
         assert "mode=remote" in caplog.text
 
@@ -419,7 +419,7 @@ class TestRemoteAuthIntegration:
             patch("fastmcp.server.auth.oidc_proxy.OIDCProxy", mock_cls),
             caplog.at_level(logging.INFO),
         ):
-            create_server()
+            make_server()
 
         assert "mode=oidc-proxy" in caplog.text
 
@@ -430,7 +430,7 @@ class TestVersionLogging:
     def test_version_logged_on_startup(self, caplog: pytest.LogCaptureFixture) -> None:
         """Server config log line includes version."""
         with caplog.at_level(logging.INFO):
-            create_server()
+            make_server()
         assert "Server config:" in caplog.text
         assert "version=" in caplog.text
 
@@ -440,12 +440,12 @@ class TestVersionLogging:
         """Version falls back to 'unknown' when package is not installed."""
         with (
             patch(
-                "image_generation_mcp.mcp_server._pkg_version",
+                "image_generation_mcp.server._pkg_version",
                 side_effect=PackageNotFoundError(),
             ),
             caplog.at_level(logging.INFO),
         ):
-            create_server()
+            make_server()
         assert "version=unknown" in caplog.text
 
 
@@ -454,7 +454,7 @@ class TestReadOnlyMode:
 
     async def test_read_only_by_default(self) -> None:
         """Server is read-only by default — write tools are hidden."""
-        server = create_server()
+        server = make_server()
         tool_names = [t.name for t in await server.list_tools()]
         assert "list_providers" in tool_names
         assert "generate_image" not in tool_names
@@ -462,7 +462,7 @@ class TestReadOnlyMode:
     async def test_read_write_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Setting READ_ONLY=false makes write tools visible."""
         monkeypatch.setenv("IMAGE_GENERATION_MCP_READ_ONLY", "false")
-        server = create_server()
+        server = make_server()
         tool_names = [t.name for t in await server.list_tools()]
         assert "list_providers" in tool_names
         assert "generate_image" in tool_names

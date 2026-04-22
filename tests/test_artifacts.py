@@ -448,25 +448,25 @@ class TestArtifactHandler:
 
 
 # ---------------------------------------------------------------------------
-# create_server: artifact route mounted on HTTP but not stdio
+# make_server: artifact route mounted on HTTP but not stdio
 # ---------------------------------------------------------------------------
 
 
 class TestCreateServerArtifactRoute:
-    """create_server mounts the artifact route for HTTP transport only."""
+    """make_server mounts the artifact route for HTTP transport only."""
 
     def test_artifact_route_not_registered_for_stdio(self) -> None:
-        from image_generation_mcp.mcp_server import create_server
+        from image_generation_mcp.server import make_server
 
-        server = create_server(transport="stdio")
+        server = make_server(transport="stdio")
         routes = server._additional_http_routes
         paths = [getattr(r, "path", "") for r in routes]
         assert not any("/artifacts/" in p for p in paths)
 
     def test_artifact_route_registered_for_http(self) -> None:
-        from image_generation_mcp.mcp_server import create_server
+        from image_generation_mcp.server import make_server
 
-        server = create_server(transport="http")
+        server = make_server(transport="http")
         routes = server._additional_http_routes
         paths = [getattr(r, "path", "") for r in routes]
         assert any("/artifacts/" in p for p in paths)

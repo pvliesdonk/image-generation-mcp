@@ -183,9 +183,9 @@ async def test_provider_capabilities_resource() -> None:
     """info://providers resource returns JSON with provider and capability info."""
     from fastmcp import Client
 
-    from image_generation_mcp.mcp_server import create_server
+    from image_generation_mcp.server import make_server
 
-    server = create_server()
+    server = make_server()
     async with Client(server) as client:
         result = await client.read_resource("info://providers")
 
