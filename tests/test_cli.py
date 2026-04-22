@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from image_generation_mcp.cli import (
+from image_generation_mcp._cli_impl import (
     _build_parser,
     _cmd_serve,
     _normalise_http_path,
@@ -293,7 +293,7 @@ class TestCmdServe:
 
         with (
             patch("image_generation_mcp.mcp_server.create_server", mock_create),
-            caplog.at_level(logging.WARNING, logger="image_generation_mcp.cli"),
+            caplog.at_level(logging.WARNING, logger="image_generation_mcp._cli_impl"),
         ):
             args = argparse.Namespace(
                 transport="stdio",
@@ -341,7 +341,7 @@ class TestMain:
             patch("image_generation_mcp.mcp_server.create_server", mock_create),
             patch("sys.argv", ["image-generation-mcp", "--verbose", "serve"]),
             patch(
-                "image_generation_mcp.cli.configure_logging_from_env"
+                "image_generation_mcp._cli_impl.configure_logging_from_env"
             ) as mock_cfg_log,
         ):
             main()
