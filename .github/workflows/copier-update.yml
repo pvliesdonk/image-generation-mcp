@@ -95,14 +95,21 @@ jobs:
           echo "ref=${ref}" >> "$GITHUB_OUTPUT"
           echo "conflict_count=${conflict_count}" >> "$GITHUB_OUTPUT"
 
-      - name: Ensure `copier` label exists
+      - name: Ensure PR labels exist
         if: steps.changes.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
+          # `gh pr create --label foo` fails if the label doesn't exist,
+          # so ensure both labels are present first.  `|| true` keeps the
+          # step idempotent across repeat runs.
           gh label create copier \
             --color C5DEF5 \
             --description "Automated copier template sync" \
+            2>/dev/null || true
+          gh label create dependencies \
+            --color 0075CA \
+            --description "Pull requests that update a dependency file" \
             2>/dev/null || true
 
       - name: Commit and push to copier/update branch
