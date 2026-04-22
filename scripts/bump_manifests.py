@@ -9,6 +9,11 @@ commit — which is the commit it then tags.
 
 The script runs inside PSR's Docker action container (python:3.14-slim), which
 has Python but no ``jq`` — hence Python rather than a shell+jq wrapper.
+
+Projects that ship additional versioned manifests (e.g. a Claude Code
+``plugin.json``, an ``.mcp.json``, or other lockstep JSON/TOML files) should
+add the extra paths to this script and list them in
+``pyproject.toml`` ``[tool.semantic_release] assets``.
 """
 
 from __future__ import annotations
@@ -56,16 +61,27 @@ def main() -> int:
     server = _load(server_path)
     if not isinstance(server, dict):
         print(
-            f"{server_path} must contain a JSON object (top-level)",
+            f"{server_path} must contain a JSON object (top-level), "
+            f"got {type(server).__name__}",
             file=sys.stderr,
         )
         return 1
     server["version"] = version
     packages = server.get("packages", [])
     if not isinstance(packages, list):
-        packages = []
-    for pkg in packages:
+        print(
+            f"{server_path}: 'packages' must be a JSON array, got "
+            f"{type(packages).__name__}",
+            file=sys.stderr,
+        )
+        return 1
+    for i, pkg in enumerate(packages):
         if not isinstance(pkg, dict):
+            print(
+                f"WARNING: packages[{i}] is not a JSON object "
+                f"(got {type(pkg).__name__}) — skipped",
+                file=sys.stderr,
+            )
             continue
         if pkg.get("registryType") == "pypi":
             pkg["version"] = version
