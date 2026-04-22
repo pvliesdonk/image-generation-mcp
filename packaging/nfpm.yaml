@@ -19,7 +19,7 @@ description: |
   (gpt-image-1, dall-e-3), Stable Diffusion (A1111 WebUI), and a
   zero-cost placeholder provider. Requires uv — see postinstall instructions.
 homepage: "https://pvliesdonk.github.io/image-generation-mcp/"
-license: "MIT"
+license: "MIT"  # project-owned — keep across copier updates
 
 # --- Package contents ---
 

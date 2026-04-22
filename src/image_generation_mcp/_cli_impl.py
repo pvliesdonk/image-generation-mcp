@@ -1,0 +1,161 @@
+"""Command-line interface for image-generation-mcp.
+
+Provides a ``serve`` subcommand.  The entry point is :func:`main`,
+registered as ``image-generation-mcp`` in ``pyproject.toml``.
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import os
+import sys
+
+from fastmcp_pvl_core import configure_logging_from_env, normalise_http_path
+
+from image_generation_mcp.config import _ENV_PREFIX
+
+logger = logging.getLogger(__name__)
+
+_PROG = "image-generation-mcp"
+_DEFAULT_HTTP_PATH = "/mcp"
+
+
+def _normalise_http_path(path: str | None) -> str:
+    """Normalise an HTTP endpoint path for FastMCP streamable HTTP transport.
+
+    Thin wrapper preserving IG's semantics (fallback to ``/mcp``) while
+    delegating the heavy lifting to :func:`fastmcp_pvl_core.normalise_http_path`.
+    Kept as a module-private symbol so existing test imports still work.
+    """
+    if path is None or not path.strip():
+        return _DEFAULT_HTTP_PATH
+    return normalise_http_path(path)
+
+
+def _cmd_serve(args: argparse.Namespace) -> None:
+    """Run the MCP server."""
+    try:
+        from image_generation_mcp.config import load_config
+        from image_generation_mcp.mcp_server import create_server
+    except ImportError:
+        logger.error(
+            "FastMCP is not installed. Install with: pip install image-generation-mcp[mcp]"
+        )
+        sys.exit(1)
+
+    transport = args.transport
+    config = load_config()
+    server = create_server(transport=transport, config=config)
+    env_http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH")
+    http_path = _normalise_http_path(args.path or env_http_path)
+    if transport != "http" and (
+        args.host != "0.0.0.0" or args.port != 8000 or args.path is not None
+    ):
+        logger.warning("--host, --port and --path are only used with --transport http")
+    if transport == "http":
+        import uvicorn
+
+        from image_generation_mcp._http_logging import mcp_request_logging_middleware
+        from image_generation_mcp.mcp_server import build_event_store
+
+        event_store = build_event_store(config.server.event_store_url)
+
+        app = server.http_app(
+            path=http_path,
+            middleware=mcp_request_logging_middleware(),
+            event_store=event_store,
+        )
+        uvicorn.run(app, host=args.host, port=args.port)
+    else:
+        server.run(transport=transport)
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser.
+
+    Returns:
+        Configured :class:`argparse.ArgumentParser`.
+    """
+    parser = argparse.ArgumentParser(
+        prog=_PROG,
+        description=(
+            "MCP server for AI image generation via OpenAI, Google GenAI, "
+            "or Stable Diffusion WebUI"
+        ),
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="enable debug logging",
+    )
+
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    # serve
+    serve_parser = sub.add_parser("serve", help="run the MCP server")
+    serve_parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse", "http"],
+        default="stdio",
+        help="MCP transport: stdio (default), sse, or http (streamable-http)",
+    )
+    serve_parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="host to bind to for http transport (default: 0.0.0.0)",
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="port for http transport (default: 8000)",
+    )
+    serve_parser.add_argument(
+        "--path",
+        default=None,
+        help=(
+            f"mount path for http transport (default: ${_ENV_PREFIX}_HTTP_PATH or /mcp)"
+        ),
+    )
+
+    return parser
+
+
+_COMMANDS = {
+    "serve": _cmd_serve,
+}
+
+
+def main() -> None:
+    """CLI entry point."""
+    parser = _build_parser()
+    args = parser.parse_args()
+
+    # App loggers (image_generation_mcp.*) propagate to root; FastMCP
+    # loggers (fastmcp.*) have propagate=False and are configured via
+    # FASTMCP_LOG_LEVEL.  -v also overrides the FastMCP tree to DEBUG.
+    level = logging.DEBUG if args.verbose else logging.INFO
+    root = logging.getLogger()
+    root.setLevel(level)
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    root.addHandler(handler)
+
+    configure_logging_from_env(verbose=args.verbose)
+    if args.verbose:
+        # httpx is noisy at DEBUG — keep it at WARNING.
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+    cmd = _COMMANDS[args.command]
+    try:
+        cmd(args)
+    except ValueError as exc:
+        logger.error("%s", exc)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

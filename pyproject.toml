@@ -3,7 +3,7 @@ name = "image-generation-mcp"
 version = "1.8.0"
 description = "MCP server for AI image generation via OpenAI, Google GenAI, or Stable Diffusion WebUI"
 readme = "README.md"
-license = "MIT"
+license = "MIT"  # project-owned — keep across copier updates
 requires-python = ">=3.11"
 authors = [{ name = "Peter van Liesdonk" }]
 keywords = ["mcp", "image-generation-mcp", "model-context-protocol", "fastmcp"]
@@ -14,22 +14,26 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: MIT License",  # project-owned — keep across copier updates
 ]
 dependencies = [
     # httpx and uvicorn come transitively via fastmcp (pulled by
     # fastmcp-pvl-core).  Don't re-list them here.
     "fastmcp-pvl-core>=1.0,<2",
+    # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
     "Pillow>=10.0",
+    # PROJECT-DEPS-END
 ]
 
 [project.optional-dependencies]
+# PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
 # fastmcp-pvl-core already pins fastmcp>=3,<4; adding `[tasks]` here
 # attaches the task-queue extra on top.
 mcp = ["fastmcp[tasks]>=3.0,<4"]
 openai = ["openai>=1.0"]
 google-genai = ["google-genai>=1.0"]
 all = ["fastmcp[tasks]>=3.0,<4", "openai>=1.0", "google-genai>=1.0"]
+# PROJECT-EXTRAS-END
 dev = [
     "image-generation-mcp[all]",
     "pytest>=7.0",
