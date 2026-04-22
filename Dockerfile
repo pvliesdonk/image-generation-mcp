@@ -1,7 +1,9 @@
 FROM python:3.12-slim
 
+# DOCKERFILE-APT-DEPS-START — add domain apt packages below; kept across copier update
 RUN apt-get update && apt-get install -y --no-install-recommends git gosu \
     && rm -rf /var/lib/apt/lists/*
+# DOCKERFILE-APT-DEPS-END
 
 COPY --from=ghcr.io/astral-sh/uv:0.6 /uv /uvx /bin/
 
@@ -10,6 +12,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
+# DOCKERFILE-UV-EXTRAS-START — append `--extra <name>` flags below to pull domain-specific extras; kept across copier update
 # Install dependencies first (cache layer).
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
@@ -20,6 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --extra all
+# DOCKERFILE-UV-EXTRAS-END
 
 # Create non-root user with configurable UID/GID for bind-mount compatibility.
 ARG APP_UID=1000
@@ -41,4 +45,4 @@ EXPOSE 8000
 VOLUME ["/data/service", "/data/state"]
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["image-generation-mcp", "serve", "--transport", "http"]
+CMD ["image-generation-mcp", "serve", "--transport", "http", "--host", "0.0.0.0"]
