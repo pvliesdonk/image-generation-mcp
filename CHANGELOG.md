@@ -2,6 +2,47 @@
 
 <!-- version list -->
 
+## v1.8.1 (2026-04-23)
+
+### Bug Fixes
+
+- **ci**: Stage conflict markers before git checkout -B in copier-update (#197)
+  ([#197](https://github.com/pvliesdonk/image-generation-mcp/pull/197),
+  [`21a3546`](https://github.com/pvliesdonk/image-generation-mcp/commit/21a3546c3cd270aaf3f854058df116d719cf0258))
+
+- **gitignore**: Narrow .claude/ → specific per-user paths + add .worktrees/ (#189)
+  ([#189](https://github.com/pvliesdonk/image-generation-mcp/pull/189),
+  [`9f42d8b`](https://github.com/pvliesdonk/image-generation-mcp/commit/9f42d8bda0d9ee85c62c83c61c4c0191bf91e0b6))
+
+### Chores
+
+- **copier**: Converge drifted template-owned files to v1.1.5 shape (#196)
+  ([#196](https://github.com/pvliesdonk/image-generation-mcp/pull/196),
+  [`ee9a39f`](https://github.com/pvliesdonk/image-generation-mcp/commit/ee9a39f5ae253c2810494e049b458d95d6e34523))
+
+- **copier**: Heavy backfill v1.0.0 → v1.1.1 + bootstrap copier-update workflow (#191)
+  ([#191](https://github.com/pvliesdonk/image-generation-mcp/pull/191),
+  [`55eb88e`](https://github.com/pvliesdonk/image-generation-mcp/commit/55eb88ebc0d3e0e0b91a8535c23adb8a36f5ffeb))
+
+- **copier**: Update to v1.1.3 (#192)
+  ([#192](https://github.com/pvliesdonk/image-generation-mcp/pull/192),
+  [`7c04f30`](https://github.com/pvliesdonk/image-generation-mcp/commit/7c04f30ff47626a27455e381e4f5a19fe387d646))
+
+- **copier**: Update to v1.1.4 (#193)
+  ([#193](https://github.com/pvliesdonk/image-generation-mcp/pull/193),
+  [`b4b90a0`](https://github.com/pvliesdonk/image-generation-mcp/commit/b4b90a078de4e166b49280a8c75e7a02185a5190))
+
+- **copier**: Update to v1.1.8 (#198)
+  ([#198](https://github.com/pvliesdonk/image-generation-mcp/pull/198),
+  [`bfba50c`](https://github.com/pvliesdonk/image-generation-mcp/commit/bfba50c22e879787491a80f898db799f29ce0cdd))
+
+### Refactoring
+
+- **claude-md**: Add DOMAIN + TEMPLATE-OWNED sentinel structure (#195)
+  ([#195](https://github.com/pvliesdonk/image-generation-mcp/pull/195),
+  [`37f53d3`](https://github.com/pvliesdonk/image-generation-mcp/commit/37f53d3edd749944d782eb37b7f464906c59ef39))
+
+
 ## v1.8.0 (2026-04-21)
 
 
