@@ -1,6 +1,7 @@
 <!-- mcp-name: io.github.pvliesdonk/image-generation-mcp -->
 # image-generation-mcp
 
+<<<<<<< before updating
 [![CI](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/pvliesdonk/image-generation-mcp/branch/main/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/image-generation-mcp)
 [![PyPI](https://img.shields.io/pypi/v/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/)
@@ -67,12 +68,52 @@ docker pull ghcr.io/pvliesdonk/image-generation-mcp:latest
 ### Linux packages (.deb / .rpm)
 
 Native packages with a hardened systemd service are available from [GitHub Releases](https://github.com/pvliesdonk/image-generation-mcp/releases). See the [systemd deployment guide](https://pvliesdonk.github.io/image-generation-mcp/deployment/systemd/) for details.
+=======
+[![CI](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/image-generation-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/image-generation-mcp) [![PyPI](https://img.shields.io/pypi/v/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/) [![Python](https://img.shields.io/pypi/pyversions/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/image-generation-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/image-generation-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/image-generation-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/image-generation-mcp/llms.txt)
 
-## Quick start
+MCP server for AI image generation via OpenAI, Google GenAI, or Stable Diffusion WebUI
+>>>>>>> after updating
+
+**[Documentation](https://pvliesdonk.github.io/image-generation-mcp/)** | **[PyPI](https://pypi.org/project/image-generation-mcp/)** | **[Docker](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp)**
+
+## Features
+
+<!-- DOMAIN-START -->
+<!-- Replace with 3-7 bullets describing what this MCP server does. Kept across copier update. -->
+
+- **[Capability 1]** — one-sentence description of a user-visible feature.
+- **[Capability 2]** — one-sentence description of another capability.
+- **MCP tools** — N LLM-visible tools exposed; see `src/image_generation_mcp/tools.py`.
+- **MCP resources** — M resources exposing domain state; see `src/image_generation_mcp/resources.py`.
+- **MCP prompts** — K prompt templates; see `src/image_generation_mcp/prompts.py`.
+<!-- DOMAIN-END -->
+
+## What you can do with it
+
+<!-- DOMAIN-START -->
+<!-- Replace with 3-5 concrete "you can ask Claude to X" examples. Kept across copier update. -->
+
+With this server mounted in an MCP client (Claude, etc.), you can:
+
+- **[Task 1]** — "[example user request]." Composes tools `[tool_a]` + `[tool_b]`.
+- **[Task 2]** — "[another example request]." Uses resource `[resource_x]`.
+- **[Task 3]** — "[third example]."
+
+Short, concrete prompts beat abstract feature lists — replace the
+`[Task N]` placeholders with prompts that actually work against your
+server's tool surface.
+<!-- DOMAIN-END -->
+
+<!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
+
+## Installation
+
+### From PyPI
 
 ### As MCP server (stdio)
 
 ```bash
+<<<<<<< before updating
 # Placeholder only -- no API keys needed
 IMAGE_GENERATION_MCP_READ_ONLY=false image-generation-mcp serve
 
@@ -135,10 +176,59 @@ Add to your project's `.mcp.json`:
     }
   }
 }
+=======
+pip install image-generation-mcp
+>>>>>>> after updating
 ```
+
+If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END` sentinels in `pyproject.toml`, document them below:
+
+<!-- DOMAIN-START -->
+<!-- List optional extras and their purpose here (e.g. `pip install image-generation-mcp[embeddings]`). Kept across copier update. -->
+<!-- DOMAIN-END -->
+
+### From source
+
+```bash
+git clone https://github.com/pvliesdonk/image-generation-mcp.git
+cd image-generation-mcp
+uv sync --all-extras --dev
+```
+
+### Docker
+
+```bash
+docker pull ghcr.io/pvliesdonk/image-generation-mcp:latest
+```
+
+A `compose.yml` ships at the repo root as a starting point — copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+
+### Linux packages (.deb / .rpm)
+
+Download `.deb` or `.rpm` packages from the [GitHub Releases](https://github.com/pvliesdonk/image-generation-mcp/releases) page. Both install a hardened systemd unit; env configuration is sourced from `/etc/image-generation-mcp/env` (copy from the shipped `/etc/image-generation-mcp/env.example`).
+
+### Claude Desktop (.mcpb bundle)
+
+Download the `.mcpb` bundle from the [GitHub Releases](https://github.com/pvliesdonk/image-generation-mcp/releases) page and double-click to install, or run:
+
+```bash
+mcpb install image-generation-mcp-<version>.mcpb
+```
+
+Claude Desktop prompts for required env vars via a GUI wizard — no manual JSON editing needed.
+
+## Quick start
+
+```bash
+image-generation-mcp serve                                # stdio transport
+image-generation-mcp serve --transport http --port 8000   # streamable HTTP
+```
+
+For library usage (embedding the domain logic without the MCP transport), import from the `image_generation_mcp` package directly — see `src/image_generation_mcp/domain.py` for the entry point scaffold.
 
 ## Configuration
 
+<<<<<<< before updating
 All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 ### Core
@@ -310,7 +400,110 @@ uv run pytest
 uv run ruff check src/ tests/
 uv run mypy src/
 ```
+=======
+Core environment variables shared across all `fastmcp-pvl-core`-based services:
+
+| Variable | Default | Description |
+|---|---|---|
+| `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals and app loggers (`DEBUG` / `INFO` / `WARNING` / `ERROR`). The `-v` CLI flag overrides to `DEBUG`. |
+| `FASTMCP_ENABLE_RICH_LOGGING` | `true` | Set to `false` for plain / structured JSON log output. |
+| `IMAGE_GENERATION_MCP_EVENT_STORE_URL` | `memory://` | Event store backend for HTTP session persistence — `memory://` (dev), `file:///path` (survives restarts). |
+
+Domain-specific variables go below under [Domain configuration](#domain-configuration).
+
+## Post-scaffold checklist
+
+After `copier copy` and `gh repo create --push`:
+
+1. **Fill in the DOMAIN blocks** in this README (Features, What you can do with it, Domain configuration, Key design decisions) and in `CLAUDE.md`.
+2. Configure GitHub secrets — see below.
+3. Install dev dependencies: `uv sync --all-extras --dev`.
+4. Install pre-commit hooks: `uv run pre-commit install`.
+5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
+6. Push the first commit — CI should be green.
+
+## GitHub secrets
+
+CI workflows reference three repository secrets. Configure them via **Settings → Secrets and variables → Actions** or with `gh secret set`:
+
+| Secret | Used by | How to generate |
+|---|---|---|
+| `RELEASE_TOKEN` | `release.yml`, `copier-update.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write` and `pull_requests: write` (the `copier-update` cron opens PRs). Scoped to this repo. |
+| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io> — sign in with GitHub, add the repo, copy the upload token from the repo settings page. |
+| `CLAUDE_CODE_OAUTH_TOKEN` | `claude.yml`, `claude-code-review.yml` | Run `claude setup-token` locally and paste the result. |
+
+```bash
+gh secret set RELEASE_TOKEN
+gh secret set CODECOV_TOKEN
+gh secret set CLAUDE_CODE_OAUTH_TOKEN
+```
+
+`GITHUB_TOKEN` is auto-provided — no action needed.
+
+## Local development
+
+The PR gate (matches CI):
+
+```bash
+uv run pytest -x -q                                  # tests
+uv run ruff check --fix . && uv run ruff format .    # lint + format
+uv run mypy src/ tests/                              # type-check
+```
+
+Pre-commit runs a subset of the gate on each commit; see `.pre-commit-config.yaml` for details, or [`CLAUDE.md`](CLAUDE.md) for the full Hard PR Acceptance Gates.
+
+## Troubleshooting
+
+### Moving a scaffolded project
+
+`uv sync` creates `.venv/bin/*` scripts with absolute shebangs pointing at the venv Python. If you move the repo after scaffolding (`mv /old/path /new/path`), `uv run pytest` fails with `ModuleNotFoundError: No module named 'fastmcp'` because the stale shebang resolves to a different interpreter than the venv's site-packages.
+
+**Fix:**
+
+```bash
+rm -rf .venv
+uv sync --all-extras --dev
+```
+
+`uv run python -m pytest` also works as a one-shot workaround (bypasses the stale entry-script shim).
+
+### `uv.lock` refresh after `copier update`
+
+When `copier update` introduces new dependencies (e.g. a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
+>>>>>>> after updating
 
 ## License
 
+<<<<<<< before updating
 MIT
+=======
+- [Documentation](https://pvliesdonk.github.io/image-generation-mcp/)
+- [llms.txt](https://pvliesdonk.github.io/image-generation-mcp/llms.txt)
+- [FastMCP](https://gofastmcp.com)
+- [fastmcp-pvl-core](https://pypi.org/project/fastmcp-pvl-core/)
+
+<!-- ===== TEMPLATE-OWNED SECTIONS END ===== -->
+
+## Domain configuration
+
+<!-- DOMAIN-START -->
+<!-- Replace with a table of domain-specific env vars. Kept across copier update. -->
+
+Domain environment variables use the `IMAGE_GENERATION_MCP_` prefix:
+
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `IMAGE_GENERATION_MCP_EXAMPLE_VAR` | — | **Yes** | Replace this row with your first required setting. |
+| `IMAGE_GENERATION_MCP_ANOTHER_VAR` | `default` | No | Replace with an optional setting. |
+
+Domain-config fields are composed inside `src/image_generation_mcp/config.py` between the `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END` sentinels; env reads go through `fastmcp_pvl_core.env(_ENV_PREFIX, "SUFFIX", default)` so naming stays consistent.
+<!-- DOMAIN-END -->
+
+## Key design decisions
+
+<!-- DOMAIN-START -->
+<!-- Replace with 3-6 bullets describing non-obvious architectural decisions. Kept across copier update. -->
+
+_Replace this placeholder with a short list of the non-obvious design calls this service makes — e.g. "writes are append-only", "embeddings cached in SQLite", "auth uses OIDC bearer tokens". Three to six bullets is typically enough; link out to longer ADRs under `docs/decisions/` if you maintain any._
+<!-- DOMAIN-END -->
+>>>>>>> after updating
