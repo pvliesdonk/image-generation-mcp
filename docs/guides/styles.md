@@ -13,7 +13,9 @@ A style is a **creative brief**, not a prompt template. When you apply a style, 
 - **SD WebUI (SD 3 / 3.5)** — natural language, similar to Flux, but **with** native negative prompts (unlike Flux). Skip SDXL-style `(weight:1.2)` parens.
 - **SD WebUI (Pony Diffusion XL / Illustrious-XL / NoobAI-XL)** — Booru-style tag grammar with a mandatory `score_*` prefix on Pony.
 
-The style text is never copied verbatim into the generation prompt — the LLM rewrites it in the right grammar for the chosen model. The per-model registry (`list_providers` → `style_profile.style_hints` / `incompatible_styles`) is the canonical source for what each model wants; cross-reference it from your style brief when you need provider-specific guidance.
+The style text is never copied verbatim into the generation prompt — the LLM rewrites it in the right grammar for the chosen model.
+
+The per-model registry (`list_providers` → `style_profile.style_hints` / `incompatible_styles`) is the canonical source for what each model wants; cross-reference it from your style brief when you need provider-specific guidance.
 
 > **`style_profile` vs style library.** The two are deliberately separate concerns:
 >
