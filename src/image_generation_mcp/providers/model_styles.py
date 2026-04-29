@@ -346,7 +346,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
     ),
     # ----- Flux Schnell (must precede generic flux) -----
     (
-        re.compile(r"flux.*schnell|schnell"),
+        re.compile(r"flux.*schnell|schnell.*flux"),
         StyleProfile(
             label="Flux Schnell (1-4 step distilled)",
             style_hints=(

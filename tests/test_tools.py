@@ -1126,6 +1126,46 @@ class TestListProvidersTool:
             f"got {warnings!r}"
         )
 
+    async def test_list_providers_warnings_lists_legacy_gpt_image_1(
+        self, tmp_path: Path
+    ) -> None:
+        """warnings cover legacy-lifecycle models, not just deprecated ones.
+
+        ``_build_lifecycle_warnings`` skips ``lifecycle == "current"`` and
+        emits a warning for both ``"legacy"`` and ``"deprecated"``. Without
+        this test the legacy branch was uncovered — an accidental narrowing
+        to ``lifecycle == "deprecated"`` would slip through.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("openai", PlaceholderImageProvider())
+        gpt_image_1_profile = MODEL_STYLES.get("openai:gpt-image-1")
+        assert gpt_image_1_profile is not None
+        assert gpt_image_1_profile.lifecycle == "legacy"
+        model_caps = ModelCapabilities(
+            model_id="gpt-image-1",
+            display_name="GPT Image 1",
+            style_profile=gpt_image_1_profile,
+        )
+        provider_caps = ProviderCapabilities(
+            provider_name="openai",
+            models=(model_caps,),
+            discovered_at=0.0,
+        )
+        svc._capabilities["openai"] = provider_caps
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("list_providers")
+        assert tool is not None
+
+        result = await tool.fn(service=svc)
+        payload = json.loads(result)
+        assert "warnings" in payload
+        warnings = payload["warnings"]
+        assert any("gpt-image-1" in w and "legacy" in w for w in warnings), (
+            f"expected a legacy warning mentioning gpt-image-1; got {warnings!r}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # create_download_link — registered on non-stdio transports

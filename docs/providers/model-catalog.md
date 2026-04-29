@@ -141,7 +141,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 | # | Pattern | Label |
 |---|---------|-------|
 | 1 | `flux.?2|flux2` | FLUX.2 (current photorealistic flagship) |
-| 2 | `flux.*schnell|schnell` | Flux Schnell (1-4 step distilled) |
+| 2 | `flux.*schnell|schnell.*flux` | Flux Schnell (1-4 step distilled) |
 | 3 | `flux` | Flux 1 dev/pro (photorealistic / highly-detailed) |
 | 4 | `pony|score_9|autismmix` | Pony Diffusion XL (mandatory score_* tag prefix) |
 | 5 | `illustrious|noobai|noob.?ai` | Illustrious-XL / NoobAI-XL (modern anime SDXL bases) |
@@ -169,7 +169,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 **Bad prompt:** `style="watercolor wash", medium="hand-painted ink" (FLUX.2 is tuned for photorealism; painterly media will fight the model)`
 
-#### Pattern: `flux.*schnell|schnell`
+#### Pattern: `flux.*schnell|schnell.*flux`
 
 ### Flux Schnell (1-4 step distilled)
 

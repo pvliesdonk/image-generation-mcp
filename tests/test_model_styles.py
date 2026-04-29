@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+from unittest import mock
 
 import pytest
 
@@ -85,17 +86,10 @@ def test_resolve_style_exact_key_hit_in_model_styles():
         good_example="g",
         bad_example="b",
     )
-    original = MODEL_STYLES.get("openai:dall-e-3")
-    MODEL_STYLES["openai:dall-e-3"] = profile
-    try:
+    with mock.patch.dict(MODEL_STYLES, {"openai:dall-e-3": profile}):
         result = resolve_style("openai", "dall-e-3")
         assert result is not None
         assert result.label == "ExactHit"
-    finally:
-        if original is not None:
-            MODEL_STYLES["openai:dall-e-3"] = original
-        else:
-            del MODEL_STYLES["openai:dall-e-3"]
 
 
 def test_style_profile_legacy_lifecycle_omits_deprecation_note():
@@ -162,7 +156,10 @@ def test_resolve_style_picks_up_openai():
 def test_resolve_style_picks_up_gemini():
     profile = resolve_style("gemini", "gemini-2.5-flash-image")
     assert profile is not None
-    assert "Nano Banana" in profile.label
+    # Stable substring: the underlying model identity. The "Nano Banana"
+    # codename is also currently in the label but may be dropped at GA;
+    # don't pin tests on it.
+    assert "Gemini 2.5 Flash" in profile.label
 
 
 def test_resolve_style_picks_up_placeholder():
@@ -226,3 +223,25 @@ def test_default_fallback_is_last_pattern():
     # Sanity: every other pattern is non-empty
     for pattern, _ in CHECKPOINT_PATTERNS[:-1]:
         assert pattern.pattern, "non-default fallback patterns must be non-empty"
+
+
+def test_bare_schnell_without_flux_does_not_route_to_flux_schnell():
+    """The Schnell regex requires 'flux' adjacent to 'schnell' in either order.
+
+    Guards against a non-Flux checkpoint whose name happens to contain the
+    German word "schnell" being silently mis-routed to the Flux Schnell
+    profile. The earlier ``r"flux.*schnell|schnell"`` form had this bug.
+    """
+    profile = resolve_style("sd_webui", "schnell_anime_finetune.safetensors")
+    assert profile is not None
+    # Falls through to the empty-pattern default fallback, not Flux Schnell.
+    assert "Schnell" not in profile.label
+    assert "Unknown" in profile.label
+
+
+def test_schnell_flux_word_order_still_routes_to_flux_schnell():
+    """Either word order ('flux ... schnell' or 'schnell ... flux') matches."""
+    forward = resolve_style("sd_webui", "flux1_schnell_nf4.safetensors")
+    reverse = resolve_style("sd_webui", "schnell_flux1_nf4.safetensors")
+    assert forward is not None and "Schnell" in forward.label
+    assert reverse is not None and "Schnell" in reverse.label
