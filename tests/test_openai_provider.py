@@ -233,9 +233,7 @@ class TestOpenAIProvider:
         provider._client.images = MagicMock()
         provider._client.images.generate = AsyncMock(return_value=mock_response)
 
-        await provider.generate(
-            "test", model="gpt-image-1.5", background="transparent"
-        )
+        await provider.generate("test", model="gpt-image-1.5", background="transparent")
 
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["model"] == "gpt-image-1.5"
