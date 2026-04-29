@@ -87,3 +87,16 @@ class TestPlaceholderProvider:
     ) -> None:
         result = await provider.generate("test", model=None)
         assert result.image_data
+
+    async def test_discover_capabilities_populates_style_profile(
+        self, provider: PlaceholderImageProvider
+    ) -> None:
+        """style_profile is populated on the returned ModelCapabilities."""
+        caps = await provider.discover_capabilities()
+
+        assert caps.models, "expected at least one model in capabilities"
+        for model_caps in caps.models:
+            assert model_caps.style_profile is not None, (
+                f"expected style_profile for {model_caps.model_id}"
+            )
+            assert model_caps.style_profile.label

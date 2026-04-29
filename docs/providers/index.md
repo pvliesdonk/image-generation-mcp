@@ -2,6 +2,8 @@
 
 image-generation-mcp supports multiple image generation providers. Each provider is registered at startup based on available configuration (API keys, service URLs).
 
+See the [Model Catalog](model-catalog.md) for narrative guidance on every model — what each is best at, what fights it, prompt grammar examples, and lifecycle status.
+
 ## Provider comparison
 
 | | Gemini | OpenAI | SD WebUI (Stable Diffusion) | Placeholder |

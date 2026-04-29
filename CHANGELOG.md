@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-04-29)
+
+### Features
+
+- Per-model style metadata + warnings on list_providers (#207)
+  ([#207](https://github.com/pvliesdonk/image-generation-mcp/pull/207),
+  [`00e12a8`](https://github.com/pvliesdonk/image-generation-mcp/commit/00e12a8d3326fa08ff1891d4e0f539051dbfd036))
+
+
 ## v1.8.1 (2026-04-23)
 
 ### Bug Fixes

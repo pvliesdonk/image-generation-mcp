@@ -15,6 +15,7 @@ from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
     make_degraded,
 )
+from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
     ImageProviderConnectionError,
@@ -229,6 +230,7 @@ class GeminiImageProvider:
                     supports_negative_prompt=False,
                     supports_background=False,
                     prompt_style="natural_language",
+                    style_profile=resolve_style("gemini", model_id),
                 )
                 for model_id, display_name in _KNOWN_IMAGE_MODELS
             )

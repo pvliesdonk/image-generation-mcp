@@ -88,6 +88,8 @@ Tool call: generate_image
   quality: "hd"
 ```
 
+When picking `model`, consult each entry's `style_profile.style_hints` and `style_profile.incompatible_styles` from `list_providers`; check the top-level `warnings` array to avoid deprecated models for new work. The [Model Catalog](providers/model-catalog.md) lists all known models with their full profiles.
+
 ---
 
 ## show_image
@@ -510,6 +512,8 @@ JSON object with a `refreshed_at` ISO 8601 timestamp and provider names, availab
 The response is wrapped in an object with `refreshed_at` (ISO 8601 timestamp of when the data was produced) and `providers` (the provider map). Only registered (configured) providers appear in the response. The `capabilities` key is present after startup discovery completes. Degraded providers (where capability discovery failed) show `"degraded": true` with an empty model list.
 
 The `prompt_style` field on each model indicates the recommended prompt format: `"clip"` for SD 1.5/SDXL checkpoints (tag-based), `"natural_language"` for Flux checkpoints, and `null` for providers that do not set a preference (OpenAI, Placeholder).
+
+The JSON envelope contains a top-level `warnings` array (always present, may be empty) listing deprecated or legacy models that are configured. Each entry in `models` may carry a `style_profile` sub-object with `label`, `style_hints`, `incompatible_styles`, `good_example`, `bad_example`, `lifecycle`, and (when set) `deprecation_note`. See [Model Catalog](providers/model-catalog.md) for the full registry.
 
 ### Example
 

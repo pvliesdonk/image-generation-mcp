@@ -10,7 +10,10 @@ See ADR-0007 for the design rationale.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from image_generation_mcp.providers.model_styles import StyleProfile
 
 
 @dataclass(frozen=True)
@@ -34,6 +37,10 @@ class ModelCapabilities:
         prompt_style: Recommended prompt format — ``"clip"`` for CLIP-tag
             models (SD 1.5, SDXL), ``"natural_language"`` for T5-based
             models (Flux), or ``None`` for providers without guidance.
+        style_profile: Optional narrative metadata (label, hints,
+            incompatibility notes, examples, lifecycle) read by LLMs when
+            selecting a model. ``None`` when no profile is registered for
+            this model.
     """
 
     model_id: str
@@ -50,10 +57,17 @@ class ModelCapabilities:
     default_steps: int | None = None
     default_cfg: float | None = None
     prompt_style: str | None = None
+    style_profile: StyleProfile | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a JSON-compatible dictionary."""
-        return {
+        """Serialize to a JSON-compatible dictionary.
+
+        The ``style_profile`` key is omitted entirely when no profile
+        is registered (i.e. when ``self.style_profile is None``). All
+        other ``None``-valued fields are included explicitly as
+        ``null``.
+        """
+        result: dict[str, Any] = {
             "model_id": self.model_id,
             "display_name": self.display_name,
             "can_generate": self.can_generate,
@@ -69,6 +83,9 @@ class ModelCapabilities:
             "default_cfg": self.default_cfg,
             "prompt_style": self.prompt_style,
         }
+        if self.style_profile is not None:
+            result["style_profile"] = self.style_profile.to_dict()
+        return result
 
 
 @dataclass(frozen=True)

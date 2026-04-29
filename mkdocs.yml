@@ -59,6 +59,7 @@ plugins:
           - providers/gemini.md: Gemini provider setup and capabilities
           - providers/openai.md: OpenAI provider setup and capabilities
           - providers/sd-webui.md: SD WebUI (Stable Diffusion WebUI) setup
+          - providers/model-catalog.md: Per-model narrative metadata catalog (auto-generated)
           - providers/placeholder.md: Zero-cost placeholder for testing
         Configuration:
           - configuration.md: All environment variables with types and defaults
@@ -116,6 +117,7 @@ nav:
       - Gemini: providers/gemini.md
       - OpenAI: providers/openai.md
       - SD WebUI (Stable Diffusion): providers/sd-webui.md
+      - Model Catalog: providers/model-catalog.md
       - Placeholder: providers/placeholder.md
   - Configuration: configuration.md
   - MCP Interface:

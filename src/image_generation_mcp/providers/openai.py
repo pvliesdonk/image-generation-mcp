@@ -1,7 +1,10 @@
 """OpenAI image generation provider.
 
-Supports gpt-image-1 (current) and dall-e-3 (legacy, deprecated May 2026).
-Ported from questfoundry — prompt distillation removed.
+Supports the ``gpt-image-*`` family (``gpt-image-1.5`` current flagship,
+``gpt-image-1``/``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
+(deprecated, API removal scheduled 2026-05-12) plus ``dall-e-2`` (legacy,
+inpainting-only). Lifecycle metadata flows through
+``providers.model_styles.MODEL_STYLES`` into ``list_providers``.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
     make_degraded,
 )
+from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
     ImageProviderConnectionError,
@@ -299,6 +303,7 @@ class OpenAIImageProvider:
                     supported_formats=("png", "jpeg", "webp"),
                     supported_qualities=("standard", "hd"),
                     max_resolution=1536,
+                    style_profile=resolve_style("openai", "gpt-image-1"),
                 )
             )
 
@@ -322,6 +327,7 @@ class OpenAIImageProvider:
                         supported_formats=("png", "jpeg", "webp"),
                         supported_qualities=("standard", "hd"),
                         max_resolution=1536,
+                        style_profile=resolve_style("openai", mini_model_id),
                     )
                 )
 
@@ -339,6 +345,7 @@ class OpenAIImageProvider:
                     supported_formats=("png",),
                     supported_qualities=("standard", "hd"),
                     max_resolution=1792,
+                    style_profile=resolve_style("openai", "dall-e-3"),
                 )
             )
 
@@ -356,6 +363,7 @@ class OpenAIImageProvider:
                     supported_formats=("png",),
                     supported_qualities=("standard",),
                     max_resolution=1024,
+                    style_profile=resolve_style("openai", "dall-e-2"),
                 )
             )
 
