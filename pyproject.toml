@@ -17,14 +17,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",  # project-owned — keep across copier updates
 ]
 dependencies = [
-<<<<<<< before updating
     # httpx and uvicorn come transitively via fastmcp (pulled by
     # fastmcp-pvl-core).  Don't re-list them here.
-    "fastmcp-pvl-core>=1.0,<2",
-=======
     "fastmcp-pvl-core>=1.2.0,<2",
-    "typer>=0.12",
->>>>>>> after updating
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
     "Pillow>=10.0",
     # PROJECT-DEPS-END
@@ -88,25 +83,16 @@ ignore = ["E501"]
 # DI resolution — TC001/TC002/TC003.
 "src/image_generation_mcp/server.py" = ["B008", "TC001", "TC002"]
 "src/image_generation_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
-<<<<<<< before updating
 "src/image_generation_mcp/_server_tools.py" = ["B008", "TC001", "TC002"]
 "src/image_generation_mcp/_server_resources.py" = ["B008", "TC001", "TC002"]
 "src/image_generation_mcp/_server_prompts.py" = ["B008", "TC002"]
 # Path is used at runtime in ImageRecord dataclass.
 "src/image_generation_mcp/service.py" = ["TC003"]
 "src/image_generation_mcp/providers/*.py" = ["TC002"]
-# pytest fixtures need runtime imports.
-"tests/*.py" = ["TC002"]
-=======
-"src/image_generation_mcp/_server_apps.py" = ["B008", "TC001", "TC002"]
-"src/image_generation_mcp/tools.py" = ["B008", "TC001", "TC002"]
-"src/image_generation_mcp/resources.py" = ["B008", "TC001", "TC002"]
-"src/image_generation_mcp/prompts.py" = ["B008", "TC002"]
-"tests/conftest.py" = ["TC002", "TC003"]
-"tests/test_smoke.py" = ["TC002", "TC003"]
-"tests/test_tools.py" = ["TC002"]
-# Add project-specific overrides below as needed.
->>>>>>> after updating
+# pytest fixtures need runtime imports; TC003 also broadly suppressed to match
+# the template's intent (template targets `tests/conftest.py` + `tests/test_smoke.py`
+# explicitly with TC003 — broadening here pre-empts a future copier conflict).
+"tests/*.py" = ["TC002", "TC003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["image_generation_mcp"]
