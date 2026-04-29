@@ -176,7 +176,12 @@ class TestDiscoverGptImage2Fields:
         assert m.supports_background is False
         assert m.supports_negative_prompt is False
         assert "1:1" in m.supported_aspect_ratios
+        assert "16:9" in m.supported_aspect_ratios
         assert "png" in m.supported_formats
+        assert "jpeg" in m.supported_formats
+        assert "webp" in m.supported_formats
+        assert "standard" in m.supported_qualities
+        assert "hd" in m.supported_qualities
         assert m.max_resolution == 1536
         assert m.style_profile is not None
         assert "OpenAI GPT Image 2" in m.style_profile.label

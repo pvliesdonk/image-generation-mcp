@@ -67,7 +67,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 ### OpenAI GPT Image 1.5
 
-**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs **transparent backgrounds** (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports 1024x1024 / 1024x1536 / 1536x1024.
+**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs transparent backgrounds (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports 1024x1024 / 1024x1536 / 1536x1024.
 
 **Avoid:** Avoid CLIP-style comma-separated tag dumps — they underperform vs descriptive sentences. Don't use --no negative-prompt syntax; describe exclusions positively. Long, multi-element scenes with strict spatial composition can drift. Real-named-people likenesses are filtered. No identity consistency across calls.
 

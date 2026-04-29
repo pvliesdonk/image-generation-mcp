@@ -93,7 +93,7 @@ MODEL_STYLES: dict[str, StyleProfile] = {
         label="OpenAI GPT Image 1.5",
         style_hints=(
             "Previous-generation OpenAI flagship; still the right pick when "
-            "the work needs **transparent backgrounds** (gpt-image-2 dropped "
+            "the work needs transparent backgrounds (gpt-image-2 dropped "
             "alpha support). Strong instruction following for photorealistic "
             "shots, illustrations, product mockups, infographics, and "
             "marketing assets where layout and typography matter. Excels "

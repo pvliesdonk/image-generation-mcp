@@ -1,7 +1,9 @@
 """OpenAI image generation provider.
 
-Supports the ``gpt-image-*`` family (``gpt-image-1.5`` current flagship,
-``gpt-image-1``/``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
+Supports the ``gpt-image-*`` family (``gpt-image-2`` current flagship,
+``gpt-image-1.5`` previous-generation flagship — the right pick for
+transparent backgrounds since gpt-image-2 dropped alpha support;
+``gpt-image-1`` / ``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
 (deprecated, API removal scheduled 2026-05-12) plus ``dall-e-2`` (legacy,
 inpainting-only). Lifecycle metadata flows through
 ``providers.model_styles.MODEL_STYLES`` into ``list_providers``.
