@@ -311,18 +311,23 @@ RGBA output with alpha=0.
 ## Provider Selection
 
 1. **Text, logos, typography** → `openai` (gpt-image-1.5).
-2. **Transparent backgrounds** (icons, stickers) → `openai`.
+2. **Transparent backgrounds** (icons, stickers) → `openai`
+   (gpt-image-1.5 / gpt-image-1).
 3. **Infographics, diagrams, structured layouts** → `gemini` with
    `quality="hd"` on a Pro/3.x model.
-4. **Photorealism, portraits, product shots** → prefer `sd_webui`
+4. **Complex illustrations, visual storytelling, or multi-element
+   compositions** → `gemini` with `quality="hd"`.
+5. **Photorealism, portraits, product shots** → prefer `sd_webui`
    (RealVisXL / Juggernaut / Flux), fall back to `gemini` then `openai`.
-5. **Anime, illustration, painting, art** → prefer `sd_webui` with
+6. **Anime, illustration, painting, art** → prefer `sd_webui` with
    **Illustrious-XL** or **NoobAI-XL** (modern anime SDXL bases that have
    largely supplanted Animagine). Pick **Pony Diffusion XL** for
    highly-stylised character art (mandatory `score_*` prefix). Animagine
    XL is a previous-generation fallback.
-6. **Quick test or placeholder** → `placeholder`.
-7. **General requests** → `gemini` when available, then `openai`.
+7. **Quick draft or iteration** → `gemini` at `standard` quality (fast,
+   free tier) or `sd_webui` with a Lightning / Schnell checkpoint.
+8. **Quick test or placeholder** → `placeholder`.
+9. **General requests** → `gemini` when available, then `openai`.
 
 Use `provider="auto"` for automatic selection, or specify a provider
 directly. Call `list_providers` to see which providers are available, what
