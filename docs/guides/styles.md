@@ -6,11 +6,20 @@ Styles are reusable presets that capture a visual direction — palette, composi
 
 A style is a **creative brief**, not a prompt template. When you apply a style, the LLM reads the brief and adapts it to the target provider's prompt format:
 
-- **OpenAI** — natural language description incorporating the style's direction
-- **SD WebUI (SD 1.5/SDXL)** — comma-separated CLIP tags with negative prompts
-- **SD WebUI (Flux)** — natural language, similar to OpenAI
+- **OpenAI** (gpt-image-1.5 / gpt-image-1 / gpt-image-2) — natural language description incorporating the style's direction.
+- **Gemini** (Flash Image / Pro Image preview) — natural language, similar to OpenAI; can also incorporate the style brief into multi-image compositing or conversational refinement.
+- **SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut)** — comma-separated CLIP tags with a separate negative prompt.
+- **SD WebUI (Flux 1 / Flux Schnell / FLUX.2 / SD 3.5)** — natural language, similar to OpenAI; no native negative prompts on the Flux family.
+- **SD WebUI (Pony Diffusion XL / Illustrious-XL / NoobAI-XL)** — Booru-style tag grammar with a mandatory `score_*` prefix on Pony.
 
-The style text is never copied verbatim into the generation prompt.
+The style text is never copied verbatim into the generation prompt — the LLM rewrites it in the right grammar for the chosen model. The per-model registry (`list_providers` → `style_profile.style_hints` / `incompatible_styles`) is the canonical source for what each model wants; cross-reference it from your style brief when you need provider-specific guidance.
+
+> **`style_profile` vs style library.** The two are deliberately separate concerns:
+>
+> - **Style library** (this guide) — a *user-saved creative brief* applied to a generation request. Describes *the brief*.
+> - **`style_profile`** (set by the registry, surfaced via `list_providers`) — *per-model metadata* describing what each model is best at. Describes *the model*.
+>
+> Both can use the word "style" in their everyday English sense — they don't interact. See [ADR-0009](https://github.com/pvliesdonk/image-generation-mcp/blob/main/docs/decisions/0009-model-style-metadata.md) for the disambiguation.
 
 ## Style File Format
 
