@@ -106,6 +106,24 @@ class TestPresetDetection:
         preset = _resolve_preset("sd3_5_large.safetensors")
         assert preset.supports_negative_prompt is True
 
+    def test_detect_architecture_flux2(self) -> None:
+        """FLUX.2 checkpoints route to flux_dev preset, not the sd15 fallback.
+
+        Regression guard: ``_FLUX_TAGS`` must include ``"flux2"`` so that
+        FLUX.2 checkpoints get 1024px / 20 steps / CFG 1 / no-negative
+        generation params instead of being silently mis-bucketed as SD 1.5.
+        Without this, the style profile would correctly tag the checkpoint
+        as FLUX.2 while the generation parameters remained wrong.
+        """
+        assert _detect_architecture("flux2_dev_nf4.safetensors") == "flux_dev"
+        assert _detect_architecture("flux2_pro.safetensors") == "flux_dev"
+
+    def test_flux2_preset_does_not_support_negative_prompt(self) -> None:
+        """FLUX.2 inherits the Flux dev preset (CFG=1, no negative prompts)."""
+        preset = _resolve_preset("flux2_dev_nf4.safetensors")
+        assert preset.supports_negative_prompt is False
+        assert preset.prompt_style == "natural_language"
+
 
 class TestSdWebuiProvider:
     """Tests for SdWebuiImageProvider."""

@@ -88,7 +88,8 @@ def _build_lifecycle_warnings(
         providers: The dict returned by :meth:`ImageService.list_providers`.
 
     Returns:
-        Sorted list of warning sentences keyed by ``"{provider}:{model_id}"``.
+        Warning sentences sorted alphabetically. Each begins with
+        ``"{provider}:{model_id}"`` for grep-friendly identification.
     """
     warnings: list[str] = []
     for provider_name, provider_info in providers.items():

@@ -319,7 +319,7 @@ MODEL_STYLES: dict[str, StyleProfile] = {
 CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
     # ----- FLUX.2 (must precede generic flux) -----
     (
-        re.compile(r"flux.?2|flux2"),
+        re.compile(r"flux[._-]?2"),
         StyleProfile(
             label="FLUX.2 (current photorealistic flagship)",
             style_hints=(
@@ -430,7 +430,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
     ),
     # ----- Illustrious / NoobAI (must precede animagine) -----
     (
-        re.compile(r"illustrious|noobai|noob.?ai"),
+        re.compile(r"illustrious|noob.?ai"),
         StyleProfile(
             label="Illustrious-XL / NoobAI-XL (modern anime SDXL bases)",
             style_hints=(
@@ -711,7 +711,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
                 "SDXL-tier coherence at SDXL resolutions without "
                 "upscaling."
             ),
-            good_example=('style="watercolor portraiture", medium="ink illustration"'),
+            good_example='style="watercolor portraiture", medium="ink illustration"',
             bad_example=(
                 'style="hyperrealistic skin at 1024px", medium="macro '
                 'studio photograph" (SD 1.5 native latent is 512²; '

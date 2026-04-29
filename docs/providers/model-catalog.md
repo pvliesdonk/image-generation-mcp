@@ -140,11 +140,11 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 | # | Pattern | Label |
 |---|---------|-------|
-| 1 | `flux.?2|flux2` | FLUX.2 (current photorealistic flagship) |
+| 1 | `flux[._-]?2` | FLUX.2 (current photorealistic flagship) |
 | 2 | `flux.*schnell|schnell.*flux` | Flux Schnell (1-4 step distilled) |
 | 3 | `flux` | Flux 1 dev/pro (photorealistic / highly-detailed) |
 | 4 | `pony|score_9|autismmix` | Pony Diffusion XL (mandatory score_* tag prefix) |
-| 5 | `illustrious|noobai|noob.?ai` | Illustrious-XL / NoobAI-XL (modern anime SDXL bases) |
+| 5 | `illustrious|noob.?ai` | Illustrious-XL / NoobAI-XL (modern anime SDXL bases) |
 | 6 | `animagine` | Animagine XL (anime SDXL) |
 | 7 | `coloring.?book` | Coloring Book (line-art SD1.5) |
 | 8 | `juggernaut(?!.*illustrious)` | Juggernaut XL (photorealistic SDXL) |
@@ -157,7 +157,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 | 15 | `v1[-_]5|sd[-_]?1[-._]?5` | SD 1.5 (general-purpose base) |
 | 16 | _(default fallback)_ | Unknown checkpoint (SD general-purpose defaults) |
 
-#### Pattern: `flux.?2|flux2`
+#### Pattern: `flux[._-]?2`
 
 ### FLUX.2 (current photorealistic flagship)
 
@@ -205,7 +205,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 **Bad prompt:** `1girl, anime, cherry blossoms (missing score_* prefix — output collapses)`
 
-#### Pattern: `illustrious|noobai|noob.?ai`
+#### Pattern: `illustrious|noob.?ai`
 
 ### Illustrious-XL / NoobAI-XL (modern anime SDXL bases)
 

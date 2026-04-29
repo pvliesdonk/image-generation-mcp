@@ -131,10 +131,16 @@ _SD3_PRESET = _SdWebuiPreset(
     prompt_style="natural_language",
 )
 
+# NOTE: keep these tag tuples in sync with CHECKPOINT_PATTERNS in
+# providers/model_styles.py — both systems classify the same checkpoint
+# names independently. _detect_architecture chooses the *generation
+# preset* (resolution / steps / cfg / negative-prompt support);
+# CHECKPOINT_PATTERNS chooses the *narrative style profile*. A new
+# architecture needs an entry in BOTH places.
 _SD3_TAGS = ("sd3", "sd_3", "stable_diffusion_3", "stable-diffusion-3")
 _XL_TAGS = ("sdxl", "xl_", "_xl", "-xl")
 _LIGHTNING_TAGS = ("lightning", "turbo")
-_FLUX_TAGS = ("flux1", "flux_", "_flux", "-flux")
+_FLUX_TAGS = ("flux1", "flux2", "flux_", "_flux", "-flux")
 
 
 def _detect_architecture(model_name: str) -> str:
