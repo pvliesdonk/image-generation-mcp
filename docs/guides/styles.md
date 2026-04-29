@@ -6,7 +6,7 @@ Styles are reusable presets that capture a visual direction — palette, composi
 
 A style is a **creative brief**, not a prompt template. When you apply a style, the LLM reads the brief and adapts it to the target provider's prompt format:
 
-- **OpenAI** (gpt-image-1.5 / gpt-image-1 / gpt-image-1-mini) — natural language description incorporating the style's direction. (`gpt-image-2` joins the lineup once OpenAI ships it; tracked as a separate change.)
+- **OpenAI** (gpt-image-1.5 / gpt-image-1 / gpt-image-1-mini) — natural language description incorporating the style's direction.
 - **Gemini** (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview) — natural language, similar to OpenAI; can also incorporate the style brief into multi-image compositing or conversational refinement.
 - **SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut)** — comma-separated CLIP tags with a separate negative prompt.
 - **SD WebUI (Flux 1 / Flux Schnell / FLUX.2)** — natural language, similar to OpenAI; **no** native negative prompts (CFG=1 distilled).
