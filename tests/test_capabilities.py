@@ -12,6 +12,7 @@ from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
     make_degraded,
 )
+from image_generation_mcp.providers.model_styles import StyleProfile
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.service import ImageService
 
@@ -238,9 +239,6 @@ class TestListProvidersIncludesCapabilities:
         providers = svc.list_providers()
         assert providers["placeholder"]["available"] is True
         assert "description" in providers["placeholder"]
-
-
-from image_generation_mcp.providers.model_styles import StyleProfile  # noqa: E402
 
 
 def test_model_capabilities_to_dict_omits_style_profile_when_none():

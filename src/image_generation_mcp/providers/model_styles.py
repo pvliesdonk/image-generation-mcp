@@ -37,7 +37,12 @@ class StyleProfile:
     deprecation_note: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a JSON-compatible dictionary."""
+        """Serialize to a JSON-compatible dictionary.
+
+        The ``deprecation_note`` key is omitted entirely when
+        ``self.deprecation_note is None``. All other fields are always
+        present.
+        """
         result: dict[str, Any] = {
             "label": self.label,
             "style_hints": self.style_hints,
@@ -57,6 +62,8 @@ MODEL_STYLES: dict[str, StyleProfile] = {}
 # default fallback that guarantees resolve_style() returns non-None for any
 # SD WebUI checkpoint.
 CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
+    # re.compile(r"") matches every string; this entry always fires,
+    # making the loop's "no match" branch unreachable in practice.
     (
         re.compile(r""),
         StyleProfile(

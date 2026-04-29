@@ -60,7 +60,13 @@ class ModelCapabilities:
     style_profile: StyleProfile | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize to a JSON-compatible dictionary."""
+        """Serialize to a JSON-compatible dictionary.
+
+        The ``style_profile`` key is omitted entirely when no profile
+        is registered (i.e. when ``self.style_profile is None``). All
+        other ``None``-valued fields are included explicitly as
+        ``null``.
+        """
         result: dict[str, Any] = {
             "model_id": self.model_id,
             "display_name": self.display_name,

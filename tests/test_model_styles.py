@@ -6,7 +6,11 @@ import dataclasses
 
 import pytest
 
-from image_generation_mcp.providers.model_styles import StyleProfile
+from image_generation_mcp.providers.model_styles import (
+    MODEL_STYLES,
+    StyleProfile,
+    resolve_style,
+)
 
 
 def test_style_profile_to_dict_omits_deprecation_note_when_none():
@@ -50,9 +54,6 @@ def test_style_profile_is_frozen():
         profile.label = "y"  # type: ignore[misc]
 
 
-from image_generation_mcp.providers.model_styles import resolve_style  # noqa: E402
-
-
 def test_resolve_style_returns_none_for_unknown_provider():
     assert resolve_style("future-provider", "any-model") is None
 
@@ -72,3 +73,36 @@ def test_resolve_style_sd_webui_falls_back_to_default():
 def test_resolve_style_sd_webui_is_case_insensitive():
     profile = resolve_style("sd_webui", "TOTALLY-RANDOM-NAME")
     assert profile is not None  # default fallback always matches
+
+
+def test_resolve_style_exact_key_hit_in_model_styles():
+    """resolve_style returns the registered profile for an exact-key match."""
+    profile = StyleProfile(
+        label="ExactHit",
+        style_hints="s",
+        incompatible_styles="i",
+        good_example="g",
+        bad_example="b",
+    )
+    MODEL_STYLES["openai:dall-e-3"] = profile
+    try:
+        result = resolve_style("openai", "dall-e-3")
+        assert result is not None
+        assert result.label == "ExactHit"
+    finally:
+        del MODEL_STYLES["openai:dall-e-3"]
+
+
+def test_style_profile_legacy_lifecycle_omits_deprecation_note():
+    """A legacy-lifecycle profile without a deprecation_note still serialises cleanly."""
+    profile = StyleProfile(
+        label="L",
+        style_hints="h",
+        incompatible_styles="i",
+        good_example="g",
+        bad_example="b",
+        lifecycle="legacy",
+    )
+    result = profile.to_dict()
+    assert result["lifecycle"] == "legacy"
+    assert "deprecation_note" not in result
