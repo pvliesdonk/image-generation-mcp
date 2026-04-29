@@ -53,9 +53,9 @@ Choose the best provider for the user's request based on these guidelines.
 ### Gemini
 
 - **Production:** `gemini-2.5-flash-image` (production GA). Cheap (~$0.04/image),
-  fast, supports 10 aspect ratios from 21:9 to 9:16, multi-image compositing
-  (up to 3 inputs), and conversational image editing. Outputs carry an
-  invisible SynthID watermark.
+  fast, supports 14 aspect ratios from 21:9 to 9:16 (including ultra-wide
+  4:1 / 8:1), multi-image compositing (up to 3 inputs), and conversational
+  image editing. Outputs carry an invisible SynthID watermark.
 - **Preview:** `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`
   add reasoning ("thinking") for layout-heavy and dense-typography work.
   Preview-tier — surface stability not guaranteed.
@@ -436,7 +436,7 @@ You are applying the style "{entry.name}" to the user's request above.
    - **For SD WebUI (SD 3 / 3.5):** Compose in natural language; **do**
      include a negative prompt for excluded elements (SD3 supports them
      natively).
-   - **For SD WebUI (Pony Diffusion XL):** Compose Booru-style tags with
+   - **For SD WebUI (Pony Diffusion XL):** Compose Danbooru-style tags with
      the mandatory `score_9, score_8_up, score_7_up, score_6_up,
      score_5_up, score_4_up` prefix, plus a `source_*` and `rating_*` tag.
      Without the `score_*` prefix the output collapses.
