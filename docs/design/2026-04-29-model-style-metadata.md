@@ -96,22 +96,25 @@ orthogonal axes (grammar vs purpose).
 
 ```python
 MODEL_STYLES: dict[str, StyleProfile] = {
-    # Keys are "{provider_name}:{model_id}". Only model IDs that the
-    # provider actually exposes today are listed; new model IDs join the
-    # registry alongside the provider-config change that exposes them.
-    "openai:gpt-image-1": StyleProfile(..., lifecycle="legacy"),
-    "openai:dall-e-3":    StyleProfile(..., lifecycle="deprecated",
-                                        deprecation_note="OpenAI API removal 2026-05-12."),
-    "gemini:gemini-2.5-flash-image": StyleProfile(label="Gemini 2.5 Flash Image (Nano Banana)", ...),
-    "placeholder:placeholder":       StyleProfile(label="Solid-color placeholder", ...),
+    # Keys are "{provider_name}:{model_id}". One entry per model_id that the
+    # provider actually returns from discover_capabilities() today.
+    "openai:gpt-image-1.5":  StyleProfile(label="GPT Image 1.5", ...),                  # current flagship
+    "openai:gpt-image-1":    StyleProfile(label="GPT Image 1", ..., lifecycle="legacy"),
+    "openai:gpt-image-1-mini": StyleProfile(label="GPT Image 1 Mini", ...),             # cheaper variant
+    "openai:dall-e-3":       StyleProfile(..., lifecycle="deprecated",
+                                           deprecation_note="OpenAI API removal scheduled 2026-05-12."),
+    "openai:dall-e-2":       StyleProfile(..., lifecycle="legacy"),
+    "gemini:gemini-2.5-flash-image":         StyleProfile(label="Gemini 2.5 Flash Image (Nano Banana)", ...),
+    "gemini:gemini-3.1-flash-image-preview": StyleProfile(label="Gemini 3.1 Flash Image (preview)", ...),
+    "gemini:gemini-3-pro-image-preview":     StyleProfile(label="Gemini 3 Pro Image (preview)", ...),
+    "placeholder:placeholder":               StyleProfile(label="Solid-color placeholder", ...),
 }
 ```
 
 Source content for the profile prose comes from the brainstorming research
 report (cited in commit message). All hosted-API models in this set tag
-`prompt_style="natural_language"`. Profiles for `gpt-image-1.5`,
-`gpt-image-2`, `gemini-3-pro-image-preview`, etc. join the registry in the
-same PR that adds them to provider config (out-of-scope item #2).
+`prompt_style="natural_language"`. New OpenAI model IDs (e.g. `gpt-image-2`)
+join the registry alongside the provider-config change that exposes them.
 
 ### SD WebUI checkpoints — ordered regex table
 
@@ -327,11 +330,10 @@ Filed as separate issues in the same session (per CLAUDE.md "PR workflow"):
    2026 model lineup. The static prompt text overlaps with the new metadata;
    refactoring it to consume the registry (or to be hand-edited in sync) is a
    focused follow-up PR.
-2. **Add `gpt-image-1.5` and `gpt-image-2` to OpenAI provider config and
-   `gemini-3-pro-image-preview` to Gemini provider config.** The registry will
-   carry their profiles (otherwise the page is incomplete), but enabling them
-   as callable model IDs requires provider-config and capability-discovery
-   changes.
+2. **Add `gpt-image-2` to OpenAI provider config** when OpenAI ships it. The
+   provider already supports `gpt-image-1`, `gpt-image-1-mini`,
+   `gpt-image-1.5`, `dall-e-3`, and `dall-e-2`; this PR's registry covers all
+   of those plus the three Gemini variants already in `_KNOWN_IMAGE_MODELS`.
 3. **Surface the SynthID watermark** as a `watermark: "synthid"` capability
    field on `gemini-2.5-flash-image`. Distinct addition to the capability
    schema.
