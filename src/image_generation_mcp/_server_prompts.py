@@ -52,7 +52,7 @@ Choose the best provider for the user's request based on these guidelines.
 
 ### Gemini
 
-- **Production:** `gemini-2.5-flash-image` (Nano Banana). Cheap (~$0.04/image),
+- **Production:** `gemini-2.5-flash-image` (production GA). Cheap (~$0.04/image),
   fast, supports 10 aspect ratios from 21:9 to 9:16, multi-image compositing
   (up to 3 inputs), and conversational image editing. Outputs carry an
   invisible SynthID watermark.
@@ -329,12 +329,27 @@ The server maps these to optimal pixel dimensions for each SD model.
 
 ## Workflow
 
-1. Check `list_providers` to see available models and their `prompt_style`
-   (`"clip"` for SD 1.5/SDXL, `"natural_language"` for Flux)
-2. Write your prompt in the appropriate style for the model
-3. For SD 1.5/SDXL: add quality tags and a negative prompt
-4. For Flux: write a natural language description, skip negative prompt
-5. Call `generate_image` with `provider="sd_webui"`:
+1. Check `list_providers` to see available models, their `prompt_style`
+   (`"clip"` for SD 1.5/SDXL/Pony/Illustrious, `"natural_language"` for
+   Flux/SD3), and their per-checkpoint `style_profile.style_hints` for
+   any fine-tune-specific guidance.
+2. Write your prompt in the appropriate style for the model:
+   - **SD 1.5 / SDXL** — add quality tags and a negative prompt.
+   - **Flux 1 / Flux Schnell / FLUX.2** — write natural language; skip
+     negative prompt (CFG=1 distilled, unsupported).
+   - **SD 3 / 3.5** — write natural language; **do** include a negative
+     prompt (SD3 supports them natively, unlike Flux); skip SDXL-style
+     `(weight:1.2)` parens.
+   - **Pony Diffusion XL** — prepend the mandatory `score_9, score_8_up,
+     score_7_up, …` block before all other tags. Add `source_anime` /
+     `source_pony` / `source_furry` and a `rating_*` tag. Without the
+     `score_*` prefix, output collapses.
+   - **Illustrious-XL / NoobAI-XL** — Danbooru-style tags
+     (`1girl, long hair, …, masterpiece, best quality, very aesthetic`).
+     For NoobAI v-prediction variants, ensure the v-prediction sampler
+     config is set on the WebUI side (epsilon-prediction is wrong for
+     those weights and produces noise).
+3. Call `generate_image` with `provider="sd_webui"`:
 
 **SD 1.5 / SDXL example:**
 ```
@@ -410,13 +425,25 @@ You are applying the style "{entry.name}" to the user's request above.
    palette, composition, mood, medium, constraints.
 2. Combine that direction with the user's specific request.
 3. Compose a provider-appropriate prompt for `generate_image`:
-   - **For OpenAI:** Compose in natural language. Describe the scene
-     incorporating the style's visual direction.
-   - **For SD WebUI (SD 1.5/SDXL):** Compose as comma-separated CLIP tags.
-     Translate the style's concepts into appropriate tags. Include a
-     negative prompt based on the style's constraints.
-   - **For SD WebUI (Flux):** Compose in natural language, similar to OpenAI.
-   - Check `list_providers` for each model's `prompt_style` field.
+   - **For OpenAI / Gemini:** Compose in natural language. Describe the
+     scene incorporating the style's visual direction.
+   - **For SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut):** Compose as
+     comma-separated CLIP tags. Translate the style's concepts into
+     appropriate tags. Include a negative prompt based on the style's
+     constraints.
+   - **For SD WebUI (Flux 1 / Flux Schnell / FLUX.2):** Compose in natural
+     language. Skip the negative prompt (Flux is CFG=1 distilled).
+   - **For SD WebUI (SD 3 / 3.5):** Compose in natural language; **do**
+     include a negative prompt for excluded elements (SD3 supports them
+     natively).
+   - **For SD WebUI (Pony Diffusion XL):** Compose Booru-style tags with
+     the mandatory `score_9, score_8_up, score_7_up, score_6_up,
+     score_5_up, score_4_up` prefix, plus a `source_*` and `rating_*` tag.
+     Without the `score_*` prefix the output collapses.
+   - **For SD WebUI (Illustrious-XL / NoobAI-XL):** Compose Danbooru-style
+     anime tags (artist, character, series, descriptors).
+   - Check `list_providers` for each model's `prompt_style` field plus
+     `style_profile.style_hints` for fine-tune-specific guidance.
 4. **Do NOT copy the style text verbatim into the prompt.** Interpret and
    adapt it for the target provider's format.
 5. Use the style's frontmatter defaults (provider, aspect_ratio, quality)
@@ -448,7 +475,8 @@ def register_prompts(mcp: FastMCP) -> None:
         name="sd_prompt_guide",
         description=(
             "Guide for writing SD WebUI prompts — "
-            "CLIP tags for SD 1.5/SDXL, natural language for Flux"
+            "CLIP tags (SD 1.5 / SDXL / Pony / Illustrious / NoobAI), "
+            "prose (Flux 1 / FLUX.2 / Schnell / SD 3 / 3.5)"
         ),
         icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
     )

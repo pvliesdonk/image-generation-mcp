@@ -12,8 +12,13 @@ class TestPromptContent:
     """Verify prompt strings contain expected guidance."""
 
     def test_select_provider_mentions_all_providers(self) -> None:
-        for provider in ("OpenAI", "SD WebUI", "Placeholder"):
+        for provider in ("OpenAI", "Gemini", "SD WebUI", "Placeholder"):
             assert provider in _SELECT_PROVIDER_PROMPT
+
+    def test_sd_prompt_guide_mentions_modern_arch_families(self) -> None:
+        """SD3, Pony, Illustrious are documented per the 2026-04-29 audit."""
+        for family in ("SD 3", "Pony", "Illustrious", "NoobAI"):
+            assert family in _SD_PROMPT_GUIDE
 
     def test_select_provider_mentions_auto(self) -> None:
         assert "auto" in _SELECT_PROVIDER_PROMPT

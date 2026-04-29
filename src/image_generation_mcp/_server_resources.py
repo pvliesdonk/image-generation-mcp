@@ -120,7 +120,7 @@ choose). `hd` maps to `high` for maximum detail.
 
 ## Gemini
 
-**Lineup:** `gemini-2.5-flash-image` ("Nano Banana", production GA — fast,
+**Lineup:** `gemini-2.5-flash-image` (production GA — fast,
 cheap, strong text rendering, multi-image compositing up to 3 inputs),
 `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview` (preview
 tier with reasoning / "thinking" support — use for layout-heavy or dense-
@@ -145,11 +145,12 @@ Note: `hd` uses thinking tokens which are billed.
 
 **Negative prompts:** Appended as an "Avoid:" clause (same as OpenAI).
 
-## SD WebUI / Stable Diffusion
+## SD WebUI (Stable Diffusion / Forge / reForge / Forge-neo)
 
 SD WebUI supports multiple model architectures with different prompt styles.
 Check `list_providers` to see each model's `prompt_style` field (`"clip"` or
-`"natural_language"`).
+`"natural_language"`) plus `style_profile.style_hints` for fine-tune-specific
+guidance.
 
 ### SD 1.5 / SDXL (CLIP-based models)
 
