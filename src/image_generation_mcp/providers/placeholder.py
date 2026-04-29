@@ -18,6 +18,7 @@ from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
     ProviderCapabilities,
 )
+from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import ImageResult, ProgressCallback
 
 logger = logging.getLogger(__name__)
@@ -157,6 +158,7 @@ class PlaceholderImageProvider:
             supports_negative_prompt=False,
             supports_background=True,
             max_resolution=640,
+            style_profile=resolve_style("placeholder", "placeholder"),
         )
         return ProviderCapabilities(
             provider_name="placeholder",

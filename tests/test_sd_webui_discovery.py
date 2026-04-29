@@ -717,3 +717,41 @@ class TestSdWebuiDiscoverFluxModels:
         )
         caps = await provider.discover_capabilities()
         assert caps.supports_negative_prompt is False
+
+
+# -- Style profile population tests ------------------------------------------
+
+
+class TestSdWebuiDiscoverStyleProfile:
+    """Verify style_profile is populated on all discovered checkpoints."""
+
+    async def test_discover_capabilities_populates_style_profile(self) -> None:
+        """style_profile is non-None on every returned ModelCapabilities entry."""
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+
+        caps = await provider.discover_capabilities()
+
+        assert caps.models, "expected at least one model in capabilities"
+        for model_caps in caps.models:
+            assert model_caps.style_profile is not None, (
+                f"expected style_profile for {model_caps.model_id}"
+            )
+            assert model_caps.style_profile.label
+
+    async def test_unknown_checkpoint_routes_to_default_fallback(self) -> None:
+        """A checkpoint not matching any specific pattern uses the default fallback."""
+        unknown_checkpoint = {
+            "title": "totally_unknown_custom_model_v1.safetensors [xyz789]",
+            "model_name": "totally_unknown_custom_model_v1",
+            "hash": "xyz789",
+        }
+        provider = _make_provider()
+        provider._client.get = _mock_get([unknown_checkpoint])
+
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1
+        m = caps.models[0]
+        assert m.style_profile is not None
+        assert "unknown checkpoint" in m.style_profile.label.lower()

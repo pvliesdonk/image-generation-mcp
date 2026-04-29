@@ -100,6 +100,19 @@ class TestDiscoverCapabilities:
 
         assert before <= caps.discovered_at <= after
 
+    async def test_discover_capabilities_populates_style_profile(
+        self, gemini_provider: GeminiImageProvider
+    ) -> None:
+        """style_profile is populated on all returned ModelCapabilities entries."""
+        caps = await gemini_provider.discover_capabilities()
+
+        assert caps.models, "expected at least one model in capabilities"
+        for model_caps in caps.models:
+            assert model_caps.style_profile is not None, (
+                f"expected style_profile for {model_caps.model_id}"
+            )
+            assert model_caps.style_profile.label
+
     async def test_degraded_on_unexpected_exception(
         self, gemini_provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch
     ) -> None:

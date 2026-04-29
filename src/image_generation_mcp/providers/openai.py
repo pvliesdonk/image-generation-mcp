@@ -15,6 +15,7 @@ from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
     make_degraded,
 )
+from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
     ImageProviderConnectionError,
@@ -299,6 +300,7 @@ class OpenAIImageProvider:
                     supported_formats=("png", "jpeg", "webp"),
                     supported_qualities=("standard", "hd"),
                     max_resolution=1536,
+                    style_profile=resolve_style("openai", "gpt-image-1"),
                 )
             )
 
@@ -322,6 +324,7 @@ class OpenAIImageProvider:
                         supported_formats=("png", "jpeg", "webp"),
                         supported_qualities=("standard", "hd"),
                         max_resolution=1536,
+                        style_profile=resolve_style("openai", mini_model_id),
                     )
                 )
 
@@ -339,6 +342,7 @@ class OpenAIImageProvider:
                     supported_formats=("png",),
                     supported_qualities=("standard", "hd"),
                     max_resolution=1792,
+                    style_profile=resolve_style("openai", "dall-e-3"),
                 )
             )
 
@@ -356,6 +360,7 @@ class OpenAIImageProvider:
                     supported_formats=("png",),
                     supported_qualities=("standard",),
                     max_resolution=1024,
+                    style_profile=resolve_style("openai", "dall-e-2"),
                 )
             )
 

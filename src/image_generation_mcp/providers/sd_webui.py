@@ -24,6 +24,7 @@ from image_generation_mcp.providers.capabilities import (
     ProviderCapabilities,
     make_degraded,
 )
+from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
@@ -467,6 +468,7 @@ class SdWebuiImageProvider:
                     default_steps=preset.steps,
                     default_cfg=preset.cfg_scale,
                     prompt_style=preset.prompt_style,
+                    style_profile=resolve_style("sd_webui", title),
                 )
             )
 
