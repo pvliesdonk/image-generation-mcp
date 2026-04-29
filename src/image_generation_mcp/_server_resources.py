@@ -316,8 +316,11 @@ RGBA output with alpha=0.
    `quality="hd"` on a Pro/3.x model.
 4. **Photorealism, portraits, product shots** → prefer `sd_webui`
    (RealVisXL / Juggernaut / Flux), fall back to `gemini` then `openai`.
-5. **Anime, illustration, painting, art** → prefer `sd_webui`
-   (Illustrious-XL / NoobAI-XL / Pony for stylised work).
+5. **Anime, illustration, painting, art** → prefer `sd_webui` with
+   **Illustrious-XL** or **NoobAI-XL** (modern anime SDXL bases that have
+   largely supplanted Animagine). Pick **Pony Diffusion XL** for
+   highly-stylised character art (mandatory `score_*` prefix). Animagine
+   XL is a previous-generation fallback.
 6. **Quick test or placeholder** → `placeholder`.
 7. **General requests** → `gemini` when available, then `openai`.
 

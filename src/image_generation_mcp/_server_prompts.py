@@ -108,8 +108,11 @@ Choose the best provider for the user's request based on these guidelines.
    prefer **sd_webui** (RealVisXL / Juggernaut / Flux), fall back to
    **gemini** then **openai**.
 6. If the request involves **anime, manga, or painting styles** → prefer
-   **sd_webui** (Illustrious-XL / NoobAI-XL / Animagine; Pony for stylised
-   anime with `score_*` prefix).
+   **sd_webui** with **Illustrious-XL / NoobAI-XL** (modern anime SDXL
+   bases that have largely supplanted Animagine for general anime work).
+   Pick **Pony Diffusion XL** for highly-stylised character art (mandatory
+   `score_*` tag prefix; output collapses without it). Animagine XL still
+   works but is considered a previous-generation choice.
 7. If the request is a **quick draft or iteration** → use **gemini** at
    `standard` quality (fast, free tier) or **sd_webui** with a Lightning /
    Schnell checkpoint.
