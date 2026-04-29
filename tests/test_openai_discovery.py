@@ -251,6 +251,34 @@ class TestDiscoverDalle2Fields:
         assert m.max_resolution == 1024
 
 
+class TestDiscoverStyleProfile:
+    """Verify style_profile is populated on discover_capabilities() results."""
+
+    async def test_discover_capabilities_populates_style_profile(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """style_profile is populated on returned ModelCapabilities entries."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model(
+                "gpt-image-1",
+                "gpt-image-1-mini",
+                "gpt-image-1.5",
+                "dall-e-3",
+                "dall-e-2",
+            )
+        )
+
+        caps = await provider.discover_capabilities()
+
+        assert caps.models, "expected at least one model in capabilities"
+        for model_caps in caps.models:
+            assert model_caps.style_profile is not None, (
+                f"expected style_profile for {model_caps.model_id}"
+            )
+            assert model_caps.style_profile.label
+
+
 class TestDiscoverNewGptImageModels:
     """Verify discovery of gpt-image-1-mini and gpt-image-1.5."""
 

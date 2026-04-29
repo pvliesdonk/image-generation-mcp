@@ -31,6 +31,11 @@ from mcp.types import ImageContent, ResourceLink, TextContent
 from PIL import Image
 
 from image_generation_mcp._server_tools import register_tools
+from image_generation_mcp.providers.capabilities import (
+    ModelCapabilities,
+    ProviderCapabilities,
+)
+from image_generation_mcp.providers.model_styles import MODEL_STYLES
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageResult
 from image_generation_mcp.service import ImageService
@@ -173,6 +178,18 @@ class TestGenerateImageRegistration:
         tool = await mcp.get_tool("generate_image")
         assert tool is not None
         assert "write" in tool.tags
+
+    async def test_docstring_mentions_style_profile_and_warnings(self) -> None:
+        """Docstring must point the LLM at style_profile fields and the warnings array."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+
+        tool = await mcp.get_tool("generate_image")
+        assert tool is not None
+        doc = tool.description
+        assert doc is not None
+        assert "style_profile" in doc
+        assert "warnings" in doc
 
 
 # ---------------------------------------------------------------------------
@@ -1056,6 +1073,98 @@ class TestListProvidersTool:
 
         data = json.loads(result)
         assert "refreshed_at" in data
+
+    async def test_list_providers_includes_warnings_array_always(
+        self, service: ImageService
+    ) -> None:
+        """warnings is always present (empty when no deprecated models)."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("list_providers")
+        assert tool is not None
+
+        result = await tool.fn(service=service)
+        payload = json.loads(result)
+        assert "warnings" in payload
+        assert isinstance(payload["warnings"], list)
+        # Placeholder provider has no style_profile → no warnings
+        assert payload["warnings"] == []
+
+    async def test_list_providers_warnings_lists_deprecated_dall_e_3(
+        self, tmp_path: Path
+    ) -> None:
+        """warnings includes a sentence for each non-current configured model."""
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("openai", PlaceholderImageProvider())
+        # Inject a discovered capabilities snapshot that includes dall-e-3
+        # (deprecated lifecycle) directly into the service's _capabilities cache.
+        dall_e_3_profile = MODEL_STYLES.get("openai:dall-e-3")
+        assert dall_e_3_profile is not None, "dall-e-3 must be in MODEL_STYLES"
+        model_caps = ModelCapabilities(
+            model_id="dall-e-3",
+            display_name="DALL-E 3",
+            style_profile=dall_e_3_profile,
+        )
+        provider_caps = ProviderCapabilities(
+            provider_name="openai",
+            models=(model_caps,),
+            discovered_at=0.0,
+        )
+        svc._capabilities["openai"] = provider_caps
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("list_providers")
+        assert tool is not None
+
+        result = await tool.fn(service=svc)
+        payload = json.loads(result)
+        assert "warnings" in payload
+        warnings = payload["warnings"]
+        assert any("dall-e-3" in w and "2026-05-12" in w for w in warnings), (
+            f"expected a deprecation warning mentioning dall-e-3 + 2026-05-12; "
+            f"got {warnings!r}"
+        )
+
+    async def test_list_providers_warnings_lists_legacy_gpt_image_1(
+        self, tmp_path: Path
+    ) -> None:
+        """warnings cover legacy-lifecycle models, not just deprecated ones.
+
+        ``_build_lifecycle_warnings`` skips ``lifecycle == "current"`` and
+        emits a warning for both ``"legacy"`` and ``"deprecated"``. Without
+        this test the legacy branch was uncovered — an accidental narrowing
+        to ``lifecycle == "deprecated"`` would slip through.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("openai", PlaceholderImageProvider())
+        gpt_image_1_profile = MODEL_STYLES.get("openai:gpt-image-1")
+        assert gpt_image_1_profile is not None
+        assert gpt_image_1_profile.lifecycle == "legacy"
+        model_caps = ModelCapabilities(
+            model_id="gpt-image-1",
+            display_name="GPT Image 1",
+            style_profile=gpt_image_1_profile,
+        )
+        provider_caps = ProviderCapabilities(
+            provider_name="openai",
+            models=(model_caps,),
+            discovered_at=0.0,
+        )
+        svc._capabilities["openai"] = provider_caps
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("list_providers")
+        assert tool is not None
+
+        result = await tool.fn(service=svc)
+        payload = json.loads(result)
+        assert "warnings" in payload
+        warnings = payload["warnings"]
+        assert any("gpt-image-1" in w and "legacy" in w for w in warnings), (
+            f"expected a legacy warning mentioning gpt-image-1; got {warnings!r}"
+        )
 
 
 # ---------------------------------------------------------------------------
