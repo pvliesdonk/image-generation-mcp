@@ -7,6 +7,7 @@ import dataclasses
 import pytest
 
 from image_generation_mcp.providers.model_styles import (
+    CHECKPOINT_PATTERNS,
     MODEL_STYLES,
     StyleProfile,
     resolve_style,
@@ -168,3 +169,60 @@ def test_resolve_style_picks_up_placeholder():
     profile = resolve_style("placeholder", "placeholder")
     assert profile is not None
     assert profile.lifecycle == "current"
+
+
+@pytest.mark.parametrize(
+    "model_id,expected_label_substring",
+    [
+        # FLUX.2 must beat generic flux
+        ("flux2_dev_nf4.safetensors", "FLUX.2"),
+        # Schnell must beat generic flux
+        ("flux1_schnell_nf4.safetensors", "Schnell"),
+        # Generic flux1 dev still routes to Flux 1 entry
+        ("flux1_dev_nf4.safetensors", "Flux 1"),
+        # Pony tag system
+        ("ponyDiffusionV6XL.safetensors", "Pony"),
+        ("autismMix_confetti.safetensors", "Pony"),
+        # Illustrious / NoobAI must beat animagine for Illustrious-Animagine fine-tunes
+        ("illustriousJuggernaut_v3.safetensors", "Illustrious"),
+        ("noobAI_xl_vpred.safetensors", "Illustrious"),
+        # Animagine still wins on plain Animagine names
+        ("animagineXL_v3.safetensors", "Animagine"),
+        # Coloring book
+        ("coloringBook_v1.ckpt", "Coloring"),
+        # Juggernaut on its own routes to photorealistic, but Illustrious-prefixed routes elsewhere
+        ("juggernautXL_v9.safetensors", "Juggernaut"),
+        # DreamShaper Lightning specificity
+        ("dreamshaperXL_v21Lightning.safetensors", "Lightning"),
+        ("dreamshaperXL_v2.safetensors", "DreamShaperXL"),
+        ("dreamshaper_8.safetensors", "DreamShaper"),
+        # SD3 / SD3.5
+        ("sd3_5_large.safetensors", "SD 3"),
+        ("sd_3_medium.safetensors", "SD 3"),
+        # SDXL base
+        ("sd_xl_base_1.0.safetensors", "SDXL Base"),
+        # RealVisXL
+        ("realvisxl_v4.safetensors", "RealVisXL"),
+        # SD 1.5 base
+        ("v1-5-pruned-emaonly.safetensors", "SD 1.5"),
+        ("sd_1_5_base.safetensors", "SD 1.5"),
+        # Default fallback
+        ("xyzUnknownCheckpoint.safetensors", "Unknown"),
+    ],
+)
+def test_checkpoint_pattern_routing(model_id: str, expected_label_substring: str):
+    profile = resolve_style("sd_webui", model_id)
+    assert profile is not None
+    assert expected_label_substring in profile.label, (
+        f"{model_id} routed to {profile.label!r}, expected substring "
+        f"{expected_label_substring!r}"
+    )
+
+
+def test_default_fallback_is_last_pattern():
+    """Empty-pattern entry must be the final tuple element."""
+    last_pattern, _ = CHECKPOINT_PATTERNS[-1]
+    assert last_pattern.pattern == ""
+    # Sanity: every other pattern is non-empty
+    for pattern, _ in CHECKPOINT_PATTERNS[:-1]:
+        assert pattern.pattern, "non-default fallback patterns must be non-empty"

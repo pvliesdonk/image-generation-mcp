@@ -317,6 +317,409 @@ MODEL_STYLES: dict[str, StyleProfile] = {
 # default fallback that guarantees resolve_style() returns non-None for any
 # SD WebUI checkpoint.
 CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
+    # ----- FLUX.2 (must precede generic flux) -----
+    (
+        re.compile(r"flux.?2|flux2"),
+        StyleProfile(
+            label="FLUX.2 (current photorealistic flagship)",
+            style_hints=(
+                "Newest BFL Flux generation. Photorealistic imagery with "
+                "extreme fine detail; coherent in-scene text; strong "
+                "architectural and product photography. Natural-language "
+                "prose prompts; T5 encoder."
+            ),
+            incompatible_styles=(
+                "FLUX.2 does not support negative prompts (CFG=1 distilled). "
+                "Anime / cel-shaded / low-detail illustration styles fight "
+                "the model. Don't use SD-style weighted parens or BREAK."
+            ),
+            good_example=(
+                'style="cinematic urban photography", medium="digital '
+                'photograph with shallow DOF"'
+            ),
+            bad_example=(
+                'style="watercolor wash", medium="hand-painted ink" '
+                "(FLUX.2 is tuned for photorealism; painterly media will "
+                "fight the model)"
+            ),
+        ),
+    ),
+    # ----- Flux Schnell (must precede generic flux) -----
+    (
+        re.compile(r"flux.*schnell|schnell"),
+        StyleProfile(
+            label="Flux Schnell (1-4 step distilled)",
+            style_hints=(
+                "Distilled Flux variant for very fast drafts (1-4 steps, "
+                "CFG=1). Same natural-language prompt style as Flux dev. "
+                "Best for ideation passes where iteration speed dominates."
+            ),
+            incompatible_styles=(
+                "No negative prompts (CFG=1, fully distilled). Quality "
+                "below Flux dev / FLUX.2; don't use for final-grade "
+                "output. Highly detailed textures suffer at 1-4 step "
+                "counts."
+            ),
+            good_example=(
+                'style="cinematic environment concept", medium="painterly '
+                'digital art, broad strokes" (4 steps)'
+            ),
+            bad_example=(
+                'style="hyperreal skin pores at 4K", medium="macro '
+                'photograph" (Schnell sacrifices fine detail for speed)'
+            ),
+        ),
+    ),
+    # ----- Flux 1 dev/pro (NF4 quants share identity) -----
+    (
+        re.compile(r"flux"),
+        StyleProfile(
+            label="Flux 1 dev/pro (photorealistic / highly-detailed)",
+            style_hints=(
+                "Photorealistic imagery, extreme fine detail, architectural "
+                "photography, natural lighting, product shots, documentary "
+                "portraiture, coherent text in scene. Natural-language "
+                "prose; T5 encoder; CFG=1 distilled."
+            ),
+            incompatible_styles=(
+                "Negative prompts are unsupported (CFG=1 distilled). "
+                "Anime / cel-shading / heavy painterly textures fight "
+                "the model. Don't use SD-style weighted parens or BREAK."
+            ),
+            good_example=(
+                'style="cinematic urban photography", medium="digital '
+                'photograph with shallow DOF"'
+            ),
+            bad_example=(
+                'style="watercolor wash", medium="hand-painted ink" '
+                "(Flux is tuned for photorealism; painterly media will "
+                "fight the model)"
+            ),
+        ),
+    ),
+    # ----- Pony Diffusion XL family -----
+    (
+        re.compile(r"pony|score_9|autismmix"),
+        StyleProfile(
+            label="Pony Diffusion XL (mandatory score_* tag prefix)",
+            style_hints=(
+                "Highly versatile SDXL fine-tune. Excellent for stylised "
+                "character art, anime, and varied art styles when prompted "
+                "with the mandatory leading tag block: 'score_9, "
+                "score_8_up, score_7_up, score_6_up, score_5_up, "
+                "score_4_up, source_anime, rating_safe' (or "
+                "source_pony/source_furry, rating_questionable, etc.). "
+                "Without the score_* prefix, output quality collapses."
+            ),
+            incompatible_styles=(
+                "Bare prompts without the score_* prefix produce visibly "
+                "degraded results. Photorealistic catalog work — Pony is "
+                "stylised by design. Natural-language prose underperforms "
+                "vs Booru-style tag grammar."
+            ),
+            good_example=(
+                "score_9, score_8_up, score_7_up, score_6_up, "
+                "source_anime, rating_safe, 1girl, school uniform, "
+                "cherry blossoms, soft lighting"
+            ),
+            bad_example=(
+                "1girl, anime, cherry blossoms (missing score_* prefix — "
+                "output collapses)"
+            ),
+        ),
+    ),
+    # ----- Illustrious / NoobAI (must precede animagine) -----
+    (
+        re.compile(r"illustrious|noobai|noob.?ai"),
+        StyleProfile(
+            label="Illustrious-XL / NoobAI-XL (modern anime SDXL bases)",
+            style_hints=(
+                "Current-generation anime SDXL bases that have largely "
+                "supplanted Animagine in 2025-26. Danbooru-style tag "
+                "grammar (artist tags, character tags, e6/Danbooru-style). "
+                "Much larger character/style dataset than Animagine 3.x. "
+                "Strong cel-shading and expressive character art."
+            ),
+            incompatible_styles=(
+                "Photorealism — anime-specialised. NoobAI v-prediction "
+                "variants need the v-prediction sampler config; wrong "
+                "sampler produces noise. Natural-language prose "
+                "underperforms vs tag grammar."
+            ),
+            good_example=(
+                "1girl, long hair, blue eyes, school uniform, cherry "
+                "blossoms, masterpiece, best quality, very aesthetic"
+            ),
+            bad_example=(
+                'style="documentary photograph", medium="35mm film" '
+                "(Illustrious/NoobAI are anime-specialised; photographic "
+                "styles produce off-distribution outputs)"
+            ),
+        ),
+    ),
+    # ----- Animagine XL -----
+    (
+        re.compile(r"animagine"),
+        StyleProfile(
+            label="Animagine XL (anime SDXL)",
+            style_hints=(
+                "Anime illustration base. Danbooru-style tag vocabulary, "
+                "clean cel shading, expressive character art, vivid "
+                "saturated palette, manga panel compositions. Animagine "
+                "4.x recommends '1girl/1boy, character (series), rating, "
+                "..., masterpiece, high score, great score, absurdres'."
+            ),
+            incompatible_styles=(
+                "Photorealism, photography-style lighting, gritty texture, "
+                "oil painting, detailed backgrounds without anime "
+                "stylisation. For broader character/style coverage, "
+                "consider Illustrious-XL or NoobAI-XL."
+            ),
+            good_example=(
+                "1girl, long hair, school uniform, cherry blossoms, "
+                "masterpiece, high score, absurdres"
+            ),
+            bad_example=(
+                'style="documentary photograph", medium="35mm film" '
+                "(Animagine is anime-specialised; photographic styles "
+                "produce off-distribution outputs)"
+            ),
+        ),
+    ),
+    # ----- Coloring-book fine-tune (SD1.5 line-art) -----
+    (
+        re.compile(r"coloring.?book"),
+        StyleProfile(
+            label="Coloring Book (line-art SD1.5)",
+            style_hints=(
+                "Clean outlines on white background, no fill colors, "
+                "strong linework, simple shapes, children's-book-friendly "
+                "compositions, decorative borders."
+            ),
+            incompatible_styles=(
+                "Photorealism, color renders, painterly textures, complex "
+                "shading, dark backgrounds, photographic lighting."
+            ),
+            good_example=(
+                'style="bold ink linework", medium="black-and-white outline drawing"'
+            ),
+            bad_example=(
+                'style="photorealistic portrait", medium="oil paint with '
+                'rich color" (this checkpoint is fine-tuned for line-art '
+                "only; color renders will fail)"
+            ),
+        ),
+    ),
+    # ----- Juggernaut XL (tightened to exclude Illustrious-Juggernaut) -----
+    (
+        re.compile(r"juggernaut(?!.*illustrious)"),
+        StyleProfile(
+            label="Juggernaut XL (photorealistic SDXL)",
+            style_hints=(
+                "Photorealistic portraits, cinematic lighting, sharp "
+                "textural detail, skin pores, fabric weave, dramatic rim "
+                "lighting, environmental storytelling. Recent Juggernaut "
+                "X / XI handle some stylised work too."
+            ),
+            incompatible_styles=(
+                "Anime, cartoon, flat illustration. Watercolor and "
+                "comic-ink styles are weaker than dedicated stylised "
+                "checkpoints — usable but not the model's strength."
+            ),
+            good_example=(
+                'style="gritty photorealistic urban", medium="digital photo"'
+            ),
+            bad_example=(
+                'style="watercolor wash", medium="traditional ink" '
+                "(Juggernaut is tuned for photorealism; stylised media "
+                "will underperform)"
+            ),
+        ),
+    ),
+    # ----- DreamShaperXL Lightning / Alpha (must precede generic dreamshaperxl) -----
+    (
+        re.compile(r"dreamshaperxl.*lightning|dreamshaperxl.*alpha"),
+        StyleProfile(
+            label="DreamShaperXL Lightning / Alpha (fast fantasy SDXL)",
+            style_hints=(
+                "Fantasy concept art, painterly illustration, vibrant "
+                "color, dramatic character portraits. Run at 3-6 steps "
+                "with CFG ~2 and DPM++ SDE Karras (per Civitai). Fast "
+                "ideation pass for stylised work."
+            ),
+            incompatible_styles=(
+                "Photorealism (stylised by design), highly detailed "
+                "textures at very low step counts, strict architectural "
+                "accuracy."
+            ),
+            good_example=(
+                'style="dramatic fantasy concept art", medium="painterly '
+                'digital illustration"'
+            ),
+            bad_example=(
+                'style="hyperrealistic skin detail at 4K", medium="macro '
+                'photograph" (Lightning checkpoints sacrifice fine detail '
+                "for speed)"
+            ),
+        ),
+    ),
+    # ----- DreamShaperXL standard -----
+    (
+        re.compile(r"dreamshaperxl|dreamshaper.*xl"),
+        StyleProfile(
+            label="DreamShaperXL (versatile fantasy SDXL)",
+            style_hints=(
+                "Fantasy illustration, painterly portraits, concept-art "
+                "style, stylised environments, strong use of negative "
+                "space."
+            ),
+            incompatible_styles=(
+                "Strict photorealism, clinical document photography, "
+                "flat-color infographic styles."
+            ),
+            good_example=(
+                'style="painterly fantasy illustration", medium="digital concept art"'
+            ),
+            bad_example=(
+                'style="clinical product photography", medium="catalog '
+                'studio shot" (DreamShaperXL is stylised by design; '
+                "strict photo-real fights the model)"
+            ),
+        ),
+    ),
+    # ----- DreamShaper SD1.5 (generic, must come after XL variants) -----
+    (
+        re.compile(r"dreamshaper"),
+        StyleProfile(
+            label="DreamShaper (versatile SD1.5)",
+            style_hints=(
+                "General-purpose stylised illustration, fantasy character "
+                "art, soft painterly lighting, portrait and environmental "
+                "compositions; notably versatile — adapt style tags rather "
+                "than leaning on a single category."
+            ),
+            incompatible_styles=(
+                "Extreme photorealism (slightly stylised by design), "
+                "Danbooru/anime tag grammar (use natural descriptors)."
+            ),
+            good_example=(
+                'style="painterly fantasy character portrait", medium="soft '
+                'digital illustration"'
+            ),
+            bad_example=(
+                'style="Danbooru anime tags", medium="cel-shading" '
+                "(DreamShaper SD1.5 expects natural descriptors, not "
+                "anime tag grammar)"
+            ),
+        ),
+    ),
+    # ----- SD 3 / 3.5 (T5-encoder; natural-language prose) -----
+    (
+        re.compile(r"sd3|sd_3|sd3_5|sd3\.5"),
+        StyleProfile(
+            label="SD 3 / 3.5 (triple-encoder; natural-language)",
+            style_hints=(
+                "Triple-encoder architecture (CLIP-L + OpenCLIP-bigG + "
+                "T5-XXL). Benefits from natural-language prose for the T5 "
+                "stream — same prose-friendly profile as Flux. Supports "
+                "negative prompts (unlike Flux). 3.5 Large Turbo is 4-step "
+                "distilled."
+            ),
+            incompatible_styles=(
+                "CLIP tag-soup underperforms vs descriptive prose. "
+                "Architecturally distinct from SDXL — don't expect SDXL "
+                "fine-tune behaviour to carry over."
+            ),
+            good_example=(
+                "A weathered fishing boat moored at a stone harbour at "
+                "dawn, gulls circling overhead, soft cool light, painterly "
+                "yet photoreal, 16:9 cinematic framing."
+            ),
+            bad_example=(
+                "fishing boat, harbour, dawn, masterpiece, 8k, ((highly "
+                "detailed)) (tag-soup with weighted parens — SD3 wants "
+                "prose, parens are SDXL/SD1.5 syntax)"
+            ),
+        ),
+    ),
+    # ----- SDXL base -----
+    (
+        re.compile(r"sd_xl_base|sdxl_base|sdxl-base"),
+        StyleProfile(
+            label="SDXL Base (general-purpose SDXL)",
+            style_hints=(
+                "Broad style range, photography, illustration, concept art. "
+                "Responds well to explicit style tokens. Works at 25-30+ "
+                "steps for coherence."
+            ),
+            incompatible_styles=(
+                "Anime-specific Danbooru vocabulary without style priming. "
+                "Very low step counts (needs 25-30+ for coherence). The "
+                "SDXL refiner is rarely used in 2026 workflows; modern "
+                "fine-tunes drop it in favour of hires-fix / upscalers."
+            ),
+            good_example=(
+                'style="cinematic illustration with explicit style tokens", '
+                'medium="digital art"'
+            ),
+            bad_example=(
+                'style="anime without style priming", medium="bare Danbooru '
+                'tags" (SDXL base needs explicit style direction; bare '
+                "anime grammar underperforms)"
+            ),
+        ),
+    ),
+    # ----- RealVisXL (current SDXL photoreal favourite) -----
+    (
+        re.compile(r"realvisxl|realvis"),
+        StyleProfile(
+            label="RealVisXL (photorealistic SDXL)",
+            style_hints=(
+                "Current-generation SDXL photorealism fine-tune. Sharp "
+                "textural detail, skin/fabric/material fidelity, cinematic "
+                "lighting. Has eclipsed Juggernaut share in 2026 SDXL "
+                "photoreal work."
+            ),
+            incompatible_styles=(
+                "Anime, cel-shading, watercolor, comic-ink. Painterly "
+                "stylisation fights the photorealistic tuning."
+            ),
+            good_example=(
+                'style="documentary photorealism", medium="digital photo, '
+                'sharp focus, natural light"'
+            ),
+            bad_example=(
+                'style="cel-shaded anime", medium="flat colour" (RealVisXL '
+                "is photoreal-tuned; stylised media underperforms)"
+            ),
+        ),
+    ),
+    # ----- SD 1.5 base / pruned -----
+    (
+        re.compile(r"v1[-_]5|sd[-_]?1[-._]?5"),
+        StyleProfile(
+            label="SD 1.5 (general-purpose base)",
+            style_hints=(
+                "Broad style range. Native latent at 512px; commonly used "
+                "at 512x768 / 768x512 before hires-fix. With hires-fix or "
+                "upscaler chains routinely produces 1024x1536+. "
+                "Well-supported by community LoRAs."
+            ),
+            incompatible_styles=(
+                "Photorealistic skin detail at high resolution without "
+                "hires-fix; SDXL-native aspect ratios. Don't expect "
+                "SDXL-tier coherence at SDXL resolutions without "
+                "upscaling."
+            ),
+            good_example=('style="watercolor portraiture", medium="ink illustration"'),
+            bad_example=(
+                'style="hyperrealistic skin at 1024px", medium="macro '
+                'studio photograph" (SD 1.5 native latent is 512²; '
+                "use SDXL or run hires-fix)"
+            ),
+        ),
+    ),
+    # ----- Default fallback — must remain last -----
     # re.compile(r"") matches every string; this entry always fires,
     # making the loop's "no match" branch unreachable in practice.
     (
