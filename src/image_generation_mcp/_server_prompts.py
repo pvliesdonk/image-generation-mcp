@@ -333,8 +333,8 @@ The server maps these to optimal pixel dimensions for each SD model.
 ## Workflow
 
 1. Check `list_providers` to see available models, their `prompt_style`
-   (`"clip"` for SD 1.5/SDXL/Pony/Illustrious, `"natural_language"` for
-   Flux/SD3), and their per-checkpoint `style_profile.style_hints` for
+   (`"clip"` for SD 1.5/SDXL/Pony/Illustrious/NoobAI, `"natural_language"`
+   for Flux/SD3), and their per-checkpoint `style_profile.style_hints` for
    any fine-tune-specific guidance.
 2. Write your prompt in the appropriate style for the model:
    - **SD 1.5 / SDXL** — add quality tags and a negative prompt.
