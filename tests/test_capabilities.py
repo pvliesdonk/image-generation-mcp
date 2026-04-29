@@ -277,10 +277,13 @@ def test_model_capabilities_to_dict_includes_watermark_when_set():
     assert result["watermark"] == "synthid"
 
 
-def test_model_capabilities_watermark_none_value_explicitly_omitted():
-    """Explicit ``watermark='none'`` is preserved (asserts no watermark).
+def test_model_capabilities_watermark_none_string_is_preserved():
+    """Explicit ``watermark='none'`` is preserved in the serialised output.
 
     Distinct from ``watermark=None`` (default — provider hasn't declared).
+    The 'none' string asserts no watermark; the field is present in the
+    dict (not omitted), so consumers can distinguish 'declared no
+    watermark' from 'undeclared'.
     """
     caps = ModelCapabilities(model_id="x", display_name="X", watermark="none")
     result = caps.to_dict()
