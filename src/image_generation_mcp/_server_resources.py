@@ -87,7 +87,14 @@ ignores them.
 compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
 placeholder. SD WebUI ignores this parameter.
 
-## OpenAI (gpt-image-1 / gpt-image-1.5 / dall-e-3)
+## OpenAI
+
+**Lineup:** `gpt-image-1.5` (current flagship), `gpt-image-1` and
+`gpt-image-1-mini` (legacy; same grammar, mini is cheaper for drafts),
+`dall-e-3` (deprecated — API removal 2026-05-12, migrate new work to
+gpt-image-1.5), `dall-e-2` (legacy; useful for cheap inpainting only).
+Check the `warnings` array on `list_providers` for the canonical lifecycle
+state.
 
 Natural language descriptions work well — write prompts as you would describe a
 scene to a person. No need for comma-separated tags.
@@ -111,7 +118,14 @@ metal, fabric) and precise text on objects. Strong general-purpose generation.
 **Quality levels:** `standard` maps to OpenAI's `auto` quality (lets the model
 choose). `hd` maps to `high` for maximum detail.
 
-## Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview)
+## Gemini
+
+**Lineup:** `gemini-2.5-flash-image` ("Nano Banana", production GA — fast,
+cheap, strong text rendering, multi-image compositing up to 3 inputs),
+`gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview` (preview
+tier with reasoning / "thinking" support — use for layout-heavy or dense-
+typography work). All Gemini outputs carry an invisible **SynthID
+watermark** — unsuitable for workflows requiring bit-perfect originals.
 
 Natural language descriptions work best — similar to OpenAI prompting style.
 
@@ -237,9 +251,53 @@ A pair of pristine white sneakers on a clean white background, shot from
 a three-quarter angle with professional studio lighting and crisp focus
 ```
 
-**Flux Schnell vs Flux Dev:**
-- **Flux Schnell:** 4 steps, fastest generation. Good for drafts and iteration.
+**Flux Schnell vs Flux Dev vs FLUX.2:**
+- **Flux Schnell:** 1-4 steps, fastest generation. Good for drafts.
 - **Flux Dev:** 20 steps, higher quality. Use for final output.
+- **FLUX.2:** Newest BFL generation. Same grammar; better in-scene text and
+  architectural detail. No negative prompts (CFG=1 distilled).
+
+### SD 3 / 3.5 (T5 + CLIP triple-encoder)
+
+SD 3 / 3.5 use a triple-encoder architecture (CLIP-L + OpenCLIP-bigG +
+T5-XXL). Use descriptive prose for the T5 stream — same profile as Flux —
+but **negative prompts work natively** (unlike Flux). Skip SDXL-style
+`(weight:1.2)` parens; that's the wrong syntax for SD3. The 3.5 Large
+Turbo variant is 4-step distilled.
+
+```
+A weathered fishing boat moored at a stone harbour at dawn, gulls
+circling overhead, soft cool light, painterly yet photoreal.
+```
+
+### Pony Diffusion XL (mandatory score_* prefix)
+
+Pony Diffusion XL family (incl. AutismMix, Pony Realism) has a strict
+required tag prefix. Output collapses visibly without it:
+
+```
+score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up,
+source_anime, rating_safe, 1girl, school uniform, cherry blossoms
+```
+
+Variants: `source_anime` / `source_pony` / `source_furry` and
+`rating_safe` / `rating_questionable` / `rating_explicit`. Pony underperforms
+vs RealVisXL / Juggernaut for photorealism — it's tuned for stylised
+character art.
+
+### Illustrious-XL / NoobAI-XL (modern anime SDXL)
+
+Illustrious-XL and NoobAI-XL have largely supplanted Animagine for anime
+SDXL in 2026. Same Danbooru-style tag grammar with a much larger
+character / style dataset.
+
+```
+1girl, long hair, blue eyes, school uniform, cherry blossoms,
+masterpiece, best quality, very aesthetic
+```
+
+NoobAI v-prediction variants need the v-prediction sampler config — wrong
+sampler produces noise. Check the checkpoint's notes.
 
 ## Placeholder
 
@@ -251,14 +309,22 @@ RGBA output with alpha=0.
 
 ## Provider Selection
 
-1. **Text, logos, typography** → `openai`
-2. **Photorealism, portraits, product shots** → prefer `sd_webui`, fall back to `openai`
-3. **Anime, illustration, painting, art** → prefer `sd_webui`, fall back to `openai`
-4. **Quick test or placeholder** → `placeholder`
-5. **General requests** → `openai` (most versatile, default)
+1. **Text, logos, typography** → `openai` (gpt-image-1.5).
+2. **Transparent backgrounds** (icons, stickers) → `openai`.
+3. **Infographics, diagrams, structured layouts** → `gemini` with
+   `quality="hd"` on a Pro/3.x model.
+4. **Photorealism, portraits, product shots** → prefer `sd_webui`
+   (RealVisXL / Juggernaut / Flux), fall back to `gemini` then `openai`.
+5. **Anime, illustration, painting, art** → prefer `sd_webui`
+   (Illustrious-XL / NoobAI-XL / Pony for stylised work).
+6. **Quick test or placeholder** → `placeholder`.
+7. **General requests** → `gemini` when available, then `openai`.
 
-Use `provider="auto"` for automatic selection, or specify a provider directly.
-Call `list_providers` to see which providers are currently available.
+Use `provider="auto"` for automatic selection, or specify a provider
+directly. Call `list_providers` to see which providers are available, what
+models each has loaded, and per-model `style_profile` narrative guidance.
+The top-level `warnings` array on `list_providers` lists deprecated /
+legacy models — avoid those for new long-lived workflows.
 """
 
 _IMAGE_VIEWER_HTML = """\
