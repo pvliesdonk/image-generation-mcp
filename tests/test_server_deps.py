@@ -1,7 +1,6 @@
 """Tests for _server_deps.py — provider initialization, lifespan, DI helpers.
 
 Covers:
-- _get_service_from_store() raises when service not initialised
 - get_service() raises when lifespan context missing
 - get_config() raises when lifespan context missing
 - make_service_lifespan registers OpenAI provider when openai_api_key is set
@@ -19,46 +18,13 @@ import pytest
 if TYPE_CHECKING:
     from pathlib import Path
 
-import image_generation_mcp._server_deps as deps_mod
 from image_generation_mcp._server_deps import (
-    _get_service_from_store,
     get_config,
     get_service,
     make_service_lifespan,
 )
 from image_generation_mcp.config import ProjectConfig
 from image_generation_mcp.service import ImageService
-
-# ---------------------------------------------------------------------------
-# _get_service_from_store
-# ---------------------------------------------------------------------------
-
-
-class TestGetServiceFromStore:
-    """Tests for _get_service_from_store() module-level accessor."""
-
-    def test_raises_when_not_initialised(self) -> None:
-        """Raises RuntimeError if lifespan has not run."""
-        # Ensure the store is None
-        original = deps_mod._service_store
-        deps_mod._service_store = None
-        try:
-            with pytest.raises(RuntimeError, match="lifespan has not run"):
-                _get_service_from_store()
-        finally:
-            deps_mod._service_store = original
-
-    def test_returns_service_when_set(self, tmp_path: Path) -> None:
-        """Returns the stored service when set."""
-        svc = ImageService(scratch_dir=tmp_path)
-        original = deps_mod._service_store
-        deps_mod._service_store = svc
-        try:
-            result = _get_service_from_store()
-            assert result is svc
-        finally:
-            deps_mod._service_store = original
-
 
 # ---------------------------------------------------------------------------
 # get_service and get_config (DI helpers)
@@ -153,21 +119,6 @@ class TestMakeServiceLifespan:
         config = ProjectConfig(scratch_dir=tmp_path, sd_webui_host=None)
         service = await self._run_lifespan(config)
         assert "sd_webui" not in service.providers
-
-    async def test_service_store_cleared_after_lifespan(self, tmp_path: Path) -> None:
-        """Module-level _service_store is cleared to None after lifespan exits."""
-        from fastmcp import FastMCP
-
-        config = ProjectConfig(scratch_dir=tmp_path)
-        server = FastMCP("test-cleanup")
-        lifespan_fn = make_service_lifespan(config)
-
-        async with lifespan_fn(server):
-            # Store should be set now
-            assert deps_mod._service_store is not None
-
-        # Store should be cleared after context exits
-        assert deps_mod._service_store is None
 
 
 def _make_mock_provider() -> MagicMock:

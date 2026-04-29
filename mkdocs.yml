@@ -127,6 +127,7 @@ nav:
   - Guides:
       - Authentication: guides/authentication.md
       - Client Compatibility: guides/client-compatibility.md
+      - File Exchange: guides/file-exchange.md
       - Prompt Writing: guides/prompt-writing.md
       - Image Assets: guides/image-assets.md
       - Style Library: guides/styles.md

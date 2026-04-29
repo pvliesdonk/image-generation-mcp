@@ -19,6 +19,7 @@ from fastmcp_pvl_core import (
     build_auth,
     build_instructions,
     configure_logging_from_env,
+    register_file_exchange,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -173,21 +174,27 @@ def make_server(
 
     wire_middleware_stack(mcp)
 
-    register_tools(mcp, transport=transport)
+    # MCP File Exchange wiring (spec-compliant): mounts /artifacts/{token},
+    # registers create_download_link, advertises the experimental.file_exchange
+    # capability.  Tools publish via the handle passed into register_tools.
+    #
+    # We pass `transport` explicitly (NOT "auto") because "auto" reads env
+    # vars (`{PREFIX}_TRANSPORT` / `FASTMCP_TRANSPORT`) that the CLI doesn't
+    # set — leaving "auto" would silently disable file-exchange in
+    # production.  The CLI knows the transport from its own --transport flag
+    # and passes it to make_server, so we have the authoritative value here.
+    fx_transport: str = "http" if transport in ("http", "sse") else "stdio"
+    file_exchange = register_file_exchange(
+        mcp,
+        namespace="image-generation-mcp",
+        env_prefix=_ENV_PREFIX,
+        produces=("image/png", "image/webp", "image/jpeg"),
+        transport=fx_transport,  # type: ignore[arg-type]
+    )
+
+    register_tools(mcp, transport=transport, file_exchange=file_exchange)
     register_resources(mcp)
     register_prompts(mcp)
-
-    if transport != "stdio":
-        from image_generation_mcp.artifacts import make_artifact_handler
-
-        artifact_handler = make_artifact_handler()
-
-        from starlette.requests import Request
-        from starlette.responses import Response
-
-        @mcp.custom_route("/artifacts/{token}", methods=["GET"])
-        async def _artifact_route(request: Request) -> Response:
-            return await artifact_handler(request)
 
     # IG-specific: expose resources as tools for clients without resource support.
     # Apply AFTER all registrations so the transform sees every resource.
@@ -195,11 +202,5 @@ def make_server(
 
     if config.read_only:
         mcp.disable(tags={"write"})
-
-    # NOTE: template v1.2.1 introduces ``register_file_exchange`` for generic
-    # MCP File Exchange wiring.  This project still uses its own
-    # ``artifact_handler`` (above); migration tracked in #202.  Until that
-    # lands, this block diverges from the template by design and will keep
-    # producing a conflict on copier updates of server.py.
 
     return mcp
