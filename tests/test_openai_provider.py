@@ -193,11 +193,14 @@ class TestOpenAIProvider:
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["quality"] == "high"
 
-    async def test_gpt_image_2_does_not_send_background(self) -> None:
+    @pytest.mark.parametrize("background", ["transparent", "opaque"])
+    async def test_gpt_image_2_does_not_send_background(self, background: str) -> None:
         """gpt-image-2 dropped transparency support — must NOT pass background.
 
         Sending the background parameter to gpt-image-2 returns a 400 from
-        OpenAI. Other gpt-image-* models still accept it.
+        OpenAI. The guard is unconditional — neither the explicit
+        ``transparent`` request nor the implicit ``opaque`` default leaks
+        through. Parametrised to document both paths.
         """
         provider = OpenAIImageProvider(api_key="sk-test")
 
@@ -212,7 +215,7 @@ class TestOpenAIProvider:
         provider._client.images = MagicMock()
         provider._client.images.generate = AsyncMock(return_value=mock_response)
 
-        await provider.generate("test", model="gpt-image-2", background="transparent")
+        await provider.generate("test", model="gpt-image-2", background=background)
 
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["model"] == "gpt-image-2"
