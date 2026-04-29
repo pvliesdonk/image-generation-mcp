@@ -179,6 +179,18 @@ class TestGenerateImageRegistration:
         assert tool is not None
         assert "write" in tool.tags
 
+    async def test_docstring_mentions_style_profile_and_warnings(self) -> None:
+        """Docstring must point the LLM at style_profile fields and the warnings array."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+
+        tool = await mcp.get_tool("generate_image")
+        assert tool is not None
+        doc = tool.description
+        assert doc is not None
+        assert "style_profile" in doc
+        assert "warnings" in doc
+
 
 # ---------------------------------------------------------------------------
 # show_image: tool registration properties

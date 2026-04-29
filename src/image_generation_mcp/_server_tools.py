@@ -168,6 +168,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         OpenAI) need descriptive sentences.  Flux ignores
         ``negative_prompt``.
 
+        When picking ``model``, also consult each entry's ``style_profile``
+        in ``list_providers``: ``style_hints`` describes what the model is
+        good for; ``incompatible_styles`` describes what fights it;
+        ``good_example`` and ``bad_example`` show the prompt grammar.  The
+        top-level ``warnings`` array lists deprecated models to avoid for
+        new long-lived workflows.
+
         Args:
             prompt: Text description of the desired image.
             provider: Which provider to use. ``"auto"`` (default) selects
