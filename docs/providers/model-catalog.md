@@ -81,7 +81,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 **Avoid:** Transparent backgrounds are not supported — pick gpt-image-1.5 for icons / stickers / logos that need alpha. Avoid CLIP-style tag dumps and `--no` negative-prompt syntax. Real-named-people likenesses are filtered. Cost per image is materially higher than gpt-image-1.5 / mini — pick those for drafts.
 
-**Good prompt:** `Magazine cover layout with the headline 'Urban Foragers' set in a bold geometric serif, subhead 'A Field Guide to City Edibles', central full-bleed photo of a moss-covered tree stump in dappled afternoon light. 3:4.`
+**Good prompt:** `Magazine cover layout with the headline 'Urban Foragers' set in a bold geometric serif, subhead 'A Field Guide to City Edibles', central full-bleed photo of a moss-covered tree stump in dappled afternoon light. 2:3.`
 
 **Bad prompt:** `magazine, foragers, bold serif (single-line keyword set — gpt-image-2 shines on richly described prompts; underprompting wastes the cost premium)`
 

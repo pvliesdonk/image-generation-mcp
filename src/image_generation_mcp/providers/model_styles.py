@@ -81,7 +81,7 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "Magazine cover layout with the headline 'Urban Foragers' set "
             "in a bold geometric serif, subhead 'A Field Guide to City "
             "Edibles', central full-bleed photo of a moss-covered tree "
-            "stump in dappled afternoon light. 3:4."
+            "stump in dappled afternoon light. 2:3."
         ),
         bad_example=(
             "magazine, foragers, bold serif (single-line keyword set — "

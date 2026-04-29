@@ -75,6 +75,14 @@ def _is_gpt_image_model(model: str) -> bool:
     return model.startswith("gpt-image")
 
 
+# Models in the gpt-image-* family that DON'T accept the ``background``
+# API parameter. Most gpt-image-* models support transparency control;
+# gpt-image-2 dropped it. Sending ``background`` to a model that doesn't
+# accept it returns a 400. Keep in sync with ``supports_background`` in
+# ``discover_capabilities()`` for the same model_ids.
+_NO_BACKGROUND_GPT_IMAGE: frozenset[str] = frozenset({"gpt-image-2"})
+
+
 class OpenAIImageProvider:
     """Image generation via OpenAI's Images API.
 
@@ -197,7 +205,13 @@ class OpenAIImageProvider:
             }
             if is_gpt_image:
                 api_kwargs["output_format"] = effective_format
-                api_kwargs["background"] = background
+                if effective_model not in _NO_BACKGROUND_GPT_IMAGE:
+                    api_kwargs["background"] = background
+                elif background == "transparent":
+                    logger.debug(
+                        "%s does not support background parameter, ignoring",
+                        effective_model,
+                    )
             else:
                 api_kwargs["response_format"] = "b64_json"
                 logger.debug("dall-e-3 does not support background parameter, ignoring")
