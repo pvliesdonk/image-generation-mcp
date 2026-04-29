@@ -285,7 +285,7 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 | `generate_image` | `write` | `task=True` | Generate image, return metadata + `ResourceLink` |
 | `show_image` | *(none)* | -- | Display a registered image with optional transforms |
 | `list_providers` | *(none)* | -- | List available providers with availability info |
-| `create_download_link` | *(none)* | -- | Create one-time HTTP download URL (HTTP transport only) |
+| `create_download_link` | *(none)* | -- | Mint a one-time HTTP download URL from a `file_ref.origin_id`. Spec-compliant MCP File Exchange tool registered by `fastmcp_pvl_core.register_file_exchange` (HTTP transport only) |
 
 `generate_image` uses a fire-and-forget pattern
 (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)). It returns
@@ -313,10 +313,17 @@ For in-progress generations, it returns:
 `show_image` is wired to the MCP Apps image viewer via
 `AppConfig(resourceUri="ui://image-viewer/view.html")`.
 
-`create_download_link` creates a one-time-use HTTP download URL for an image.
-It is only registered on non-stdio transports (SSE/HTTP) where a web server is
-available. Requires `IMAGE_GENERATION_MCP_BASE_URL` to be set. Tokens are stored
-in an in-memory `ArtifactStore` with configurable TTL and lazy expiry cleanup.
+`create_download_link` mints a one-time-use HTTP download URL from a
+`file_ref.origin_id` published earlier by `show_image` (or any other producer
+calling `file_exchange.publish`). It is the spec-compliant MCP File Exchange
+download tool, registered automatically by
+`fastmcp_pvl_core.register_file_exchange()` in `make_server()` (`server.py`).
+Wiring is gated on the file-exchange handle's `http_enabled` property, which is
+true on SSE/HTTP transports with `IMAGE_GENERATION_MCP_BASE_URL` set. Tokens
+and bytes live in `fastmcp_pvl_core`'s artifact store with a configurable
+TTL (`IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL`, default 3600 s). See the
+[File Exchange guide](../guides/file-exchange.md) and #202 for the migration
+from the previous bespoke ArtifactStore.
 
 In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is hidden.
 

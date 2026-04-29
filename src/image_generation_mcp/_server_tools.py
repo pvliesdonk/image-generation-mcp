@@ -27,6 +27,7 @@ from fastmcp.dependencies import CurrentContext, Depends
 from fastmcp.server.context import Context
 from fastmcp.server.elicitation import AcceptedElicitation
 from fastmcp.tools import ToolResult
+from fastmcp_pvl_core import FileExchangeHandle, FileRefPreview
 from mcp.types import (
     ClientCapabilities,
     ElicitationCapability,
@@ -112,14 +113,26 @@ def _build_lifecycle_warnings(
     return sorted(warnings)
 
 
-def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
+def register_tools(
+    mcp: FastMCP,
+    *,
+    transport: str = "stdio",  # noqa: ARG001 - kept for API stability across copier updates
+    file_exchange: FileExchangeHandle | None = None,
+) -> None:
     """Register all MCP tools on *mcp*.
 
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
-        transport: The MCP transport in use.  ``create_download_link`` is
-            only registered for non-stdio transports (``"sse"`` or
-            ``"http"``), because stdio has no HTTP server.
+        transport: The MCP transport in use.  Currently unused — the
+            file-exchange handle owns transport-aware gating now — but
+            kept on the signature so callers don't break across copier
+            updates.
+        file_exchange: Handle returned by ``register_file_exchange``;
+            ``show_image`` calls ``file_exchange.publish(source=bytes, ...)``
+            to mint ``FileRef`` payloads for clients to download via
+            ``create_download_link``.  ``None`` (the default, for tests
+            that don't exercise the download path) disables ``file_ref`` /
+            ``download_url`` population.
     """
 
     @mcp.tool(
@@ -374,8 +387,14 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             elif len(caps.models) == 1:
                 prompt_style = caps.models[0].prompt_style
 
-        # Return immediately with pending status
-        metadata = {
+        # Return immediately with pending status.  ``file_ref`` is NOT
+        # published here — at this point bytes don't exist yet AND the
+        # provider-chosen content_type (PNG / WebP / JPEG) is not yet known,
+        # so we'd be forced to lie about ``mime_type`` at publish time.
+        # Consumers poll via ``check_generation_status`` and call
+        # ``show_image`` once status="completed" — show_image is the file_ref
+        # publisher (it knows the actual ``record.content_type``).
+        metadata: dict[str, Any] = {
             "status": "generating",
             "image_id": image_id,
             "prompt": prompt,
@@ -488,7 +507,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         uri: str,
         with_link: bool = True,
         service: ImageService = Depends(get_service),
-        config: ProjectConfig = Depends(get_config),
+        config: ProjectConfig = Depends(get_config),  # noqa: ARG001
     ) -> ToolResult:
         """Display a completed image with optional on-demand transforms.
 
@@ -632,19 +651,44 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "transforms_applied": transform_params,
         }
 
-        # Auto-generate a download link when on HTTP transport with
-        # BASE_URL configured and with_link is True.
-        if with_link:
-            base_url = (config.server.base_url or "").rstrip("/")
-            if base_url:
-                from .artifacts import get_artifact_store
+        # Publish the rendered bytes via MCP File Exchange so the LLM can
+        # call create_download_link(origin_id) to mint a fresh URL on demand,
+        # and so other MCP servers can discover the file via file_ref.
+        # On stdio (or when FILE_EXCHANGE_ENABLED=false), publishing is a
+        # no-op — file_ref / download_url stay absent.
+        if with_link and file_exchange is not None and file_exchange.http_enabled:
+            import hashlib
 
-                try:
-                    store = get_artifact_store()
-                    token = store.create_token(uri, ttl_seconds=300)
-                    metadata["download_url"] = f"{base_url}/artifacts/{token}"
-                except RuntimeError:
-                    pass  # stdio transport — artifact store not initialised
+            origin_id = (
+                record.id
+                if not transform_params
+                else f"{record.id}-{hashlib.sha256(uri.encode()).hexdigest()[:12]}"
+            )
+            ext = content_type.split("/")[-1]
+            file_ref = await file_exchange.publish(
+                source=data,
+                origin_id=origin_id,
+                mime_type=content_type,
+                ext=ext,
+                preview=FileRefPreview(
+                    description=record.prompt,
+                    dimensions=(final_w, final_h),
+                ),
+            )
+            metadata["file_ref"] = file_ref.to_dict()
+
+            # Backward-compat: pre-mint a download URL for clients (e.g.
+            # the gallery UI) that don't yet drive create_download_link
+            # themselves.  Tracked for removal in a follow-up once the
+            # gallery JS is migrated.
+            store = file_exchange.artifact_store
+            if store is not None:
+                metadata["download_url"] = store.put_ephemeral(
+                    data,
+                    content_type=content_type,
+                    filename=f"{record.id}.{ext}",
+                    ttl_seconds=300,
+                )
 
         return ToolResult(
             content=[
@@ -1111,103 +1155,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             ]
         )
 
-    # create_download_link is only available on HTTP transports —
-    # stdio has no HTTP server to host the artifact endpoint.
-    if transport != "stdio":
-        _register_download_link_tool(mcp)
-
-
-def _register_download_link_tool(mcp: FastMCP) -> None:
-    """Register the ``create_download_link`` tool on *mcp*.
-
-    Separated from :func:`register_tools` so it can be conditionally
-    called only when an HTTP transport is active.
-
-    Args:
-        mcp: The :class:`~fastmcp.FastMCP` instance to register the tool on.
-    """
-
-    @mcp.tool(
-        annotations={
-            "readOnlyHint": True,
-            "destructiveHint": False,
-            "openWorldHint": False,
-        },
-        icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],
-    )
-    async def create_download_link(
-        uri: str,
-        ttl_seconds: int = 300,
-        service: ImageService = Depends(get_service),
-        config: ProjectConfig = Depends(get_config),
-    ) -> str:
-        """Create a one-time download URL for an image.
-
-        Creates a temporary HTTP endpoint that expires after a single
-        download OR when ``ttl_seconds`` elapses, whichever comes first.
-        Use this to pass images to other MCP servers (e.g., save to a
-        vault, attach to email).
-
-        The URI should be an ``image://`` resource URI, optionally with
-        transform parameters (``format``, ``width``, ``height``,
-        ``quality``).
-
-        Requires ``IMAGE_GENERATION_MCP_BASE_URL`` to be configured.
-        Only available on HTTP transport (not stdio).
-
-        Args:
-            uri: A full ``image://`` resource URI, e.g.
-                ``image://abc123/view`` or
-                ``image://abc123/view?format=webp&width=512``.
-            ttl_seconds: Link lifetime in seconds (default 300 / 5 minutes).
-
-        Returns:
-            JSON with ``download_url``, ``expires_in_seconds``, and ``uri``.
-
-        Raises:
-            ValueError: If ``IMAGE_GENERATION_MCP_BASE_URL`` is not
-                configured or the URI references an unknown image.
-        """
-        from urllib.parse import urlparse
-
-        # Validate BASE_URL is configured
-        base_url = (config.server.base_url or "").rstrip("/")
-        if not base_url:
-            msg = (
-                "IMAGE_GENERATION_MCP_BASE_URL is required for download links. "
-                "Set it to the public base URL of this server "
-                "(e.g. https://mcp.example.com)."
-            )
-            raise ValueError(msg)
-
-        # Validate the URI references a registered image
-        parsed = urlparse(uri)
-        image_id = parsed.netloc or ""
-        if not image_id:
-            msg = f"Invalid image URI: {uri!r}. Expected format: image://{{image_id}}/view"
-            raise ValueError(msg)
-
-        # Raises ImageProviderError if the image is not found
-        await asyncio.to_thread(service.get_image, image_id)
-
-        from image_generation_mcp.artifacts import get_artifact_store
-
-        store = get_artifact_store()
-        token = store.create_token(uri, ttl_seconds=ttl_seconds)
-
-        download_url = f"{base_url}/artifacts/{token}"
-        result = {
-            "download_url": download_url,
-            "expires_in_seconds": ttl_seconds,
-            "uri": uri,
-        }
-        logger.info(
-            "Created download link for image_id=%r ttl=%ds url=%s",
-            image_id,
-            ttl_seconds,
-            download_url,
-        )
-        return json.dumps(result, indent=2)
+    # The spec-compliant ``create_download_link`` tool (taking ``origin_id``)
+    # is registered separately by :func:`fastmcp_pvl_core.register_file_exchange`
+    # in ``server.py``.  Tools above publish via ``file_exchange.publish(...)``
+    # to make ``origin_id`` values discoverable.
 
     # -- Style library tools ---------------------------------------------------
 

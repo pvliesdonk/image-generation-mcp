@@ -49,12 +49,17 @@ Everything works out of the box:
 
 ### ChatGPT / Gemini CLI / other clients
 
-These clients cannot display `ImageContent` from tool results. Use `create_download_link` to generate a one-time HTTP download URL that can be opened in a browser or passed to other tools.
+These clients cannot display `ImageContent` from tool results. Use `show_image` (which publishes a `file_ref`) followed by `create_download_link` to generate a one-time HTTP download URL that can be opened in a browser or passed to other tools.
 
 ```
-1. generate_image(prompt="a sunset") → image_id
-2. create_download_link(uri="image://abc123/view?format=jpeg")
-   → {"download_url": "https://mcp.example.com/artifacts/..."}
+1. generate_image(prompt="a sunset")
+   → {image_id: "abc123", status: "generating", ...}
+2. check_generation_status(image_id="abc123")
+   → status: "completed"
+3. show_image(uri="image://abc123/view?format=jpeg")
+   → {file_ref: {origin_id: "abc123-<hash>", mime_type: "image/jpeg", ...}, ...}
+4. create_download_link(origin_id="abc123-<hash>")
+   → {url: "https://mcp.example.com/artifacts/...", ttl_seconds: 3600, mime_type: "image/jpeg"}
 ```
 
 !!! tip "`create_download_link` requires HTTP transport"
