@@ -79,17 +79,18 @@ ignore = ["E501"]
 [tool.ruff.lint.per-file-ignores]
 # Depends() and CurrentContext() calls in argument defaults are the standard
 # FastMCP dependency injection pattern — B008 is a false positive here.
-# Context/FastMCP imports must stay runtime (not TYPE_CHECKING) for DI.
-"src/image_generation_mcp/server.py" = ["B008", "TCH002", "TC001", "TC002"]
-"src/image_generation_mcp/_server_deps.py" = ["B008", "TCH002"]
-"src/image_generation_mcp/_server_tools.py" = ["B008", "TCH001", "TCH002"]
-"src/image_generation_mcp/_server_resources.py" = ["B008", "TCH001", "TCH002"]
-"src/image_generation_mcp/_server_prompts.py" = ["B008", "TCH002"]
+# Context/FastMCP/Service imports must stay runtime (not TYPE_CHECKING) for
+# DI resolution — TC001/TC002/TC003.
+"src/image_generation_mcp/server.py" = ["B008", "TC001", "TC002"]
+"src/image_generation_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
+"src/image_generation_mcp/_server_tools.py" = ["B008", "TC001", "TC002"]
+"src/image_generation_mcp/_server_resources.py" = ["B008", "TC001", "TC002"]
+"src/image_generation_mcp/_server_prompts.py" = ["B008", "TC002"]
 # Path is used at runtime in ImageRecord dataclass.
-"src/image_generation_mcp/service.py" = ["TCH003"]
-"src/image_generation_mcp/providers/*.py" = ["TCH002"]
+"src/image_generation_mcp/service.py" = ["TC003"]
+"src/image_generation_mcp/providers/*.py" = ["TC002"]
 # pytest fixtures need runtime imports.
-"tests/*.py" = ["TCH002"]
+"tests/*.py" = ["TC002"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["image_generation_mcp"]
@@ -135,12 +136,40 @@ ignore_missing_imports = true
 module = ["google", "google.genai", "google.genai.*"]
 ignore_missing_imports = true
 
+# Tests use FastMCP private surfaces (e.g. ``tool.fn``) and pytest fixtures
+# that mypy --strict cannot type without invasive annotation. Loosen the
+# strict knobs for the test tree so the ``mypy src/ tests/`` gate from
+# template v1.2.0 stays useful (still catches real bugs) without burying us
+# in 290 false-positive errors. Tightening this is tracked as follow-up
+# work — see the README's Local development section.
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+warn_return_any = false
+warn_unused_ignores = false  # stale `type: ignore` comments from earlier configs
+disable_error_code = [
+    "attr-defined",      # fastmcp Tool.fn private surface used by tests
+    "union-attr",        # mcp.get_tool() returns Tool | None; tests assert non-None
+    "no-untyped-def",    # pytest fixtures intentionally untyped
+    "no-untyped-call",   # importlib-loaded helpers (test_render_model_catalog) are untyped
+    "type-arg",          # bare list/tuple/dict in test helpers
+    "var-annotated",     # local helper vars without annotations
+    "misc",              # async-generator return-type quirks
+    "arg-type",          # narrow dict[str, X] vs dict[str, object] in helpers
+    "assignment",        # tuple-narrowing in fixture rebinding
+    "comparison-overlap",# middleware identity checks in test_http_logging
+]
+
 [tool.pyright]
 # Point Pyright at the uv-managed venv so editor diagnostics resolve
 # imports the same way as our CLI tools (mypy/ruff/pytest run via uv).
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.11"
+# src-layout editable installs use a .pth shim that Pyright does not execute;
+# point Pyright at src/ directly so IDE import resolution matches runtime.
+extraPaths = ["src"]
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
