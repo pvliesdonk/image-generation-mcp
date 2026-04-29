@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
     # httpx and uvicorn come transitively via fastmcp (pulled by
     # fastmcp-pvl-core).  Don't re-list them here.
-    "fastmcp-pvl-core>=1.0,<2",
+    "fastmcp-pvl-core>=1.2.0,<2",
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
     "Pillow>=10.0",
     # PROJECT-DEPS-END
@@ -89,8 +89,10 @@ ignore = ["E501"]
 # Path is used at runtime in ImageRecord dataclass.
 "src/image_generation_mcp/service.py" = ["TC003"]
 "src/image_generation_mcp/providers/*.py" = ["TC002"]
-# pytest fixtures need runtime imports.
-"tests/*.py" = ["TC002"]
+# pytest fixtures need runtime imports; TC003 also broadly suppressed to match
+# the template's intent (template targets `tests/conftest.py` + `tests/test_smoke.py`
+# explicitly with TC003 — broadening here pre-empts a future copier conflict).
+"tests/*.py" = ["TC002", "TC003"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["image_generation_mcp"]

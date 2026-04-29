@@ -19,13 +19,11 @@ from fastmcp_pvl_core import (
     build_auth,
     build_instructions,
     configure_logging_from_env,
+    resolve_auth_mode,
     wire_middleware_stack,
 )
 from fastmcp_pvl_core import (
     build_event_store as _core_build_event_store,
-)
-from fastmcp_pvl_core import (
-    resolve_auth_mode as _core_resolve_auth_mode,
 )
 from mcp.types import Icon
 
@@ -57,7 +55,7 @@ def _resolve_auth_mode() -> str | None:
     that still returns ``None`` (not ``"none"``) when no auth is configured,
     matching the pre-retrofit contract expected by tests.
     """
-    mode = _core_resolve_auth_mode(_load_server_config())
+    mode = resolve_auth_mode(_load_server_config())
     return None if mode == "none" else mode
 
 
@@ -92,10 +90,6 @@ def _build_oidc_auth() -> object | None:
     from fastmcp_pvl_core import build_oidc_proxy_auth
 
     return build_oidc_proxy_auth(_load_server_config())
-
-
-# Module-level name used inside ``make_server`` + re-exported for tests.
-resolve_auth_mode = _core_resolve_auth_mode
 
 
 def build_event_store(url: str | None = None) -> EventStore:
@@ -201,5 +195,11 @@ def make_server(
 
     if config.read_only:
         mcp.disable(tags={"write"})
+
+    # NOTE: template v1.2.1 introduces ``register_file_exchange`` for generic
+    # MCP File Exchange wiring.  This project still uses its own
+    # ``artifact_handler`` (above); migration tracked in #202.  Until that
+    # lands, this block diverges from the template by design and will keep
+    # producing a conflict on copier updates of server.py.
 
     return mcp

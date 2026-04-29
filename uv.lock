@@ -707,15 +707,15 @@ wheels = [
 
 [[package]]
 name = "fakeredis"
-version = "2.34.1"
+version = "2.35.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "redis" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/40/fd09efa66205eb32253d2b2ebc63537281384d2040f0a88bcd2289e120e4/fakeredis-2.34.1.tar.gz", hash = "sha256:4ff55606982972eecce3ab410e03d746c11fe5deda6381d913641fbd8865ea9b", size = 177315, upload-time = "2026-02-25T13:17:51.315Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/50/b748233c02fa77e5105238190cc9bb58b852eb1c8b1d0763230d3a5b745a/fakeredis-2.35.1.tar.gz", hash = "sha256:5bae5eba7b9d93cb968944ac40936373cf2397ff71667d4b595df65c3d2e413f", size = 189118, upload-time = "2026-04-12T17:05:58.539Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/b5/82f89307d0d769cd9bf46a54fb9136be08e4e57c5570ae421db4c9a2ba62/fakeredis-2.34.1-py3-none-any.whl", hash = "sha256:0107ec99d48913e7eec2a5e3e2403d1bd5f8aa6489d1a634571b975289c48f12", size = 122160, upload-time = "2026-02-25T13:17:49.701Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/27/b8b057a23f7777177e92d3a602fd866751b6b45014964548997e92e048fd/fakeredis-2.35.1-py3-none-any.whl", hash = "sha256:67d97e11f562b7870e11e5c30cf182270bfb2dd37f6707dba47cc6d91628d1b9", size = 129678, upload-time = "2026-04-12T17:05:56.86Z" },
 ]
 
 [package.optional-dependencies]
@@ -725,12 +725,13 @@ lua = [
 
 [[package]]
 name = "fastmcp"
-version = "3.2.0"
+version = "3.2.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
     { name = "cyclopts" },
     { name = "exceptiongroup" },
+    { name = "griffelib" },
     { name = "httpx" },
     { name = "jsonref" },
     { name = "jsonschema-path" },
@@ -750,9 +751,9 @@ dependencies = [
     { name = "watchfiles" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d0/32/4f1b2cfd7b50db89114949f90158b1dcc2c92a1917b9f57c0ff24e47a2f4/fastmcp-3.2.0.tar.gz", hash = "sha256:d4830b8ffc3592d3d9c76dc0f398904cf41f04910e41a0de38cc1004e0903bef", size = 26318581, upload-time = "2026-03-30T20:25:37.692Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/13/29544fbc6dfe45ea38046af0067311e0bad7acc7d1f2ad38bb08f2409fe2/fastmcp-3.2.4.tar.gz", hash = "sha256:083ecb75b44a4169e7fc0f632f94b781bdb0ff877c6b35b9877cbb566fd4d4d1", size = 28746127, upload-time = "2026-04-14T01:42:24.174Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/67/684fa2d2de1e7504549d4ca457b4f854ccec3cd3be03bd86b33b599fbf58/fastmcp-3.2.0-py3-none-any.whl", hash = "sha256:e71aba3df16f86f546a4a9e513261d3233bcc92bef0dfa647bac3fa33623f681", size = 705550, upload-time = "2026-03-30T20:25:35.499Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/76/b310d52fa0e30d39bd937eb58ec2c1f1ea1b5f519f0575e9dd9612f01deb/fastmcp-3.2.4-py3-none-any.whl", hash = "sha256:e6c9c429171041455e47ab94bb3f83c4657622a0ec28922f6940053959bd58a9", size = 728599, upload-time = "2026-04-14T01:42:26.85Z" },
 ]
 
 [package.optional-dependencies]
@@ -762,14 +763,15 @@ tasks = [
 
 [[package]]
 name = "fastmcp-pvl-core"
-version = "1.0.0"
+version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp" },
+    { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/20/e8/19d9736dd16b366fcad897c3b305588c6e79d989caa296d0116f1625eb44/fastmcp_pvl_core-1.0.0.tar.gz", hash = "sha256:01a37c824a8929c6267d54ec570d5f6b1639e6c133eb6c36f1ee03ac216603f8", size = 144843, upload-time = "2026-04-20T15:57:19.215Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/28/60/b759ac74d360c96eac9dcecbb82f0fa600aff717fd1e4f110b220b825169/fastmcp_pvl_core-1.2.0.tar.gz", hash = "sha256:539f520a29edbb4e4b546d6b24f7b145a7c2436e2fc5ed2dab235649394442a5", size = 214954, upload-time = "2026-04-27T16:50:10.411Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0d/d8/f79abe84d1dbe4be2165755de52b50fae365f5c4a096eea49e97ac12c948/fastmcp_pvl_core-1.0.0-py3-none-any.whl", hash = "sha256:a19e24ec387ae792e62781edbbc8a986545b5eb33eb01580ed707edbbea77e39", size = 18410, upload-time = "2026-04-20T15:57:17.835Z" },
+    { url = "https://files.pythonhosted.org/packages/60/76/a9767c163361ccdd2f9ea0150573130cde6e8f2dcca1d942ceaff00d198c/fastmcp_pvl_core-1.2.0-py3-none-any.whl", hash = "sha256:6ad2f588751393e8efa2b1b2bf5d4adc4aea89c94874d90a0cb1f242bda0fde7", size = 55774, upload-time = "2026-04-27T16:50:09.142Z" },
 ]
 
 [[package]]
@@ -943,7 +945,7 @@ requires-dist = [
     { name = "diff-cover", marker = "extra == 'dev'", specifier = ">=9.0" },
     { name = "fastmcp", extras = ["tasks"], marker = "extra == 'all'", specifier = ">=3.0,<4" },
     { name = "fastmcp", extras = ["tasks"], marker = "extra == 'mcp'", specifier = ">=3.0,<4" },
-    { name = "fastmcp-pvl-core", specifier = ">=1.0,<2" },
+    { name = "fastmcp-pvl-core", specifier = ">=1.2.0,<2" },
     { name = "google-genai", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "google-genai", marker = "extra == 'google-genai'", specifier = ">=1.0" },
     { name = "image-generation-mcp", extras = ["all"], marker = "extra == 'dev'" },
@@ -2230,7 +2232,7 @@ wheels = [
 
 [[package]]
 name = "pydocket"
-version = "0.18.2"
+version = "0.19.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cloudpickle" },
@@ -2247,9 +2249,9 @@ dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "uncalled-for" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b8/5f/82dde9fb6099b960a4203596d3b755d1bd2c0d0210fea104d015d6515d7f/pydocket-0.18.2.tar.gz", hash = "sha256:cc2051d15557f83bb164a83b0743fa9c12c2bfe9a9145cff3a5922b4935ce4f5", size = 354762, upload-time = "2026-03-10T13:09:22.52Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/02/a229e2fa77c0f61b562bcb77e27d4b085dbfd439ddf41364ad1f381b2270/pydocket-0.19.2.tar.gz", hash = "sha256:5bfb42a8fd76e67c7caee1ca8ee268850f7d09d53507dd0211821f2ac7757ba1", size = 364208, upload-time = "2026-04-20T23:47:57.579Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/cf/8c1b6340baf81d7f6c97fe0181bda7cfd500d5e33bf469fbffbdae07b3c9/pydocket-0.18.2-py3-none-any.whl", hash = "sha256:19e48de15e83370f750e362610b777533ff9c0fa48bf36766ed581f91d266556", size = 99041, upload-time = "2026-03-10T13:09:20.598Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/d5/e3effef2c9ed44156566bffbc0c9ea68dd75c0124c3d1cd8c4a6c3513694/pydocket-0.19.2-py3-none-any.whl", hash = "sha256:6cf58610685ad7cc5e5174db39435c64dc485e545186d0523c7f5526d2a4469e", size = 101082, upload-time = "2026-04-20T23:47:55.776Z" },
 ]
 
 [[package]]
