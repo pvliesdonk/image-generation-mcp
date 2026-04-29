@@ -58,16 +58,49 @@ class StyleProfile:
 
 MODEL_STYLES: dict[str, StyleProfile] = {
     # ----- OpenAI -----
+    "openai:gpt-image-2": StyleProfile(
+        label="OpenAI GPT Image 2",
+        style_hints=(
+            "Current OpenAI flagship image model. Highest-fidelity "
+            "instruction following in the family — best for demanding "
+            "production work, dense in-image typography, complex multi-"
+            "element compositions, and prompts that require strict "
+            "adherence to layout / brand / scene direction. Same descriptive-"
+            "paragraph prompt grammar as gpt-image-1.5; same three aspect "
+            "ratios. Drops transparent-background support — use gpt-image-1.5 "
+            "if you need transparency."
+        ),
+        incompatible_styles=(
+            "Transparent backgrounds are not supported — pick gpt-image-1.5 "
+            "for icons / stickers / logos that need alpha. Avoid CLIP-style "
+            "tag dumps and `--no` negative-prompt syntax. Real-named-people "
+            "likenesses are filtered. Cost per image is materially higher "
+            "than gpt-image-1.5 / mini — pick those for drafts."
+        ),
+        good_example=(
+            "Magazine cover layout with the headline 'Urban Foragers' set "
+            "in a bold geometric serif, subhead 'A Field Guide to City "
+            "Edibles', central full-bleed photo of a moss-covered tree "
+            "stump in dappled afternoon light. 3:4."
+        ),
+        bad_example=(
+            "magazine, foragers, bold serif (single-line keyword set — "
+            "gpt-image-2 shines on richly described prompts; underprompting "
+            "wastes the cost premium)"
+        ),
+    ),
     "openai:gpt-image-1.5": StyleProfile(
         label="OpenAI GPT Image 1.5",
         style_hints=(
-            "Current OpenAI flagship image model. Strong instruction "
-            "following for photorealistic shots, illustrations, product "
-            "mockups, infographics, and marketing assets where layout and "
-            "typography matter. Excels with descriptive paragraphs ordered "
-            "scene → subject → details → constraints, and with text in image "
-            "given in quotes with explicit typography hints. Supports "
-            "transparent backgrounds and 1024x1024 / 1024x1536 / 1536x1024."
+            "Previous-generation OpenAI flagship; still the right pick when "
+            "the work needs **transparent backgrounds** (gpt-image-2 dropped "
+            "alpha support). Strong instruction following for photorealistic "
+            "shots, illustrations, product mockups, infographics, and "
+            "marketing assets where layout and typography matter. Excels "
+            "with descriptive paragraphs ordered scene → subject → details "
+            "→ constraints, and with text in image given in quotes with "
+            "explicit typography hints. Supports 1024x1024 / 1024x1536 / "
+            "1536x1024."
         ),
         incompatible_styles=(
             "Avoid CLIP-style comma-separated tag dumps — they underperform "

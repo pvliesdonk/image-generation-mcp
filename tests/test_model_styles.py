@@ -125,6 +125,7 @@ def test_all_model_styles_have_non_empty_prose():
 @pytest.mark.parametrize(
     "key,expected_lifecycle",
     [
+        ("openai:gpt-image-2", "current"),
         ("openai:gpt-image-1.5", "current"),
         ("openai:gpt-image-1", "legacy"),
         ("openai:gpt-image-1-mini", "current"),

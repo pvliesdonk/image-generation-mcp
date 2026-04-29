@@ -58,9 +58,10 @@ _DALLE3_FORMATS: frozenset[str] = frozenset({"png"})
 
 _KNOWN_IMAGE_MODELS: frozenset[str] = frozenset(
     {
+        "gpt-image-2",
+        "gpt-image-1.5",
         "gpt-image-1",
         "gpt-image-1-mini",
-        "gpt-image-1.5",
         "dall-e-3",
         "dall-e-2",
     }
@@ -330,6 +331,31 @@ class OpenAIImageProvider:
                         style_profile=resolve_style("openai", mini_model_id),
                     )
                 )
+
+        # gpt-image-2 — current OpenAI flagship beyond gpt-image-1.5. Per the
+        # 2026-04-29 research report, gpt-image-2 drops transparent-background
+        # support but otherwise mirrors gpt-image-1.5's prompt grammar and
+        # supported aspect ratios. We pin the conservative capability surface
+        # here; tighten if/when OpenAI documents differences. Output stays
+        # gated on `if "gpt-image-2" in model_ids` so the entry is dormant
+        # until OpenAI's models.list() actually returns the id.
+        if "gpt-image-2" in model_ids:
+            model_caps.append(
+                ModelCapabilities(
+                    model_id="gpt-image-2",
+                    display_name="GPT Image 2",
+                    can_generate=True,
+                    can_edit=True,
+                    supports_mask=True,
+                    supports_background=False,
+                    supports_negative_prompt=False,
+                    supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
+                    supported_formats=("png", "jpeg", "webp"),
+                    supported_qualities=("standard", "hd"),
+                    max_resolution=1536,
+                    style_profile=resolve_style("openai", "gpt-image-2"),
+                )
+            )
 
         if "dall-e-3" in model_ids:
             model_caps.append(
