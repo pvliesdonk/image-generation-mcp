@@ -107,10 +107,6 @@ At startup, the provider returns a static list of known image-capable Gemini mod
 
 Gemini has a generous free tier (check [Google AI pricing](https://ai.google.dev/pricing) for current limits). The provider is not in `paid_providers` by default — no confirmation prompt is shown before use. Set `IMAGE_GENERATION_MCP_PAID_PROVIDERS=gemini,openai` if you want cost confirmation for Gemini.
 
-## SynthID watermark
-
-All Gemini-generated images include an invisible SynthID watermark added by Google. This is automatic and cannot be disabled.
-
 ## Error handling
 
 | Error | Cause | Resolution |
