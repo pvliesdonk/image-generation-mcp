@@ -1,7 +1,9 @@
 """OpenAI image generation provider.
 
-Supports the ``gpt-image-*`` family (``gpt-image-1.5`` current flagship,
-``gpt-image-1``/``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
+Supports the ``gpt-image-*`` family (``gpt-image-2`` current flagship,
+``gpt-image-1.5`` previous-generation flagship — the right pick for
+transparent backgrounds since gpt-image-2 dropped alpha support;
+``gpt-image-1`` / ``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
 (deprecated, API removal scheduled 2026-05-12) plus ``dall-e-2`` (legacy,
 inpainting-only). Lifecycle metadata flows through
 ``providers.model_styles.MODEL_STYLES`` into ``list_providers``.
@@ -58,9 +60,10 @@ _DALLE3_FORMATS: frozenset[str] = frozenset({"png"})
 
 _KNOWN_IMAGE_MODELS: frozenset[str] = frozenset(
     {
+        "gpt-image-2",
+        "gpt-image-1.5",
         "gpt-image-1",
         "gpt-image-1-mini",
-        "gpt-image-1.5",
         "dall-e-3",
         "dall-e-2",
     }
@@ -70,6 +73,14 @@ _KNOWN_IMAGE_MODELS: frozenset[str] = frozenset(
 def _is_gpt_image_model(model: str) -> bool:
     """Return True for gpt-image-* models (not dall-e)."""
     return model.startswith("gpt-image")
+
+
+# Models in the gpt-image-* family that DON'T accept the ``background``
+# API parameter. Most gpt-image-* models support transparency control;
+# gpt-image-2 dropped it. Sending ``background`` to a model that doesn't
+# accept it returns a 400. Keep in sync with ``supports_background`` in
+# ``discover_capabilities()`` for the same model_ids.
+_NO_BACKGROUND_GPT_IMAGE: frozenset[str] = frozenset({"gpt-image-2"})
 
 
 class OpenAIImageProvider:
@@ -194,7 +205,13 @@ class OpenAIImageProvider:
             }
             if is_gpt_image:
                 api_kwargs["output_format"] = effective_format
-                api_kwargs["background"] = background
+                if effective_model not in _NO_BACKGROUND_GPT_IMAGE:
+                    api_kwargs["background"] = background
+                elif background == "transparent":
+                    logger.debug(
+                        "%s does not support background parameter, ignoring",
+                        effective_model,
+                    )
             else:
                 api_kwargs["response_format"] = "b64_json"
                 logger.debug("dall-e-3 does not support background parameter, ignoring")
@@ -330,6 +347,31 @@ class OpenAIImageProvider:
                         style_profile=resolve_style("openai", mini_model_id),
                     )
                 )
+
+        # gpt-image-2 — current OpenAI flagship beyond gpt-image-1.5. Per the
+        # 2026-04-29 research report, gpt-image-2 drops transparent-background
+        # support but otherwise mirrors gpt-image-1.5's prompt grammar and
+        # supported aspect ratios. We pin the conservative capability surface
+        # here; tighten if/when OpenAI documents differences. Output stays
+        # gated on `if "gpt-image-2" in model_ids` so the entry is dormant
+        # until OpenAI's models.list() actually returns the id.
+        if "gpt-image-2" in model_ids:
+            model_caps.append(
+                ModelCapabilities(
+                    model_id="gpt-image-2",
+                    display_name="GPT Image 2",
+                    can_generate=True,
+                    can_edit=True,
+                    supports_mask=True,
+                    supports_background=False,
+                    supports_negative_prompt=False,
+                    supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
+                    supported_formats=("png", "jpeg", "webp"),
+                    supported_qualities=("standard", "hd"),
+                    max_resolution=1536,
+                    style_profile=resolve_style("openai", "gpt-image-2"),
+                )
+            )
 
         if "dall-e-3" in model_ids:
             model_caps.append(

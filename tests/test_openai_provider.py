@@ -193,6 +193,55 @@ class TestOpenAIProvider:
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert call_kwargs["quality"] == "high"
 
+    @pytest.mark.parametrize("background", ["transparent", "opaque"])
+    async def test_gpt_image_2_does_not_send_background(self, background: str) -> None:
+        """gpt-image-2 dropped transparency support — must NOT pass background.
+
+        Sending the background parameter to gpt-image-2 returns a 400 from
+        OpenAI. The guard is unconditional — neither the explicit
+        ``transparent`` request nor the implicit ``opaque`` default leaks
+        through. Parametrised to document both paths.
+        """
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", model="gpt-image-2", background=background)
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["model"] == "gpt-image-2"
+        assert "background" not in call_kwargs
+
+    async def test_gpt_image_1_5_still_sends_background(self) -> None:
+        """gpt-image-1.5 keeps transparency support — background passes through."""
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate("test", model="gpt-image-1.5", background="transparent")
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["model"] == "gpt-image-1.5"
+        assert call_kwargs["background"] == "transparent"
+
     async def test_per_call_model_overrides_constructor(self) -> None:
         """Per-call model= overrides the constructor model in the API call."""
         # Constructor uses gpt-image-1, per-call uses dall-e-3

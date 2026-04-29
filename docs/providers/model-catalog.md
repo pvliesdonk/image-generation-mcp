@@ -17,6 +17,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 | `gpt-image-1` | OpenAI GPT Image 1 (legacy) | legacy |
 | `gpt-image-1-mini` | OpenAI GPT Image 1 Mini | current |
 | `gpt-image-1.5` | OpenAI GPT Image 1.5 | current |
+| `gpt-image-2` | OpenAI GPT Image 2 | current |
 
 ### OpenAI DALL-E 2 (legacy) — **legacy**
 
@@ -66,13 +67,23 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 ### OpenAI GPT Image 1.5
 
-**Best for:** Current OpenAI flagship image model. Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports transparent backgrounds and 1024x1024 / 1024x1536 / 1536x1024.
+**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs transparent backgrounds (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports 1024x1024 / 1024x1536 / 1536x1024.
 
 **Avoid:** Avoid CLIP-style comma-separated tag dumps — they underperform vs descriptive sentences. Don't use --no negative-prompt syntax; describe exclusions positively. Long, multi-element scenes with strict spatial composition can drift. Real-named-people likenesses are filtered. No identity consistency across calls.
 
 **Good prompt:** `Editorial product photo of a beige ceramic coffee mug on a worn oak table, shallow depth of field, soft window light from the left, warm muted palette. No text, no logos.`
 
 **Bad prompt:** `coffee mug, masterpiece, 8k, hyperdetailed, --no text (tag-soup + unsupported negative-prompt syntax — wastes tokens, mostly ignored)`
+
+### OpenAI GPT Image 2
+
+**Best for:** Current OpenAI flagship image model. Highest-fidelity instruction following in the family — best for demanding production work, dense in-image typography, complex multi-element compositions, and prompts that require strict adherence to layout / brand / scene direction. Same descriptive-paragraph prompt grammar as gpt-image-1.5; same three aspect ratios. Drops transparent-background support — use gpt-image-1.5 if you need transparency.
+
+**Avoid:** Transparent backgrounds are not supported — pick gpt-image-1.5 for icons / stickers / logos that need alpha. Avoid CLIP-style tag dumps and `--no` negative-prompt syntax. Real-named-people likenesses are filtered. Cost per image is materially higher than gpt-image-1.5 / mini — pick those for drafts.
+
+**Good prompt:** `Magazine cover layout with the headline 'Urban Foragers' set in a bold geometric serif, subhead 'A Field Guide to City Edibles', central full-bleed photo of a moss-covered tree stump in dappled afternoon light. 2:3.`
+
+**Bad prompt:** `magazine, foragers, bold serif (single-line keyword set — gpt-image-2 shines on richly described prompts; underprompting wastes the cost premium)`
 
 ## Gemini
 

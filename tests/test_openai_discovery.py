@@ -144,6 +144,49 @@ class TestDiscoverGptImage1Fields:
         assert m.max_resolution == 1536
 
 
+class TestDiscoverGptImage2Fields:
+    """Verify specific fields for the gpt-image-2 model entry.
+
+    gpt-image-2 mirrors gpt-image-1.5's surface except it drops transparent-
+    background support per OpenAI's documented difference. The branch is
+    gated on models.list() returning the id, so the entry is dormant until
+    OpenAI ships it publicly.
+    """
+
+    async def test_openai_discover_gpt_image_2_fields(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """gpt-image-2 has the expected capability fields, no transparency."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model("gpt-image-2")
+        )
+
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1
+        m = caps.models[0]
+        assert isinstance(m, ModelCapabilities)
+        assert m.model_id == "gpt-image-2"
+        assert m.display_name == "GPT Image 2"
+        assert m.can_generate is True
+        assert m.can_edit is True
+        assert m.supports_mask is True
+        # Documented difference vs gpt-image-1.5: no transparency support.
+        assert m.supports_background is False
+        assert m.supports_negative_prompt is False
+        assert "1:1" in m.supported_aspect_ratios
+        assert "16:9" in m.supported_aspect_ratios
+        assert "png" in m.supported_formats
+        assert "jpeg" in m.supported_formats
+        assert "webp" in m.supported_formats
+        assert "standard" in m.supported_qualities
+        assert "hd" in m.supported_qualities
+        assert m.max_resolution == 1536
+        assert m.style_profile is not None
+        assert "OpenAI GPT Image 2" in m.style_profile.label
+
+
 class TestDiscoverDalle3Fields:
     """Verify specific fields for the dall-e-3 model entry."""
 
