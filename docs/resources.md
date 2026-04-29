@@ -80,6 +80,8 @@ Provider capabilities and supported features.
 
 Only registered (configured) providers appear. Degraded providers (where capability discovery failed at startup) show `"degraded": true` with an empty `models` list -- they remain available for generation.
 
+The JSON envelope contains a top-level `warnings` array (always present, may be empty) listing deprecated or legacy models that are configured. Each entry in `models` may carry a `style_profile` sub-object with `label`, `style_hints`, `incompatible_styles`, `good_example`, `bad_example`, `lifecycle`, and (when set) `deprecation_note`. See [Model Catalog](providers/model-catalog.md) for the full registry.
+
 ---
 
 ## info://prompt-guide

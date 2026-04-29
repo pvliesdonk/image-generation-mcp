@@ -2,6 +2,8 @@
 
 Tips for writing effective image generation prompts, tailored to each provider.
 
+For per-model strengths, weaknesses, and prompt examples, see the [Model Catalog](../providers/model-catalog.md).
+
 ## OpenAI (natural language)
 
 OpenAI models work best with natural language descriptions. Be specific about what you want.
