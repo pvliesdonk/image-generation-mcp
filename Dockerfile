@@ -20,8 +20,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev --extra all
 
 # Copy source and install project.
-COPY pyproject.toml uv.lock README.md /app/
-COPY src/ /app/src/
+COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --extra all
 # DOCKERFILE-UV-EXTRAS-END
@@ -34,9 +33,7 @@ RUN if [ "$APP_UID" -eq 0 ] || [ "$APP_GID" -eq 0 ]; then \
     fi \
     && groupadd -r --gid $APP_GID --non-unique appuser \
     && useradd -r --uid $APP_UID --gid $APP_GID --no-log-init -d /app appuser \
-    # DOCKERFILE-STATE-DIRS-START — domain state subdirs; kept across copier update
     && mkdir -p /data/service /data/state/fastmcp \
-    # DOCKERFILE-STATE-DIRS-END
     && chown -R appuser:appuser /app /data
 
 COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/
@@ -45,9 +42,7 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 EXPOSE 8000
 
-# DOCKERFILE-VOLUMES-START — mounted volume list; kept across copier update
 VOLUME ["/data/service", "/data/state"]
-# DOCKERFILE-VOLUMES-END
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["image-generation-mcp", "serve", "--transport", "http", "--host", "0.0.0.0"]
