@@ -18,6 +18,7 @@ import logging
 import re
 import time
 from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from fastmcp import FastMCP
@@ -67,6 +68,47 @@ _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
 _GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
+
+def _build_lifecycle_warnings(
+    providers: dict[str, dict[str, Any]],
+) -> list[str]:
+    """Return human-readable warning strings for legacy/deprecated models.
+
+    Iterates the ``service.list_providers()`` envelope (a mapping of
+    provider name to provider info dict) and emits one warning per
+    configured model whose ``style_profile.lifecycle`` is not
+    ``"current"``. Returns an empty list when no warnings apply, so the
+    consumer schema is stable.
+
+    Skips providers whose ``capabilities`` key is absent (discovery not
+    yet run).
+
+    Args:
+        providers: The dict returned by :meth:`ImageService.list_providers`.
+
+    Returns:
+        Sorted list of warning sentences keyed by ``"{provider}:{model_id}"``.
+    """
+    warnings: list[str] = []
+    for provider_name, provider_info in providers.items():
+        capabilities = provider_info.get("capabilities")
+        if not capabilities:
+            continue
+        for model in capabilities.get("models", []):
+            profile = model.get("style_profile")
+            if not profile:
+                continue
+            lifecycle = profile.get("lifecycle", "current")
+            if lifecycle == "current":
+                continue
+            note = profile.get("deprecation_note", "")
+            model_id = model.get("model_id", "<unknown>")
+            warning = f"{provider_name}:{model_id} — {lifecycle}."
+            if note:
+                warning = f"{warning} {note}"
+            warnings.append(warning)
+    return sorted(warnings)
 
 
 def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
@@ -911,9 +953,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if force_refresh:
             await service.discover_all_capabilities()
         providers = service.list_providers()
+        warnings = _build_lifecycle_warnings(providers)
         result = {
             "refreshed_at": datetime.now(UTC).isoformat(),
             "providers": providers,
+            "warnings": warnings,
         }
         return json.dumps(result, indent=2)
 
