@@ -109,6 +109,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting Started:
+<<<<<<< before updating
       - Installation: getting-started/installation.md
       - Claude Desktop: getting-started/claude-desktop.md
       - Claude Code: getting-started/claude-code.md
@@ -120,6 +121,13 @@ nav:
       - Model Catalog: providers/model-catalog.md
       - Placeholder: providers/placeholder.md
   - Configuration: configuration.md
+=======
+      - Installation: installation.md
+      - Configuration: configuration.md
+  - Guides:
+      - Authentication: guides/authentication.md
+      - File Exchange: guides/file-exchange.md
+>>>>>>> after updating
   - MCP Interface:
       - Tools: tools.md
       - Resources: resources.md

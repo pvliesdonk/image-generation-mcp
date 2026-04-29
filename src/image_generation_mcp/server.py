@@ -15,10 +15,19 @@ from fastmcp import FastMCP
 from fastmcp.server.event_store import EventStore
 from fastmcp.server.transforms import ResourcesAsTools
 from fastmcp_pvl_core import (
+<<<<<<< before updating
     ServerConfig,
+=======
+    ServerConfig,  # noqa: F401  — re-exported for downstream projects' convenience
+>>>>>>> after updating
     build_auth,
     build_instructions,
     configure_logging_from_env,
+<<<<<<< before updating
+=======
+    register_file_exchange,
+    resolve_auth_mode,
+>>>>>>> after updating
     wire_middleware_stack,
 )
 from fastmcp_pvl_core import (
@@ -122,10 +131,20 @@ def make_server(
     """Construct the Image Generation MCP FastMCP server.
 
     Args:
+<<<<<<< before updating
         transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  HTTP-only
             features (artifact downloads) are wired only when transport
             != ``"stdio"``.
         config: Optional pre-loaded config; defaults to env-based load.
+=======
+        transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  Used here for
+            logging only; MCP File Exchange wiring is gated by
+            ``register_file_exchange`` reading
+            ``IMAGE_GENERATION_MCP_TRANSPORT`` / ``FASTMCP_TRANSPORT`` and
+            ``IMAGE_GENERATION_MCP_FILE_EXCHANGE_ENABLED`` (default true on
+            HTTP/SSE, false on stdio).
+        config: Optional pre-loaded config; default loads from env.
+>>>>>>> after updating
 
     Returns:
         A configured :class:`fastmcp.FastMCP` instance.
@@ -153,9 +172,14 @@ def make_server(
     server_name = config.server_name or _DEFAULT_SERVER_NAME
 
     logger.info(
+<<<<<<< before updating
         "Server config: name=%s version=%s auth=%s mode=%s",
         server_name,
+=======
+        "Server config: version=%s name=image-generation-mcp transport=%s auth=%s",
+>>>>>>> after updating
         pkg_ver,
+        transport,
         auth_mode,
         "read-only" if config.read_only else "read-write",
     )
@@ -183,6 +207,7 @@ def make_server(
     register_resources(mcp)
     register_prompts(mcp)
 
+<<<<<<< before updating
     if transport != "stdio":
         from image_generation_mcp.artifacts import make_artifact_handler
 
@@ -201,5 +226,18 @@ def make_server(
 
     if config.read_only:
         mcp.disable(tags={"write"})
+=======
+    # To publish files from a tool body, capture the returned handle
+    # — see docs/guides/file-exchange.md for the module-level singleton
+    # pattern (e.g. ``_file_exchange = register_file_exchange(...)``).
+    register_file_exchange(
+        mcp,
+        namespace="image-generation-mcp",
+        env_prefix=_ENV_PREFIX,
+        transport="auto",
+        # produces=("application/octet-stream",),  # uncomment + customise per project
+        # consumer_sink=_my_sink,                  # uncomment if this server consumes file_refs
+    )
+>>>>>>> after updating
 
     return mcp
