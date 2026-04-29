@@ -116,10 +116,11 @@ class TestDiscoverCapabilities:
     async def test_all_models_carry_synthid_watermark(
         self, gemini_provider: GeminiImageProvider
     ) -> None:
-        """All Gemini Flash Image outputs carry an invisible SynthID watermark.
+        """All Gemini image-model outputs carry an invisible SynthID watermark.
 
-        Surfaced via ``ModelCapabilities.watermark="synthid"`` so consumers
-        can warn users when bit-perfect originals are required.
+        Covers the full Gemini Image family (Flash + Pro tiers). Surfaced
+        via ``ModelCapabilities.watermark="synthid"`` so consumers can warn
+        users when bit-perfect originals are required.
         """
         caps = await gemini_provider.discover_capabilities()
 
