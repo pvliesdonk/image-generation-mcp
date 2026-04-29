@@ -205,7 +205,7 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | Variable | Default | Required | Description |
 |---|---|---|---|
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | — | No | Static bearer token; enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | — | No | Public base URL for OIDC and artifact download links (e.g. `https://mcp.example.com`). |
+| `IMAGE_GENERATION_MCP_BASE_URL` | — | No | Public base URL for OIDC and MCP File Exchange downloads (e.g. `https://mcp.example.com`). |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | — | No | OIDC discovery endpoint URL. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | — | No | OIDC client ID. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | — | No | OIDC client secret. |
@@ -220,6 +220,14 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |---|---|---|---|
 | `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | `openai,gemini` | No | Comma-separated paid provider names. Triggers elicitation confirmation on capable clients. Set to empty to disable. |
 | `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | `64` | No | Max cached transforms. Set to `0` to disable caching. |
+
+### File Exchange (MCP downloads)
+
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_ENABLED` | `true` on http/sse, `false` on stdio | No | Master switch for the file-exchange producer. Set `false` to suppress all `file_ref` publishing. |
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL` | `3600` | No | Default and maximum TTL (seconds) for published files and download URLs. `create_download_link`'s `ttl_seconds` is clamped to this. |
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_CONSUME` | `true` | Recommended `false` | Master switch for the consumer side. This server is producer-only; set `false` to silence the upstream "consume on, no consumer_sink wired" startup warning. |
 
 ### Server identity
 

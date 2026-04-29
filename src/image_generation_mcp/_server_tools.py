@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import io
 import json
 import logging
@@ -657,8 +658,14 @@ def register_tools(
         # On stdio (or when FILE_EXCHANGE_ENABLED=false), publishing is a
         # no-op — file_ref / download_url stay absent.
         if with_link and file_exchange is not None and file_exchange.http_enabled:
-            import hashlib
-
+            # The origin_id is content-deterministic per (image_id, URI):
+            # the bare image_id for the default rendering, image_id +
+            # sha256(uri)[:12] for any variant.  The hash is over the raw
+            # URI string — query-param order is significant.  Callers that
+            # normalise or reorder params between calls will get separate
+            # registry entries for byte-identical content (a registry
+            # duplicate, not a bug).  See docs/guides/file-exchange.md for
+            # the transform-variant contract.
             origin_id = (
                 record.id
                 if not transform_params

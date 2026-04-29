@@ -92,8 +92,6 @@ When picking `model`, consult each entry's `style_profile.style_hints` and `styl
 
 ---
 
-## show_image
-
 ## check_generation_status
 
 Lightweight status check for background image generation. Returns a short JSON string with `status`, `image_id`, and progress info — no image data, no heavy UI card.
