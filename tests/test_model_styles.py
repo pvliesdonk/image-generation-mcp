@@ -48,3 +48,27 @@ def test_style_profile_is_frozen():
     )
     with pytest.raises(dataclasses.FrozenInstanceError):
         profile.label = "y"  # type: ignore[misc]
+
+
+from image_generation_mcp.providers.model_styles import resolve_style  # noqa: E402
+
+
+def test_resolve_style_returns_none_for_unknown_provider():
+    assert resolve_style("future-provider", "any-model") is None
+
+
+def test_resolve_style_returns_none_for_openai_unknown_model():
+    assert resolve_style("openai", "definitely-not-a-real-model-id") is None
+
+
+def test_resolve_style_sd_webui_falls_back_to_default():
+    profile = resolve_style(
+        "sd_webui", "completely-unknown-checkpoint-xyz123.safetensors"
+    )
+    assert profile is not None
+    assert "Unknown checkpoint" in profile.label
+
+
+def test_resolve_style_sd_webui_is_case_insensitive():
+    profile = resolve_style("sd_webui", "TOTALLY-RANDOM-NAME")
+    assert profile is not None  # default fallback always matches
