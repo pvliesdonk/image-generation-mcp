@@ -231,10 +231,7 @@ class GeminiImageProvider:
                     supports_background=False,
                     prompt_style="natural_language",
                     style_profile=resolve_style("gemini", model_id),
-                    # All Google Gemini Flash Image outputs carry an
-                    # invisible SynthID watermark — Google's documentation
-                    # is explicit about this. Surfaced so consumers can
-                    # warn users when bit-perfect originals are required.
+                    # SynthID watermark: see docs/providers/gemini.md.
                     watermark="synthid",
                 )
                 for model_id, display_name in _KNOWN_IMAGE_MODELS

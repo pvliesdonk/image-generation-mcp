@@ -48,7 +48,8 @@ class ModelCapabilities:
             Image family); ``"none"`` to explicitly assert no watermark;
             ``None`` (default) when the provider has not declared a value.
             LLMs and downstream tools should warn users when bit-perfect
-            originals are required and ``watermark`` is non-``None``.
+            originals are required and ``watermark`` is not ``None`` and
+            not ``"none"`` (i.e. a specific watermark scheme is declared).
     """
 
     model_id: str
