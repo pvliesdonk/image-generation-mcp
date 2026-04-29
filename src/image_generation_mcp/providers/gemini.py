@@ -231,6 +231,8 @@ class GeminiImageProvider:
                     supports_background=False,
                     prompt_style="natural_language",
                     style_profile=resolve_style("gemini", model_id),
+                    # SynthID watermark: see docs/providers/gemini.md.
+                    watermark="synthid",
                 )
                 for model_id, display_name in _KNOWN_IMAGE_MODELS
             )

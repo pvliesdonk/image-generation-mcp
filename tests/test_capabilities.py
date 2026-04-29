@@ -263,3 +263,28 @@ def test_model_capabilities_to_dict_includes_style_profile_when_set():
     result = caps.to_dict()
     assert result["style_profile"]["label"] == "L"
     assert result["style_profile"]["lifecycle"] == "current"
+
+
+def test_model_capabilities_to_dict_omits_watermark_when_none():
+    caps = ModelCapabilities(model_id="x", display_name="X")
+    result = caps.to_dict()
+    assert "watermark" not in result
+
+
+def test_model_capabilities_to_dict_includes_watermark_when_set():
+    caps = ModelCapabilities(model_id="x", display_name="X", watermark="synthid")
+    result = caps.to_dict()
+    assert result["watermark"] == "synthid"
+
+
+def test_model_capabilities_watermark_none_string_is_preserved():
+    """Explicit ``watermark='none'`` is preserved in the serialised output.
+
+    Distinct from ``watermark=None`` (default — provider hasn't declared).
+    The 'none' string asserts no watermark; the field is present in the
+    dict (not omitted), so consumers can distinguish 'declared no
+    watermark' from 'undeclared'.
+    """
+    caps = ModelCapabilities(model_id="x", display_name="X", watermark="none")
+    result = caps.to_dict()
+    assert result["watermark"] == "none"
