@@ -44,8 +44,9 @@ class ModelCapabilities:
             selecting a model. ``None`` when no profile is registered for
             this model.
         watermark: Identifier for any persistent watermark embedded in the
-            model's output. ``"synthid"`` for Google SynthID (Gemini Flash
-            Image family); ``"none"`` to explicitly assert no watermark;
+            model's output. ``"synthid"`` for Google SynthID (Gemini Image
+            family — Flash and Pro tiers); ``"none"`` to explicitly assert
+            no watermark;
             ``None`` (default) when the provider has not declared a value.
             LLMs and downstream tools should warn users when bit-perfect
             originals are required and ``watermark`` is not ``None`` and

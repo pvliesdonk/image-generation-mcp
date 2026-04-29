@@ -72,7 +72,7 @@ Not supported. The `background` parameter is silently ignored — all images are
 
 ## SynthID watermark
 
-All outputs from the Gemini Flash Image family carry an **invisible Google SynthID watermark** — a per-pixel signal embedded at generation time that survives common edits (re-encoding, cropping, light filtering) and identifies the image as AI-generated. The watermark is announced in this provider's capability surface as `watermark: "synthid"` on every model entry returned by `list_providers`.
+All outputs from the Gemini Image family (Flash + Pro tiers) carry an **invisible Google SynthID watermark** — a per-pixel signal embedded at generation time that survives common edits (re-encoding, cropping, light filtering) and identifies the image as AI-generated. The watermark is announced in this provider's capability surface as `watermark: "synthid"` on every model entry returned by `list_providers`.
 
 This means Gemini outputs are **not suitable for workflows requiring bit-perfect originals** — for example, forensic chain of custody, certain regulatory contexts, or pipelines that hash the raw bytes for content addressing. Pick OpenAI or SD WebUI for those use cases — neither family currently embeds a persistent watermark in output bytes.
 
