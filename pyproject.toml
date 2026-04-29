@@ -40,7 +40,7 @@ dev = [
     "pytest-asyncio>=0.21",
     "pytest-cov>=4.0",
     "diff-cover>=9.0",
-    "ruff>=0.1",
+    "ruff>=0.6",
     "mypy>=1.0",
     "pip-audit>=2.7",
 ]
