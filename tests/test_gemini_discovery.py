@@ -113,6 +113,34 @@ class TestDiscoverCapabilities:
             )
             assert model_caps.style_profile.label
 
+    async def test_all_models_carry_synthid_watermark(
+        self, gemini_provider: GeminiImageProvider
+    ) -> None:
+        """All Gemini Flash Image outputs carry an invisible SynthID watermark.
+
+        Surfaced via ``ModelCapabilities.watermark="synthid"`` so consumers
+        can warn users when bit-perfect originals are required.
+        """
+        caps = await gemini_provider.discover_capabilities()
+
+        assert caps.models, "expected at least one model in capabilities"
+        for model_caps in caps.models:
+            assert model_caps.watermark == "synthid", (
+                f"expected synthid watermark for {model_caps.model_id}"
+            )
+
+    async def test_watermark_surfaced_in_serialised_capabilities(
+        self, gemini_provider: GeminiImageProvider
+    ) -> None:
+        """Per-model ``watermark`` field is preserved through to_dict()."""
+        caps = await gemini_provider.discover_capabilities()
+        provider_dict = caps.to_dict()
+
+        for model_dict in provider_dict["models"]:
+            assert model_dict.get("watermark") == "synthid", (
+                f"expected serialised watermark for {model_dict.get('model_id')}"
+            )
+
     async def test_degraded_on_unexpected_exception(
         self, gemini_provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch
     ) -> None:

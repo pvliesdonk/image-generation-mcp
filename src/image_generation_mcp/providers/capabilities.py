@@ -10,10 +10,12 @@ See ADR-0007 for the design rationale.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from image_generation_mcp.providers.model_styles import StyleProfile
+
+WatermarkKind = Literal["none", "synthid"]
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,12 @@ class ModelCapabilities:
             incompatibility notes, examples, lifecycle) read by LLMs when
             selecting a model. ``None`` when no profile is registered for
             this model.
+        watermark: Identifier for any persistent watermark embedded in the
+            model's output. ``"synthid"`` for Google SynthID (Gemini Flash
+            Image family); ``"none"`` to explicitly assert no watermark;
+            ``None`` (default) when the provider has not declared a value.
+            LLMs and downstream tools should warn users when bit-perfect
+            originals are required and ``watermark`` is non-``None``.
     """
 
     model_id: str
@@ -58,14 +66,14 @@ class ModelCapabilities:
     default_cfg: float | None = None
     prompt_style: str | None = None
     style_profile: StyleProfile | None = None
+    watermark: WatermarkKind | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dictionary.
 
-        The ``style_profile`` key is omitted entirely when no profile
-        is registered (i.e. when ``self.style_profile is None``). All
-        other ``None``-valued fields are included explicitly as
-        ``null``.
+        The ``style_profile`` and ``watermark`` keys are omitted entirely
+        when their underlying field is ``None``. All other ``None``-valued
+        fields are included explicitly as ``null``.
         """
         result: dict[str, Any] = {
             "model_id": self.model_id,
@@ -85,6 +93,8 @@ class ModelCapabilities:
         }
         if self.style_profile is not None:
             result["style_profile"] = self.style_profile.to_dict()
+        if self.watermark is not None:
+            result["watermark"] = self.watermark
         return result
 
 

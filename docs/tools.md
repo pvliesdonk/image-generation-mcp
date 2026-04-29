@@ -515,6 +515,8 @@ The `prompt_style` field on each model indicates the recommended prompt format: 
 
 The JSON envelope contains a top-level `warnings` array (always present, may be empty) listing deprecated or legacy models that are configured. Each entry in `models` may carry a `style_profile` sub-object with `label`, `style_hints`, `incompatible_styles`, `good_example`, `bad_example`, `lifecycle`, and (when set) `deprecation_note`. See [Model Catalog](providers/model-catalog.md) for the full registry.
 
+A `watermark` field is included on models whose outputs carry a persistent identifier — currently `"synthid"` for the Google Gemini Flash Image family (all variants embed an invisible Google SynthID watermark on every generation). The field is omitted on models without a declared watermark. Surface this to users when bit-perfect originals are required (forensic chain of custody, certain regulatory contexts).
+
 ### Example
 
 ```
