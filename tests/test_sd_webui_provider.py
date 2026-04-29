@@ -18,6 +18,7 @@ from image_generation_mcp.providers.sd_webui import (
     _SDXL_LIGHTNING_PRESET,
     _SDXL_PRESET,
     SdWebuiImageProvider,
+    _detect_architecture,
     _resolve_preset,
 )
 from image_generation_mcp.providers.types import (
@@ -87,6 +88,23 @@ class TestPresetDetection:
 
     def test_sdxl_no_distilled_cfg(self) -> None:
         assert _SDXL_PRESET.distilled_cfg_scale is None
+
+    def test_detect_architecture_sd3(self) -> None:
+        assert _detect_architecture("sd3_5_large.safetensors") == "sd3"
+        assert _detect_architecture("sd_3_medium.safetensors") == "sd3"
+        assert (
+            _detect_architecture("stable_diffusion_3_5_large_turbo.safetensors")
+            == "sd3"
+        )
+
+    def test_sd3_preset_uses_natural_language_prompt_style(self) -> None:
+        preset = _resolve_preset("sd3_5_large.safetensors")
+        assert preset.prompt_style == "natural_language"
+
+    def test_sd3_preset_supports_negative_prompt(self) -> None:
+        """Unlike Flux, SD3 supports negative prompts."""
+        preset = _resolve_preset("sd3_5_large.safetensors")
+        assert preset.supports_negative_prompt is True
 
 
 class TestSdWebuiProvider:

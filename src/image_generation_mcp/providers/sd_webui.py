@@ -119,6 +119,18 @@ _FLUX_SCHNELL_PRESET = _SdWebuiPreset(
     prompt_style="natural_language",
 )
 
+_SD3_PRESET = _SdWebuiPreset(
+    sizes=_SDXL_SIZES,
+    steps=28,
+    sampler="DPM++ 2M",
+    scheduler="Karras",
+    cfg_scale=4.5,
+    quality_tier="high",
+    supports_negative_prompt=True,
+    prompt_style="natural_language",
+)
+
+_SD3_TAGS = ("sd3", "sd_3", "stable_diffusion_3", "stable-diffusion-3")
 _XL_TAGS = ("sdxl", "xl_", "_xl", "-xl")
 _LIGHTNING_TAGS = ("lightning", "turbo")
 _FLUX_TAGS = ("flux1", "flux_", "_flux", "-flux")
@@ -128,20 +140,23 @@ def _detect_architecture(model_name: str) -> str:
     """Detect SD architecture from a checkpoint name.
 
     Detection order:
-    1. Flux schnell — returns ``"flux_schnell"``
-    2. Flux dev — returns ``"flux_dev"``
-    3. Lightning/Turbo SDXL — returns ``"sdxl_lightning"``
-    4. Standard SDXL — returns ``"sdxl"``
-    5. SD 1.5 fallback — returns ``"sd15"``
+    1. SD 3 / 3.5 — returns ``"sd3"``
+    2. Flux schnell — returns ``"flux_schnell"``
+    3. Flux dev — returns ``"flux_dev"``
+    4. Lightning/Turbo SDXL — returns ``"sdxl_lightning"``
+    5. Standard SDXL — returns ``"sdxl"``
+    6. SD 1.5 fallback — returns ``"sd15"``
 
     Args:
         model_name: Checkpoint name or title string (case-insensitive).
 
     Returns:
-        One of ``"sd15"``, ``"sdxl"``, ``"sdxl_lightning"``,
-        ``"flux_dev"``, or ``"flux_schnell"``.
+        One of ``"sd15"``, ``"sdxl"``, ``"sdxl_lightning"``, ``"flux_dev"``,
+        ``"flux_schnell"``, or ``"sd3"``.
     """
     lower = model_name.lower()
+    if any(tag in lower for tag in _SD3_TAGS):
+        return "sd3"
     is_flux = any(tag in lower for tag in _FLUX_TAGS)
     if is_flux:
         if "schnell" in lower:
@@ -157,6 +172,7 @@ def _detect_architecture(model_name: str) -> str:
 
 
 _ARCH_PRESETS: dict[str, _SdWebuiPreset] = {
+    "sd3": _SD3_PRESET,
     "flux_schnell": _FLUX_SCHNELL_PRESET,
     "flux_dev": _FLUX_DEV_PRESET,
     "sdxl_lightning": _SDXL_LIGHTNING_PRESET,
@@ -431,7 +447,7 @@ class SdWebuiImageProvider:
 
             max_resolution = (
                 1024
-                if arch in ("sdxl", "sdxl_lightning", "flux_dev", "flux_schnell")
+                if arch in ("sdxl", "sdxl_lightning", "flux_dev", "flux_schnell", "sd3")
                 else 768
             )
 
