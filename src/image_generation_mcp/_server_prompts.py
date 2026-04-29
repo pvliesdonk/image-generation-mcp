@@ -23,63 +23,134 @@ if TYPE_CHECKING:
 
 _SELECT_PROVIDER_PROMPT = """\
 You have access to an image generation MCP server with multiple providers.
-Choose the best provider for the user's request based on these guidelines:
+Choose the best provider for the user's request based on these guidelines.
+
+> **Per-model detail:** these notes describe provider-level capabilities and
+> selection rules. For per-model strengths, weaknesses, and lifecycle status
+> (legacy / deprecated), call `list_providers` and read each entry's
+> `style_profile` plus the top-level `warnings` array. The canonical
+> per-model registry is at `src/image_generation_mcp/providers/model_styles.py`
+> — keep this prompt's wording in sync when that registry changes.
 
 ## Provider Strengths
 
-### OpenAI (gpt-image-1 / gpt-image-1.5 / dall-e-3)
-- **Best for:** Text rendering, logos, typography, transparent backgrounds
-- **Also strong at:** Photorealistic still life, material fidelity (glass, metal, fabric), precise text on objects
-- **Good at:** General-purpose generation, following complex instructions
-- **Supports:** Negative prompt (as "Avoid:" clause), quality levels (`standard`=auto, `hd`=high)
-- **Prompt style:** Natural language descriptions work well
+### OpenAI
 
-### Gemini (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview)
-- **Best for:** Infographics, diagrams, structured layouts, complex illustrations, visual storytelling
-- **Also strong at:** Character consistency, colour palette adherence, multi-element compositions
-- **Good at:** Reasoning about layout and composition before rendering
-- **Supports:** `quality="hd"` enables model reasoning (thinking) and 2K resolution — dramatically improves output on complex prompts (10s → 55s)
-- **Cost:** Generous free tier at `standard` quality; `hd` uses thinking tokens (billed)
-- **Prompt style:** Natural language descriptions work well
-- **Extra aspect ratios:** Supports 14 ratios including ultra-wide (21:9, 4:1, 8:1)
+- **Current flagship:** `gpt-image-1.5`. Strong instruction following, photoreal
+  still life, in-image text and logos, transparent backgrounds.
+- **Legacy:** `gpt-image-1` and `gpt-image-1-mini` — same descriptive prompt
+  grammar as 1.5; mini is cheaper and good for high-volume drafts.
+- **Deprecated:** `dall-e-3` (API removal 2026-05-12 — migrate new work to
+  gpt-image-1.5) and `dall-e-2` (legacy; useful only for cheap inpainting).
+- **Best for:** Text rendering, logos, typography, transparent backgrounds.
+- **Also strong at:** Photoreal still life, material fidelity (glass, metal,
+  fabric), precise text on objects, complex multi-clause prompts.
+- **Supports:** Negative prompt (as "Avoid:" clause — weaker than native),
+  quality levels (`standard`=auto, `hd`=high).
+- **Prompt style:** Descriptive natural-language paragraphs; tag-soup
+  underperforms.
 
-### SD WebUI (Stable Diffusion WebUI)
+### Gemini
+
+- **Production:** `gemini-2.5-flash-image` (production GA). Cheap (~$0.04/image),
+  fast, supports 14 aspect ratios from 21:9 to 9:16 (including ultra-wide
+  4:1 / 8:1), multi-image compositing (up to 3 inputs), and conversational
+  image editing. Outputs carry an invisible SynthID watermark.
+- **Preview:** `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`
+  add reasoning ("thinking") for layout-heavy and dense-typography work.
+  Preview-tier — surface stability not guaranteed.
+- **Best for:** Infographics, diagrams, structured layouts, complex
+  illustrations, visual storytelling, multi-element compositions, character
+  consistency across iterations.
+- **Supports:** `quality="hd"` enables thinking (Pro/3.x variants) and 2K
+  resolution — dramatically improves output on complex prompts (10s → 55s).
+- **Cost:** Generous free tier at `standard` quality; `hd` uses thinking
+  tokens (billed).
+- **Prompt style:** Descriptive natural-language. Don't use SD-style
+  comma-separated tag lists — Google's docs explicitly call this the wrong
+  pattern.
+
+### SD WebUI (Stable Diffusion / Forge / reForge / Forge-neo)
+
 - **Best for:** Photorealism, portraits, product shots, artistic styles
-- **Good at:** Anime/manga, watercolor, oil painting, illustration
-- **Supports:** Native negative prompt (SD 1.5/SDXL only), fine-grained parameter control
-- **Prompt style depends on the loaded model:**
-  - **SD 1.5 / SDXL:** Comma-separated CLIP tags (see sd_prompt_guide)
-  - **Flux (dev/schnell):** Natural language descriptions, like OpenAI (see sd_prompt_guide)
-- **Note:** Compatible with A1111, Forge, reForge, and Forge-neo
-- Check `list_providers` for each model's `prompt_style` field
+  (anime / watercolor / oil painting / illustration).
+- **Supports:** Native negative prompt on SD 1.5 / SDXL / SD3 (NOT Flux),
+  fine-grained parameter control, optional checkpoint override per call.
+- **Prompt grammar depends on the loaded checkpoint architecture:**
+  - **SD 1.5 / SDXL** — Comma-separated CLIP tags (see `sd_prompt_guide`).
+  - **Flux** (dev / schnell / FLUX.2) — Natural language descriptions, no
+    negative prompts (CFG=1 distilled).
+  - **SD 3 / 3.5** — Natural language (T5 stream); supports negative prompts.
+  - **Pony Diffusion XL** — Mandatory `score_9, score_8_up, …` tag prefix;
+    output collapses without it.
+  - **Illustrious-XL / NoobAI-XL** — Danbooru-style tag grammar for anime,
+    larger character/style coverage than Animagine.
+- **Always check `list_providers`** for each loaded checkpoint's
+  `style_profile.style_hints`, `incompatible_styles`, and `prompt_style`
+  before composing the prompt.
 
 ### Placeholder
-- **Best for:** Testing, mock-ups, zero-cost placeholders
-- **Produces:** Solid-color PNG images (no real generation)
-- **Use when:** You need a fast placeholder without API costs
+
+- Returns a deterministic solid-color PNG. Use for testing, mock-ups, or
+  zero-cost demos without invoking a real provider.
 
 ## Selection Rules
 
-1. If the request involves **text rendering, logos, or typography** → use **openai**
-2. If the request involves **transparent backgrounds** (icons, stickers) → use **openai** (gpt-image-1)
-3. If the request involves **infographics, diagrams, or structured layouts** → use **gemini** with `quality="hd"`
-4. If the request involves **complex illustrations, visual storytelling, or multi-element compositions** → use **gemini** with `quality="hd"`
-5. If the request involves **photorealism, still life, or product shots** → prefer **sd_webui**, fall back to **gemini** then **openai**
-6. If the request involves **anime, manga, or painting styles** → prefer **sd_webui** (fall back to gemini)
-7. If the request is a **quick draft or iteration** → use **gemini** at `standard` quality (fast, free tier)
-8. If the request is a **quick test or placeholder** → use **placeholder**
-9. For **general requests** → default to **gemini** when available, then **openai**
+1. If the request involves **text rendering, logos, or typography** → use
+   **openai** (gpt-image-1.5).
+2. If the request involves **transparent backgrounds** (icons, stickers) →
+   use **openai** (gpt-image-1.5 / gpt-image-1).
+3. If the request involves **infographics, diagrams, or structured layouts**
+   → use **gemini** with `quality="hd"` on a Pro/3.x model.
+4. If the request involves **complex illustrations, visual storytelling, or
+   multi-element compositions** → use **gemini** with `quality="hd"`.
+5. If the request involves **photorealism, still life, or product shots** →
+   prefer **sd_webui** (RealVisXL / Juggernaut / Flux), fall back to
+   **gemini** then **openai**.
+6. If the request involves **anime, manga, or painting styles** → prefer
+   **sd_webui** with **Illustrious-XL / NoobAI-XL** (modern anime SDXL
+   bases that have largely supplanted Animagine for general anime work).
+   Pick **Pony Diffusion XL** for highly-stylised character art (mandatory
+   `score_*` tag prefix; output collapses without it). Animagine XL still
+   works but is considered a previous-generation choice.
+7. If the request is a **quick draft or iteration** → use **gemini** at
+   `standard` quality (fast, free tier) or **sd_webui** with a Lightning /
+   Schnell checkpoint.
+8. If the request is a **quick test or placeholder** → use **placeholder**.
+9. For **general requests** → default to **gemini** when available, then
+   **openai**.
+
+**Avoid deprecated models for new long-lived workflows.** Check the
+`warnings` array on `list_providers`'s response — it lists every configured
+model whose `lifecycle` is `legacy` or `deprecated`, including removal dates
+when known.
 
 ## Usage
 
-Call `generate_image` with `provider="auto"` for automatic selection,
-or specify a provider name directly. Use `list_providers` to see which
-providers are currently available.
+Call `generate_image` with `provider="auto"` for automatic selection, or
+specify a provider name directly. Pass `model="<id>"` to pin a specific
+model_id within the provider. Use `list_providers` to see which providers
+are currently available, what models each has loaded, and per-model
+narrative guidance.
 """
 
 _SD_PROMPT_GUIDE = """\
 Guide for writing SD WebUI prompts. The correct prompt style depends on the
-model architecture — check `list_providers` to see which models are loaded.
+checkpoint architecture and (sometimes) the specific fine-tune family —
+check `list_providers` for each model's `prompt_style` field plus its
+`style_profile.style_hints` / `incompatible_styles` / `good_example` /
+`bad_example` for per-checkpoint nuance.
+
+Architecture summary:
+
+| Family | Encoder | Grammar | Negative prompts |
+|---|---|---|---|
+| SD 1.5, SDXL | CLIP | Comma-separated tags | Yes (native) |
+| Flux 1 / FLUX.2 | T5 | Descriptive prose | No (CFG=1 distilled) |
+| Flux Schnell | T5 | Descriptive prose, 1-4 steps | No |
+| SD 3 / 3.5 | CLIP + T5 | Descriptive prose | Yes |
+| Pony Diffusion XL | SDXL+CLIP | Tags + mandatory `score_*` prefix | Yes |
+| Illustrious-XL / NoobAI-XL | SDXL+CLIP | Danbooru-style tags | Yes |
 
 ## SD 1.5 / SDXL — CLIP Tag Format
 
@@ -191,13 +262,68 @@ A pair of pristine white sneakers on a clean white background, shot from
 a three-quarter angle with professional studio lighting and crisp focus
 ```
 
-### Flux Schnell vs Flux Dev
+### Flux Schnell vs Flux Dev vs FLUX.2
 
-- **Flux Schnell:** 4 steps, fastest generation (~5-10s). Good for drafts.
+- **Flux Schnell:** 1-4 steps, fastest generation (~5-10s). Good for drafts;
+  do not rely on it for final-grade detail.
 - **Flux Dev:** 20 steps, higher quality (~60-120s). Use for final output.
+- **FLUX.2:** Newest BFL generation. Same prose grammar; same no-negative-
+  prompts limitation. Even better in-scene text and architectural detail.
 
-Both use Euler sampler, Simple scheduler, CFG 1.0, and distilled CFG 3.5
-(all set automatically by the server).
+All Flux variants use Euler sampler, Simple scheduler, CFG 1.0, and
+distilled CFG 3.5 (set automatically by the server).
+
+## SD 3 / 3.5 — Triple-encoder, prose-friendly
+
+SD 3 and 3.5 use a triple-encoder architecture (CLIP-L + OpenCLIP-bigG +
+T5-XXL). They benefit from descriptive prose for the T5 stream — same
+profile as Flux — but **do** support negative prompts (unlike Flux).
+
+**Key differences from SDXL:**
+- Use complete sentences, not comma-separated tags.
+- Skip SDXL-style `(weight:1.2)` parens — wrong syntax for SD3.
+- Negative prompts work natively; use them for excluded elements.
+- 3.5 Large Turbo is 4-step distilled, similar speed/quality tradeoff to
+  Flux Schnell.
+
+**Example:**
+```
+A weathered fishing boat moored at a stone harbour at dawn, gulls
+circling overhead, soft cool light, painterly yet photoreal.
+```
+
+## Pony Diffusion XL — score_* prefix mandatory
+
+Pony Diffusion XL (and AutismMix, Pony Realism, etc.) is an SDXL fine-tune
+with a strict tag grammar requirement. The leading tag block is mandatory:
+
+```
+score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up,
+source_anime, rating_safe, <your subject and description>
+```
+
+Variants of the source/rating tags:
+- `source_anime` / `source_pony` / `source_furry`
+- `rating_safe` / `rating_questionable` / `rating_explicit`
+
+Without the `score_*` prefix, output quality collapses visibly. Pony also
+underperforms vs other SDXL fine-tunes for photorealism — it's tuned for
+stylised character art.
+
+## Illustrious-XL / NoobAI-XL — modern anime SDXL
+
+Illustrious-XL and NoobAI-XL have largely supplanted Animagine for anime
+SDXL work. Same Danbooru-style tag grammar as Animagine but with a much
+larger character / style dataset.
+
+```
+1girl, long hair, blue eyes, school uniform, cherry blossoms,
+masterpiece, best quality, very aesthetic
+```
+
+**NoobAI v-prediction variants** need the v-prediction sampler config
+(epsilon-prediction is wrong for those weights and produces noise) — check
+the checkpoint's documentation.
 
 ## Aspect Ratios
 
@@ -206,12 +332,27 @@ The server maps these to optimal pixel dimensions for each SD model.
 
 ## Workflow
 
-1. Check `list_providers` to see available models and their `prompt_style`
-   (`"clip"` for SD 1.5/SDXL, `"natural_language"` for Flux)
-2. Write your prompt in the appropriate style for the model
-3. For SD 1.5/SDXL: add quality tags and a negative prompt
-4. For Flux: write a natural language description, skip negative prompt
-5. Call `generate_image` with `provider="sd_webui"`:
+1. Check `list_providers` to see available models, their `prompt_style`
+   (`"clip"` for SD 1.5/SDXL/Pony/Illustrious/NoobAI, `"natural_language"`
+   for Flux/SD3), and their per-checkpoint `style_profile.style_hints` for
+   any fine-tune-specific guidance.
+2. Write your prompt in the appropriate style for the model:
+   - **SD 1.5 / SDXL** — add quality tags and a negative prompt.
+   - **Flux 1 / Flux Schnell / FLUX.2** — write natural language; skip
+     negative prompt (CFG=1 distilled, unsupported).
+   - **SD 3 / 3.5** — write natural language; **do** include a negative
+     prompt (SD3 supports them natively, unlike Flux); skip SDXL-style
+     `(weight:1.2)` parens.
+   - **Pony Diffusion XL** — prepend the mandatory `score_9, score_8_up,
+     score_7_up, …` block before all other tags. Add `source_anime` /
+     `source_pony` / `source_furry` and a `rating_*` tag. Without the
+     `score_*` prefix, output collapses.
+   - **Illustrious-XL / NoobAI-XL** — Danbooru-style tags
+     (`1girl, long hair, …, masterpiece, best quality, very aesthetic`).
+     For NoobAI v-prediction variants, ensure the v-prediction sampler
+     config is set on the WebUI side (epsilon-prediction is wrong for
+     those weights and produces noise).
+3. Call `generate_image` with `provider="sd_webui"`:
 
 **SD 1.5 / SDXL example:**
 ```
@@ -287,13 +428,25 @@ You are applying the style "{entry.name}" to the user's request above.
    palette, composition, mood, medium, constraints.
 2. Combine that direction with the user's specific request.
 3. Compose a provider-appropriate prompt for `generate_image`:
-   - **For OpenAI:** Compose in natural language. Describe the scene
-     incorporating the style's visual direction.
-   - **For SD WebUI (SD 1.5/SDXL):** Compose as comma-separated CLIP tags.
-     Translate the style's concepts into appropriate tags. Include a
-     negative prompt based on the style's constraints.
-   - **For SD WebUI (Flux):** Compose in natural language, similar to OpenAI.
-   - Check `list_providers` for each model's `prompt_style` field.
+   - **For OpenAI / Gemini:** Compose in natural language. Describe the
+     scene incorporating the style's visual direction.
+   - **For SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut):** Compose as
+     comma-separated CLIP tags. Translate the style's concepts into
+     appropriate tags. Include a negative prompt based on the style's
+     constraints.
+   - **For SD WebUI (Flux 1 / Flux Schnell / FLUX.2):** Compose in natural
+     language. Skip the negative prompt (Flux is CFG=1 distilled).
+   - **For SD WebUI (SD 3 / 3.5):** Compose in natural language; **do**
+     include a negative prompt for excluded elements (SD3 supports them
+     natively).
+   - **For SD WebUI (Pony Diffusion XL):** Compose Danbooru-style tags with
+     the mandatory `score_9, score_8_up, score_7_up, score_6_up,
+     score_5_up, score_4_up` prefix, plus a `source_*` and `rating_*` tag.
+     Without the `score_*` prefix the output collapses.
+   - **For SD WebUI (Illustrious-XL / NoobAI-XL):** Compose Danbooru-style
+     anime tags (artist, character, series, descriptors).
+   - Check `list_providers` for each model's `prompt_style` field plus
+     `style_profile.style_hints` for fine-tune-specific guidance.
 4. **Do NOT copy the style text verbatim into the prompt.** Interpret and
    adapt it for the target provider's format.
 5. Use the style's frontmatter defaults (provider, aspect_ratio, quality)
@@ -325,7 +478,8 @@ def register_prompts(mcp: FastMCP) -> None:
         name="sd_prompt_guide",
         description=(
             "Guide for writing SD WebUI prompts — "
-            "CLIP tags for SD 1.5/SDXL, natural language for Flux"
+            "CLIP tags (SD 1.5 / SDXL / Pony / Illustrious / NoobAI), "
+            "prose (Flux 1 / FLUX.2 / Schnell / SD 3 / 3.5)"
         ),
         icons=[Icon(src=_LUCIDE.format("book-open-text"), mimeType="image/svg+xml")],
     )
