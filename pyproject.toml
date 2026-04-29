@@ -152,6 +152,7 @@ disable_error_code = [
     "attr-defined",      # fastmcp Tool.fn private surface used by tests
     "union-attr",        # mcp.get_tool() returns Tool | None; tests assert non-None
     "no-untyped-def",    # pytest fixtures intentionally untyped
+    "no-untyped-call",   # importlib-loaded helpers (test_render_model_catalog) are untyped
     "type-arg",          # bare list/tuple/dict in test helpers
     "var-annotated",     # local helper vars without annotations
     "misc",              # async-generator return-type quirks
