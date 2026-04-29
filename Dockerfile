@@ -20,12 +20,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev --extra all
 
 # Copy source and install project.
-<<<<<<< before updating
-COPY . .
-=======
 COPY pyproject.toml uv.lock README.md /app/
 COPY src/ /app/src/
->>>>>>> after updating
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --extra all
 # DOCKERFILE-UV-EXTRAS-END
