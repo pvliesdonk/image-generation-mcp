@@ -2,11 +2,11 @@
 # Reference: https://developers.google.com/gemini-code-assist/docs/customize-repo-review
 #
 # Rationale: gemini-code-assist is a merge gate, not a pair reviewer. We run a
-# local review circus (`pr-review-toolkit:code-reviewer` subagent + the
-# `gemini-cli-extensions/code-review` extension) before any push; by the time
-# the PR opens we expect the hosted bot to have nothing to flag. These settings
-# narrow the bot's scope so it fires on flip-to-ready (not on every draft push)
-# and only surfaces real issues.
+# local review circus (two subagent code-reviewers with different prompt
+# templates — `pr-review-toolkit:code-reviewer` + `superpowers:code-reviewer`)
+# before any push; by the time the PR opens we expect the hosted bot to have
+# nothing to flag. These settings narrow the bot's scope so it fires on
+# flip-to-ready (not on every draft push) and only surfaces real issues.
 
 code_review:
   disable: false
