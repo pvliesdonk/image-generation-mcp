@@ -238,3 +238,30 @@ class TestListProvidersIncludesCapabilities:
         providers = svc.list_providers()
         assert providers["placeholder"]["available"] is True
         assert "description" in providers["placeholder"]
+
+
+from image_generation_mcp.providers.model_styles import StyleProfile  # noqa: E402
+
+
+def test_model_capabilities_to_dict_omits_style_profile_when_none():
+    caps = ModelCapabilities(model_id="x", display_name="X")
+    result = caps.to_dict()
+    assert "style_profile" not in result
+
+
+def test_model_capabilities_to_dict_includes_style_profile_when_set():
+    profile = StyleProfile(
+        label="L",
+        style_hints="s",
+        incompatible_styles="i",
+        good_example="g",
+        bad_example="b",
+    )
+    caps = ModelCapabilities(
+        model_id="x",
+        display_name="X",
+        style_profile=profile,
+    )
+    result = caps.to_dict()
+    assert result["style_profile"]["label"] == "L"
+    assert result["style_profile"]["lifecycle"] == "current"
