@@ -6,7 +6,10 @@
 # templates — `pr-review-toolkit:code-reviewer` + `superpowers:code-reviewer`)
 # before any push; by the time the PR opens we expect the hosted bot to have
 # nothing to flag. These settings narrow the bot's scope so it fires on
-# flip-to-ready (not on every draft push) and only surfaces real issues.
+# flip-to-ready (not on every draft push) and only surfaces real issues —
+# the HIGH severity floor and 20-comment cap match the local-circus contract:
+# anything LOW/MEDIUM should already be caught locally, so a quiet bot review
+# is the expected steady state, not a sign of a quota or auth failure.
 
 code_review:
   disable: false
