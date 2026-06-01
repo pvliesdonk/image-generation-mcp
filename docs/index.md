@@ -4,6 +4,7 @@ Multi-provider image generation [MCP](https://modelcontextprotocol.io) server bu
 
 ## Features
 
+<<<<<<< before updating
 - **Multi-provider** -- OpenAI (gpt-image-1, dall-e-3), SD WebUI (Stable Diffusion WebUI), and placeholder
 - **Auto-selection** -- keyword-based routing picks the best provider for your prompt
 - **Image assets** -- content-addressed registry with thumbnail previews and resource URI-based transforms
@@ -97,3 +98,20 @@ image-generation-mcp serve
     [:octicons-arrow-right-24: Tools](tools.md) | [:octicons-arrow-right-24: Resources](resources.md) | [:octicons-arrow-right-24: Prompts](prompts.md)
 
 </div>
+=======
+- [Installation](installation.md)
+- [Configuration](configuration.md)
+- [Tools](tools/index.md)
+
+<!-- DOMAIN-INDEX-FEATURES-START -->
+## Features
+
+- _Add features specific to your server here._
+<!-- DOMAIN-INDEX-FEATURES-END -->
+
+<!-- DOMAIN-INDEX-USE-CASES-START -->
+## What you can do
+
+- _Add usage examples here._
+<!-- DOMAIN-INDEX-USE-CASES-END -->
+>>>>>>> after updating

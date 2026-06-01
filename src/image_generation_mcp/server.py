@@ -20,6 +20,7 @@ from fastmcp_pvl_core import (
     build_instructions,
     configure_logging_from_env,
     register_file_exchange,
+    register_server_info_tool,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -174,6 +175,7 @@ def make_server(
 
     wire_middleware_stack(mcp)
 
+<<<<<<< before updating
     # MCP File Exchange wiring (spec-compliant): mounts /artifacts/{token},
     # registers create_download_link, advertises the experimental.file_exchange
     # capability.  Tools publish via the handle passed into register_tools.
@@ -185,6 +187,62 @@ def make_server(
     # and passes it to make_server, so we have the authoritative value here.
     fx_transport: str = "http" if transport in ("http", "sse") else "stdio"
     file_exchange = register_file_exchange(
+=======
+    # Optional: enable opt-in per-subject authorization on tools / resources /
+    # prompts.  See fastmcp-pvl-core's README "Authorization" section for the
+    # design.  Tools, resources, and prompts opt in by setting
+    # ``meta={"required_scope": "<scope>"}``; absence of the key means
+    # unrestricted.  The middleware is only installed when ``acl_path`` is set.
+    #
+    # from fastmcp_pvl_core import (
+    #     AuthorizationMiddleware,
+    #     load_acl,
+    #     make_acl_authorizer,
+    # )
+    #
+    # if config.acl_path is not None:
+    #     authorizer = make_acl_authorizer(load_acl(config.acl_path))
+    #     mcp.add_middleware(AuthorizationMiddleware(authorizer=authorizer))
+
+    register_tools(mcp)
+    register_resources(mcp)
+    register_prompts(mcp)
+    register_apps(mcp)
+
+    register_server_info_tool(
+        mcp,
+        server_name="image-generation-mcp",
+        server_version=pkg_ver,
+        # DOMAIN-UPSTREAM-START — wire upstream version reporting for servers
+        # that talk to a remote service (paperless-mcp, etc.). The provider is
+        # a zero-arg callable; the simplest pattern is a module-level upstream
+        # client (typically constructed from env vars at import time) whose
+        # version method is referenced here. ``CurrentContext()`` is a FastMCP
+        # DI marker — it only resolves to a live context when used as a
+        # parameter default in a tool/resource handler, so it cannot be called
+        # directly from a zero-arg provider.
+        # Uncomment the kwargs below as additional arguments to this call:
+        # upstream_version=lambda: _upstream_client.remote_version(),
+        # upstream_label="paperless",
+        # DOMAIN-UPSTREAM-END
+    )
+
+    # DOMAIN-WIRING-START — project-specific wiring (custom HTTP routes,
+    # transforms, mode toggles, alternative middleware, additional registrations);
+    # kept across copier update. Leave empty for projects that don't customise
+    # make_server() beyond the standard scaffold.
+    # DOMAIN-WIRING-END
+
+    # DOMAIN-FILE-EXCHANGE-START — file-exchange wiring (download direction
+    # always; upload direction opt-in by uncommenting). Kept across copier
+    # update so opt-in customisations (consumer_sink=, produces=, upload
+    # receiver) survive subsequent template updates.
+    #
+    # To publish files from a tool body, capture the returned handle
+    # — see docs/guides/file-exchange.md for the module-level singleton
+    # pattern (e.g. ``_file_exchange = register_file_exchange(...)``).
+    register_file_exchange(
+>>>>>>> after updating
         mcp,
         namespace="image-generation-mcp",
         env_prefix=_ENV_PREFIX,
@@ -192,6 +250,7 @@ def make_server(
         transport=fx_transport,  # type: ignore[arg-type]
     )
 
+<<<<<<< before updating
     register_tools(mcp, transport=transport, file_exchange=file_exchange)
     register_resources(mcp)
     register_prompts(mcp)
@@ -202,5 +261,50 @@ def make_server(
 
     if config.read_only:
         mcp.disable(tags={"write"})
+=======
+    # Optional upload direction — uncomment + flesh out the helpers below
+    # to accept agent-pushed files via POST /<namespace>/uploads/{token}.
+    # The route mounts only when transport is HTTP/SSE AND
+    # IMAGE_GENERATION_MCP_BASE_URL is set; sync receivers run in a thread.
+    # See docs/guides/file-exchange.md for the full pattern. When
+    # uncommenting, move the two ``from`` imports below to the
+    # module-level import block at the top of this file.
+    #
+    # from typing import Any
+    #
+    # from fastmcp_pvl_core import (
+    #     UploadRecord,
+    #     register_file_exchange_upload,
+    # )
+    #
+    # def _validate_upload_target(target_id: str, extra: dict[str, Any] | None) -> None:
+    #     """Pre-link validator: reject obviously bad target_ids in-band.
+    #
+    #     Runs inside create_upload_link before the token is minted, so an
+    #     LLM gets a clean tool error rather than after a wasted upload
+    #     round-trip.
+    #     """
+    #     # Example: reject anything outside the domain's allowlist.
+    #     # raise ValueError(f"target_id not allowed: {target_id}")
+    #     pass
+    #
+    # def _upload_receiver(record: UploadRecord, body: bytes) -> dict[str, Any]:
+    #     """Commit the uploaded bytes. Raise ValueError → 400,
+    #     FileExistsError → 409, anything else → 500 (with traceback
+    #     logged). Return value MUST be a dict — non-dict returns are
+    #     treated as receiver bugs (500 + WARNING log)."""
+    #     # TODO: replace with your storage logic.
+    #     return {"path": record.target_id, "size_bytes": len(body)}
+    #
+    # register_file_exchange_upload(
+    #     mcp,
+    #     namespace="image-generation-mcp",
+    #     env_prefix=_ENV_PREFIX,
+    #     transport="auto",
+    #     receiver=_upload_receiver,
+    #     pre_link_validator=_validate_upload_target,
+    # )
+    # DOMAIN-FILE-EXCHANGE-END
+>>>>>>> after updating
 
     return mcp

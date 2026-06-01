@@ -40,6 +40,7 @@ exclude_docs: |
 
 plugins:
   - search
+<<<<<<< before updating
   - llmstxt:
       full_output: llms-full.txt
       markdown_description: >
@@ -75,6 +76,30 @@ plugins:
           - deployment/docker.md: Docker Compose, Traefik, volumes
           - deployment/systemd.md: Systemd service, .deb/.rpm packages, security hardening
           - deployment/oidc.md: OIDC authentication setup
+=======
+  # Generates llms.txt + llms-full.txt for the README badge.
+  # Sections mirror `nav:` below — keep them aligned when customising
+  # (both blocks are sentinel-protected so customise both as a unit).
+  # `guides/*.md` and `deployment/*.md` use globs deliberately so new pages
+  # in those directories are auto-indexed without a sections-list update.
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        # PROJECT-LLMSTXT-SECTIONS-START — keep aligned with `nav:` below;
+        # kept across copier update.
+        Getting Started:
+          - index.md
+          - installation.md
+          - configuration.md
+        Guides:
+          - guides/*.md
+        MCP Interface:
+          - tools/index.md
+          - prompts.md
+        Deployment:
+          - deployment/*.md
+        # PROJECT-LLMSTXT-SECTIONS-END
+>>>>>>> after updating
   - mkdocstrings:
       handlers:
         python:
@@ -107,6 +132,9 @@ markdown_extensions:
   - md_in_html
 
 nav:
+  # PROJECT-NAV-START — replace with your real navigation; kept across copier
+  # update. Keep aligned with the `llmstxt` plugin's sentinel-protected
+  # `sections:` block above.
   - Home: index.md
   - Getting Started:
       - Installation: getting-started/installation.md
@@ -135,3 +163,4 @@ nav:
       - Docker: deployment/docker.md
       - Systemd: deployment/systemd.md
       - OIDC Authentication: deployment/oidc.md
+  # PROJECT-NAV-END
