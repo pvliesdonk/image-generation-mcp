@@ -13,6 +13,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 
 ## Providers
 
+<<<<<<< before updating
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | -- | OpenAI API key. Enables the OpenAI provider (gpt-image-1, dall-e-3) when set. |
@@ -21,6 +22,29 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | str | -- | SD WebUI checkpoint name. Used for model-aware preset detection (SD 1.5 vs SDXL vs Lightning) and checkpoint override. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_MODEL`. |
 
 ## Authentication
+=======
+These variables control [MCP File Exchange](guides/file-exchange.md)
+participation: pass-by-reference file transfer between co-deployed
+servers (and HTTP fallback for remote clients). All are optional; the
+defaults are sensible for both stdio and HTTP deployments.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_ENABLED` | `true` on HTTP/SSE, `false` on stdio | Master switch. Set `false` to opt out entirely. |
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_PRODUCE` | `true` | Allow this server to mint `FileRef` objects via `handle.publish(...)`. |
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_CONSUME` | `true` | Master toggle for the consumer side. **Only effective when `consumer_sink=` is wired in `server.py`**; without that argument, `fetch_file` is never registered no matter how this var is set. See [the guide](guides/file-exchange.md#consuming-files-consumer_sink). |
+| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL` | `3600` | Lifetime in seconds for download links and exchange-volume records. |
+| `IMAGE_GENERATION_MCP_UPLOAD_ENABLED` | `true` on HTTP/SSE, `false` on stdio | Master switch for the upload direction. **Only effective when `register_file_exchange_upload(...)` is uncommented in `server.py`**; without that call, no upload route is mounted regardless of this var. Also requires `IMAGE_GENERATION_MCP_BASE_URL` to be set so `create_upload_link` can mint usable URLs. See [the guide](guides/file-exchange.md#uploading-files-receiver). |
+| `IMAGE_GENERATION_MCP_UPLOAD_MAX_BYTES` | `10485760` (10 MiB) | Maximum POST body size for the upload route. Bodies exceeding this return HTTP 413. |
+| `IMAGE_GENERATION_MCP_UPLOAD_TTL` | `300` | Default lifetime in seconds for upload links. Caller-requested TTL is clamped to `IMAGE_GENERATION_MCP_UPLOAD_TTL_MAX`. |
+| `IMAGE_GENERATION_MCP_UPLOAD_TTL_MAX` | `3600` | Operator ceiling for caller-requested upload-link TTL. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | unset | Public base URL of this server. Required for the `http` transfer method; the `create_download_link` tool and (when upload is wired) the `create_upload_link` tool both build URLs against it. Also referenced by the OIDC guide and the universal-variables list above. Set it once and every consumer picks it up. |
+
+Note the upload-direction variables are namespaced under `_UPLOAD_*`,
+not `_FILE_EXCHANGE_UPLOAD_*`. This matches the upstream
+`fastmcp-pvl-core` 2.1.0 contract. The download-direction variables
+keep the historical `_FILE_EXCHANGE_*` namespace.
+>>>>>>> after updating
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -41,6 +65,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 !!! note "Auth mode auto-detection"
     When `AUTH_MODE` is not set explicitly, the mode is auto-detected:
 
+<<<<<<< before updating
     - **`oidc-proxy`**: when all four OIDC variables (`BASE_URL`, `OIDC_CONFIG_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`) are set. Backward compatible with existing deployments.
     - **`remote`**: when `BASE_URL` + `OIDC_CONFIG_URL` are set but `CLIENT_ID`/`CLIENT_SECRET` are not. Recommended for new deployments — avoids the [OIDCProxy session lifetime issue](guides/authentication.md#known-limitations-oidc-session-lifetime).
 
@@ -147,3 +172,10 @@ IMAGE_GENERATION_MCP_OIDC_CLIENT_ID=image-generation-mcp
 IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET=your-client-secret
 IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=your-stable-hex-key
 ```
+=======
+<!-- DOMAIN-CONFIG-VARS-START -->
+## Domain variables
+
+Document your project-specific variables here.
+<!-- DOMAIN-CONFIG-VARS-END -->
+>>>>>>> after updating
