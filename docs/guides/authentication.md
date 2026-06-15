@@ -11,12 +11,17 @@ The server supports four authentication modes:
 
 | Mode | When to use | Configuration |
 |------|-------------|---------------|
+<<<<<<< before updating
 | **Multi-auth** | Mixed clients — e.g. Claude web (OIDC) + Claude Code (bearer token) on the same server | Set `IMAGE_GENERATION_MCP_BEARER_TOKEN` + OIDC variables |
+=======
+| **Multi-auth** | Mixed clients, such as Claude web (OIDC) + Claude Code (bearer token) on the same server | Set both `IMAGE_GENERATION_MCP_BEARER_TOKEN` and all four OIDC variables |
+>>>>>>> after updating
 | **Bearer token** | Simple deployments behind a VPN, Docker compose stacks, development | Set `IMAGE_GENERATION_MCP_BEARER_TOKEN` only |
 | **OIDC (remote)** | Production with user identity — recommended | Set `BASE_URL` + `OIDC_CONFIG_URL` |
 | **OIDC (oidc-proxy)** | Production when IdP lacks DCR support and you need DCR emulation | Set `BASE_URL` + `OIDC_CONFIG_URL` + `OIDC_CLIENT_ID` + `OIDC_CLIENT_SECRET` |
 | **No auth** | Local stdio usage, trusted networks | Default (nothing to configure) |
 
+<<<<<<< before updating
 When both bearer token and OIDC are configured, the server accepts **either** credential — a valid bearer token or a valid OIDC session. This is useful when different clients require different authentication flows against the same vault instance.
 
 ### OIDC mode selection
@@ -28,6 +33,9 @@ Two OIDC modes are available via the `IMAGE_GENERATION_MCP_AUTH_MODE` env var:
 - **`oidc-proxy`**: The server acts as an OAuth intermediary, emulating Dynamic Client Registration (DCR) for IdPs that don't support it natively. Requires `CLIENT_ID`, `CLIENT_SECRET`, and optionally `JWT_SIGNING_KEY`. Subject to the [session lifetime limitation](#known-limitations-oidc-session-lifetime).
 
 When `AUTH_MODE` is not set, it auto-detects: `oidc-proxy` when client credentials are present, `remote` otherwise. See [OIDC deployment guide](../deployment/oidc.md) for setup details.
+=======
+When both bearer token and OIDC are configured, the server accepts **either** credential: a valid bearer token or a valid OIDC session. This is useful when different clients require different authentication flows against the same server instance.
+>>>>>>> after updating
 
 ---
 
@@ -70,7 +78,24 @@ Authorization: Bearer your-generated-token
 - Development and testing environments
 - Any scenario where full OIDC is overkill
 
+<<<<<<< before updating
 See also: [`examples/bearer-auth.env`](https://github.com/pvliesdonk/image-generation-mcp/blob/main/examples/bearer-auth.env) for a ready-to-use example.
+=======
+### Mapped bearer tokens (multi-subject)
+
+The bearer-token mode above shares one subject across every authenticated caller. By default this is the library's `bearer-anon`; override with `IMAGE_GENERATION_MCP_BEARER_DEFAULT_SUBJECT`. For audit logs and authorization that distinguish callers, switch to mapped-token mode by pointing `IMAGE_GENERATION_MCP_BEARER_TOKENS_FILE` at a TOML file:
+
+```toml
+# tokens.toml
+[tokens]
+"ghp_alice_xxxxxxxx" = "user:alice@example.com"
+"sk_ci_yyyyyyyy"     = "service:ci-bot"
+```
+
+Each token resolves to a distinct subject string for downstream attribution. Subject strings are opaque: the `<kind>:<id>` convention (`user:`, `service:`, `token:`) is documentation only. When `BEARER_TOKENS_FILE` is set it overrides `BEARER_TOKEN` (a `WARNING` is logged if both are present). A missing or malformed file aborts startup with `ConfigurationError` rather than silently denying every request.
+
+For the per-tool authorization that consumes these subjects, see [Authorization (opt-in)](https://github.com/pvliesdonk/image-generation-mcp/blob/main/README.md#authorization-opt-in) in the project README.
+>>>>>>> after updating
 
 ---
 
@@ -80,7 +105,7 @@ Full OAuth 2.1 authentication using an external identity provider. Supports user
 
 ### How it works
 
-The server uses FastMCP's built-in `OIDCProxy` — no external auth sidecar needed:
+The server uses FastMCP's built-in `OIDCProxy`. No external auth sidecar needed:
 
 ```
 Client → image-generation-mcp (OIDCProxy) → OIDC Provider
@@ -96,7 +121,11 @@ Client → image-generation-mcp (OIDCProxy) → OIDC Provider
 
 | Variable | Description |
 |----------|-------------|
+<<<<<<< before updating
 | `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL for OIDC and artifact download links (e.g. `https://mcp.example.com`) |
+=======
+| `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL (such as `https://mcp.example.com`) |
+>>>>>>> after updating
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | Client ID registered with your provider |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | Client secret |
@@ -105,8 +134,8 @@ Client → image-generation-mcp (OIDCProxy) → OIDC Provider
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | ephemeral | JWT signing key — **required on Linux/Docker** |
-| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | — | Expected JWT audience claim; leave unset if your provider does not set one |
+| `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | ephemeral | JWT signing key (**required on Linux/Docker**) |
+| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | n/a | Expected JWT audience claim; leave unset if your provider does not set one |
 | `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | `openid` | Comma-separated required scopes |
 | `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false` | Set `true` to verify the access token as a JWT instead of the id token; useful for audience-claim validation on JWT access tokens |
 
@@ -118,9 +147,13 @@ Client → image-generation-mcp (OIDCProxy) → OIDC Provider
     ```
 
 !!! tip "Long-running sessions"
+<<<<<<< before updating
     Current MCP clients do not reliably refresh tokens — see [Known Limitations](#known-limitations-oidc-session-lifetime). Configure **all** token lifetimes (access, id, refresh) on your identity provider to cover a full workday (8h+). For simpler deployments, bearer token auth is unaffected by these limitations.
 
 ### Full OIDC reference
+=======
+    Current MCP clients do not reliably refresh tokens; see [Known Limitations](#known-limitations-mcp-oauth-token-refresh). Configure **all** token lifetimes (access, id, refresh) on your identity provider to cover a full workday (8 hours or more). For simpler deployments, bearer token auth is unaffected by these limitations.
+>>>>>>> after updating
 
 For the full OIDC reference (env vars, Docker Compose, subpath deployments, architecture):
 
@@ -150,13 +183,13 @@ Authentication only works with HTTP transport. If you're using `--transport stdi
 
 - Verify the env var is set and non-empty (whitespace-only values are ignored)
 - Check that clients send `Authorization: Bearer <token>` (not `Basic` or other schemes)
-- If OIDC is also configured, multi-auth is active — both bearer and OIDC are accepted simultaneously
+- If OIDC is also configured, multi-auth is active: both bearer and OIDC are accepted simultaneously
 
 ### OIDC redirect fails
 
 - Verify `BASE_URL` matches your public URL exactly (including any subpath prefix)
-- For subpath deployments, see the [subpath deployment guide](../deployment/oidc.md#subpath-deployments) — `BASE_URL` must include the prefix, `HTTP_PATH` must not
-- Check that `redirect_uris` in your provider config includes your callback URL (e.g., `https://mcp.example.com/auth/callback`)
+- For subpath deployments, see the [subpath deployment guide](../deployment/oidc.md#subpath-deployments); `BASE_URL` must include the prefix, `HTTP_PATH` must not
+- Check that `redirect_uris` in your provider config includes your callback URL (such as `https://mcp.example.com/auth/callback`)
 
 ### Session drops after token expiry
 
@@ -164,11 +197,15 @@ Authentication only works with HTTP transport. If you're using `--transport stdi
 
 **Root cause:** this is almost always a token lifetime issue, not a server bug. Check three things:
 
-1. **id_token lifetime** (most common): When using `verify_id_token` mode (the default for Authelia), the server re-validates the upstream `id_token` on every request. If your provider's `id_token` lifetime is shorter than the `access_token` lifetime, the session dies at the `id_token` expiry — even though the access token is still valid. Authelia defaults `id_token` to 1 hour. **Fix: set `id_token` lifetime to match `access_token`** in your provider config.
+1. **id_token lifetime** (most common): When using `verify_id_token` mode (the default for Authelia), the server re-validates the upstream `id_token` on every request. If your provider's `id_token` lifetime is shorter than the `access_token` lifetime, the session dies at the `id_token` expiry, even though the access token is still valid. Authelia defaults `id_token` to 1 hour. **Fix: set `id_token` lifetime to match `access_token`** in your provider config.
 
 2. **access_token lifetime**: If both `id_token` and `access_token` are set correctly but sessions still drop, check that the provider's `expires_in` response matches your configured lifetime.
 
+<<<<<<< before updating
 3. **No refresh token**: See [Known Limitations](#known-limitations-oidc-session-lifetime) below — current MCP clients cannot refresh tokens, so sessions are limited to the token lifetime.
+=======
+3. **No refresh token**: See [Known Limitations](#known-limitations-mcp-oauth-token-refresh) below; current MCP clients cannot refresh tokens, so sessions are limited to the token lifetime.
+>>>>>>> after updating
 
 **Workaround:** configure **all** token lifetimes on your identity provider to cover a full workday:
 
@@ -184,7 +221,11 @@ lifespans:
 
 ### Opaque access tokens (Authelia)
 
+<<<<<<< before updating
 Authelia issues opaque (non-JWT) access tokens by default. How this affects you depends on the OIDC mode:
+=======
+Authelia issues opaque (non-JWT) access tokens. This is handled automatically: the server verifies the `id_token` instead. No extra configuration needed.
+>>>>>>> after updating
 
 - **Remote mode** (recommended): requires JWT access tokens. Add `access_token_signed_response_alg: 'RS256'` to the Authelia client registration. See [Authelia setup](../deployment/oidc.md#setup-with-authelia) for details.
 - **OIDCProxy mode**: handles opaque tokens automatically by verifying the `id_token` instead. No extra configuration needed.
@@ -203,6 +244,7 @@ Authelia issues opaque (non-JWT) access tokens by default. How this affects you 
 
 ### The problem
 
+<<<<<<< before updating
 When using FastMCP's `OIDCProxy` (or `OAuthProxy`), sessions die when the upstream IdP access token expires — typically after 1 hour — even though the proxy has issued its own JWT with a longer lifetime.
 
 ### Root cause: OAuthProxy double-validation
@@ -211,6 +253,9 @@ FastMCP's `OAuthProxy.load_access_token()` performs **two** token validations on
 
 1. Verify the proxy's own JWT (signature, expiry, scopes) — **this succeeds**
 2. Fetch and re-validate the upstream IdP token from the token store — **this fails after upstream expiry**
+=======
+MCP clients cannot maintain sessions beyond the token lifetime because token refresh does not work. When tokens expire, the session drops and requires manual re-authentication. This affects every provider: Authelia, Keycloak, Google, and others.
+>>>>>>> after updating
 
 When the upstream token expires, step 2 returns `None`, causing a 401 — even though the proxy JWT is still valid. The client has no way to preemptively refresh because it only sees the proxy JWT's expiry, not the upstream token's shorter expiry.
 
@@ -229,14 +274,19 @@ These client issues are real but secondary — fixing them alone would not resol
 | **Claude Code** | Never requests `offline_access` scope ([claude-code#7744](https://github.com/anthropics/claude-code/issues/7744)) | Some providers won't issue a refresh token without this scope |
 | **MCP Python SDK** | Token refresh deadlocks inside SSE streams ([python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326)) | SDK hangs when attempting refresh during an active stream |
 
+<<<<<<< before updating
 ### Workarounds
+=======
+The server-side refresh architecture (FastMCP's `OAuthProxy.exchange_refresh_token()`) is correctly implemented and would work, but it requires the client to initiate the refresh, which none of the current clients do reliably.
+>>>>>>> after updating
 
 **Use `remote` auth mode instead of `oidc-proxy`** (recommended). Set `AUTH_MODE=remote` — the server validates tokens locally via JWKS without storing or re-validating upstream tokens. This requires only `BASE_URL` + `OIDC_CONFIG_URL`. See [OIDC mode selection](#oidc-mode-selection) for setup details.
 
-**Bearer token auth** is unaffected by all of the above. If your deployment allows it (e.g., Claude Code with env vars, or API clients), bearer tokens are the simplest and most reliable option.
+**Bearer token auth** is unaffected by all of the above. If your deployment allows it (such as Claude Code with env vars, or API clients), bearer tokens are the simplest and most reliable option.
 
 **Long token lifetimes** mitigate the problem for OIDCProxy deployments. Set the upstream IdP's access token lifetime to cover your session duration:
 
+<<<<<<< before updating
 - `access_token: '8h'` — covers a workday (this is the critical one)
 - `id_token: '8h'` — must match access_token when using `verify_id_token` mode
 - `refresh_token: '30d'` — ready for when clients support refresh
@@ -248,3 +298,32 @@ These client issues are real but secondary — fixing them alone would not resol
 - [anthropics/claude-code#21333](https://github.com/anthropics/claude-code/issues/21333) — refresh tokens stored but never used
 - [anthropics/claude-code#7744](https://github.com/anthropics/claude-code/issues/7744) — `offline_access` scope never requested
 - [modelcontextprotocol/python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326) — SSE refresh deadlock
+=======
+- `access_token: '8h'`: covers a workday
+- `id_token: '8h'`: **must match access_token** when using `verify_id_token` mode (critical for Authelia)
+- `refresh_token: '30d'`: ready for when clients support refresh
+- Include `offline_access` in provider-side scopes; no effect today, but enables refresh when clients are fixed
+
+### Tracking
+
+These upstream issues are actively tracked:
+
+- [anthropics/claude-code#21333](https://github.com/anthropics/claude-code/issues/21333): refresh tokens stored but never used
+- [anthropics/claude-code#7744](https://github.com/anthropics/claude-code/issues/7744): `offline_access` scope never requested
+- [modelcontextprotocol/python-sdk#1326](https://github.com/modelcontextprotocol/python-sdk/issues/1326): SSE refresh deadlock
+
+When these are resolved, OIDC sessions should persist indefinitely via automatic token refresh with no changes needed server-side.
+
+
+<!-- DOMAIN-AUTH-EXTRA-START -->
+<!-- Project-specific notes for authentication; kept across copier update. -->
+
+## Project-specific notes
+
+<!-- Add domain-specific caveats here (e.g. "paperless-mcp tokens expire
+     every 60 min", "this server requires the 'admin' scope for write tools",
+     "bearer-token middleware skips /health for liveness probes"). Use
+     sub-headings to organize if needed. -->
+
+<!-- DOMAIN-AUTH-EXTRA-END -->
+>>>>>>> after updating

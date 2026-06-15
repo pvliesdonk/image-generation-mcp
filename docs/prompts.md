@@ -2,6 +2,7 @@
 
 image-generation-mcp provides three prompts that give LLM clients guidance on provider selection, prompt formatting, and style application.
 
+<<<<<<< before updating
 ## select_provider
 
 Guidelines for selecting the best image generation provider based on the user's request.
@@ -85,6 +86,9 @@ The prompt:
 5. Uses frontmatter defaults (provider, aspect_ratio, quality) unless the user overrides
 
 ### Example
+=======
+## Example
+>>>>>>> after updating
 
 ```
 User: Create a hero banner using my website style
@@ -99,4 +103,17 @@ Prompt: apply_style
 
 If the style is not found, returns an error message suggesting `style://list` to browse available styles.
 
+<<<<<<< before updating
 See the [Style Library Guide](guides/styles.md) for more details on creating and managing styles.
+=======
+See the [FastMCP prompts documentation](https://gofastmcp.com/servers/prompts)
+for the full prompt API.
+
+<!-- DOMAIN-PROMPTS-LIST-START -->
+## Built-in prompts
+
+_None in the scaffold._ Define prompts with `@mcp.prompt(...)` decorators in
+`src/image_generation_mcp/prompts.py` and list them here with their arguments,
+usage, and example output.
+<!-- DOMAIN-PROMPTS-LIST-END -->
+>>>>>>> after updating

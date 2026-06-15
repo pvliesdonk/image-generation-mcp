@@ -4,11 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: 'Force version bump (leave empty for auto)'
+        description: 'Force version bump (empty = auto; "prerelease" advances the rc revision e.g. rc.1 → rc.2 — keep the pre-release box below checked)'
         type: choice
         default: ''
         options:
           - ''
+          - prerelease
           - patch
           - minor
           - major
@@ -32,6 +33,12 @@ jobs:
       id-token: write
 
     steps:
+      - name: Reject contradictory dispatch inputs
+        if: inputs.force == 'prerelease' && inputs.prerelease == false
+        run: |
+          echo "::error::force=prerelease advances the rc revision and requires the pre-release box to stay checked"
+          exit 1
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -405,8 +412,13 @@ jobs:
 
       - name: Install mcp-publisher
         env:
-          MCP_PUBLISHER_VERSION: v1.5.0
-          MCP_PUBLISHER_SHA256: 79bbb73ba048c5906034f73ef6286d7763bd53cf368ea0b358fc593ed360cbd5
+          # v1.7.x is the first that requests the per-deployment OIDC audience
+          # the registry now requires (PR modelcontextprotocol/registry#1229,
+          # merged 2026-04-30 — production registry expects audience
+          # `https://registry.modelcontextprotocol.io`; v1.5.0 still requests
+          # `mcp-registry` and fails token exchange with HTTP 401).
+          MCP_PUBLISHER_VERSION: v1.7.6
+          MCP_PUBLISHER_SHA256: bcc96ca630cae4cf503b4550bd4a17462d42ad4819273bee56f4385bb059ddee
         run: |
           curl -sL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" -o mcp-publisher.tar.gz
           echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c
