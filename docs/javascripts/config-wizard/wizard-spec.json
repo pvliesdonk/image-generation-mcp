@@ -86,5 +86,15 @@
       "advancedGroup": "Logging"
     }
   ],
-  "guards": []
+  "guards": [
+    {
+      "level": "warning",
+      "message": "No provider is configured — the server will start but cannot generate images. Fill in at least one of: OpenAI API key, Google API key, or SD WebUI host.",
+      "when": {
+        "openai_api_key": [""],
+        "google_api_key": [""],
+        "sd_webui_host": [""]
+      }
+    }
+  ]
 }
