@@ -782,15 +782,15 @@ tasks = [
 
 [[package]]
 name = "fastmcp-pvl-core"
-version = "1.2.0"
+version = "3.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp" },
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/28/60/b759ac74d360c96eac9dcecbb82f0fa600aff717fd1e4f110b220b825169/fastmcp_pvl_core-1.2.0.tar.gz", hash = "sha256:539f520a29edbb4e4b546d6b24f7b145a7c2436e2fc5ed2dab235649394442a5", size = 214954, upload-time = "2026-04-27T16:50:10.411Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/38/05/2d414878c6575ab9b82418fd61b9b9d47c93104041764ec0a6e1c34e0135/fastmcp_pvl_core-3.2.0.tar.gz", hash = "sha256:0bcd3dced86305a69c727e4e7779c33a3f57b275c8b302ea330c0817fa1066fc", size = 331755, upload-time = "2026-06-03T17:01:34.772Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/76/a9767c163361ccdd2f9ea0150573130cde6e8f2dcca1d942ceaff00d198c/fastmcp_pvl_core-1.2.0-py3-none-any.whl", hash = "sha256:6ad2f588751393e8efa2b1b2bf5d4adc4aea89c94874d90a0cb1f242bda0fde7", size = 55774, upload-time = "2026-04-27T16:50:09.142Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/12/b15f31ef4fa85d39b5c0c0bc9cbcb5202b0ad595cd03f72467307d23e393/fastmcp_pvl_core-3.2.0-py3-none-any.whl", hash = "sha256:71b2760ec491bdfd9ad131f489795b1dd5bdc31a62552ef4f5df8beba3308dff", size = 52644, upload-time = "2026-06-03T17:01:33.133Z" },
 ]
 
 [[package]]
@@ -1018,7 +1018,7 @@ requires-dist = [
     { name = "diff-cover", marker = "extra == 'dev'", specifier = ">=9.0" },
     { name = "fastmcp", extras = ["tasks"], marker = "extra == 'all'", specifier = ">=3.0,<4" },
     { name = "fastmcp", extras = ["tasks"], marker = "extra == 'mcp'", specifier = ">=3.0,<4" },
-    { name = "fastmcp-pvl-core", specifier = ">=1.2.0,<2" },
+    { name = "fastmcp-pvl-core", specifier = ">=3.2.0,<4" },
     { name = "google-genai", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "google-genai", marker = "extra == 'google-genai'", specifier = ">=1.0" },
     { name = "image-generation-mcp", extras = ["all"], marker = "extra == 'dev'" },
