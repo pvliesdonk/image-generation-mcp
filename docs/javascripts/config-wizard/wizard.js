@@ -24,7 +24,11 @@ function writeUrlState(spec) {
     if (answers[q.id] !== undefined && answers[q.id] !== "") params.set(q.id, answers[q.id]);
   }
   const qs = params.toString();
-  history.replaceState(null, "", qs ? `#${qs}` : location.pathname + location.search);
+  try {
+    history.replaceState(null, "", qs ? `#${qs}` : location.pathname + location.search);
+  } catch {
+    // history.replaceState throws in sandboxed iframes — safe to ignore.
+  }
 }
 
 function field(q, secrets) {
@@ -175,13 +179,18 @@ function render() {
     }
   }
 
-  ROOT.replaceChildren(core, drawer, warnings, out);
+  if (Object.keys(advanced).length > 0) {
+    ROOT.replaceChildren(core, drawer, warnings, out);
+  } else {
+    ROOT.replaceChildren(core, warnings, out);
+  }
   writeUrlState(spec);
 
   // Restore focus + caret to the field the user was editing.
   if (activeQid) {
+    const escaped = CSS.escape(activeQid);
     const restored = ROOT.querySelector(
-      `.cfg-field[data-qid="${activeQid}"] input, .cfg-field[data-qid="${activeQid}"] select`,
+      `.cfg-field[data-qid="${escaped}"] input, .cfg-field[data-qid="${escaped}"] select`,
     );
     if (restored) {
       restored.focus();

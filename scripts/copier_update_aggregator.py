@@ -46,7 +46,7 @@ class AggregatorInputs:
     """
 
 
-def _read_job_json(path: Path | None) -> dict | None:
+def _read_job_json(path: Path | None) -> object | None:
     """Read and JSON-parse an agent output file.
 
     Absent paths (None or not a regular file) return None silently — expected
