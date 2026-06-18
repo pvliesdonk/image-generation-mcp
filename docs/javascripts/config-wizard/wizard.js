@@ -219,8 +219,11 @@ async function init() {
   }
   readUrlState(SPEC);
   for (const q of SPEC.questions) {
-    if (answers[q.id] === undefined && q.type === "select" && q.options?.length) {
+    if (answers[q.id] !== undefined) continue;
+    if (q.type === "select" && q.options?.length) {
       answers[q.id] = q.options[0].value;
+    } else {
+      answers[q.id] = "";
     }
   }
   render();
