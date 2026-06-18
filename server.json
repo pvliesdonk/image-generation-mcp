@@ -189,6 +189,11 @@
           ]
         },
         {
+          "name": "IMAGE_GENERATION_MCP_KV_STORE_URL",
+          "description": "Persistent-state backend URL for pvl-core subsystems. Schemes: file:///path (survives restarts), memory:// (dev/ephemeral).",
+          "default": "file:///data/state"
+        },
+        {
           "name": "IMAGE_GENERATION_MCP_SERVER_NAME",
           "description": "Server name shown to MCP clients in the initialization response.",
           "default": "image-generation-mcp"

@@ -20,6 +20,8 @@ dependencies = [
     # httpx and uvicorn come transitively via fastmcp (pulled by
     # fastmcp-pvl-core).  Don't re-list them here.
     "fastmcp-pvl-core>=3.2.0,<4",
+    "typer>=0.12",
+
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
     "Pillow>=10.0",
     # PROJECT-DEPS-END
@@ -33,7 +35,15 @@ mcp = ["fastmcp[tasks]>=3.0,<4"]
 openai = ["openai>=1.0"]
 google-genai = ["google-genai>=1.0"]
 all = ["fastmcp[tasks]>=3.0,<4", "openai>=1.0", "google-genai>=1.0"]
+# Pulls debugpy transitively via fastmcp-pvl-core's [debug] extra.  The
+# version range is inherited from the [project] dependency on
+# fastmcp-pvl-core above; pip resolves a single, consistent version.
+debug = ["fastmcp-pvl-core[debug]"]
 # PROJECT-EXTRAS-END
+
+# Tooling lives under PEP 735 [dependency-groups] (not [project.optional-dependencies])
+# so it never ships to PyPI consumers and never lands in the security-audit input.
+[dependency-groups]
 dev = [
     "image-generation-mcp[all]",
     "pytest>=7.0",
@@ -45,9 +55,10 @@ dev = [
     "pip-audit>=2.7",
 ]
 docs = [
-    "mkdocs-material>=9.5",
-    "mkdocstrings[python]>=0.24",
-    "mkdocs-llmstxt>=0.2",
+    "mike>=2",
+    "mkdocs-material>=9.7.6",
+    "mkdocstrings[python]>=0.28",
+    "mkdocs-llmstxt>=0.5",
 ]
 
 [project.scripts]
@@ -81,7 +92,12 @@ ignore = ["E501"]
 # FastMCP dependency injection pattern — B008 is a false positive here.
 # Context/FastMCP/Service imports must stay runtime (not TYPE_CHECKING) for
 # DI resolution — TC001/TC002/TC003.
+# PROJECT-RUFF-IGNORES-START — replace, extend, or override the entries below
+# for your project's real source/test paths (split _server_apps.py into
+# per-domain modules, rename tests, add per-file overrides as needed); kept
+# across copier update.
 "src/image_generation_mcp/server.py" = ["B008", "TC001", "TC002"]
+"src/image_generation_mcp/cli.py" = ["B008"]
 "src/image_generation_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
 "src/image_generation_mcp/_server_tools.py" = ["B008", "TC001", "TC002"]
 "src/image_generation_mcp/_server_resources.py" = ["B008", "TC001", "TC002"]
@@ -93,6 +109,7 @@ ignore = ["E501"]
 # the template's intent (template targets `tests/conftest.py` + `tests/test_smoke.py`
 # explicitly with TC003 — broadening here pre-empts a future copier conflict).
 "tests/*.py" = ["TC002", "TC003"]
+# PROJECT-RUFF-IGNORES-END
 
 [tool.ruff.lint.isort]
 known-first-party = ["image_generation_mcp"]

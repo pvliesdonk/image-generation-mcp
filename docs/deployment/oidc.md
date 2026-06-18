@@ -48,8 +48,8 @@ The server fetches the OIDC discovery document at startup to obtain `jwks_uri` a
 
 | Variable | Description |
 |----------|-------------|
-| `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL of the server (e.g. `https://mcp.example.com`; include prefix when mounted under subpath, e.g. `https://mcp.example.com/vault`) |
-| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint (e.g. `https://auth.example.com/.well-known/openid-configuration`) |
+| `IMAGE_GENERATION_MCP_BASE_URL` | Public base URL of the server (such as `https://mcp.example.com`; include prefix when mounted under subpath, such as `https://mcp.example.com/myservice`) |
+| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint (such as `https://auth.example.com/.well-known/openid-configuration`) |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | OIDC client ID registered with your provider |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | OIDC client secret |
 
@@ -57,8 +57,8 @@ The server fetches the OIDC discovery document at startup to obtain `jwks_uri` a
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | ephemeral | JWT signing key. **Required on Linux/Docker** — the default is ephemeral and invalidates tokens on restart |
-| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | — | Expected JWT audience claim; leave unset if your provider does not set one |
+| `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | ephemeral | JWT signing key. **Required on Linux/Docker**: the default is ephemeral and invalidates tokens on restart |
+| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | n/a | Expected JWT audience claim; leave unset if your provider does not set one |
 | `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | `openid` | Comma-separated required scopes |
 | `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false` | Set `true` to verify the upstream access token as JWT instead of the id token. Only needed when your provider issues JWT access tokens and you require audience-claim validation on that token |
 
@@ -328,3 +328,10 @@ labels:
 
 - **Dedicated hostname** (preferred): give `image-generation-mcp` its own hostname (e.g., `vault.example.com`) so discovery routes do not collide.
 - **External auth gateway**: use `mcp-auth-proxy` as a sidecar instead of native OIDC. The MCP server runs unauthenticated behind the proxy, and the proxy handles OAuth discovery at its own routes.
+
+
+<!-- DOMAIN-OIDC-EXTRA-START -->
+<!-- Project-specific notes for OIDC deployment go here; kept across copier
+     update. (E.g. "Keycloak requires X claim", "Authelia token-cache quirk
+     for /admin paths", "this server's audience claim must include 'mcp'".) -->
+<!-- DOMAIN-OIDC-EXTRA-END -->
