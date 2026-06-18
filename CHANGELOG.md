@@ -2,6 +2,21 @@
 
 <!-- version list -->
 
+## v1.10.1 (2026-06-18)
+
+### Bug Fixes
+
+- **wizard**: Correct .cfg-warn → .cfg-warning CSS class; drop stale CVE suppression (#248)
+  ([#248](https://github.com/pvliesdonk/image-generation-mcp/pull/248),
+  [`cac1b90`](https://github.com/pvliesdonk/image-generation-mcp/commit/cac1b9076f3d91d8f7699453671413a4d6828fa1))
+
+### Chores
+
+- **template**: Apply copier template v2.1.1 → v2.2.0 (#246)
+  ([#246](https://github.com/pvliesdonk/image-generation-mcp/pull/246),
+  [`62941f7`](https://github.com/pvliesdonk/image-generation-mcp/commit/62941f7048458256118543a968a3249154510284))
+
+
 ## v1.10.0 (2026-06-18)
 
 
