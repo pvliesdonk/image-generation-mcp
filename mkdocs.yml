@@ -43,6 +43,13 @@ extra:
     provider: mike
     default: latest
 
+extra_javascript:
+  - path: javascripts/config-wizard/wizard.js
+    type: module
+
+extra_css:
+  - stylesheets/config-wizard.css
+
 plugins:
   - search
   - llmstxt:
@@ -61,6 +68,7 @@ plugins:
           - getting-started/installation.md: Installation from PyPI, uv, source, or Docker
           - getting-started/claude-desktop.md: Claude Desktop MCP configuration
           - getting-started/claude-code.md: Claude Code MCP configuration
+          - configuration-generator.md: Interactive configuration wizard
         Providers:
           - providers/index.md: Provider comparison and selection guide
           - providers/gemini.md: Gemini provider setup and capabilities
@@ -123,6 +131,7 @@ nav:
       - Installation: getting-started/installation.md
       - Claude Desktop: getting-started/claude-desktop.md
       - Claude Code: getting-started/claude-code.md
+      - Configuration Generator: configuration-generator.md
   - Providers:
       - Overview: providers/index.md
       - Gemini: providers/gemini.md

@@ -61,6 +61,10 @@ docs = [
     "mkdocs-llmstxt>=0.5",
 ]
 
+browser = [
+    "pytest-playwright>=0.5",
+]
+
 [project.scripts]
 image-generation-mcp = "image_generation_mcp.cli:main"
 
@@ -122,6 +126,9 @@ indent-style = "space"
 testpaths = ["tests"]
 addopts = ["--strict-markers", "-ra"]
 asyncio_mode = "auto"
+markers = [
+    "browser: end-to-end test that drives a headless browser (requires the 'browser' dependency group + 'playwright install chromium')",
+]
 
 [tool.coverage.run]
 source = ["src/image_generation_mcp"]
@@ -153,6 +160,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["google", "google.genai", "google.genai.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["playwright", "playwright.*"]
 ignore_missing_imports = true
 
 # Tests use FastMCP private surfaces (e.g. ``tool.fn``) and pytest fixtures
