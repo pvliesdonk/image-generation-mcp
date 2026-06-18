@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "secretKeys": [
+    "IMAGE_GENERATION_MCP_BEARER_TOKEN",
+    "IMAGE_GENERATION_MCP_OPENAI_API_KEY",
+    "IMAGE_GENERATION_MCP_GOOGLE_API_KEY"
+  ],
+  "questions": [
+    {
+      "id": "deployment",
+      "label": "Where will the server run?",
+      "help": "Local stdio for Claude Desktop/Code, or an HTTP server for Docker/systemd.",
+      "type": "select",
+      "options": [
+        { "value": "local", "label": "Local (Claude Desktop / Claude Code, stdio)" },
+        { "value": "server", "label": "Server (HTTP — Docker / Compose / systemd)" }
+      ]
+    },
+    {
+      "id": "bearer_token",
+      "label": "Bearer token",
+      "help": "Any non-empty string enables bearer auth. Leave blank for no authentication.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_BEARER_TOKEN",
+      "showIf": { "deployment": ["server"] }
+    },
+    {
+      "id": "openai_api_key",
+      "label": "OpenAI API key",
+      "help": "Required for the OpenAI provider (DALL-E 3, GPT-Image-1). Leave blank to skip OpenAI.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_OPENAI_API_KEY"
+    },
+    {
+      "id": "google_api_key",
+      "label": "Google API key (Gemini)",
+      "help": "Required for the Gemini provider (Imagen 3). Leave blank to skip Gemini.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_GOOGLE_API_KEY"
+    },
+    {
+      "id": "sd_webui_host",
+      "label": "SD WebUI host URL",
+      "help": "Base URL of a running AUTOMATIC1111/Forge/reForge instance, e.g. http://localhost:7860. Leave blank to skip SD WebUI.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_SD_WEBUI_HOST"
+    },
+    {
+      "id": "default_provider",
+      "label": "Default provider",
+      "help": "Provider used when no keyword triggers auto-selection. \"auto\" picks the first configured provider.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_DEFAULT_PROVIDER",
+      "advancedGroup": "Providers"
+    },
+    {
+      "id": "read_only",
+      "label": "Read-only mode",
+      "help": "Disables write tools (generate, transform). Default: true.",
+      "type": "bool",
+      "var": "IMAGE_GENERATION_MCP_READ_ONLY",
+      "advancedGroup": "Behaviour"
+    },
+    {
+      "id": "scratch_dir",
+      "label": "Scratch directory",
+      "help": "Directory where generated images are saved. Defaults to ~/.image-generation-mcp/.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_SCRATCH_DIR",
+      "advancedGroup": "Behaviour"
+    },
+    {
+      "id": "log_level",
+      "label": "Log level",
+      "help": "One of DEBUG, INFO, WARNING, ERROR.",
+      "type": "text",
+      "var": "FASTMCP_LOG_LEVEL",
+      "advancedGroup": "Logging"
+    },
+    {
+      "id": "rich_logging",
+      "label": "Rich logging",
+      "help": "Enable pretty terminal output. Disable for JSON/plain logs in production.",
+      "type": "bool",
+      "var": "FASTMCP_ENABLE_RICH_LOGGING",
+      "advancedGroup": "Logging"
+    }
+  ],
+  "guards": []
+}
