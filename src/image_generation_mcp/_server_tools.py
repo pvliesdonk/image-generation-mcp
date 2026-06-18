@@ -482,7 +482,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "openWorldHint": False,
         },
         icons=[Icon(src=_LUCIDE.format("eye"), mimeType="image/svg+xml")],
-        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
+        app=AppConfig(resource_uri=_IMAGE_VIEWER_URI),
     )
     async def show_image(
         uri: str,
@@ -667,7 +667,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "openWorldHint": False,
         },
         icons=[Icon(src=_LUCIDE.format("images"), mimeType="image/svg+xml")],
-        app=AppConfig(resourceUri=_IMAGE_GALLERY_URI),
+        app=AppConfig(resource_uri=_IMAGE_GALLERY_URI),
     )
     async def browse_gallery(
         service: ImageService = Depends(get_service),
@@ -758,7 +758,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "destructiveHint": False,
             "openWorldHint": False,
         },
-        app=AppConfig(resourceUri=_IMAGE_GALLERY_URI, visibility=["app"]),
+        app=AppConfig(resource_uri=_IMAGE_GALLERY_URI, visibility=["app"]),
     )
     async def gallery_page(
         page: int = 1,
@@ -843,7 +843,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "destructiveHint": False,
             "openWorldHint": False,
         },
-        app=AppConfig(resourceUri=_IMAGE_GALLERY_URI, visibility=["app"]),
+        app=AppConfig(resource_uri=_IMAGE_GALLERY_URI, visibility=["app"]),
     )
     async def gallery_full_image(
         image_id: str,
@@ -976,7 +976,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "openWorldHint": False,
         },
         icons=[Icon(src=_LUCIDE.format("crop"), mimeType="image/svg+xml")],
-        app=AppConfig(resourceUri=_IMAGE_VIEWER_URI),
+        app=AppConfig(resource_uri=_IMAGE_VIEWER_URI),
     )
     async def edit_image(
         image_id: str,
