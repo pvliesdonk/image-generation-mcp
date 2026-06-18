@@ -407,6 +407,12 @@ After adding the configuration, restart Claude Code (or run `/mcp` to reload MCP
 - The `select_provider` prompt gives Claude guidance on provider strengths
 - The `sd_prompt_guide` prompt helps Claude write effective Stable Diffusion prompts
 - Generated images are saved to `~/.image-generation-mcp/images/` by default (configurable via `IMAGE_GENERATION_MCP_SCRATCH_DIR`)
+
+# Configuration Generator
+
+Answer a few questions and copy a ready-to-use configuration for your exact deployment. Everything runs in your browser; nothing you type is sent anywhere. Secret fields (tokens, keys) are never included in the shareable link; replace the `<YOUR_...>` placeholders if you leave them blank.
+
+Loading the configuration generator…
 # Providers
 
 # Providers

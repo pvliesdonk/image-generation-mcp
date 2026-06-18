@@ -11,6 +11,7 @@ image-generation-mcp is a multi-provider image generation MCP server supporting 
 - [Installation](https://pvliesdonk.github.io/image-generation-mcp/1.10/getting-started/installation/index.md): Installation from PyPI, uv, source, or Docker
 - [Claude Desktop](https://pvliesdonk.github.io/image-generation-mcp/1.10/getting-started/claude-desktop/index.md): Claude Desktop MCP configuration
 - [Claude Code](https://pvliesdonk.github.io/image-generation-mcp/1.10/getting-started/claude-code/index.md): Claude Code MCP configuration
+- [Configuration Generator](https://pvliesdonk.github.io/image-generation-mcp/1.10/configuration-generator/index.md): Interactive configuration wizard
 
 ## Providers
 

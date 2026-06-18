@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://pvliesdonk.github.io/image-generation-mcp/1.10/guides/prompt-writing/">
+        <link rel="canonical" href="https://pvliesdonk.github.io/image-generation-mcp/1.10/configuration-generator/">
       
       
-        <link rel="prev" href="../client-compatibility/">
+        <link rel="prev" href="../getting-started/claude-code/">
       
       
-        <link rel="next" href="../image-assets/">
+        <link rel="next" href="../providers/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Prompt Writing - Image Generation MCP Server</title>
+        <title>Configuration Generator - Image Generation MCP Server</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+      <link rel="stylesheet" href="../stylesheets/config-wizard.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#prompt-writing-guide" class="md-skip">
+        <a href="#configuration-generator" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +100,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Image Generation MCP Server" class="md-header__button md-logo" aria-label="Image Generation MCP Server" data-md-component="logo">
+    <a href=".." title="Image Generation MCP Server" class="md-header__button md-logo" aria-label="Image Generation MCP Server" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Prompt Writing
+              Configuration Generator
             
           </span>
         </div>
@@ -233,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -250,11 +250,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../getting-started/installation/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../getting-started/installation/" class="md-tabs__link">
           
   
   
@@ -274,7 +276,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../providers/" class="md-tabs__link">
+        <a href="../providers/" class="md-tabs__link">
           
   
   
@@ -292,7 +294,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../configuration/" class="md-tabs__link">
+      <a href="../configuration/" class="md-tabs__link">
         
   
   
@@ -313,7 +315,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../tools/" class="md-tabs__link">
+        <a href="../tools/" class="md-tabs__link">
           
   
   
@@ -329,13 +331,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../authentication/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../guides/authentication/" class="md-tabs__link">
           
   
   
@@ -355,7 +355,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../deployment/docker/" class="md-tabs__link">
+        <a href="../deployment/docker/" class="md-tabs__link">
           
   
   
@@ -389,7 +389,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Image Generation MCP Server" class="md-nav__button md-logo" aria-label="Image Generation MCP Server" data-md-component="logo">
+    <a href=".." title="Image Generation MCP Server" class="md-nav__button md-logo" aria-label="Image Generation MCP Server" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -419,7 +419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -443,28 +443,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
             
   
   
@@ -482,7 +485,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -500,7 +503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/installation/" class="md-nav__link">
+      <a href="../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -528,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/claude-desktop/" class="md-nav__link">
+      <a href="../getting-started/claude-desktop/" class="md-nav__link">
         
   
   
@@ -556,7 +559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../getting-started/claude-code/" class="md-nav__link">
+      <a href="../getting-started/claude-code/" class="md-nav__link">
         
   
   
@@ -581,10 +584,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../configuration-generator/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -600,6 +612,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -673,7 +686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../providers/" class="md-nav__link">
+      <a href="../providers/" class="md-nav__link">
         
   
   
@@ -701,7 +714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../providers/gemini/" class="md-nav__link">
+      <a href="../providers/gemini/" class="md-nav__link">
         
   
   
@@ -729,7 +742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../providers/openai/" class="md-nav__link">
+      <a href="../providers/openai/" class="md-nav__link">
         
   
   
@@ -757,7 +770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../providers/sd-webui/" class="md-nav__link">
+      <a href="../providers/sd-webui/" class="md-nav__link">
         
   
   
@@ -785,7 +798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../providers/model-catalog/" class="md-nav__link">
+      <a href="../providers/model-catalog/" class="md-nav__link">
         
   
   
@@ -813,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../providers/placeholder/" class="md-nav__link">
+      <a href="../providers/placeholder/" class="md-nav__link">
         
   
   
@@ -848,7 +861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -929,7 +942,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tools/" class="md-nav__link">
+      <a href="../tools/" class="md-nav__link">
         
   
   
@@ -957,7 +970,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../resources/" class="md-nav__link">
+      <a href="../resources/" class="md-nav__link">
         
   
   
@@ -985,7 +998,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../prompts/" class="md-nav__link">
+      <a href="../prompts/" class="md-nav__link">
         
   
   
@@ -1017,31 +1030,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -1059,7 +1069,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1077,7 +1087,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authentication/" class="md-nav__link">
+      <a href="../guides/authentication/" class="md-nav__link">
         
   
   
@@ -1105,7 +1115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client-compatibility/" class="md-nav__link">
+      <a href="../guides/client-compatibility/" class="md-nav__link">
         
   
   
@@ -1130,37 +1140,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Prompt Writing
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../guides/prompt-writing/" class="md-nav__link">
         
   
   
@@ -1176,209 +1159,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#openai-natural-language" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenAI (natural language)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="OpenAI (natural language)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#general-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        General tips
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#negative-prompts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Negative prompts
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sd-webui-stable-diffusion-clip-tag-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SD WebUI / Stable Diffusion (CLIP tag format)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="SD WebUI / Stable Diffusion (CLIP tag format)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tag-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tag structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#weighted-tokens-emphasis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Weighted tokens (emphasis)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quality-tags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quality tags
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#negative-prompts_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Negative prompts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#break-syntax" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BREAK syntax
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clip-token-limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLIP token limits
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#provider-agnostic-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Provider-agnostic tips
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Provider-agnostic tips">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#aspect-ratios" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Aspect ratios
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#common-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common use cases
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1391,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../image-assets/" class="md-nav__link">
+      <a href="../guides/image-assets/" class="md-nav__link">
         
   
   
@@ -1419,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../styles/" class="md-nav__link">
+      <a href="../guides/styles/" class="md-nav__link">
         
   
   
@@ -1508,7 +1288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deployment/docker/" class="md-nav__link">
+      <a href="../deployment/docker/" class="md-nav__link">
         
   
   
@@ -1536,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deployment/systemd/" class="md-nav__link">
+      <a href="../deployment/systemd/" class="md-nav__link">
         
   
   
@@ -1564,7 +1344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deployment/oidc/" class="md-nav__link">
+      <a href="../deployment/oidc/" class="md-nav__link">
         
   
   
@@ -1592,7 +1372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../deployment/claude-desktop/" class="md-nav__link">
+      <a href="../deployment/claude-desktop/" class="md-nav__link">
         
   
   
@@ -1640,197 +1420,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#openai-natural-language" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        OpenAI (natural language)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="OpenAI (natural language)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#general-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        General tips
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#negative-prompts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Negative prompts
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#sd-webui-stable-diffusion-clip-tag-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SD WebUI / Stable Diffusion (CLIP tag format)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="SD WebUI / Stable Diffusion (CLIP tag format)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tag-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tag structure
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#examples_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#weighted-tokens-emphasis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Weighted tokens (emphasis)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#quality-tags" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quality tags
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#negative-prompts_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Negative prompts
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#break-syntax" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        BREAK syntax
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#clip-token-limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        CLIP token limits
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#provider-agnostic-tips" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Provider-agnostic tips
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Provider-agnostic tips">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#aspect-ratios" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Aspect ratios
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#common-use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common use cases
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1849,199 +1438,15 @@
   
 
 
-<h1 id="prompt-writing-guide">Prompt Writing Guide<a class="headerlink" href="#prompt-writing-guide" title="Permanent link">&para;</a></h1>
-<p>Tips for writing effective image generation prompts, tailored to each provider.</p>
-<p>For per-model strengths, weaknesses, and prompt examples, see the <a href="../../providers/model-catalog/">Model Catalog</a>.</p>
-<h2 id="openai-natural-language">OpenAI (natural language)<a class="headerlink" href="#openai-natural-language" title="Permanent link">&para;</a></h2>
-<p>OpenAI models work best with natural language descriptions. Be specific about what you want.</p>
-<h3 id="general-tips">General tips<a class="headerlink" href="#general-tips" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Describe the scene in complete sentences</li>
-<li>Include style, lighting, and composition details</li>
-<li>Specify camera angle or perspective when relevant</li>
-<li>Mention the medium (photograph, oil painting, digital art, etc.)</li>
-</ul>
-<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
-<p><strong>Product photography:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>A professional product photo of white sneakers on a clean white background,
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>studio lighting, sharp focus, commercial photography style, high resolution
-</code></pre></div>
-<p><strong>Logo design:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>A minimalist logo for &quot;Acme Corp&quot; with clean sans-serif typography,
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>blue and white color scheme, modern design, vector art style
-</code></pre></div>
-<p><strong>Illustration:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>A whimsical children&#39;s book illustration of a fox reading a book under
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>a large oak tree, watercolor style, warm autumn colors, soft lighting
-</code></pre></div>
-<h3 id="negative-prompts">Negative prompts<a class="headerlink" href="#negative-prompts" title="Permanent link">&para;</a></h3>
-<p>When using OpenAI, negative prompts are appended as an "Avoid:" clause. Keep them concise:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Avoid: blurry, low quality, distorted text, watermark
-</code></pre></div>
-<hr />
-<h2 id="sd-webui-stable-diffusion-clip-tag-format">SD WebUI / Stable Diffusion (CLIP tag format)<a class="headerlink" href="#sd-webui-stable-diffusion-clip-tag-format" title="Permanent link">&para;</a></h2>
-<p>Stable Diffusion models respond best to comma-separated tags ordered by importance.</p>
-<h3 id="tag-structure">Tag structure<a class="headerlink" href="#tag-structure" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>subject, medium, style, lighting, camera, quality tags
-</code></pre></div>
-<h3 id="examples_1">Examples<a class="headerlink" href="#examples_1" title="Permanent link">&para;</a></h3>
-<p><strong>Portrait:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>1girl, long hair, blue eyes, school uniform, standing, cherry blossoms,
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>soft lighting, detailed face, masterpiece, best quality
-</code></pre></div>
-<p><strong>Landscape:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>mountain landscape, sunset, dramatic clouds, lake reflection,
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>cinematic lighting, wide angle, 8k, highly detailed
-</code></pre></div>
-<p><strong>Product shot:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>white sneakers, product photography, studio lighting, white background,
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>sharp focus, commercial photography, high resolution
-</code></pre></div>
-<p><strong>Anime:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>1boy, silver hair, red eyes, dark coat, standing on rooftop, city skyline,
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>night, wind, detailed, anime style, masterpiece
-</code></pre></div>
-<h3 id="weighted-tokens-emphasis">Weighted tokens (emphasis)<a class="headerlink" href="#weighted-tokens-emphasis" title="Permanent link">&para;</a></h3>
-<p>Use parentheses to increase or decrease emphasis on specific tokens:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a># Increase emphasis (1.1x per level of parentheses)
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>(detailed face)       # 1.1x emphasis
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>((detailed face))     # 1.21x emphasis
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>(detailed face:1.5)   # 1.5x emphasis (explicit weight)
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a># Decrease emphasis
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>[blurry background]   # 0.9x emphasis
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>(blurry background:0.5)  # 0.5x emphasis (explicit weight)
-</code></pre></div>
-<p>Weights are relative to the baseline of 1.0. Values above 1.0 strengthen a concept; values below 1.0 weaken it. Extreme weights (above 1.8 or below 0.3) often produce artifacts.</p>
-<h3 id="quality-tags">Quality tags<a class="headerlink" href="#quality-tags" title="Permanent link">&para;</a></h3>
-<p>Add these to improve output quality:</p>
-<table>
-<thead>
-<tr>
-<th>Tags</th>
-<th>Effect</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>masterpiece, best quality</code></td>
-<td>General quality boost</td>
-</tr>
-<tr>
-<td><code>highly detailed, sharp focus</code></td>
-<td>Detail enhancement</td>
-</tr>
-<tr>
-<td><code>8k, ultra high res</code></td>
-<td>Resolution boost (use sparingly)</td>
-</tr>
-<tr>
-<td><code>professional, award winning</code></td>
-<td>Style refinement</td>
-</tr>
-</tbody>
-</table>
-<h3 id="negative-prompts_1">Negative prompts<a class="headerlink" href="#negative-prompts_1" title="Permanent link">&para;</a></h3>
-<p>Always include a negative prompt with SD WebUI to avoid common artifacts.</p>
-<p><strong>General-purpose:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>lowres, bad anatomy, bad hands, text, error, missing fingers,
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>extra digit, fewer digits, cropped, worst quality, low quality,
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>normal quality, jpeg artifacts, signature, watermark, blurry
-</code></pre></div>
-<p><strong>Add for photorealism:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>cartoon, anime, illustration, painting, drawing, art, sketch
-</code></pre></div>
-<p><strong>Add for anime/illustration:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>photo, realistic, 3d render
-</code></pre></div>
-<h3 id="break-syntax">BREAK syntax<a class="headerlink" href="#break-syntax" title="Permanent link">&para;</a></h3>
-<p>Use <code>BREAK</code> to separate concepts into different CLIP token chunks. This is useful when your prompt is long or has distinct elements:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>1girl, detailed face, blue eyes BREAK
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>forest background, sunlight through trees BREAK
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>masterpiece, best quality, sharp focus
-</code></pre></div>
-<h3 id="clip-token-limits">CLIP token limits<a class="headerlink" href="#clip-token-limits" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>SD 1.5:</strong> 77 tokens per CLIP chunk</li>
-<li><strong>SDXL:</strong> 77 tokens per chunk, but uses two CLIP encoders (ViT-L + ViT-bigG)</li>
-</ul>
-<p>Front-load the most important tags -- tokens beyond the first 77-token chunk have diminishing influence.</p>
-<hr />
-<h2 id="provider-agnostic-tips">Provider-agnostic tips<a class="headerlink" href="#provider-agnostic-tips" title="Permanent link">&para;</a></h2>
-<h3 id="aspect-ratios">Aspect ratios<a class="headerlink" href="#aspect-ratios" title="Permanent link">&para;</a></h3>
-<p>All providers support these aspect ratios:</p>
-<table>
-<thead>
-<tr>
-<th>Ratio</th>
-<th>Best for</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>1:1</code></td>
-<td>Avatars, icons, social media posts</td>
-</tr>
-<tr>
-<td><code>16:9</code></td>
-<td>Landscapes, banners, desktop wallpapers</td>
-</tr>
-<tr>
-<td><code>9:16</code></td>
-<td>Phone wallpapers, stories, portraits</td>
-</tr>
-<tr>
-<td><code>3:2</code></td>
-<td>Photography standard, prints</td>
-</tr>
-<tr>
-<td><code>2:3</code></td>
-<td>Book covers, posters</td>
-</tr>
-</tbody>
-</table>
-<h3 id="common-use-cases">Common use cases<a class="headerlink" href="#common-use-cases" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Use case</th>
-<th>Recommended provider</th>
-<th>Prompt approach</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Logo with text</td>
-<td>OpenAI</td>
-<td>Natural language, specify text content exactly</td>
-</tr>
-<tr>
-<td>Photo-realistic portrait</td>
-<td>SD WebUI</td>
-<td>Tag format, include quality and lighting tags</td>
-</tr>
-<tr>
-<td>Anime character</td>
-<td>SD WebUI</td>
-<td>Tag format, include character details</td>
-</tr>
-<tr>
-<td>Quick placeholder</td>
-<td>Placeholder</td>
-<td>Any prompt (generates solid color)</td>
-</tr>
-<tr>
-<td>Product photo</td>
-<td>SD WebUI or OpenAI</td>
-<td>Describe studio setup and product details</td>
-</tr>
-<tr>
-<td>Landscape art</td>
-<td>SD WebUI or OpenAI</td>
-<td>Include composition, lighting, and style</td>
-</tr>
-</tbody>
-</table>
+<h1 id="configuration-generator">Configuration Generator<a class="headerlink" href="#configuration-generator" title="Permanent link">&para;</a></h1>
+<p>Answer a few questions and copy a ready-to-use configuration for your exact
+deployment. Everything runs in your browser; nothing you type is sent anywhere.
+Secret fields (tokens, keys) are never included in the shareable link; replace
+the <code>&lt;YOUR_...&gt;</code> placeholders if you leave them blank.</p>
+<!-- The relative path relies on MkDocs' default use_directory_urls: true -->
+<div id="cfg-wizard" data-spec-url="../javascripts/config-wizard/wizard-spec.json">
+  Loading the configuration generator…
+</div>
 
 
 
@@ -2099,12 +1504,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
+        <script src="../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>
