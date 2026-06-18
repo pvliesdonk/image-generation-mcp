@@ -574,50 +574,37 @@ These tools provide access to the same resources documented in [Resources](resou
 
 ## create_download_link
 
-Mint a one-time HTTP download URL for a previously-published file. Spec-compliant MCP File Exchange tool — registered automatically by `fastmcp_pvl_core.register_file_exchange`. Enables server-to-server image transfer between MCP servers (e.g., saving to a vault, attaching to email).
+Mint a one-time HTTP download URL for an image. Enables server-to-server image transfer between MCP servers (e.g., saving to a vault, attaching to email). The link expires after a single download or after `ttl_seconds`, whichever comes first.
 
 | Property | Value |
 |----------|-------|
 | **Tags** | *(none)* |
 | **Annotations** | `readOnlyHint: true` |
 | **Task** | No |
-| **Transport** | HTTP/SSE only (file-exchange disables on stdio by default) |
-| **Requires** | `IMAGE_GENERATION_MCP_BASE_URL`, plus a prior `show_image` call to publish the file |
+| **Transport** | HTTP/SSE only (not available on stdio) |
+| **Requires** | `IMAGE_GENERATION_MCP_BASE_URL` |
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `origin_id` | str | *(required)* | The opaque registry key from a `file_ref.origin_id` field returned by `show_image`. **Not** an `image://` URI. |
-| `ttl_seconds` | float | server default (3600) | Link lifetime in seconds, clamped to the server-side max (`IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL`). |
+| `uri` | str | *(required)* | A full `image://` resource URI, e.g. `image://abc123/view` or `image://abc123/view?format=webp&width=512`. |
+| `ttl_seconds` | int | 300 | Link lifetime in seconds (default 5 minutes). |
 
 ### Return value
 
 ```json
 {
-  "url": "https://mcp.example.com/artifacts/7f3a...e9b1",
-  "ttl_seconds": 3600,
-  "mime_type": "image/png"
-}
-```
-
-If the `origin_id` is unknown or expired:
-
-```json
-{
-  "error": "transfer_failed",
-  "origin_server": "image-generation-mcp",
-  "origin_id": "...",
-  "method": "http",
-  "message": "origin_id is unknown or has expired"
+  "download_url": "https://mcp.example.com/artifacts/7f3a...e9b1",
+  "expires_in_seconds": 300,
+  "uri": "image://abc123/view"
 }
 ```
 
 The download URL:
-- Serves the bytes once with the registered `Content-Type` and `Content-Disposition`
+- Serves the bytes once with the appropriate `Content-Type`
 - Returns HTTP 404 after first download or after TTL expires
 - Does not require bearer token or OIDC auth (the random token is the auth)
-- The artifact endpoint bypasses MCP authentication
 
 ### Example workflow
 
@@ -628,14 +615,10 @@ User: Generate a photo and save it to my vault
    → {image_id: "a1b2c3...", status: "generating", ...}
 2. check_generation_status(image_id="a1b2c3...")
    → status: "completed"
-3. show_image(uri="image://a1b2c3/view?format=jpeg")  # publishes a JPEG variant
-   → {file_ref: {origin_id: "a1b2c3-<hash>", mime_type: "image/jpeg", ...}, ...}
-4. create_download_link(origin_id="a1b2c3-<hash>")
-   → {url: "https://mcp.example.com/artifacts/7f3a...", ttl_seconds: 3600, mime_type: "image/jpeg"}
-5. vault-mcp: save_artifact_from_url(url="https://...", path="photos/sunset.jpg")
+3. create_download_link(uri="image://a1b2c3/view?format=jpeg")
+   → {download_url: "https://mcp.example.com/artifacts/7f3a...", expires_in_seconds: 300, ...}
+4. vault-mcp: save_artifact_from_url(url="https://...", path="photos/sunset.jpg")
 ```
-
-See the [File Exchange guide](guides/file-exchange.md) for env vars, transform-variant origin_ids, and the spec link.
 
 ---
 

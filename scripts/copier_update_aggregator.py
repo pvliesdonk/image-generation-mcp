@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -45,7 +46,7 @@ class AggregatorInputs:
     """
 
 
-def _read_job_json(path: Path | None) -> dict | None:
+def _read_job_json(path: Path | None) -> object:
     """Read and JSON-parse an agent output file. Returns None if missing or unreadable."""
     if path is None or not path.exists():
         return None
@@ -55,7 +56,7 @@ def _read_job_json(path: Path | None) -> dict | None:
         return None
 
 
-def _validate_job_a(data: dict | None) -> dict | None:
+def _validate_job_a(data: object) -> dict | None:
     """Return data if it has the expected schema, else None (treated as errored).
 
     Validates ONLY the top-level shape (`status` is a str; `auto_resolved` /
@@ -68,6 +69,8 @@ def _validate_job_a(data: dict | None) -> dict | None:
     """
     if data is None:
         return None
+    if not isinstance(data, dict):
+        return None
     if not isinstance(data.get("status"), str):
         return None
     if data["status"] == "ok" and not isinstance(data.get("auto_resolved", []), list):
@@ -77,9 +80,11 @@ def _validate_job_a(data: dict | None) -> dict | None:
     return data
 
 
-def _validate_job_b(data: dict | None) -> dict | None:
+def _validate_job_b(data: object) -> dict | None:
     """Return data if it has the expected schema, else None (treated as errored)."""
     if data is None:
+        return None
+    if not isinstance(data, dict):
         return None
     if not isinstance(data.get("status"), str):
         return None
@@ -88,9 +93,11 @@ def _validate_job_b(data: dict | None) -> dict | None:
     return data
 
 
-def _validate_job_c(data: dict | None) -> dict | None:
+def _validate_job_c(data: object) -> dict | None:
     """Return data if it has the expected schema, else None (treated as errored)."""
     if data is None:
+        return None
+    if not isinstance(data, dict):
         return None
     if not isinstance(data.get("status"), str):
         return None
@@ -130,7 +137,7 @@ def _file_label(entry: dict) -> str:
     return f"`{name}`" if name is not None else "`(unnamed)`"
 
 
-def _render_job_a(data: dict | None, conflict_count: int) -> str:
+def _render_job_a(data: object, conflict_count: int) -> str:
     """Render the 🔧 Conflict resolutions section."""
     if conflict_count == 0:
         return ""  # Job A is gated; no section if no conflicts
@@ -172,7 +179,7 @@ def _render_job_a(data: dict | None, conflict_count: int) -> str:
     return "\n".join(["### 🔧 Conflict resolutions", "", *content])
 
 
-def _render_job_b(data: dict | None, template_advanced: bool = True) -> str:
+def _render_job_b(data: object, template_advanced: bool = True) -> str:
     """Render the ✨ New features in this update section."""
     if not template_advanced:
         return ""  # Job B is gated; no section if refs didn't differ
@@ -253,7 +260,7 @@ def _render_job_b(data: dict | None, template_advanced: bool = True) -> str:
     return "\n".join(["### ✨ New features in this update", "", *content])
 
 
-def _render_job_c(data: dict | None, template_advanced: bool = True) -> str:
+def _render_job_c(data: object, template_advanced: bool = True) -> str:
     """Render the 📦 Excluded-file upstream changes section."""
     if not template_advanced:
         return ""  # Job C is gated; no section if refs didn't differ
@@ -524,8 +531,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    try:
+        existing_body = args.existing_body.read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"ERROR: cannot read existing body: {exc}", file=sys.stderr)
+        return 1
     inputs = AggregatorInputs(
-        existing_body=args.existing_body.read_text(encoding="utf-8"),
+        existing_body=existing_body,
         agent_enabled=(args.agent_enabled == "true"),
         job_a_path=args.job_a,
         job_b_path=args.job_b,
@@ -536,7 +548,11 @@ def main(argv: list[str] | None = None) -> int:
     body, overflow_paths = compose_body_with_overflow(
         inputs, overflow_dir=args.overflow_dir
     )
-    args.output_body.write_text(body, encoding="utf-8")
+    try:
+        args.output_body.write_text(body, encoding="utf-8")
+    except OSError as exc:
+        print(f"ERROR: cannot write output body: {exc}", file=sys.stderr)
+        return 1
     if overflow_paths:
         for p in overflow_paths:
             print(f"OVERFLOW: {p}")
