@@ -7,6 +7,7 @@ from importlib.metadata import PackageNotFoundError
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fastmcp_pvl_core import ConfigurationError
 
 from image_generation_mcp.server import (
     _build_remote_auth,
@@ -207,10 +208,8 @@ class TestBuildRemoteAuth:
         )
         assert _build_remote_auth() is None
 
-    def test_returns_none_when_httpx_missing(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """Returns None with install hint when httpx is not importable."""
+    def test_raises_when_httpx_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Raises ConfigurationError with install hint when httpx is not importable."""
         for var, val in _REMOTE_REQUIRED.items():
             monkeypatch.setenv(var, val)
 
@@ -218,12 +217,9 @@ class TestBuildRemoteAuth:
         # ImportError regardless of prior import state (order-independent).
         with (
             patch.dict("sys.modules", {"httpx": None}),
-            caplog.at_level(logging.WARNING),
+            pytest.raises(ConfigurationError, match="remote-auth"),
         ):
-            result = _build_remote_auth()
-
-        assert result is None
-        assert "httpx" in caplog.text
+            _build_remote_auth()
 
     def test_returns_remote_auth_provider(
         self, monkeypatch: pytest.MonkeyPatch
@@ -243,10 +239,8 @@ class TestBuildRemoteAuth:
 
         assert isinstance(result, RemoteAuthProvider)
 
-    def test_returns_none_on_discovery_failure(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """Returns None and logs error when discovery fetch fails."""
+    def test_raises_on_discovery_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Raises ConfigurationError when OIDC discovery fetch fails."""
         import httpx
 
         for var, val in _REMOTE_REQUIRED.items():
@@ -254,17 +248,12 @@ class TestBuildRemoteAuth:
 
         with (
             patch("httpx.get", side_effect=httpx.ConnectError("connection refused")),
-            caplog.at_level(logging.ERROR),
+            pytest.raises(ConfigurationError, match="discovery"),
         ):
-            result = _build_remote_auth()
+            _build_remote_auth()
 
-        assert result is None
-        assert "discovery_failed" in caplog.text
-
-    def test_returns_none_on_missing_jwks_uri(
-        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """Returns None when discovery response lacks jwks_uri."""
+    def test_raises_on_missing_jwks_uri(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Raises ConfigurationError when discovery response lacks jwks_uri."""
         for var, val in _REMOTE_REQUIRED.items():
             monkeypatch.setenv(var, val)
 
@@ -274,12 +263,9 @@ class TestBuildRemoteAuth:
 
         with (
             patch("httpx.get", return_value=mock_resp),
-            caplog.at_level(logging.ERROR),
+            pytest.raises(ConfigurationError, match="incomplete"),
         ):
-            result = _build_remote_auth()
-
-        assert result is None
-        assert "discovery_incomplete" in caplog.text
+            _build_remote_auth()
 
     def test_passes_audience_and_scopes(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Audience and scopes from env vars are passed to JWTVerifier."""
