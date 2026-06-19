@@ -1114,6 +1114,7 @@ browser = [
 dev = [
     { name = "diff-cover" },
     { name = "image-generation-mcp", extra = ["all"] },
+    { name = "jsonschema" },
     { name = "mypy" },
     { name = "pip-audit" },
     { name = "pytest" },
@@ -1148,6 +1149,7 @@ browser = [{ name = "pytest-playwright", specifier = ">=0.5" }]
 dev = [
     { name = "diff-cover", specifier = ">=9.0" },
     { name = "image-generation-mcp", extras = ["all"] },
+    { name = "jsonschema", specifier = ">=4.18" },
     { name = "mypy", specifier = ">=1.0" },
     { name = "pip-audit", specifier = ">=2.7" },
     { name = "pytest", specifier = ">=7.0" },

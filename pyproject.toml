@@ -53,6 +53,7 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.0",
     "pip-audit>=2.7",
+    "jsonschema>=4.18",
 ]
 docs = [
     "mike>=2",
@@ -164,6 +165,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["playwright", "playwright.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["jsonschema", "jsonschema.*"]
 ignore_missing_imports = true
 
 # Tests use FastMCP private surfaces (e.g. ``tool.fn``) and pytest fixtures
