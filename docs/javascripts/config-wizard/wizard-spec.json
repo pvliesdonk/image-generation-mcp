@@ -1,5 +1,10 @@
 {
   "version": 1,
+  "meta": {
+    "projectName": "image-generation-mcp",
+    "dockerImage": "ghcr.io/pvliesdonk/image-generation-mcp:latest",
+    "envPrefix": "IMAGE_GENERATION_MCP"
+  },
   "secretKeys": [
     "IMAGE_GENERATION_MCP_BEARER_TOKEN",
     "IMAGE_GENERATION_MCP_OPENAI_API_KEY",
@@ -67,6 +72,7 @@
       "help": "Directory where generated images are saved. Defaults to ~/.image-generation-mcp/.",
       "type": "text",
       "var": "IMAGE_GENERATION_MCP_SCRATCH_DIR",
+      "dockerPath": "/data/state/images",
       "advancedGroup": "Behaviour"
     },
     {
