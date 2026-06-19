@@ -82,6 +82,7 @@ function field(q, secrets) {
 
 let SPEC = null;
 let ROOT = null;
+let _writeTimer = null;
 
 function render() {
   const spec = SPEC;
@@ -170,7 +171,7 @@ function render() {
 
   const warnings = document.createElement("div");
   warnings.className = "cfg-warnings";
-  for (const g of spec.guards) {
+  for (const g of (spec.guards ?? [])) {
     if (Object.entries(g.when).every(([k, vals]) => vals.includes(answers[k]))) {
       const w = document.createElement("div");
       w.className = `cfg-${g.level}`;
@@ -184,7 +185,10 @@ function render() {
   } else {
     ROOT.replaceChildren(core, warnings, out);
   }
-  writeUrlState(spec);
+  // Debounce URL writes: browsers throttle history.replaceState to ~100
+  // calls/10 s, and URL sync is a "share" feature, not live feedback.
+  clearTimeout(_writeTimer);
+  _writeTimer = setTimeout(() => writeUrlState(spec), 300);
 
   // Restore focus + caret to the field the user was editing.
   if (activeQid) {
@@ -212,12 +216,20 @@ async function init() {
   try {
     const resp = await fetch(specUrl);
     if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
-    SPEC = await resp.json();
+    const spec = await resp.json();
+    if (!spec || typeof spec !== "object" || !Array.isArray(spec.questions)) {
+      throw new Error("wizard-spec.json is malformed (missing questions array)");
+    }
+    SPEC = spec;
   } catch (e) {
     ROOT.textContent = `Failed to load the configuration generator: ${e.message}`;
     return;
   }
   readUrlState(SPEC);
+  // Initialize all answers so guards that match [""] fire on the first render.
+  // Secrets are excluded from URL hydration (readUrlState skips them) so they
+  // also need this default, ensuring guards referencing secret question IDs
+  // evaluate correctly before the user has typed anything.
   for (const q of SPEC.questions) {
     if (answers[q.id] !== undefined) continue;
     if (q.type === "select" && q.options?.length) {
