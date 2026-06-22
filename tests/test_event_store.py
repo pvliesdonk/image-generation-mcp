@@ -27,7 +27,7 @@ class TestBuildEventStoreURLParsing:
         """
         target = tmp_path / "default-events"
         monkeypatch.setattr(
-            "fastmcp_pvl_core._factory._DEFAULT_EVENT_STORE_DIR", str(target)
+            "fastmcp_pvl_core._kv_store._DEFAULT_KV_STORE_DIR", str(target)
         )
 
         store = build_event_store(None)
@@ -43,7 +43,7 @@ class TestBuildEventStoreURLParsing:
         """``build_event_store("")`` hits the same fallback branch as ``None``."""
         target = tmp_path / "default-events"
         monkeypatch.setattr(
-            "fastmcp_pvl_core._factory._DEFAULT_EVENT_STORE_DIR", str(target)
+            "fastmcp_pvl_core._kv_store._DEFAULT_KV_STORE_DIR", str(target)
         )
 
         store = build_event_store("")
@@ -82,7 +82,7 @@ class TestBuildEventStoreURLParsing:
 
     def test_unsupported_scheme_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="Unsupported"):
-            build_event_store("redis://localhost:6379")
+            build_event_store("postgres://localhost:5432")
 
     def test_unsupported_scheme_message_includes_scheme(self) -> None:
         with pytest.raises(ValueError, match="'ftp'"):

@@ -680,12 +680,12 @@ class TestShowImageModelField:
 
 
 # ---------------------------------------------------------------------------
-# show_image — file_ref + download_url via file_exchange
+# show_image — download_url via ArtifactStore token
 # ---------------------------------------------------------------------------
 
 
-class TestShowImageFileRef:
-    """show_image publishes via file_exchange and returns file_ref + download_url."""
+class TestShowImageDownloadUrl:
+    """show_image mints a download_url via ArtifactStore when base_url is set."""
 
     @pytest.fixture
     def _registered(self, service: ImageService) -> tuple[ImageService, str]:
@@ -700,29 +700,15 @@ class TestShowImageFileRef:
         service: ImageService,
         image_id: str,
         *,
-        with_handle: bool = True,
         with_link: bool = True,
         base_url: str | None = "https://mcp.example.com",
     ) -> ToolResult:
-        from fastmcp_pvl_core import register_file_exchange
+        from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
 
         mcp = FastMCP("test")
-        handle = None
-        if with_handle:
-            monkeypatch_env = {
-                "TEST_BASE_URL": base_url or "",
-                "TEST_TRANSPORT": "http",
-                "TEST_FILE_EXCHANGE_ENABLED": "true",
-            }
-            with unittest.mock.patch.dict("os.environ", monkeypatch_env):
-                handle = register_file_exchange(
-                    mcp,
-                    namespace="test",
-                    env_prefix="TEST",
-                    produces=("image/png", "image/webp"),
-                    transport="http",
-                )
-        register_tools(mcp, file_exchange=handle)
+        register_tools(mcp)
+        artifact_store = ArtifactStore()
+        set_artifact_store(artifact_store)
         tool = await mcp.get_tool("show_image")
         cfg = MagicMock()
         cfg.server.base_url = base_url
@@ -733,43 +719,36 @@ class TestShowImageFileRef:
             config=cfg,
         )
 
-    async def test_no_file_ref_without_file_exchange(
+    async def test_download_url_present_with_base_url(
         self, _registered: tuple[ImageService, str]
     ) -> None:
-        """No file_ref / download_url when file_exchange is None (stdio tests)."""
+        """download_url present when base_url is configured and store is active."""
         service, image_id = _registered
-        result = await self._call_show(service, image_id, with_handle=False)
+        result = await self._call_show(service, image_id, with_link=True)
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
-        assert "file_ref" not in meta
-        assert "download_url" not in meta
-
-    async def test_file_ref_published_with_handle(
-        self, _registered: tuple[ImageService, str]
-    ) -> None:
-        """file_ref + download_url present when file_exchange is wired."""
-        service, image_id = _registered
-        result = await self._call_show(service, image_id, with_handle=True)
-        text_items = [c for c in result.content if isinstance(c, TextContent)]
-        meta = json.loads(text_items[0].text)
-        assert "file_ref" in meta
-        assert meta["file_ref"]["origin_id"] == image_id
-        assert meta["file_ref"]["mime_type"] == "image/png"
-        assert "transfer" in meta["file_ref"]
         assert "download_url" in meta
         assert meta["download_url"].startswith("https://mcp.example.com/artifacts/")
 
-    async def test_no_file_ref_when_with_link_false(
+    async def test_no_download_url_when_with_link_false(
         self, _registered: tuple[ImageService, str]
     ) -> None:
-        """file_ref / download_url suppressed when with_link=False."""
+        """download_url suppressed when with_link=False."""
         service, image_id = _registered
-        result = await self._call_show(
-            service, image_id, with_handle=True, with_link=False
-        )
+        result = await self._call_show(service, image_id, with_link=False)
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
-        assert "file_ref" not in meta
+        assert "download_url" not in meta
+
+    async def test_no_download_url_without_base_url(
+        self, _registered: tuple[ImageService, str]
+    ) -> None:
+        """download_url absent when base_url is not configured."""
+        service, image_id = _registered
+        result = await self._call_show(service, image_id, with_link=True, base_url=None)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        meta = json.loads(text_items[0].text)
+        assert "download_url" not in meta
         assert "download_url" not in meta
 
 
@@ -1170,49 +1149,19 @@ class TestListProvidersTool:
 
 
 class TestCreateDownloadLinkTool:
-    """The spec-compliant create_download_link tool is registered by
-    fastmcp_pvl_core.register_file_exchange (not by register_tools).
-    These tests cover the shape, not the wiring — see test_file_exchange.py."""
+    """create_download_link is registered by register_tools on HTTP transports only."""
 
-    async def test_registered_via_register_file_exchange(self) -> None:
-        """register_file_exchange registers create_download_link on http."""
-        from fastmcp_pvl_core import register_file_exchange
-
+    async def test_registered_on_http(self) -> None:
+        """register_tools registers create_download_link for http transport."""
         mcp = FastMCP("test")
-        with unittest.mock.patch.dict(
-            "os.environ",
-            {
-                "TEST_BASE_URL": "https://mcp.example.com",
-                "TEST_TRANSPORT": "http",
-                "TEST_FILE_EXCHANGE_ENABLED": "true",
-            },
-        ):
-            register_file_exchange(
-                mcp,
-                namespace="test",
-                env_prefix="TEST",
-                produces=("image/png",),
-                transport="http",
-            )
+        register_tools(mcp, transport="http")
         tool = await mcp.get_tool("create_download_link")
         assert tool is not None
 
-    async def test_not_registered_when_disabled(self) -> None:
-        """No create_download_link when file-exchange is disabled (stdio)."""
-        from fastmcp_pvl_core import register_file_exchange
-
+    async def test_not_registered_on_stdio(self) -> None:
+        """No create_download_link on stdio (no HTTP server available)."""
         mcp = FastMCP("test")
-        with unittest.mock.patch.dict(
-            "os.environ",
-            {"TEST_FILE_EXCHANGE_ENABLED": "false"},
-        ):
-            register_file_exchange(
-                mcp,
-                namespace="test",
-                env_prefix="TEST",
-                produces=("image/png",),
-                transport="stdio",
-            )
+        register_tools(mcp, transport="stdio")
         tool = await mcp.get_tool("create_download_link")
         assert tool is None
 
@@ -1269,10 +1218,6 @@ class TestToolAnnotations:
                 f"{tool_name}.annotations.{key}: "
                 f"expected {value}, got {getattr(tool.annotations, key)}"
             )
-
-    # The spec-compliant create_download_link tool is registered (and
-    # annotated) by fastmcp_pvl_core.register_file_exchange — its
-    # annotations are upstream's responsibility, not tested here.
 
 
 # ---------------------------------------------------------------------------

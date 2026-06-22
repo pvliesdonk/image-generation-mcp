@@ -36,6 +36,7 @@ site/
 # --- Development / ecosystem ignores (don't ship)
 .mcpregistry_*
 .worktrees/
-.claude/worktrees/
-.claude/settings.local.json
+.claude/
+.mcp.json
+.repowise/
 docs/superpowers/

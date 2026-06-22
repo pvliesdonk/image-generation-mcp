@@ -38,6 +38,18 @@ exclude_docs: |
   design/**
   decisions/**
 
+extra:
+  version:
+    provider: mike
+    default: latest
+
+extra_javascript:
+  - path: javascripts/config-wizard/wizard.js
+    type: module
+
+extra_css:
+  - stylesheets/config-wizard.css
+
 plugins:
   - search
   - llmstxt:
@@ -49,11 +61,14 @@ plugins:
         provider. Features keyword-based auto-selection, background tasks with
         progress reporting, and resource-based image transforms.
       sections:
+        # PROJECT-LLMSTXT-SECTIONS-START — keep aligned with `nav:` below;
+        # kept across copier update.
         Getting Started:
           - index.md: Overview -- features, providers, quick start
           - getting-started/installation.md: Installation from PyPI, uv, source, or Docker
           - getting-started/claude-desktop.md: Claude Desktop MCP configuration
           - getting-started/claude-code.md: Claude Code MCP configuration
+          - configuration-generator.md: Interactive configuration wizard
         Providers:
           - providers/index.md: Provider comparison and selection guide
           - providers/gemini.md: Gemini provider setup and capabilities
@@ -75,6 +90,7 @@ plugins:
           - deployment/docker.md: Docker Compose, Traefik, volumes
           - deployment/systemd.md: Systemd service, .deb/.rpm packages, security hardening
           - deployment/oidc.md: OIDC authentication setup
+        # PROJECT-LLMSTXT-SECTIONS-END
   - mkdocstrings:
       handlers:
         python:
@@ -107,11 +123,15 @@ markdown_extensions:
   - md_in_html
 
 nav:
+  # PROJECT-NAV-START — replace with your real navigation; kept across copier
+  # update. Keep aligned with the `llmstxt` plugin's sentinel-protected
+  # `sections:` block above.
   - Home: index.md
   - Getting Started:
       - Installation: getting-started/installation.md
       - Claude Desktop: getting-started/claude-desktop.md
       - Claude Code: getting-started/claude-code.md
+      - Configuration Generator: configuration-generator.md
   - Providers:
       - Overview: providers/index.md
       - Gemini: providers/gemini.md
@@ -127,7 +147,6 @@ nav:
   - Guides:
       - Authentication: guides/authentication.md
       - Client Compatibility: guides/client-compatibility.md
-      - File Exchange: guides/file-exchange.md
       - Prompt Writing: guides/prompt-writing.md
       - Image Assets: guides/image-assets.md
       - Style Library: guides/styles.md
@@ -135,3 +154,5 @@ nav:
       - Docker: deployment/docker.md
       - Systemd: deployment/systemd.md
       - OIDC Authentication: deployment/oidc.md
+      - Claude Desktop: deployment/claude-desktop.md
+  # PROJECT-NAV-END

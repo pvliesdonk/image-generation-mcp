@@ -1,11 +1,11 @@
 <!-- mcp-name: io.github.pvliesdonk/image-generation-mcp -->
 # Image Generation MCP
 
-[![CI](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/image-generation-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/image-generation-mcp) [![PyPI](https://img.shields.io/pypi/v/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/) [![Python](https://img.shields.io/pypi/pyversions/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/image-generation-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/image-generation-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/image-generation-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/image-generation-mcp/llms.txt)
+[![CI](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/pvliesdonk/image-generation-mcp/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/pvliesdonk/image-generation-mcp/graph/badge.svg)](https://codecov.io/gh/pvliesdonk/image-generation-mcp) [![PyPI](https://img.shields.io/pypi/v/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/) [![Python](https://img.shields.io/pypi/pyversions/image-generation-mcp)](https://pypi.org/project/image-generation-mcp/) [![License](https://img.shields.io/github/license/pvliesdonk/image-generation-mcp)](LICENSE) [![Docker](https://img.shields.io/github/v/release/pvliesdonk/image-generation-mcp?label=ghcr.io&logo=docker)](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://pvliesdonk.github.io/image-generation-mcp/) [![llms.txt](https://img.shields.io/badge/llms.txt-available-brightgreen)](https://pvliesdonk.github.io/image-generation-mcp/llms.txt) [![Template](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/pvliesdonk/image-generation-mcp/main/.copier-answers.yml&query=%24._commit&label=template)](https://github.com/pvliesdonk/fastmcp-server-template)
 
 Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Google Gemini, Stable Diffusion (SD WebUI), or a zero-cost placeholder provider.
 
-**[Documentation](https://pvliesdonk.github.io/image-generation-mcp/)** | **[PyPI](https://pypi.org/project/image-generation-mcp/)** | **[Docker](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp)**
+**[Documentation](https://pvliesdonk.github.io/image-generation-mcp/)** | **[Config wizard](https://pvliesdonk.github.io/image-generation-mcp/latest/configuration-generator/)** | **[PyPI](https://pypi.org/project/image-generation-mcp/)** | **[Docker](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp)**
 
 ## Features
 
@@ -62,7 +62,7 @@ Example: `pip install image-generation-mcp[all]`.
 ```bash
 git clone https://github.com/pvliesdonk/image-generation-mcp.git
 cd image-generation-mcp
-uv sync --all-extras --dev
+uv sync --all-extras --all-groups
 ```
 
 ### Docker
@@ -72,6 +72,8 @@ docker pull ghcr.io/pvliesdonk/image-generation-mcp:latest
 ```
 
 A `compose.yml` ships at the repo root as a starting point — copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+
+To attach a remote Python debugger (development only — the protocol is unauthenticated), see [Remote debugging](docs/deployment/docker.md#remote-debugging).
 
 ### Linux packages (.deb / .rpm)
 
@@ -87,6 +89,8 @@ mcpb install image-generation-mcp-<version>.mcpb
 
 Claude Desktop prompts for required env vars via a GUI wizard — no manual JSON editing needed.
 
+For manual Claude Desktop configuration and setup options, see [Claude Desktop deployment](docs/deployment/claude-desktop.md).
+
 ## Quick start
 
 ```bash
@@ -94,7 +98,11 @@ image-generation-mcp serve                                # stdio transport
 image-generation-mcp serve --transport http --port 8000   # streamable HTTP
 ```
 
-For library usage (embedding the domain logic without the MCP transport), import from the `image_generation_mcp` package directly — see `src/image_generation_mcp/domain.py` for the entry point scaffold.
+For library usage (embedding the domain logic without the MCP transport), import from the `image_generation_mcp` package directly — see the project's domain modules under `src/image_generation_mcp/` for entry points.
+
+### Server info
+
+The server registers a built-in `get_server_info` tool (via `fastmcp_pvl_core.register_server_info_tool`) so operators can confirm the deployed version with a single MCP call. The default response carries `server_name`, `server_version`, and `core_version`. Servers that talk to a remote upstream wire upstream version reporting inside the `DOMAIN-UPSTREAM-START` / `DOMAIN-UPSTREAM-END` sentinel in `src/image_generation_mcp/server.py` — see [`CLAUDE.md`](CLAUDE.md#server-info-tool-get_server_info) for the wiring pattern.
 
 ## Configuration
 
@@ -104,9 +112,13 @@ Core environment variables shared across all `fastmcp-pvl-core`-based services:
 |---|---|---|
 | `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals and app loggers (`DEBUG` / `INFO` / `WARNING` / `ERROR`). The `-v` CLI flag overrides to `DEBUG`. |
 | `FASTMCP_ENABLE_RICH_LOGGING` | `true` | Set to `false` for plain / structured JSON log output. |
-| `IMAGE_GENERATION_MCP_EVENT_STORE_URL` | `memory://` | Event store backend for HTTP session persistence — `memory://` (dev), `file:///path` (survives restarts). |
+| `IMAGE_GENERATION_MCP_KV_STORE_URL` | `file:///data/state` | Persistent-state backend URL for pvl-core subsystems — `file:///path` (survives restarts), `memory://` (dev/ephemeral). |
 
 Domain-specific variables go below under [Domain configuration](#domain-configuration).
+
+## Authentication
+
+Callers authenticate via a bearer token or OIDC (mutually exclusive). See the [Authentication guide](docs/guides/authentication.md) for setup, mapped multi-subject tokens, OIDC, and troubleshooting.
 
 ## Post-scaffold checklist
 
@@ -114,7 +126,7 @@ After `copier copy` and `gh repo create --push`:
 
 1. **Fill in the DOMAIN blocks** in this README (Features, What you can do with it, Domain configuration, Key design decisions) and in `CLAUDE.md`.
 2. Configure GitHub secrets — see below.
-3. Install dev dependencies: `uv sync --all-extras --dev`.
+3. Install dev + docs tooling: `uv sync --all-extras --all-groups`.
 4. Install pre-commit hooks: `uv run pre-commit install`.
 5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
 6. Push the first commit — CI should be green.
@@ -159,7 +171,7 @@ Pre-commit runs a subset of the gate on each commit; see `.pre-commit-config.yam
 
 ```bash
 rm -rf .venv
-uv sync --all-extras --dev
+uv sync --all-extras --all-groups
 ```
 
 `uv run python -m pytest` also works as a one-shot workaround (bypasses the stale entry-script shim).

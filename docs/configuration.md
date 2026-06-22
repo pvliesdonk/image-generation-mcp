@@ -11,6 +11,7 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `gemini`, `openai`, `sd_webui`, `placeholder`. |
 | `IMAGE_GENERATION_MCP_STYLES_DIR` | Path | `~/.image-generation-mcp/styles/` | Directory for style preset files (`.md` with YAML frontmatter). Created automatically if it does not exist. See the [Style Library Guide](guides/styles.md). |
 
+<!-- DOMAIN-CONFIG-VARS-START -->
 ## Providers
 
 | Variable | Type | Default | Description |
@@ -27,9 +28,6 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_AUTH_MODE` | str | auto | OIDC auth mode: `remote` (local JWT validation) or `oidc-proxy` (DCR emulation). Auto-detected from env vars when not set — see below. |
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | -- | Static bearer token for HTTP authentication. Enables bearer auth when set. |
 | `IMAGE_GENERATION_MCP_BASE_URL` | str | -- | Public base URL of the server (e.g. `https://mcp.example.com`). Required for OIDC and for MCP File Exchange downloads (`create_download_link`, `show_image`'s `file_ref` / auto `download_url`). Include subpath prefix if applicable. |
-| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_ENABLED` | bool | `true` on http/sse, `false` on stdio | Master switch for the file-exchange producer side. Set `false` to suppress all `file_ref` publishing. See [File Exchange guide](guides/file-exchange.md). |
-| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL` | int | `3600` | Default and maximum TTL (seconds) for published file records and download URLs. `create_download_link`'s `ttl_seconds` argument is clamped to this. |
-| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_CONSUME` | bool | `true` | Master switch for the consumer side. This server is producer-only; set `false` to silence the upstream "consume on, no consumer_sink wired" startup warning. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | -- | OIDC discovery endpoint URL (e.g. `https://auth.example.com/.well-known/openid-configuration`). |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | -- | OIDC client ID registered with your identity provider. Required for `oidc-proxy` mode only. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | -- | OIDC client secret. Required for `oidc-proxy` mode only. |
@@ -147,3 +145,4 @@ IMAGE_GENERATION_MCP_OIDC_CLIENT_ID=image-generation-mcp
 IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET=your-client-secret
 IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=your-stable-hex-key
 ```
+<!-- DOMAIN-CONFIG-VARS-END -->

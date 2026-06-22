@@ -18,8 +18,9 @@ from fastmcp_pvl_core import (
     ServerConfig,
     build_auth,
     build_instructions,
+    build_kv_store,  # noqa: F401  — re-exported for downstream projects' convenience
     configure_logging_from_env,
-    register_file_exchange,
+    register_server_info_tool,
     resolve_auth_mode,
     wire_middleware_stack,
 )
@@ -174,27 +175,43 @@ def make_server(
 
     wire_middleware_stack(mcp)
 
-    # MCP File Exchange wiring (spec-compliant): mounts /artifacts/{token},
-    # registers create_download_link, advertises the experimental.file_exchange
-    # capability.  Tools publish via the handle passed into register_tools.
-    #
-    # We pass `transport` explicitly (NOT "auto") because "auto" reads env
-    # vars (`{PREFIX}_TRANSPORT` / `FASTMCP_TRANSPORT`) that the CLI doesn't
-    # set — leaving "auto" would silently disable file-exchange in
-    # production.  The CLI knows the transport from its own --transport flag
-    # and passes it to make_server, so we have the authoritative value here.
-    fx_transport: str = "http" if transport in ("http", "sse") else "stdio"
-    file_exchange = register_file_exchange(
-        mcp,
-        namespace="image-generation-mcp",
-        env_prefix=_ENV_PREFIX,
-        produces=("image/png", "image/webp", "image/jpeg"),
-        transport=fx_transport,  # type: ignore[arg-type]
-    )
-
-    register_tools(mcp, transport=transport, file_exchange=file_exchange)
+    register_tools(mcp, transport=transport)
     register_resources(mcp)
     register_prompts(mcp)
+
+    register_server_info_tool(
+        mcp,
+        server_name="image-generation-mcp",
+        server_version=pkg_ver,
+        # DOMAIN-UPSTREAM-START — wire upstream version reporting for servers
+        # that talk to a remote service (paperless-mcp, etc.). The provider is
+        # a zero-arg callable; the simplest pattern is a module-level upstream
+        # client (typically constructed from env vars at import time) whose
+        # version method is referenced here. ``CurrentContext()`` is a FastMCP
+        # DI marker — it only resolves to a live context when used as a
+        # parameter default in a tool/resource handler, so it cannot be called
+        # directly from a zero-arg provider.
+        # Uncomment the kwargs below as additional arguments to this call:
+        # upstream_version=lambda: _upstream_client.remote_version(),
+        # upstream_label="paperless",
+        # DOMAIN-UPSTREAM-END
+    )
+
+    # DOMAIN-WIRING-START — project-specific wiring (custom HTTP routes,
+    # transforms, mode toggles, alternative middleware, additional registrations);
+    # kept across copier update. Leave empty for projects that don't customise
+    # make_server() beyond the standard scaffold.
+    if transport != "stdio":
+        from image_generation_mcp.artifacts import make_artifact_handler
+
+        artifact_handler = make_artifact_handler()
+
+        from starlette.requests import Request
+        from starlette.responses import Response
+
+        @mcp.custom_route("/artifacts/{token}", methods=["GET"])
+        async def _artifact_route(request: Request) -> Response:
+            return await artifact_handler(request)
 
     # IG-specific: expose resources as tools for clients without resource support.
     # Apply AFTER all registrations so the transform sees every resource.
@@ -202,5 +219,6 @@ def make_server(
 
     if config.read_only:
         mcp.disable(tags={"write"})
+    # DOMAIN-WIRING-END
 
     return mcp
