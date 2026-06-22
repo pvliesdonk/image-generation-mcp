@@ -10,8 +10,9 @@ Two kinds of tests live here, both template-owned and spec-agnostic:
   every spec shares (the ``deployment`` question exists; output carries the
   project identity from ``meta``).
 * Generator unit tests import ``generators.js`` directly and feed it synthetic
-  specs, so they exercise ``dockerVolume`` / ``dockerPath`` behaviour without
-  depending on this project's questions.
+  specs, so they exercise generator behaviour (``dockerVolume`` / ``dockerPath``
+  mapping, ``validateSpec`` rejection of malformed specs) without depending on
+  this project's questions.
 
 Domain-specific assertions belong in ``test_config_wizard_domain.py``.
 """
@@ -33,14 +34,47 @@ if typing.TYPE_CHECKING:
     from playwright.sync_api import Browser, Page
 
 SITE = Path(__file__).resolve().parent.parent / "site"
+_DOCS_WIZARD = (
+    Path(__file__).resolve().parent.parent / "docs" / "javascripts" / "config-wizard"
+)
+_SITE_WIZARD = SITE / "javascripts" / "config-wizard"
 
 pytestmark = pytest.mark.browser
+
+
+def _stale_wizard_assets() -> list[str]:
+    """Names of wizard assets whose built copy is missing or differs from source.
+
+    mkdocs copies the ``docs/javascripts/config-wizard`` files into ``site/``
+    verbatim, so a byte mismatch means ``site/`` is stale relative to the source
+    these tests actually exercise. Comparing bytes (not mtimes) is robust across
+    fresh checkouts, where mtimes carry no build ordering.
+    """
+    stale: list[str] = []
+    for src in sorted(_DOCS_WIZARD.glob("*")):
+        if not src.is_file():
+            continue
+        built = _SITE_WIZARD / src.name
+        if not built.is_file() or built.read_bytes() != src.read_bytes():
+            stale.append(src.name)
+    return stale
 
 
 @pytest.fixture(scope="module")
 def site_url() -> typing.Iterator[str]:
     if not (SITE / "configuration-generator" / "index.html").exists():
         pytest.skip("site/ not built -- run `uv run mkdocs build` first")
+    # A built-but-stale site/ (source edited under docs/ without rebuilding)
+    # would silently run these tests against outdated assets and false-fail.
+    # Skip with an actionable message instead. CI always builds fresh, so this
+    # only ever trips locally.
+    stale = _stale_wizard_assets()
+    if stale:
+        pytest.skip(
+            "site/ is stale relative to docs/ ("
+            + ", ".join(stale)
+            + ") -- rebuild with `uv run mkdocs build`"
+        )
     handler = functools.partial(
         http.server.SimpleHTTPRequestHandler, directory=str(SITE)
     )
@@ -113,6 +147,75 @@ def _eval_generators(page: Page, body: str) -> typing.Any:
         + ")(g); }"
     )
     return page.evaluate(script)
+
+
+def test_validate_spec_accepts_complete_spec(page: Page) -> None:
+    err = _eval_generators(
+        page,
+        """(g) => {
+          const spec = { version: 1,
+            meta: { projectName: 'demo', dockerImage: 'img:latest', envPrefix: 'DEMO' },
+            secretKeys: [],
+            questions: [{ id: 'deployment', label: 'W', type: 'select' }],
+            guards: [] };
+          try { g.validateSpec(spec); return null; } catch (e) { return e.message; }
+        }""",
+    )
+    assert err is None
+
+
+def test_validate_spec_rejects_missing_questions(page: Page) -> None:
+    err = _eval_generators(
+        page,
+        """(g) => {
+          const spec = { version: 1,
+            meta: { projectName: 'demo', dockerImage: 'img:latest', envPrefix: 'DEMO' } };
+          try { g.validateSpec(spec); return null; } catch (e) { return e.message; }
+        }""",
+    )
+    assert err is not None
+    assert "missing questions array" in err
+
+
+def test_validate_spec_rejects_missing_meta(page: Page) -> None:
+    err = _eval_generators(
+        page,
+        """(g) => {
+          const spec = { version: 1, questions: [{ id: 'deployment', label: 'W', type: 'select' }] };
+          try { g.validateSpec(spec); return null; } catch (e) { return e.message; }
+        }""",
+    )
+    assert err is not None
+    assert "missing meta block" in err
+
+
+def test_validate_spec_rejects_empty_meta(page: Page) -> None:
+    # meta is an object but lacks the fields the generators dereference: the
+    # exact gap the old `typeof meta === 'object'` guard let through.
+    err = _eval_generators(
+        page,
+        """(g) => {
+          const spec = { version: 1, meta: {},
+            questions: [{ id: 'deployment', label: 'W', type: 'select' }] };
+          try { g.validateSpec(spec); return null; } catch (e) { return e.message; }
+        }""",
+    )
+    assert err is not None
+    assert "meta.projectName missing or empty" in err
+
+
+def test_validate_spec_rejects_empty_meta_field(page: Page) -> None:
+    err = _eval_generators(
+        page,
+        """(g) => {
+          const spec = { version: 1,
+            meta: { projectName: 'demo', dockerImage: '', envPrefix: 'DEMO' },
+            questions: [{ id: 'deployment', label: 'W', type: 'select' }] };
+          try { g.validateSpec(spec); return null; } catch (e) { return e.message; }
+        }""",
+    )
+    assert err is not None
+    assert "meta.dockerImage missing or empty" in err
 
 
 def test_docker_volume_adds_mount_and_fixes_container_path(page: Page) -> None:

@@ -5,7 +5,7 @@
 
 Multi-provider image generation [MCP](https://modelcontextprotocol.io) server built on [FastMCP](https://gofastmcp.com). Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Google Gemini, Stable Diffusion (SD WebUI), or a zero-cost placeholder provider.
 
-**[Documentation](https://pvliesdonk.github.io/image-generation-mcp/)** | **[PyPI](https://pypi.org/project/image-generation-mcp/)** | **[Docker](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp)**
+**[Documentation](https://pvliesdonk.github.io/image-generation-mcp/)** | **[Config wizard](https://pvliesdonk.github.io/image-generation-mcp/latest/configuration-generator/)** | **[PyPI](https://pypi.org/project/image-generation-mcp/)** | **[Docker](https://github.com/pvliesdonk/image-generation-mcp/pkgs/container/image-generation-mcp)**
 
 ## Features
 
@@ -116,44 +116,9 @@ Core environment variables shared across all `fastmcp-pvl-core`-based services:
 
 Domain-specific variables go below under [Domain configuration](#domain-configuration).
 
-## Authorization (opt-in)
+## Authentication
 
-This server inherits opt-in per-subject authorization from `fastmcp-pvl-core`.  The default posture is **off** — every authenticated caller can use every tool, resource, and prompt.  Turn it on by pointing `IMAGE_GENERATION_MCP_ACL_PATH` at a TOML ACL file; the middleware is installed only when the path is set, and individual tools opt in by declaring `meta={"required_scope": "<scope>"}` at registration.  A tool without `required_scope` is unrestricted regardless of caller.
-
-Wire it in by uncommenting the `acl_path` field in `src/image_generation_mcp/config.py` and the `AuthorizationMiddleware` stanza in `src/image_generation_mcp/server.py` — both ship as commented stubs in the scaffold.
-
-### ACL TOML schema
-
-```toml
-[subjects]
-"user:alice@example.com" = ["read", "write"]
-"user:admin@example.com" = ["*"]              # wildcard — any required scope passes
-"service:ci-bot"         = ["read"]
-"local"                  = ["*"]              # stdio mode subject
-```
-
-- **Subject strings are opaque.** The `<kind>:<id>` convention is documentation only; the library treats each subject as a literal string.
-- **`*` is the only library-treated special scope** — it grants every required scope.  Subject-side wildcards (`*` as an ACL key) are rejected at load time.
-- **Scope vocabulary is domain-defined.** Per-project or per-folder gating is encoded into the scope string itself (e.g. `read:project-foo`, `write:vault/personal`); `fastmcp-pvl-core` treats every scope except `*` as opaque.
-
-### Subject ↔ bearer-token alignment
-
-The subject string used as a *value* in the bearer-tokens TOML (`IMAGE_GENERATION_MCP_BEARER_TOKENS_FILE`) is the same string used as a *key* in the ACL TOML.  Same string, opposite roles — keep the two files consistent when adding or removing a principal.  See [Mapped bearer tokens](docs/guides/authentication.md#mapped-bearer-tokens-multi-subject) in the authentication guide for the bearer-tokens TOML schema.
-
-In single-token mode (`IMAGE_GENERATION_MCP_BEARER_TOKEN`) every authenticated caller shares one subject — the library's default (currently `"bearer-anon"`), override with `IMAGE_GENERATION_MCP_BEARER_DEFAULT_SUBJECT`; reference *that* string as the ACL key.  In stdio mode the subject is the literal `"local"`.
-
-### Load semantics
-
-The ACL file is loaded **once at server startup**.  Restart the server to pick up changes; live reload is not part of the initial implementation.  `load_acl` fails fast with `ConfigurationError` on every malformed condition, so a typo in the ACL file aborts startup rather than silently denying requests.
-
-### Privacy default
-
-Denied requests are logged at WARNING with the subject string for audit attribution.  The wire-side error payload **omits** the subject by default to limit cross-user information disclosure.  For internal-only servers where the subject is safe to surface to clients, construct the middleware with `AuthorizationMiddleware(..., expose_subject_in_error=True)`.
-
-### See also
-
-- [fastmcp-pvl-core README — Authorization](https://github.com/pvliesdonk/fastmcp-pvl-core#authorization-opt-in--authorizationmiddleware) — full design, the `check_authorization` per-call helper, and per-token subject mapping.
-- [Authorization submodule spec](https://github.com/pvliesdonk/fastmcp-pvl-core/blob/main/docs/specs/authorization-submodule.md) — design rationale and deviations table.
+Callers authenticate via a bearer token or OIDC (mutually exclusive). See the [Authentication guide](docs/guides/authentication.md) for setup, mapped multi-subject tokens, OIDC, and troubleshooting.
 
 ## Post-scaffold checklist
 

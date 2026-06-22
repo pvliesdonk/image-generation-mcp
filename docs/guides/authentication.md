@@ -80,10 +80,10 @@ Full OAuth 2.1 authentication using an external identity provider. Supports user
 
 ### How it works
 
-The server uses FastMCP's built-in `OIDCProxy`. No external auth sidecar needed:
+The server proxies OIDC itself, with no external auth sidecar to deploy:
 
 ```
-Client → image-generation-mcp (OIDCProxy) → OIDC Provider
+Client → image-generation-mcp → OIDC Provider
 ```
 
 1. Client connects to the server
