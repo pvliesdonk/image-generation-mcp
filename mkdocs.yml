@@ -84,6 +84,7 @@ plugins:
           - prompts.md: MCP prompts with workflow descriptions
         Guides:
           - guides/authentication.md: Authentication modes -- bearer, OIDC, multi-auth
+          - guides/image-input.md: Image input -- editing, composition, and masking via transform_image
           - guides/prompt-writing.md: Provider-specific prompt writing tips
           - guides/styles.md: Style library -- reusable creative briefs for consistent generation
         Deployment:
@@ -147,6 +148,7 @@ nav:
   - Guides:
       - Authentication: guides/authentication.md
       - Client Compatibility: guides/client-compatibility.md
+      - Image Input (i2i): guides/image-input.md
       - Prompt Writing: guides/prompt-writing.md
       - Image Assets: guides/image-assets.md
       - Style Library: guides/styles.md

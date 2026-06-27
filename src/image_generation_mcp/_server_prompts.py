@@ -54,8 +54,9 @@ Choose the best provider for the user's request based on these guidelines.
 
 - **Production:** `gemini-2.5-flash-image` (production GA). Cheap (~$0.04/image),
   fast, supports 14 aspect ratios from 21:9 to 9:16 (including ultra-wide
-  4:1 / 8:1), multi-image compositing (up to 3 inputs), and conversational
-  image editing. Outputs carry an invisible SynthID watermark.
+  4:1 / 8:1), multi-image compositing (3 references on 2.5-flash, up to 14 on
+  the Gemini 3 models), and conversational image editing. Outputs carry an
+  invisible SynthID watermark.
 - **Preview:** `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`
   add reasoning ("thinking") for layout-heavy and dense-typography work.
   Preview-tier — surface stability not guaranteed.
@@ -120,6 +121,26 @@ Choose the best provider for the user's request based on these guidelines.
 9. For **general requests** → default to **gemini** when available, then
    **openai**.
 
+## Reference-Image Input (transform_image)
+
+When the request supplies an existing image (edit, style transfer,
+composition, or inpainting), use `transform_image` instead of
+`generate_image`, and pick the provider by what the task needs:
+
+- **Edit or style transfer** (one reference) → any image-input provider:
+  **gemini**, **openai** (gpt-image), or **sd_webui** (img2img).
+- **Multi-image composition** (several references) → **gemini** on a Gemini 3
+  model (up to 14 references) or **openai** gpt-image (up to 16). **sd_webui**
+  takes a single reference only.
+- **Inpainting with a mask** → **openai** gpt-image (the only mask-capable
+  family).
+- **Fine-grained edit control** → **sd_webui**, using `strength` (denoising
+  `0.0`-`1.0`; lower preserves the reference).
+
+Check `supports_image_input`, `max_input_images`, and `supports_mask` on
+`list_providers` for the authoritative per-model values; `provider="auto"`
+already routes on them.
+
 **Avoid deprecated models for new long-lived workflows.** Check the
 `warnings` array on `list_providers`'s response — it lists every configured
 model whose `lifecycle` is `legacy` or `deprecated`, including removal dates
@@ -128,10 +149,11 @@ when known.
 ## Usage
 
 Call `generate_image` with `provider="auto"` for automatic selection, or
-specify a provider name directly. Pass `model="<id>"` to pin a specific
-model_id within the provider. Use `list_providers` to see which providers
-are currently available, what models each has loaded, and per-model
-narrative guidance.
+specify a provider name directly. For requests that supply an existing image
+(editing, composition, or masking), call `transform_image` instead. Pass
+`model="<id>"` to pin a specific model_id within the provider. Use
+`list_providers` to see which providers are currently available, what models
+each has loaded, and per-model narrative guidance.
 """
 
 _SD_PROMPT_GUIDE = """\
