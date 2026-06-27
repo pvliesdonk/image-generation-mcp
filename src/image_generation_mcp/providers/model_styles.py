@@ -61,21 +61,21 @@ MODEL_STYLES: dict[str, StyleProfile] = {
     "openai:gpt-image-2": StyleProfile(
         label="OpenAI GPT Image 2",
         style_hints=(
-            "Current OpenAI flagship image model. Highest-fidelity "
-            "instruction following in the family — best for demanding "
+            "Current OpenAI flagship image model with the highest-fidelity "
+            "instruction following in the family. Best for demanding "
             "production work, dense in-image typography, complex multi-"
             "element compositions, and prompts that require strict "
             "adherence to layout / brand / scene direction. Same descriptive-"
             "paragraph prompt grammar as gpt-image-1.5; same three aspect "
-            "ratios. Drops transparent-background support — use gpt-image-1.5 "
+            "ratios. Drops transparent-background support, so use gpt-image-1.5 "
             "if you need transparency."
         ),
         incompatible_styles=(
-            "Transparent backgrounds are not supported — pick gpt-image-1.5 "
+            "Transparent backgrounds are not supported; pick gpt-image-1.5 "
             "for icons / stickers / logos that need alpha. Avoid CLIP-style "
-            "tag dumps and `--no` negative-prompt syntax. Real-named-people "
+            "tag dumps and negative-prompt syntax. Real-named-people "
             "likenesses are filtered. Cost per image is materially higher "
-            "than gpt-image-1.5 / mini — pick those for drafts."
+            "than gpt-image-1.5 / mini, so pick those for drafts."
         ),
         good_example=(
             "Magazine cover layout with the headline 'Urban Foragers' set "
@@ -103,9 +103,9 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "1536x1024."
         ),
         incompatible_styles=(
-            "Avoid CLIP-style comma-separated tag dumps — they underperform "
-            "vs descriptive sentences. Don't use --no negative-prompt "
-            "syntax; describe exclusions positively. Long, multi-element "
+            "Avoid CLIP-style comma-separated tag dumps, which underperform "
+            "vs descriptive sentences. Negative-prompt syntax is not "
+            "supported; describe exclusions positively. Long, multi-element "
             "scenes with strict spatial composition can drift. Real-named-"
             "people likenesses are filtered. No identity consistency across "
             "calls."
@@ -130,8 +130,8 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "siblings give better fidelity and instruction following."
         ),
         incompatible_styles=(
-            "Avoid CLIP-style tag dumps. No --no negative-prompt syntax. "
-            "Real-named-people likenesses are filtered. Prefer "
+            "Avoid CLIP-style tag dumps. Negative-prompt syntax is not "
+            "supported. Real-named-people likenesses are filtered. Prefer "
             "gpt-image-1.5 for new long-lived workflows."
         ),
         good_example=(
@@ -140,7 +140,7 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "field, no text in frame."
         ),
         bad_example=(
-            "watchmaker, masterpiece, 8k, ultradetailed (tag-soup style — "
+            "watchmaker, masterpiece, 8k, ultradetailed (tag-soup style; "
             "use descriptive sentences instead)"
         ),
         lifecycle="legacy",
@@ -159,9 +159,10 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "acceptable."
         ),
         incompatible_styles=(
-            "Avoid CLIP-style tag dumps. No --no negative-prompt syntax. "
-            "Same content filters as the full model. For final-grade output "
-            "where small quality differences matter, prefer gpt-image-1.5."
+            "Avoid CLIP-style tag dumps. Negative-prompt syntax is not "
+            "supported. Same content filters as the full model. For "
+            "final-grade output where small quality differences matter, "
+            "prefer gpt-image-1.5."
         ),
         good_example=(
             "Quick draft sketch: a fox curled up on a windowsill at dusk, "
@@ -183,16 +184,16 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "logo work."
         ),
         incompatible_styles=(
-            "Don't use for in-image text — text rendering is unreliable. "
+            "Don't use for in-image text: text rendering is unreliable. "
             "No edits, no inpainting, no transparent background, no "
             "negative prompts, no aspect ratios beyond 1024x1024 / "
-            "1024x1792 / 1792x1024. Cannot render named real people. Will "
-            "silently rewrite short prompts — inspect `revised_prompt` to "
-            "see what was actually used."
+            "1024x1792 / 1792x1024. Cannot render named real people. "
+            "Silently rewrites short prompts, so inspect `revised_prompt` "
+            "to see what was actually used."
         ),
         good_example=(
             "A wide cinematic painting in the style of Thomas Cole's "
-            '"Desolation" — overgrown classical ruins on a cliff at dusk, '
+            '"Desolation": overgrown classical ruins on a cliff at dusk, '
             "vines reclaiming marble columns, single shaft of warm light. "
             "Style: natural."
         ),
@@ -216,17 +217,17 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "where new code paths can't be added."
         ),
         incompatible_styles=(
-            "Don't use for new generation work. No transparent backgrounds, "
-            "no aspect ratios beyond 1:1, no in-image text, no negative "
+            "Don't use for new generation work. Lacks transparent background "
+            "support, aspect ratios beyond 1:1, in-image text, and negative "
             "prompts. Quality is well below current OpenAI models."
         ),
         good_example=(
             "Inpaint a missing hand on an existing 1024x1024 image (mask "
-            "edit only — not for new-from-scratch generation)"
+            "edit only, not for new-from-scratch generation)"
         ),
         bad_example=(
             "Detailed photoreal product shot for a marketing campaign "
-            "(use gpt-image-1.5 instead — DALL-E 2 quality is well behind)"
+            "(use gpt-image-1.5 instead; DALL-E 2 quality is well behind)"
         ),
         lifecycle="legacy",
         deprecation_note=(
@@ -239,22 +240,22 @@ MODEL_STYLES: dict[str, StyleProfile] = {
         label="Gemini 2.5 Flash Image (Nano Banana)",
         style_hints=(
             "Fast, low-latency generation and conversational image editing "
-            "— multi-turn refinement, multi-image compositing (up to 3 "
+            "with multi-turn refinement, multi-image compositing (up to 3 "
             "inputs), character consistency across iterations, in-image "
             "text, and natural-language local edits ('remove the stain', "
             "'change pose to running'). Strong photorealism with "
             "photographic vocabulary (lens, lighting, aspect ratio). "
             "Supports 10 aspect ratios from 21:9 cinematic to 9:16 "
-            "vertical. Cheap (~$0.04/image) — good default for high-volume "
-            "ideation."
+            "vertical. Cheap (~$0.04/image), making it a good default for "
+            "high-volume ideation."
         ),
         incompatible_styles=(
-            "Avoid Stable-Diffusion-style comma-separated tag lists — "
-            "performance drops vs descriptive sentences. No negative-"
+            "Avoid Stable-Diffusion-style comma-separated tag lists, which "
+            "underperform vs descriptive sentences. No negative-"
             "prompt parameter; phrase exclusions positively. Do not rely "
             "on transparent backgrounds. All outputs carry an invisible "
-            "SynthID watermark — unsuitable for workflows requiring "
-            "unmarked pixels. Not the strongest pick for very dense "
+            "SynthID watermark, making them unsuitable for workflows "
+            "requiring unmarked pixels. Not the strongest pick for dense "
             "professional typography. Limit reference inputs to 3 images."
         ),
         good_example=(
@@ -274,16 +275,16 @@ MODEL_STYLES: dict[str, StyleProfile] = {
         label="Gemini 3.1 Flash Image (preview)",
         style_hints=(
             "Successor to 2.5 Flash with reasoning ('thinking') support. "
-            "Good for prompts that benefit from layout reasoning — "
+            "Good for prompts that benefit from layout reasoning: "
             "infographics, structured layouts, multi-element compositions "
             "where spatial relationships matter. Same descriptive-prose "
             "grammar as 2.5 Flash; same 10 aspect ratios."
         ),
         incompatible_styles=(
             "Avoid tag-soup; same SynthID-watermark caveat as 2.5 Flash. "
-            "Preview-tier model — schema may shift before GA, surface text "
-            "may not be perfectly stable. Don't pin production workflows "
-            "to it without a fallback."
+            "Preview-tier model: schema may shift before GA, and surface "
+            "text may not be perfectly stable. Don't pin production "
+            "workflows to it without a fallback."
         ),
         good_example=(
             "A clean infographic explaining the water cycle on a soft "
@@ -305,10 +306,10 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "change."
         ),
         incompatible_styles=(
-            "Don't use for cheap drafts — cost per image is materially "
+            "Don't use for cheap drafts: cost per image is materially "
             "higher than Flash. Same SynthID-watermark caveat. Tag-soup "
-            "still underperforms. Preview-tier — surface stability not "
-            "guaranteed."
+            "still underperforms. Preview-tier model, so surface stability "
+            "is not guaranteed."
         ),
         good_example=(
             "Magazine cover layout for a quarterly architecture journal: "
@@ -383,7 +384,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
         StyleProfile(
             label="Flux Schnell (1-4 step distilled)",
             style_hints=(
-                "Distilled Flux variant for very fast drafts (1-4 steps, "
+                "Distilled Flux variant for rapid drafts (1-4 steps, "
                 "CFG=1). Same natural-language prompt style as Flux dev. "
                 "Best for ideation passes where iteration speed dominates."
             ),
@@ -407,12 +408,12 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
     (
         re.compile(r"flux"),
         StyleProfile(
-            label="Flux 1 dev/pro (photorealistic / highly-detailed)",
+            label="Flux 1 dev/pro (photorealistic / highly detailed)",
             style_hints=(
-                "Photorealistic imagery, extreme fine detail, architectural "
-                "photography, natural lighting, product shots, documentary "
-                "portraiture, coherent text in scene. Natural-language "
-                "prose; T5 encoder; CFG=1 distilled."
+                "Strong photorealistic output with extreme fine detail. "
+                "Suited to architectural photography, natural lighting, "
+                "product shots, documentary portraiture, and coherent text "
+                "in scene. Natural-language prose; T5 encoder; CFG=1 distilled."
             ),
             incompatible_styles=(
                 "Negative prompts are unsupported (CFG=1 distilled). "
@@ -436,7 +437,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
         StyleProfile(
             label="Pony Diffusion XL (mandatory score_* tag prefix)",
             style_hints=(
-                "Highly versatile SDXL fine-tune. Excellent for stylised "
+                "Wide-ranging SDXL fine-tune. Excellent for stylised "
                 "character art, anime, and varied art styles when prompted "
                 "with the mandatory leading tag block: 'score_9, "
                 "score_8_up, score_7_up, score_6_up, score_5_up, "
@@ -446,9 +447,9 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
             ),
             incompatible_styles=(
                 "Bare prompts without the score_* prefix produce visibly "
-                "degraded results. Photorealistic catalog work — Pony is "
-                "stylised by design. Natural-language prose underperforms "
-                "vs Booru-style tag grammar."
+                "degraded results. Photorealistic catalog work is out of "
+                "scope: Pony is stylised by design. Natural-language prose "
+                "underperforms vs Booru-style tag grammar."
             ),
             good_example=(
                 "score_9, score_8_up, score_7_up, score_6_up, "
@@ -474,7 +475,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
                 "Strong cel-shading and expressive character art."
             ),
             incompatible_styles=(
-                "Photorealism — anime-specialised. NoobAI v-prediction "
+                "Photorealism (these bases are anime-specialised). NoobAI v-prediction "
                 "variants need the v-prediction sampler config; wrong "
                 "sampler produces noise. Natural-language prose "
                 "underperforms vs tag grammar."
@@ -549,15 +550,16 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
         StyleProfile(
             label="Juggernaut XL (photorealistic SDXL)",
             style_hints=(
-                "Photorealistic portraits, cinematic lighting, sharp "
-                "textural detail, skin pores, fabric weave, dramatic rim "
-                "lighting, environmental storytelling. Recent Juggernaut "
-                "X / XI handle some stylised work too."
+                "Photorealistic SDXL checkpoint. Strong at rendering skin "
+                "pores, fabric weave, and fine material textures under "
+                "cinematic or dramatic rim lighting, with good environmental "
+                "storytelling. Recent Juggernaut X / XI handle some stylised "
+                "work too."
             ),
             incompatible_styles=(
                 "Anime, cartoon, flat illustration. Watercolor and "
                 "comic-ink styles are weaker than dedicated stylised "
-                "checkpoints — usable but not the model's strength."
+                "checkpoints (usable but not the model's strength)."
             ),
             good_example=(
                 'style="gritty photorealistic urban", medium="digital photo"'
@@ -575,15 +577,15 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
         StyleProfile(
             label="DreamShaperXL Lightning / Alpha (fast fantasy SDXL)",
             style_hints=(
-                "Fantasy concept art, painterly illustration, vibrant "
-                "color, dramatic character portraits. Run at 3-6 steps "
-                "with CFG ~2 and DPM++ SDE Karras (per Civitai). Fast "
-                "ideation pass for stylised work."
+                "Suited to fantasy concept art and painterly illustration "
+                "with rich color and dramatic character portraits. Run at "
+                "3-6 steps with CFG ~2 and DPM++ SDE Karras (per Civitai). "
+                "Fast ideation pass for stylised work."
             ),
             incompatible_styles=(
-                "Photorealism (stylised by design), highly detailed "
-                "textures at very low step counts, strict architectural "
-                "accuracy."
+                "Photorealism (stylised by design) and strict architectural "
+                "accuracy are a poor fit. Highly detailed textures suffer "
+                "at low step counts."
             ),
             good_example=(
                 'style="dramatic fantasy concept art", medium="painterly '
@@ -600,7 +602,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
     (
         re.compile(r"dreamshaperxl|dreamshaper.*xl"),
         StyleProfile(
-            label="DreamShaperXL (versatile fantasy SDXL)",
+            label="DreamShaperXL (all-purpose fantasy SDXL)",
             style_hints=(
                 "Fantasy illustration, painterly portraits, concept-art "
                 "style, stylised environments, strong use of negative "
@@ -624,12 +626,12 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
     (
         re.compile(r"dreamshaper"),
         StyleProfile(
-            label="DreamShaper (versatile SD1.5)",
+            label="DreamShaper (adaptable SD1.5)",
             style_hints=(
                 "General-purpose stylised illustration, fantasy character "
                 "art, soft painterly lighting, portrait and environmental "
-                "compositions; notably versatile — adapt style tags rather "
-                "than leaning on a single category."
+                "compositions. Adapts well across style tags rather "
+                "than locking to a single category."
             ),
             incompatible_styles=(
                 "Extreme photorealism (slightly stylised by design), "
@@ -654,13 +656,13 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
             style_hints=(
                 "Triple-encoder architecture (CLIP-L + OpenCLIP-bigG + "
                 "T5-XXL). Benefits from natural-language prose for the T5 "
-                "stream — same prose-friendly profile as Flux. Supports "
+                "stream, sharing a prose-friendly profile with Flux. Supports "
                 "negative prompts (unlike Flux). 3.5 Large Turbo is 4-step "
                 "distilled."
             ),
             incompatible_styles=(
                 "CLIP tag-soup underperforms vs descriptive prose. "
-                "Architecturally distinct from SDXL — don't expect SDXL "
+                "Architecturally distinct from SDXL, so don't expect SDXL "
                 "fine-tune behaviour to carry over."
             ),
             good_example=(
@@ -687,7 +689,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
             ),
             incompatible_styles=(
                 "Anime-specific Danbooru vocabulary without style priming. "
-                "Very low step counts (needs 25-30+ for coherence). The "
+                "Low step counts produce incoherent output (needs 25-30+ for coherence). The "
                 "SDXL refiner is rarely used in 2026 workflows; modern "
                 "fine-tunes drop it in favour of hires-fix / upscalers."
             ),
@@ -760,9 +762,9 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
         StyleProfile(
             label="Unknown checkpoint (SD general-purpose defaults)",
             style_hints=(
-                "Stable Diffusion generally excels at stylised imagery, fantasy "
-                "environments, and character portraiture. Use explicit style "
-                "tokens (e.g. 'watercolor painting', 'cinematic photograph') "
+                "Stable Diffusion is well suited to stylised work such as "
+                "fantasy environments and character art. Use explicit style "
+                "tokens (such as 'watercolor painting', 'cinematic photograph') "
                 "for best results."
             ),
             incompatible_styles=(

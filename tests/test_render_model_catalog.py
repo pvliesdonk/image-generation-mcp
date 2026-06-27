@@ -55,7 +55,7 @@ def test_render_model_catalog_lists_all_sd_pattern_labels():
         "Coloring Book",
         "Juggernaut",
         "DreamShaperXL",
-        "DreamShaper (versatile SD1.5)",
+        "DreamShaper (adaptable SD1.5)",
         "SD 3",
         "SDXL Base",
         "RealVisXL",

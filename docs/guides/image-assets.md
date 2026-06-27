@@ -9,11 +9,11 @@ image-generation-mcp uses a content-addressed image registry to manage generated
 
 ## Key concepts
 
-- **Image ID** -- content-addressed identifier (`SHA-256[:12]`) for each generated image
-- **Scratch directory** -- local storage at `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default `~/.image-generation-mcp/images/`)
-- **Sidecar metadata** -- JSON file alongside each image with generation provenance (prompt, provider, dimensions, timestamps)
-- **Resource URIs** -- access images and transforms via `image://{id}/view{?format,width,height,quality}`
-- **Transform-on-read** -- format conversion, resize, and crop happen at resource access time, not generation time
+- **Image ID**: content-addressed identifier (`SHA-256[:12]`) for each generated image
+- **Scratch directory**: local storage at `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default `~/.image-generation-mcp/images/`)
+- **Sidecar metadata**: JSON file alongside each image with generation provenance (prompt, provider, dimensions, timestamps)
+- **Resource URIs**: access images and transforms via `image://{id}/view{?format,width,height,quality}`
+- **Transform-on-read**: format conversion, resize, and crop happen at resource access time, not generation time
 
 ## How it works
 
@@ -24,8 +24,8 @@ image-generation-mcp uses a content-addressed image registry to manage generated
 
 ## Resources
 
-- `image://{id}/view` -- original image or transformed version
-- `image://{id}/metadata` -- generation metadata (prompt, provider, dimensions)
-- `image://list` -- all registered images
+- `image://{id}/view`: original image or transformed version
+- `image://{id}/metadata`: generation metadata (prompt, provider, dimensions)
+- `image://list`: all registered images
 
 See [Resources](../resources.md) for full details on available transforms.

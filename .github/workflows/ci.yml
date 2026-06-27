@@ -304,13 +304,18 @@ jobs:
           # asserts the two stay synchronized.
           version: "3.14.2"
           files: docs
-          # Working specs follow internal conventions, not user-facing prose
-          # style — exclude from linting. NO inner single quotes around the
+          # Dev-reference docs (working specs, design notes, ADRs) follow
+          # internal conventions, not user-facing prose style — exclude from
+          # linting. This mirrors the mkdocs `exclude_docs:` block (which keeps
+          # design/** and decisions/** out of the published site). Use ONE
+          # `--glob` with brace alternation: Vale takes a single `--glob`
+          # pattern (a repeated flag keeps only the last), so multiple subtrees
+          # must be combined as `{a,b,c}`. NO inner single quotes around the
           # glob value: vale-action splits `vale_flags` on whitespace and
           # passes argv elements directly (no shell), so literal quotes here
           # would be passed through to Vale, the glob would match no files,
           # and CI would silently exit 0. Verified empirically.
-          vale_flags: "--glob=!docs/superpowers/**"
+          vale_flags: "--glob=!docs/{superpowers,design,decisions}/**"
           # Failure gating is controlled by MinAlertLevel = error in
           # .vale.ini (governs both what Vale prints AND its exit code)
           # combined with fail_on_error below — only error-severity

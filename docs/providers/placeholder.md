@@ -8,14 +8,14 @@ The placeholder provider generates simple solid-color PNG images without any ext
 
 ## When to use
 
-- **Testing** -- verify your MCP client configuration without API costs
-- **Drafts and mock-ups** -- create placeholder images during development
-- **CI pipelines** -- test image generation workflows without external services
-- **Demos** -- show the image generation flow without requiring API keys
+- **Testing:** verify your MCP client configuration without API costs
+- **Drafts and mock-ups:** create placeholder images during development
+- **CI pipelines:** test image generation workflows without external services
+- **Demos:** show the image generation flow without requiring API keys
 
 ## Availability
 
-The placeholder provider is **always registered** -- it requires no configuration, no API key, and no external service.
+The placeholder provider is **always registered**: no configuration or API key is needed.
 
 ## Aspect ratios
 
@@ -29,15 +29,15 @@ The placeholder provider is **always registered** -- it requires no configuratio
 
 ## Parameters
 
-- **prompt** -- used to determine the output color (via SHA-256 hash index into a 6-color palette)
-- **negative_prompt** -- ignored
-- **quality** -- ignored
-- **aspect_ratio** -- maps to pixel sizes above
-- **background** -- `"opaque"` (default) produces RGB PNG; `"transparent"` produces RGBA PNG with alpha channel set to 0
+- **prompt:** used to determine the output color (via SHA-256 hash index into a 6-color palette)
+- **negative_prompt:** ignored
+- **quality:** ignored
+- **aspect_ratio:** maps to pixel sizes above
+- **background:** `"opaque"` (default) produces RGB PNG; `"transparent"` produces RGBA PNG with alpha channel set to 0
 
 ## Output
 
 - **Format:** PNG (RGB for opaque, RGBA for transparent)
 - **Content:** Solid color fill (fully transparent when `background="transparent"`)
 - **Size:** ~1-2 KB per image
-- **Generation time:** Instant (< 1ms)
+- **Generation time:** Instant (< 1 ms)

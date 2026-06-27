@@ -2,16 +2,16 @@
 
 image-generation-mcp supports multiple image generation providers. Each provider is registered at startup based on available configuration (API keys, service URLs).
 
-See the [Model Catalog](model-catalog.md) for narrative guidance on every model — what each is best at, what fights it, prompt grammar examples, and lifecycle status.
+See the [Model Catalog](model-catalog.md) for narrative guidance on every model: strengths, known weaknesses, prompt grammar examples, and lifecycle status.
 
 ## Provider comparison
 
 | | Gemini | OpenAI | SD WebUI (Stable Diffusion) | Placeholder |
 |---|--------|--------|----------------------------|-------------|
 | **Best for** | General-purpose, free tier | Text, logos, typography | Photorealism, portraits, anime, artistic styles | Testing, drafts, CI |
-| **Models** | gemini-2.5-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image-preview | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | -- |
+| **Models** | gemini-2.5-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image-preview | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | N/A |
 | **Quality** | High | High | Varies by model and steps | N/A (solid color) |
-| **Speed** | 5-15s | 5-15s | 10-60s (depends on GPU) | Instant |
+| **Speed** | 5-15 s | 5-15 s | 10-60 s (depends on GPU) | Instant |
 | **Cost** | Free tier available | Per-image API pricing | Self-hosted (GPU cost) | Free |
 | **Negative prompt** | Appended as "Avoid:" clause | Appended as "Avoid:" clause | Native support | Ignored |
 | **Background control** | Not supported (ignored) | Supported (gpt-image-1 only) | Not supported (ignored) | Supported (RGBA PNG) |
@@ -54,13 +54,13 @@ When `provider="auto"` (the default), the server analyzes your prompt using keyw
 
 The first matching rule wins. Within a rule, the first available provider is selected. If no provider in the chain is available, any registered provider is returned as a fallback.
 
-When `background="transparent"` is requested, providers with transparent background support are preferred within each selection rule. This is a secondary filter -- keyword heuristics still determine the rule.
+When `background="transparent"` is requested, providers with transparent background support are preferred within each selection rule. This is a secondary filter; keyword heuristics still determine the rule.
 
 ## Provider registration
 
 Providers are registered automatically at startup based on environment variables:
 
-1. **Placeholder** -- always registered (zero cost, no configuration)
-2. **OpenAI** -- registered when `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
-3. **Gemini** -- registered when `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` is set
-4. **SD WebUI** -- registered when `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set
+1. **Placeholder**: always registered (zero cost, no configuration)
+2. **OpenAI**: registered when `IMAGE_GENERATION_MCP_OPENAI_API_KEY` is set
+3. **Gemini**: registered when `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` is set
+4. **SD WebUI**: registered when `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` is set
