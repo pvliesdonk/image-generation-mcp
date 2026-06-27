@@ -389,3 +389,32 @@ class TestDiscoverNewGptImageModels:
             "dall-e-3",
             "dall-e-2",
         }
+
+
+class TestDiscoverImageInputCapability:
+    """Verify image-input capability fields on gpt-image models."""
+
+    async def test_gpt_image_models_advertise_image_input(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """gpt-image models advertise image-input support; dall-e-3 does not."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model(
+                "gpt-image-2",
+                "gpt-image-1.5",
+                "gpt-image-1",
+                "gpt-image-1-mini",
+                "dall-e-3",
+            )
+        )
+
+        caps = await provider.discover_capabilities()
+
+        by_id = {m.model_id: m for m in caps.models}
+        for mid in ("gpt-image-2", "gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini"):
+            assert by_id[mid].supports_image_input is True
+            assert by_id[mid].max_input_images == 16
+        # dall-e-3 has no edit support
+        assert by_id["dall-e-3"].supports_image_input is False
+        assert by_id["dall-e-3"].max_input_images == 0

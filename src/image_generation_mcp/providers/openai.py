@@ -86,6 +86,11 @@ def _is_gpt_image_model(model: str) -> bool:
 # ``discover_capabilities()`` for the same model_ids.
 _NO_BACKGROUND_GPT_IMAGE: frozenset[str] = frozenset({"gpt-image-2"})
 
+# OpenAI's images.edit endpoint accepts up to 16 reference images for the
+# gpt-image family (multi-image composition). dall-e-3 has no edit endpoint;
+# dall-e-2 edit is mask-only (out of scope here).
+_MAX_INPUT_IMAGES = 16
+
 
 class OpenAIImageProvider:
     """Image generation via OpenAI's Images API.
@@ -326,6 +331,8 @@ class OpenAIImageProvider:
                     supports_mask=True,
                     supports_background=True,
                     supports_negative_prompt=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
                     supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
                     supported_formats=("png", "jpeg", "webp"),
                     supported_qualities=("standard", "hd"),
@@ -350,6 +357,8 @@ class OpenAIImageProvider:
                         supports_mask=True,
                         supports_background=True,
                         supports_negative_prompt=False,
+                        supports_image_input=True,
+                        max_input_images=_MAX_INPUT_IMAGES,
                         supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
                         supported_formats=("png", "jpeg", "webp"),
                         supported_qualities=("standard", "hd"),
@@ -375,6 +384,8 @@ class OpenAIImageProvider:
                     supports_mask=True,
                     supports_background=False,
                     supports_negative_prompt=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
                     supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
                     supported_formats=("png", "jpeg", "webp"),
                     supported_qualities=("standard", "hd"),
