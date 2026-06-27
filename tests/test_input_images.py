@@ -145,3 +145,40 @@ def test_gallery_non_image_bytes_rejected() -> None:
         resolve_reference(
             "0123456789ab", loader=loader, allow_local_files=False, max_bytes=10_000
         )
+
+
+def _gif_bytes() -> bytes:
+    """Create a minimal real GIF image in memory."""
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), "green").save(buf, format="GIF")
+    return buf.getvalue()
+
+
+def _webp_bytes() -> bytes:
+    """Create a minimal real WEBP image in memory."""
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), "blue").save(buf, format="WEBP")
+    return buf.getvalue()
+
+
+def test_gif_file_raises_invalid_input_image(tmp_path) -> None:
+    """GIF is not in the allowed MIME map; must raise InvalidInputImage."""
+    p = tmp_path / "test.gif"
+    p.write_bytes(_gif_bytes())
+    loader = _loader_with({})
+    with pytest.raises(InvalidInputImage):
+        resolve_reference(
+            str(p), loader=loader, allow_local_files=True, max_bytes=10_000
+        )
+
+
+def test_webp_file_resolves_correctly(tmp_path) -> None:
+    """WEBP is in the allowed MIME map; must resolve without raising."""
+    p = tmp_path / "test.webp"
+    p.write_bytes(_webp_bytes())
+    loader = _loader_with({})
+    img = resolve_reference(
+        str(p), loader=loader, allow_local_files=True, max_bytes=100_000
+    )
+    assert img.content_type == "image/webp"
+    assert img.source_id is None

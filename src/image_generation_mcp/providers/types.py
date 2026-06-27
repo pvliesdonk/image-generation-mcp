@@ -183,7 +183,7 @@ class ImageInputUnsupported(ImageProviderError):
         super().__init__(
             provider,
             f"does not support reference-image input{target}. "
-            "Use a Gemini model for image-to-image edits.",
+            "Use a model that reports supports_image_input — see list_providers.",
         )
 
 

@@ -11,7 +11,7 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 | **Tags** | `write` (hidden in read-only mode) |
 | **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
 | **Task** | `task=True` (retained for forward compatibility; no longer blocks) |
-| **Pattern** | Fire-and-forget — returns in &lt;1s, poll via `check_generation_status`, display via `show_image` |
+| **Pattern** | Fire-and-forget: returns in under 1 second. Poll via `check_generation_status`. Display via `show_image`. |
 
 ### Parameters
 
@@ -19,18 +19,18 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 |-----------|------|---------|-------------|
 | `prompt` | str | *(required)* | Text description of the desired image |
 | `provider` | str | `"auto"` | Provider name (`openai`, `sd_webui`, `placeholder`) or `"auto"` for keyword-based selection |
-| `negative_prompt` | str | `null` | Things to avoid in the image. Native support on SD WebUI (SD 1.5/SDXL only — Flux models do NOT support negative prompts); appended as "Avoid:" on OpenAI. |
-| `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`. Gemini additionally supports: `3:4`, `4:3`, `4:5`, `5:4`, `4:1`, `1:4`, `8:1`, `1:8`, `21:9` |
-| `quality` | str | `"standard"` | Quality level: `standard` (fast, lower cost) or `hd` (higher quality — enables model reasoning + 2K on Gemini, `high` tier on OpenAI) |
+| `negative_prompt` | str | `null` | Things to avoid in the image. Native support on SD WebUI (SD 1.5/SDXL only; Flux models do NOT support negative prompts); appended as "Avoid:" on OpenAI. |
+| `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`. Gemini also supports: `3:4`, `4:3`, `4:5`, `5:4`, `4:1`, `1:4`, `8:1`, `1:8`, `21:9` |
+| `quality` | str | `"standard"` | Quality level: `standard` (fast, lower cost) or `hd` (higher quality, enables model reasoning + 2K on Gemini, `high` tier on OpenAI) |
 | `background` | str | `"opaque"` | Background mode: `opaque` or `transparent`. Supported by OpenAI (gpt-image-1) and Placeholder. SD WebUI ignores this parameter. |
-| `model` | str | `null` | Specific model to use (e.g., an SD WebUI checkpoint name or `"dall-e-3"` for OpenAI). Overrides the provider's default. Use `list_providers` to see available model IDs. |
+| `model` | str | `null` | Specific model to use (such as an SD WebUI checkpoint name or `"dall-e-3"` for OpenAI). Overrides the provider's default. Use `list_providers` to see available model IDs. |
 
 ### Return value
 
 Returns immediately with a `ToolResult` containing:
 
-1. **TextContent** -- JSON metadata with `status: "generating"`:
-2. **ResourceLink** -- URI reference to `image://{id}/view` (image pending)
+1. **TextContent**: JSON metadata with `status: "generating"`:
+2. **ResourceLink**: URI reference to `image://{id}/view` (image pending)
 
 ```json
 {
@@ -49,20 +49,20 @@ Use `check_generation_status(image_id)` to poll for completion, then call `show_
 
 ### Fire-and-forget workflow
 
-The tool uses a fire-and-forget pattern to avoid client tool-execution timeouts (~45s on Claude.ai/Desktop/Android):
+The tool uses a fire-and-forget pattern to avoid client tool-execution timeouts (about 45 seconds on Claude.ai/Desktop/Android):
 
-1. **`generate_image`** returns in &lt;1s with `"status": "generating"` and a pre-allocated `image_id`
+1. **`generate_image`** returns in under 1 second with `"status": "generating"` and a pre-allocated `image_id`
 2. **Background task** generates the image and registers it in the scratch directory
 3. **`check_generation_status`** polls for status (lightweight, no UI card):
-    - `{"status": "generating", "progress": 0.3, "progress_message": "Step 9/30 (ETA 12s)", ...}` -- still in progress
-    - `{"status": "completed"}` -- ready to display
-    - `{"status": "failed", "error": "..."}` -- generation failed
+    - `{"status": "generating", "progress": 0.3, "progress_message": "Step 9/30 (ETA 12s)", ...}`: still in progress
+    - `{"status": "completed"}`: ready to display
+    - `{"status": "failed", "error": "..."}`: generation failed
 4. **`show_image`** displays the finished image **once** when status is `"completed"`
 
 The `image://list` resource also includes pending generations with their status.
 
-!!! note "Why a separate polling tool?"
-    `show_image` renders a full image viewer card with thumbnail — calling it repeatedly to poll creates a distracting stack of cards in the conversation UI. `check_generation_status` returns minimal JSON text, keeping polling invisible to the user.
+!!! tip "Why a separate polling tool?"
+    `show_image` renders a full image viewer card with thumbnail. Calling it repeatedly to poll creates a distracting stack of cards in the conversation UI. `check_generation_status` returns minimal JSON text, keeping polling invisible to the user.
 
 ### Cost confirmation (elicitation)
 
@@ -73,8 +73,8 @@ When all of these conditions are met, `generate_image` asks the user to confirm 
 
 If the user declines or cancels, the tool returns a cancellation message without making the API call. If the client does not support elicitation, generation proceeds without confirmation (current behavior preserved).
 
-!!! note "Elicitation client support"
-    Elicitation was added in the MCP spec 2025-06-18 revision. As of this writing, few clients support it. The confirmation is a progressive enhancement — it activates automatically on capable clients and is invisible on others.
+!!! tip "Elicitation client support"
+    Elicitation was added in the MCP spec 2025-06-18 revision. As of this writing, few clients support it. The confirmation is a progressive enhancement that activates automatically on capable clients and is invisible on others.
 
 ### Example
 
@@ -96,21 +96,21 @@ When picking `model`, consult each entry's `style_profile.style_hints` and `styl
 
 Edit or transform an existing image using a model that accepts image input (image-to-image). Accepts one or more reference images alongside a prompt describing the desired change. Returns immediately with a `status: "generating"` response while the transformation runs in the background. Use `check_generation_status(image_id)` to wait for completion, then call `show_image(uri=original_uri)` **once** to display the result.
 
-`transform_image` is distinct from `edit_image` (which applies local geometry transforms — crop, rotate, flip — directly in the server) and from `generate_image` (text-only, no reference image).
+`transform_image` is distinct from `edit_image` (which applies local geometry transforms such as crop, rotate, and flip directly in the server) and from `generate_image` (text-only, no reference image).
 
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
 | **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
 | **Task** | `task=True` |
-| **Pattern** | Fire-and-forget — returns in &lt;1s, poll via `check_generation_status`, display via `show_image` |
+| **Pattern** | Fire-and-forget: returns in under 1 second. Poll via `check_generation_status`. Display via `show_image`. |
 
 ### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `prompt` | str | *(required)* | Description of the desired edit or transformation (natural language) |
-| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source image(s); currently limited to one image per call (Gemini) — check `max_input_images` in `list_providers` |
+| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source images; currently limited to one image per call (Gemini), check `max_input_images` in `list_providers` |
 | `provider` | str | `"auto"` | Provider to use, or `"auto"`. Use a Gemini provider for image-to-image tasks; check `supports_image_input` in `list_providers` |
 | `negative_prompt` | str | `null` | Things to avoid in the result (provider support varies) |
 | `aspect_ratio` | str | `"1:1"` | Desired aspect ratio of the output image |
@@ -122,9 +122,9 @@ Edit or transform an existing image using a model that accepts image input (imag
 
 Each entry in `reference_images` is resolved in order:
 
-1. **Gallery `image_id`** — a 12-character hex ID from a prior `generate_image` or `transform_image` call (e.g. `"a1b2c3d4e5f6"`).
-2. **`image://` URI** — a full resource URI (e.g. `"image://a1b2c3d4e5f6/view"`).
-3. **Local file path** — absolute path on the server host (e.g. `"/home/user/photo.png"`). Only accepted when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`; rejected with an error otherwise.
+1. **Gallery `image_id`**: a 12-character hex ID from a prior `generate_image` or `transform_image` call, such as `"a1b2c3d4e5f6"`.
+2. **`image://` URI**: a full resource URI, such as `"image://a1b2c3d4e5f6/view"`.
+3. **Local file path**: absolute path on the server host, such as `"/home/user/photo.png"`. Only accepted when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`; rejected with an error otherwise.
 
 Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. This release serves single-reference-image transformations via Gemini models.
 
@@ -132,8 +132,8 @@ Call `list_providers` and inspect `supports_image_input` and `max_input_images` 
 
 Returns immediately with a `ToolResult` containing:
 
-1. **TextContent** — JSON metadata with `status: "generating"`:
-2. **ResourceLink** — URI reference to `image://{id}/view` (image pending)
+1. **TextContent**: JSON metadata with `status: "generating"`:
+2. **ResourceLink**: URI reference to `image://{id}/view` (image pending)
 
 ```json
 {
@@ -167,11 +167,11 @@ Tool call: transform_image
 
 ## check_generation_status
 
-Lightweight status check for background image generation. Returns a short JSON string with `status`, `image_id`, and progress info — no image data, no heavy UI card.
+Lightweight status check for background image generation. Returns a short JSON string with `status`, `image_id`, and progress info (no image data, no heavy UI card).
 
 | Property | Value |
 |----------|-------|
-| **Tags** | *(none)* — always visible |
+| **Tags** | *(none, always visible)* |
 | **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`, `idempotentHint: true` |
 
 ### Parameters
@@ -195,11 +195,11 @@ Lightweight status check for background image generation. Returns a short JSON s
 
 Display a completed image with optional on-demand transforms. Accepts a full `image://` resource URI with transforms encoded in the query string.
 
-**Only call this for completed images** — use `check_generation_status` to poll, then call `show_image` once when status is `"completed"`.
+**Only call this for completed images.** Use `check_generation_status` to poll, then call `show_image` once when status is `"completed"`.
 
 | Property | Value |
 |----------|-------|
-| **Tags** | *(none)* -- always visible (read-only operation) |
+| **Tags** | *(none, always visible, read-only operation)* |
 | **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
 | **Task** | No |
 | **MCP App** | `ui://image-viewer/view.html` (interactive viewer in supported clients) |
@@ -208,7 +208,7 @@ Display a completed image with optional on-demand transforms. Accepts a full `im
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `uri` | str | *(required)* | Full `image://` resource URI (e.g., `image://a1b2c3/view?format=webp&width=512`) |
+| `uri` | str | *(required)* | Full `image://` resource URI, such as `image://a1b2c3/view?format=webp&width=512` |
 | `with_link` | bool | `true` | When `true`, publish the rendered bytes to MCP File Exchange and include `file_ref` (and a backward-compat `download_url`) in the metadata. Only effective when the server runs on HTTP transport with `BASE_URL` configured. |
 
 Transforms are encoded in the URI query string using the same parameters as the `image://{id}/view` resource template: `format`, `width`, `height`, `quality`.
@@ -217,8 +217,8 @@ Transforms are encoded in the URI query string using the same parameters as the 
 
 Returns a `ToolResult` with:
 
-1. **ImageContent** -- a WebP thumbnail preview (max 512px, always under 1 MB) for inline display in MCP clients. This is always WebP regardless of the requested format.
-2. **TextContent** -- JSON metadata with the full-resolution details:
+1. **ImageContent**: a WebP thumbnail preview (max 512 px, always under 1 MB) for inline display in MCP clients. This is always WebP regardless of the requested format.
+2. **TextContent**: JSON metadata with the full-resolution details:
 
 ```json
 {
@@ -244,13 +244,13 @@ Returns a `ToolResult` with:
 }
 ```
 
-The `model` field contains the specific model used by the provider (e.g., `"gpt-image-1"`, `"dreamshaper_xl"`), or `null` if the provider does not report a model name.
+The `model` field contains the specific model used by the provider (such as `"gpt-image-1"` or `"dreamshaper_xl"`), or `null` if the provider does not report a model name.
 
-The `file_ref` field is the spec-compliant MCP File Exchange handle — pass `file_ref.origin_id` to `create_download_link` to mint a fresh download URL (configurable TTL, default 1 hour). Each `format`/`width`/`height`/`quality` combination publishes under its own `origin_id` (the bare `image_id` for the default rendering, `image_id-<hash>` for any transformed variant) — no URL-query-string smuggling.
+The `file_ref` field is the spec-compliant MCP File Exchange handle. Pass `file_ref.origin_id` to `create_download_link` to mint a fresh download URL (configurable TTL, default 1 hour). Each `format`/`width`/`height`/`quality` combination publishes under its own `origin_id` (the bare `image_id` for the default rendering, `image_id-<hash>` for any transformed variant), with no URL-query-string smuggling.
 
-The `download_url` field is a backward-compat eager-mint of the same URL for clients (notably the gallery UI) that don't yet drive `create_download_link` themselves. Single-use, 5-minute TTL. The MCP App widget cannot open this URL from its sandboxed iframe, so LLMs should present it directly to the user as a clickable link in the conversation text. Both fields are only present when `with_link` is `true` (default) and the server is running on HTTP transport with `IMAGE_GENERATION_MCP_BASE_URL` configured.
+The `download_url` field is a backward-compat eager-mint of the same URL for clients (including the gallery UI) that don't yet drive `create_download_link` themselves. Single-use, 5-minute TTL. The MCP App widget cannot open this URL from its sandboxed iframe, so language models should present it directly to the user as a clickable link in the conversation text. Both fields are only present when `with_link` is `true` (default) and the server is running on HTTP transport with `IMAGE_GENERATION_MCP_BASE_URL` configured.
 
-The `dimensions` field reports the actual image size (or the transformed size if transforms were requested). The `thumbnail_dimensions` field reports the size of the inline preview, which is capped at 512px. When `dimensions` and `thumbnail_dimensions` differ, the inline preview is a downscaled version — use the `image://` resource URI or `create_download_link` for full resolution.
+The `dimensions` field reports the actual image size (or the transformed size if transforms were requested). The `thumbnail_dimensions` field reports the size of the inline preview, which is capped at 512 px. When `dimensions` and `thumbnail_dimensions` differ, the inline preview is a downscaled version; use the `image://` resource URI or `create_download_link` for full resolution.
 
 ### Examples
 
@@ -269,11 +269,11 @@ show_image(uri="image://a1b2c3d4e5f6/view?width=256&height=256")
 
 ## edit_image
 
-Open an image for interactive editing (crop, rotate, flip) in the image viewer UI. The user edits in the viewer widget and saves as a new image. Always edits the original image — resource template transforms are ephemeral and LLM-facing; editor transforms are persistent and user-facing.
+Open an image for interactive editing (crop, rotate, flip) in the image viewer UI. The user edits in the viewer widget and saves as a new image. Always edits the original image (resource template transforms are ephemeral and model-facing; editor transforms are persistent and user-facing).
 
 | Property | Value |
 |----------|-------|
-| **Tags** | *(none — read-only, always visible)* |
+| **Tags** | *(none, read-only, always visible)* |
 | **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
 | **MCP App** | Opens `ui://image-viewer/view.html` widget |
 
@@ -287,7 +287,7 @@ Open an image for interactive editing (crop, rotate, flip) in the image viewer U
 
 Returns a `ToolResult` with:
 
-1. **TextContent** — JSON metadata with `editable: true` to activate the editor UI:
+1. **TextContent**: JSON metadata with `editable: true` to activate the editor UI:
 
 ```json
 {
@@ -300,7 +300,7 @@ Returns a `ToolResult` with:
 }
 ```
 
-2. **ImageContent** — Full-resolution image as base64 (not a thumbnail). The viewer UI uses this to initialize the Cropper.js editor.
+2. **ImageContent**: Full-resolution image as base64 (not a thumbnail). The viewer UI uses this to initialize the Cropper.js editor.
 
 ### Editor UI
 
@@ -327,7 +327,7 @@ Open an interactive visual gallery of all generated images. The gallery renders 
 
 | Property | Value |
 |----------|-------|
-| **Tags** | *(none — read-only, always visible)* |
+| **Tags** | *(none, read-only, always visible)* |
 | **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false` |
 | **MCP App** | Opens `ui://image-gallery/view.html` widget |
 
@@ -370,7 +370,7 @@ For MCP Apps-capable clients, the gallery widget is rendered inline with:
 
 ## gallery_full_image (app-only)
 
-Load full-resolution image data for the gallery lightbox. App-only — not shown to the model; called internally by the gallery UI when a thumbnail is clicked.
+Load full-resolution image data for the gallery lightbox. App-only (not shown to the model); called internally by the gallery UI when a thumbnail is clicked.
 
 | Property | Value |
 |----------|-------|
@@ -399,6 +399,7 @@ Load full-resolution image data for the gallery lightbox. App-only — not shown
 ```
 
 Images larger than 1 MB are resized to 1024 px wide WebP before encoding.
+
 
 ---
 
@@ -431,7 +432,7 @@ Raises an error if the image ID is not found.
 
 ## save_style
 
-Save a reusable style preset as a markdown file. Styles are creative briefs that the LLM interprets per-provider — not prompt fragments. Use to capture a visual direction for reuse across conversations.
+Save a reusable style preset as a markdown file. Styles are creative briefs that the model interprets per-provider (not prompt fragments). Use to capture a visual direction for reuse across conversations.
 
 | Property | Value |
 |----------|-------|
@@ -442,11 +443,11 @@ Save a reusable style preset as a markdown file. Styles are creative briefs that
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `name` | str | *(required)* | Style identifier — used as the filename (`{name}.md`). Alphanumeric, hyphens, and underscores only. |
+| `name` | str | *(required)* | Style identifier, used as the filename (`{name}.md`). Allowed characters: letters, numbers, hyphens, and `_` (underscore character). |
 | `body` | str | *(required)* | Markdown prose describing the visual direction (the creative brief) |
 | `tags` | list[str] | `null` | Optional categorization tags for browsing/filtering |
 | `provider` | str | `null` | Suggested provider (`auto`, `openai`, `sd_webui`) |
-| `aspect_ratio` | str | `null` | Default aspect ratio (e.g. `16:9`) |
+| `aspect_ratio` | str | `null` | Default aspect ratio (such as `16:9`) |
 | `quality` | str | `null` | Default quality level (`standard` or `hd`) |
 
 ### Return value
@@ -510,7 +511,7 @@ List available image generation providers and their status.
 
 | Property | Value |
 |----------|-------|
-| **Tags** | *(none)* -- always visible |
+| **Tags** | *(none, always visible)* |
 | **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: true`, `idempotentHint: false` |
 | **Task** | No |
 
@@ -518,7 +519,7 @@ List available image generation providers and their status.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `force_refresh` | bool | `false` | When `true`, re-runs capability discovery on all providers before returning. Use when providers may have changed (e.g., new SD WebUI checkpoints loaded). |
+| `force_refresh` | bool | `false` | When `true`, re-runs capability discovery on all providers before returning. Use when providers may have changed (such as after loading new SD WebUI checkpoints). |
 
 ### Return value
 
@@ -596,7 +597,8 @@ The `prompt_style` field on each model indicates the recommended prompt format: 
 
 The JSON envelope contains a top-level `warnings` array (always present, may be empty) listing deprecated or legacy models that are configured. Each entry in `models` may carry a `style_profile` sub-object with `label`, `style_hints`, `incompatible_styles`, `good_example`, `bad_example`, `lifecycle`, and (when set) `deprecation_note`. See [Model Catalog](providers/model-catalog.md) for the full registry.
 
-A `watermark` field is included on models whose outputs carry a persistent identifier — currently `"synthid"` for the Google Gemini Image family (Flash + Pro tiers; all variants embed an invisible Google SynthID watermark on every generation). The field is omitted on models without a declared watermark. Surface this to users when bit-perfect originals are required (forensic chain of custody, certain regulatory contexts).
+
+A `watermark` field is included on models whose outputs carry a persistent identifier. Currently `"synthid"` applies to the Google Gemini Image family (Flash + Pro tiers; all variants embed an invisible Google SynthID watermark on every generation). The field is omitted on models without a declared watermark. Surface this to users when bit-perfect originals are required (forensic chain of custody, certain regulatory contexts).
 
 ### Example
 
@@ -615,7 +617,7 @@ Tool call: list_providers
 
 ## list_resources / read_resource (auto-generated)
 
-These tools are automatically generated by the [ResourcesAsTools](https://gofastmcp.com/servers/transforms/resources-as-tools) transform. They bridge the gap for MCP clients that only support tools (e.g. Claude webchat) and cannot access resources directly.
+These tools are automatically generated by the [ResourcesAsTools](https://gofastmcp.com/servers/transforms/resources-as-tools) transform. They bridge the gap for MCP clients that only support tools (Claude web chat is one such client) and cannot access resources directly.
 
 | Tool | Description |
 |------|-------------|
@@ -647,7 +649,7 @@ These tools provide access to the same resources documented in [Resources](resou
 
 ## create_download_link
 
-Mint a one-time HTTP download URL for an image. Enables server-to-server image transfer between MCP servers (e.g., saving to a vault, attaching to email). The link expires after a single download or after `ttl_seconds`, whichever comes first.
+Mint a one-time HTTP download URL for an image. Enables server-to-server image transfer between MCP servers (such as saving to a vault or attaching to email). The link expires after a single download or after `ttl_seconds`, whichever comes first.
 
 | Property | Value |
 |----------|-------|
@@ -661,7 +663,7 @@ Mint a one-time HTTP download URL for an image. Enables server-to-server image t
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `uri` | str | *(required)* | A full `image://` resource URI, e.g. `image://abc123/view` or `image://abc123/view?format=webp&width=512`. |
+| `uri` | str | *(required)* | A full `image://` resource URI, such as `image://abc123/view` or `image://abc123/view?format=webp&width=512`. |
 | `ttl_seconds` | int | 300 | Link lifetime in seconds (default 5 minutes). |
 
 ### Return value
@@ -708,4 +710,4 @@ The viewer is a custom HTML resource at `ui://image-viewer/view.html` that:
 - Caches rendered images in `localStorage` for instant restore on revisit
 - Offers a download button (uses `downloadFile` API or `openLink` fallback) for the full-resolution image
 
-No configuration is needed — the viewer activates automatically on MCP Apps-capable clients. The Claude sandbox domain is auto-computed from `BASE_URL` (see [Configuration](configuration.md#server)). Clients without Apps support see the standard base64 image + metadata response.
+No configuration is needed. The viewer activates automatically on MCP Apps-capable clients. The Claude sandbox domain is auto-computed from `BASE_URL` (see [Configuration](configuration.md#server)). Clients without Apps support see the standard base64 image + metadata response.

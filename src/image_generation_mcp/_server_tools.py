@@ -642,6 +642,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 for name, caps in service.capabilities.items()
                 if any(m.supports_image_input for m in caps.models)
             )
+            # Prefer Gemini (most capable image-input model) when available;
+            # otherwise pick the first capable provider alphabetically for determinism.
+            # A future explicit priority order can replace this once more providers gain image input.
             chosen_provider = (
                 "gemini" if "gemini" in capable_providers else capable_providers[0]
             )
@@ -671,6 +674,18 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if cancel is not None:
             return cancel
 
+        # Resolve prompt_style from capabilities for the response
+        prompt_style = None
+        transform_caps = service.capabilities.get(resolved_name)
+        if transform_caps:
+            if model:
+                for m in transform_caps.models:
+                    if m.model_id == model:
+                        prompt_style = m.prompt_style
+                        break
+            elif len(transform_caps.models) == 1:
+                prompt_style = transform_caps.models[0].prompt_style
+
         source_ids = [r.source_id for r in resolved if r.source_id]
         image_id = service.allocate_image_id()
         _start_background_generation(
@@ -693,9 +708,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "image_id": image_id,
             "prompt": prompt,
             "provider": resolved_name,
+            "prompt_style": prompt_style,
             "source_image_ids": source_ids,
             "original_uri": f"image://{image_id}/view",
             "metadata_uri": f"image://{image_id}/metadata",
+            "resource_template": (
+                f"image://{image_id}/view{{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}}"
+            ),
         }
         return ToolResult(
             content=[

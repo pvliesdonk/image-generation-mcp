@@ -81,8 +81,22 @@ def _parse_gallery_id(ref: str) -> str | None:
     return None
 
 
-def _validate(ref: str, data: bytes, content_type: str, max_bytes: int) -> str:
-    """Validate size and decodability; return the resolved content type."""
+def _validate(ref: str, data: bytes, max_bytes: int) -> str:
+    """Validate size and decodability; return the resolved MIME type.
+
+    Args:
+        ref: The original reference string (used in error messages).
+        data: Raw image bytes to validate.
+        max_bytes: Maximum allowed byte size.
+
+    Returns:
+        The MIME type derived from the PIL-detected image format.
+
+    Raises:
+        InputImageTooLarge: When ``len(data) > max_bytes``.
+        InvalidInputImage: When the bytes are not a decodable image or the
+            format is not in the supported MIME map (PNG, JPEG, WEBP).
+    """
     if len(data) > max_bytes:
         raise InputImageTooLarge(ref, len(data), max_bytes)
     try:
@@ -90,7 +104,10 @@ def _validate(ref: str, data: bytes, content_type: str, max_bytes: int) -> str:
             fmt = img.format
     except (UnidentifiedImageError, OSError) as exc:
         raise InvalidInputImage(ref) from exc
-    return _PIL_FORMAT_TO_MIME.get(fmt or "", content_type)
+    mime = _PIL_FORMAT_TO_MIME.get(fmt or "")
+    if mime is None:
+        raise InvalidInputImage(ref)
+    return mime
 
 
 def resolve_reference(
@@ -120,10 +137,10 @@ def resolve_reference(
     gallery_id = _parse_gallery_id(ref)
     if gallery_id is not None:
         try:
-            data, content_type = loader(gallery_id)
+            data, _content_type = loader(gallery_id)
         except KeyError as exc:
             raise ImageReferenceNotFound(ref) from exc
-        resolved_type = _validate(ref, data, content_type, max_bytes)
+        resolved_type = _validate(ref, data, max_bytes)
         return InputImage(data=data, content_type=resolved_type, source_id=gallery_id)
 
     if not allow_local_files:
@@ -132,7 +149,7 @@ def resolve_reference(
     if not path.is_file():
         raise ImageReferenceNotFound(ref)
     data = path.read_bytes()
-    resolved_type = _validate(ref, data, "application/octet-stream", max_bytes)
+    resolved_type = _validate(ref, data, max_bytes)
     logger.debug("resolved_file_reference path=%s bytes=%d", ref, len(data))
     return InputImage(data=data, content_type=resolved_type, source_id=None)
 

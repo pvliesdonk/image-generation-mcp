@@ -1873,3 +1873,75 @@ class TestTransformImageTool:
                 config=cfg,
                 ctx=ctx,
             )
+
+    async def test_transform_image_metadata_includes_prompt_style_and_resource_template(
+        self, tmp_path: Path
+    ) -> None:
+        """transform_image response metadata includes prompt_style and resource_template keys.
+
+        These fields must be present to match the symmetry with generate_image response.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        src_result = await provider.generate("source image", aspect_ratio="1:1")
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        stub_result = await provider.generate("transform test", aspect_ratio="1:1")
+
+        async def _fake_generate(
+            *_args: object, **_kwargs: object
+        ) -> tuple[str, ImageResult]:
+            return "placeholder", stub_result
+
+        svc.generate = AsyncMock(side_effect=_fake_generate)  # type: ignore[assignment]
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        result = await tool.fn(
+            prompt="make it blue",
+            reference_images=[source_image_id],
+            provider="placeholder",
+            service=svc,
+            config=cfg,
+            ctx=ctx,
+        )
+
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        assert len(text_items) == 1
+        metadata = json.loads(text_items[0].text)
+
+        assert "prompt_style" in metadata, (
+            "transform_image must include 'prompt_style' in metadata"
+        )
+        assert "resource_template" in metadata, (
+            "transform_image must include 'resource_template' in metadata"
+        )
+        image_id = metadata["image_id"]
+        assert metadata["resource_template"] == (
+            f"image://{image_id}/view"
+            "{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}"
+        )
