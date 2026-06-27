@@ -189,9 +189,9 @@ class TooManyInputImages(ImageProviderError):
     def __init__(
         self, provider: str, model: str | None, max_input_images: int, given: int
     ) -> None:
-        target = f" model {model!r}" if model else ""
+        subject = f"Model {model!r}" if model else "This model"
         super().__init__(
             provider,
-            f"{target} accepts at most {max_input_images} reference image(s); "
+            f"{subject} accepts at most {max_input_images} reference image(s); "
             f"{given} were given.",
         )

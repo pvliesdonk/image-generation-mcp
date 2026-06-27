@@ -154,3 +154,15 @@ def test_too_many_input_images_message() -> None:
     exc = TooManyInputImages("gemini", "gemini-2.5-flash-image", 1, 3)
     assert "1" in str(exc)
     assert "3" in str(exc)
+    assert exc.provider == "gemini"
+
+
+def test_too_many_input_images_message_without_model() -> None:
+    from image_generation_mcp.providers.types import TooManyInputImages
+
+    exc = TooManyInputImages("gemini", None, 1, 3)
+    msg = str(exc)
+    assert "1" in msg and "3" in msg
+    assert exc.provider == "gemini"
+    # message body (after the "[gemini] " prefix) must not start with a space
+    assert "] This model accepts" in msg
