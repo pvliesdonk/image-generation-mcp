@@ -168,6 +168,7 @@ def _start_background_generation(
     background: str,
     model: str | None,
     reference_images: Sequence[InputImage] | None = None,
+    strength: float | None = None,
     source_image_ids: list[str] | None = None,
     label: str = "generation",
 ) -> None:
@@ -188,6 +189,9 @@ def _start_background_generation(
         background: Background transparency (``"opaque"`` or ``"transparent"``).
         model: Specific model override, or ``None``.
         reference_images: Optional reference images for image-to-image tasks.
+        strength: Denoising strength (0.0-1.0) for image-to-image. Forwarded
+            to the provider; only SD WebUI uses it. Has no effect without
+            ``reference_images``.
         source_image_ids: Optional list of source image IDs to record as
             provenance on the resulting :class:`ImageRecord`.
         label: Short label used in log messages (e.g. ``"generation"`` or
@@ -227,6 +231,7 @@ def _start_background_generation(
                 background=background,
                 model=model,
                 reference_images=reference_images,
+                strength=strength,
                 progress_callback=_on_progress,
             )
             await asyncio.to_thread(
@@ -533,6 +538,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        strength: float | None = None,
         service: ImageService = Depends(get_service),
         config: ProjectConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
@@ -541,11 +547,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Supply one or more reference images (gallery ``image_id``, an
         ``image://`` URI, or — when enabled — a local file path) plus a
-        prompt describing the change.  Served by providers that report
-        ``supports_image_input`` in ``list_providers`` (Gemini accepts one
-        reference image; OpenAI gpt-image models accept up to 16 for
-        multi-image composition); check ``supports_image_input`` /
-        ``max_input_images`` there to route.
+        prompt describing the change.  Served by any provider that reports
+        ``supports_image_input`` in ``list_providers``; each provider's
+        ``max_input_images`` there gives its reference-image limit (some
+        accept one, others up to 16 for multi-image composition).
 
         Returns immediately; poll ``check_generation_status(image_id)``
         and then ``show_image(uri=original_uri)`` once completed — same
@@ -565,9 +570,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true``) local
                 file paths to use as the source image(s).
             provider: Provider to use, or ``"auto"`` to select
-                automatically.  Image-to-image is served by providers that
-                report ``supports_image_input`` in ``list_providers``
-                (Gemini, one reference image; OpenAI gpt-image, up to 16).
+                automatically.  Image-to-image is served by any provider that
+                reports ``supports_image_input`` in ``list_providers``; check
+                ``max_input_images`` there for each provider's reference limit.
             negative_prompt: Things to avoid in the result (provider
                 support varies).
             aspect_ratio: Desired aspect ratio of the output image.
@@ -575,6 +580,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             background: ``"opaque"`` or ``"transparent"``
                 (provider-dependent).
             model: Specific model id; see ``list_providers``.
+            strength: Denoising strength for SD WebUI img2img (0.0-1.0,
+                where higher regenerates more and lower preserves the
+                reference image). Used only by SD WebUI and only with a
+                reference image; other providers and the text-to-image
+                path ignore it.
 
         Returns:
             JSON with ``status``, ``image_id``, ``original_uri`` (pending).
@@ -601,6 +611,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             raise ValueError(msg)
         if not reference_images:
             raise ValueError("reference_images must not be empty.")
+        if strength is not None and not 0.0 <= strength <= 1.0:
+            raise ValueError(f"strength must be between 0.0 and 1.0; got {strength}.")
         if not _any_provider_supports_image_input(service):
             raise ValueError(
                 "No configured provider supports reference-image input. "
@@ -638,9 +650,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # whose capabilities include a model that supports image input AND
         # accepts at least len(resolved) references, so auto-selection cannot
         # pick a provider that would then reject this request's reference count
-        # (Gemini caps at 1; OpenAI accepts up to 16). Prefer Gemini among the
-        # eligible providers (higher-quality edits); otherwise the first
-        # eligible provider alphabetically for determinism.
+        # (Gemini and SD WebUI cap at 1; OpenAI accepts up to 16). Prefer
+        # Gemini among the eligible providers (higher-quality edits); the
+        # explicit check keeps that preference robust if a future provider
+        # would otherwise sort ahead of "gemini". Else pick the first eligible
+        # provider alphabetically for determinism.
         if provider == "auto":
             eligible = sorted(
                 name
@@ -716,6 +730,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             background=background,
             model=model,
             reference_images=resolved,
+            strength=strength,
             source_image_ids=source_ids,
             label="transform",
         )

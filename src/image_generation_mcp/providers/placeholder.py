@@ -110,6 +110,7 @@ class PlaceholderImageProvider:
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate a placeholder PNG.
@@ -124,6 +125,7 @@ class PlaceholderImageProvider:
             model: Ignored by the placeholder provider.
             reference_images: Not supported by this provider. Raises
                 :class:`ImageInputUnsupported` when non-empty.
+            strength: Ignored by the placeholder provider.
 
         Returns:
             ImageResult with a solid-color PNG.
@@ -133,6 +135,8 @@ class PlaceholderImageProvider:
         """
         if reference_images:
             raise ImageInputUnsupported("placeholder", model)
+        if strength is not None:
+            logger.debug("strength_ignored provider=placeholder reason=unsupported")
         if model is not None:
             logger.debug("Placeholder provider ignores model parameter: %r", model)
         if aspect_ratio not in _ASPECT_RATIO_TO_SIZE:

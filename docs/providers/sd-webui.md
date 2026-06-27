@@ -159,6 +159,14 @@ generate_image(prompt="...", provider="sd_webui", model="dreamshaperXL_v21.safet
 
 Use `list_providers` to discover available checkpoints and their model IDs.
 
+## Image input (img2img)
+
+Any discovered SD WebUI checkpoint accepts a single reference image through the `transform_image` tool. When a reference image is supplied, the provider calls `/sdapi/v1/img2img` instead of `/sdapi/v1/txt2img`.
+
+The `strength` parameter controls `denoising_strength` in the SD WebUI API payload. Values range from 0.0 to 1.0 (default 0.75 when omitted). Lower values preserve more of the reference image; higher values allow the model to regenerate more of the output.
+
+`list_providers` reports `supports_image_input: true` and `max_input_images: 1` for every discovered checkpoint. Pass exactly one reference image; passing more than one returns an error.
+
 ## Background transparency
 
 The `background` parameter is **not supported** by SD WebUI. When `background="transparent"` is passed, it is silently ignored (a debug log is emitted). Stable Diffusion does not natively support transparent background generation.

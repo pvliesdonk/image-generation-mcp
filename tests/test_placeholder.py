@@ -115,3 +115,11 @@ async def test_placeholder_rejects_reference_images() -> None:
             "x",
             reference_images=[InputImage(data=b"x", content_type="image/png")],
         )
+
+
+async def test_placeholder_ignores_strength() -> None:
+    """Placeholder provider accepts strength and ignores it (no error)."""
+    provider = PlaceholderImageProvider()
+
+    result = await provider.generate("x", strength=0.5)
+    assert result.image_data  # produced normally, strength ignored

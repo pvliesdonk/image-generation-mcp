@@ -125,6 +125,7 @@ class GeminiImageProvider:
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image using the Gemini generateContent API.
@@ -146,6 +147,7 @@ class GeminiImageProvider:
                 passing more than one raises ``TooManyInputImages``.
                 When provided, the image bytes are sent as inline image parts
                 alongside the prompt for guided generation.
+            strength: Ignored — Gemini does not support denoising strength.
             progress_callback: Ignored — Gemini does not report progress.
 
         Returns:
@@ -158,6 +160,9 @@ class GeminiImageProvider:
             TooManyInputImages: If more than one reference image is supplied.
         """
         from google.genai import types
+
+        if strength is not None:
+            logger.debug("strength_ignored provider=gemini reason=unsupported")
 
         if aspect_ratio not in _ASPECT_RATIOS:
             raise ImageProviderError(

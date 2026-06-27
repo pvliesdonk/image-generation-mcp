@@ -755,3 +755,33 @@ class TestSdWebuiDiscoverStyleProfile:
         m = caps.models[0]
         assert m.style_profile is not None
         assert "unknown checkpoint" in m.style_profile.label.lower()
+
+
+# -- Image input capability tests ---------------------------------------------
+
+
+class TestSdWebuiDiscoverImageInputCapability:
+    """Verify supports_image_input and max_input_images on all checkpoints."""
+
+    async def test_all_checkpoints_support_image_input(self) -> None:
+        """Every discovered checkpoint reports supports_image_input=True."""
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+        caps = await provider.discover_capabilities()
+
+        assert caps.models, "expected at least one model"
+        for model_caps in caps.models:
+            assert model_caps.supports_image_input is True, (
+                f"expected supports_image_input for {model_caps.model_id}"
+            )
+
+    async def test_all_checkpoints_max_input_images_is_one(self) -> None:
+        """Every discovered checkpoint reports max_input_images=1."""
+        provider = _make_provider()
+        provider._client.get = _mock_get(_CHECKPOINTS_ALL_FIVE)
+        caps = await provider.discover_capabilities()
+
+        for model_caps in caps.models:
+            assert model_caps.max_input_images == 1, (
+                f"expected max_input_images==1 for {model_caps.model_id}"
+            )

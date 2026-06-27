@@ -2070,3 +2070,53 @@ class TestTransformImageTool:
             f"image://{image_id}/view"
             "{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}"
         )
+
+    # F12: strength parameter validation
+    @pytest.mark.parametrize("bad", [-0.1, 1.5, 2.0])
+    async def test_transform_image_rejects_out_of_range_strength(
+        self, tmp_path: Path, bad: float
+    ) -> None:
+        """Out-of-range strength raises ValueError matching 'strength' before enqueue."""
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject image-input-capable capabilities so we reach the strength check
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real source image in the gallery
+        src_result = await provider.generate("source image", aspect_ratio="1:1")
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="strength"):
+            await tool.fn(
+                prompt="make it blue",
+                reference_images=[source_image_id],
+                provider="placeholder",
+                strength=bad,
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )

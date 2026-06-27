@@ -50,11 +50,13 @@ check_generation_status
 create_download_link
 delete_image
 delete_style
+denoising
 downscaled
 edit_image
 frontmatter
 gallery_full_image
 generate_image
+img2img
 inpainting
 lightbox
 Lightbox
@@ -69,4 +71,5 @@ sandboxed
 save_style
 show_image
 transform_image
+txt2img
 webchat

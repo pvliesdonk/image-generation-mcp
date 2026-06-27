@@ -577,3 +577,17 @@ class TestOpenAIEdit:
         )
         # gpt-image-2 does not accept background; it is omitted from the request.
         assert "background" not in provider._client.images.edit.call_args.kwargs
+
+    async def test_generate_ignores_strength(self) -> None:
+        """Passing strength=0.5 is accepted and not forwarded to images.generate kwargs."""
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=self._mk_response())
+
+        result = await provider.generate("a cat", aspect_ratio="1:1", strength=0.5)
+
+        assert result.image_data == b"hi"  # _mk_response uses b64="aGk=" → b"hi"
+        # strength must NOT be forwarded to the OpenAI SDK call
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert "strength" not in call_kwargs

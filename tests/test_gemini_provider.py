@@ -464,3 +464,27 @@ class TestGeminiProvider:
         ]
         with pytest.raises(TooManyInputImages):
             await provider.generate("x", reference_images=refs)
+
+    async def test_generate_ignores_strength(self) -> None:
+        """Passing strength=0.5 is accepted and not forwarded to generate_content kwargs."""
+        provider = GeminiImageProvider(api_key="AIza-test")
+        fake_image_bytes = b"fake-png-data"
+
+        mock_inline = MagicMock()
+        mock_inline.data = fake_image_bytes
+        mock_inline.mime_type = "image/png"
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+
+        provider._client = MagicMock()
+        gen = AsyncMock(return_value=mock_response)
+        provider._client.aio.models.generate_content = gen
+
+        result = await provider.generate("a cat", strength=0.5)
+
+        assert result.image_data == fake_image_bytes
+        # strength must NOT be forwarded to the Gemini SDK call
+        call_kwargs = gen.call_args.kwargs
+        assert "strength" not in call_kwargs
