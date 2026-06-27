@@ -162,7 +162,7 @@ class GeminiImageProvider:
         from google.genai import types
 
         if strength is not None:
-            logger.debug("strength is not supported by gemini; ignoring")
+            logger.debug("strength_ignored provider=gemini reason=unsupported")
 
         if aspect_ratio not in _ASPECT_RATIOS:
             raise ImageProviderError(

@@ -580,11 +580,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             background: ``"opaque"`` or ``"transparent"``
                 (provider-dependent).
             model: Specific model id; see ``list_providers``.
-            strength: Denoising strength for image-to-image generation
-                (0.0-1.0, where 1.0 ignores the reference image entirely
-                and 0.0 changes nothing). Only used by SD WebUI; Gemini
-                and OpenAI ignore this parameter. Has no effect without
-                an SD WebUI provider.
+            strength: Denoising strength for SD WebUI img2img (0.0-1.0,
+                where higher regenerates more and lower preserves the
+                reference image). Used only by SD WebUI and only with a
+                reference image; other providers and the text-to-image
+                path ignore it.
 
         Returns:
             JSON with ``status``, ``image_id``, ``original_uri`` (pending).

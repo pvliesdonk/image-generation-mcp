@@ -136,7 +136,7 @@ class PlaceholderImageProvider:
         if reference_images:
             raise ImageInputUnsupported("placeholder", model)
         if strength is not None:
-            logger.debug("strength is not supported by placeholder; ignoring")
+            logger.debug("strength_ignored provider=placeholder reason=unsupported")
         if model is not None:
             logger.debug("Placeholder provider ignores model parameter: %r", model)
         if aspect_ratio not in _ASPECT_RATIO_TO_SIZE:

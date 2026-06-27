@@ -266,7 +266,7 @@ class OpenAIImageProvider:
             TooManyInputImages: When more than 16 reference_images are given.
         """
         if strength is not None:
-            logger.debug("strength is not supported by openai; ignoring")
+            logger.debug("strength_ignored provider=openai reason=unsupported")
 
         if reference_images:
             return await self._edit(
