@@ -547,11 +547,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Supply one or more reference images (gallery ``image_id``, an
         ``image://`` URI, or — when enabled — a local file path) plus a
-        prompt describing the change.  Served by providers that report
-        ``supports_image_input`` in ``list_providers`` (Gemini accepts one
-        reference image; OpenAI gpt-image models accept up to 16 for
-        multi-image composition); check ``supports_image_input`` /
-        ``max_input_images`` there to route.
+        prompt describing the change.  Served by any provider that reports
+        ``supports_image_input`` in ``list_providers``; each provider's
+        ``max_input_images`` there gives its reference-image limit (some
+        accept one, others up to 16 for multi-image composition).
 
         Returns immediately; poll ``check_generation_status(image_id)``
         and then ``show_image(uri=original_uri)`` once completed — same
@@ -571,9 +570,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true``) local
                 file paths to use as the source image(s).
             provider: Provider to use, or ``"auto"`` to select
-                automatically.  Image-to-image is served by providers that
-                report ``supports_image_input`` in ``list_providers``
-                (Gemini, one reference image; OpenAI gpt-image, up to 16).
+                automatically.  Image-to-image is served by any provider that
+                reports ``supports_image_input`` in ``list_providers``; check
+                ``max_input_images`` there for each provider's reference limit.
             negative_prompt: Things to avoid in the result (provider
                 support varies).
             aspect_ratio: Desired aspect ratio of the output image.
@@ -651,9 +650,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # whose capabilities include a model that supports image input AND
         # accepts at least len(resolved) references, so auto-selection cannot
         # pick a provider that would then reject this request's reference count
-        # (Gemini caps at 1; OpenAI accepts up to 16). Prefer Gemini among the
-        # eligible providers (higher-quality edits); otherwise the first
-        # eligible provider alphabetically for determinism.
+        # (Gemini and SD WebUI cap at 1; OpenAI accepts up to 16). Prefer
+        # Gemini among the eligible providers (higher-quality edits); otherwise
+        # the first eligible provider alphabetically for determinism.
         if provider == "auto":
             eligible = sorted(
                 name
