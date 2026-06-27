@@ -591,3 +591,44 @@ class TestOpenAIEdit:
         # strength must NOT be forwarded to the OpenAI SDK call
         call_kwargs = provider._client.images.generate.call_args.kwargs
         assert "strength" not in call_kwargs
+
+    async def test_edit_with_mask_sends_mask_file(self) -> None:
+        """When a mask is provided, images.edit receives a mask kwarg as a file tuple."""
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+
+        ref = InputImage(data=b"img", content_type="image/png")
+        msk = InputImage(data=b"msk", content_type="image/png")
+        await provider.generate(
+            "inpaint",
+            reference_images=[ref],
+            mask=msk,
+        )
+
+        provider._client.images.edit.assert_awaited_once()
+        kwargs = provider._client.images.edit.call_args.kwargs
+        assert "mask" in kwargs
+        _fname, data, ctype = kwargs["mask"]
+        assert data == b"msk"
+        assert ctype == "image/png"
+        assert _fname.endswith(".png")
+        # image list is still the references
+        assert isinstance(kwargs["image"], list) and len(kwargs["image"]) == 1
+
+    async def test_edit_without_mask_omits_mask_kwarg(self) -> None:
+        """When no mask is provided, images.edit is called without a mask kwarg."""
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+
+        await provider.generate(
+            "edit",
+            reference_images=[InputImage(data=b"img", content_type="image/png")],
+        )
+
+        provider._client.images.edit.assert_awaited_once()
+        kwargs = provider._client.images.edit.call_args.kwargs
+        assert "mask" not in kwargs

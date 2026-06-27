@@ -255,9 +255,9 @@ class OpenAIImageProvider:
                 when more than 16 references are supplied.
             strength: Ignored — OpenAI does not support denoising strength.
             mask: Optional mask image for inpainting. Forwarded to
-                ``images.edit`` when reference images are present. Currently
-                accepted by the signature but not forwarded to the API until
-                the inpainting endpoint is wired up.
+                ``images.edit`` when reference images are present. Must match
+                the first reference image's size and format and carry an alpha
+                channel; format/size mismatches return a 400 from OpenAI.
 
         Returns:
             ImageResult with generated image.
@@ -376,7 +376,7 @@ class OpenAIImageProvider:
         quality: str,
         background: str,
         model: str | None,
-        mask: InputImage | None = None,  # noqa: ARG002
+        mask: InputImage | None = None,
     ) -> ImageResult:
         """Edit/compose using OpenAI ``images.edit`` (gpt-image family only).
 
@@ -388,8 +388,11 @@ class OpenAIImageProvider:
             quality: ``"standard"`` or ``"hd"``; mapped to API values.
             background: Background transparency (``opaque``, ``transparent``).
             model: Override model; must be a gpt-image model.
-            mask: Optional mask image for inpainting (accepted but not yet
-                forwarded to the API).
+            mask: Optional inpainting mask forwarded to ``images.edit`` as a
+                file tuple. Must match the first reference image's size and
+                format and carry an alpha channel; format/size mismatches are
+                enforced by OpenAI and surface as 400 errors via
+                :meth:`_handle_error`.
 
         Returns:
             ImageResult with edited image and ``edited=True`` in metadata.
@@ -422,6 +425,12 @@ class OpenAIImageProvider:
             (f"reference_{i}{_ext_for(ref.content_type)}", ref.data, ref.content_type)
             for i, ref in enumerate(reference_images)
         ]
+        if mask is not None:
+            kwargs["mask"] = (
+                f"mask{_ext_for(mask.content_type)}",
+                mask.data,
+                mask.content_type,
+            )
 
         logger.debug(
             "OpenAI image edit: model=%s refs=%d size=%s",
