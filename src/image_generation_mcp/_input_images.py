@@ -24,7 +24,7 @@ GalleryLoader = Callable[[str], tuple[bytes, str]]
 """Loads ``(data, content_type)`` for a gallery image id; raises KeyError if unknown."""
 
 _IMAGE_ID_RE = re.compile(r"^[0-9a-f]{12}$")
-_IMAGE_URI_RE = re.compile(r"^image://([0-9a-zA-Z]+)(?:/.*)?$")
+_IMAGE_URI_RE = re.compile(r"^image://([0-9a-f]{12})(?:/.*)?$")
 
 _PIL_FORMAT_TO_MIME = {
     "PNG": "image/png",

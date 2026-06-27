@@ -23,7 +23,7 @@ def _png_bytes(color: str = "red", size: tuple[int, int] = (4, 4)) -> bytes:
     return buf.getvalue()
 
 
-def _loader_with(mapping):
+def _loader_with(mapping: dict[str, tuple[bytes, str]]):
     def loader(image_id: str):
         if image_id not in mapping:
             raise KeyError(image_id)
@@ -121,3 +121,27 @@ def test_resolve_references_multiple() -> None:
         max_bytes=10_000,
     )
     assert len(imgs) == 2
+
+
+def test_unknown_gallery_id_with_local_files_enabled() -> None:
+    loader = _loader_with({})
+    with pytest.raises(ImageReferenceNotFound):
+        resolve_reference(
+            "0123456789ab", loader=loader, allow_local_files=True, max_bytes=10_000
+        )
+
+
+def test_oversized_file_rejected(tmp_path) -> None:
+    p = tmp_path / "big.png"
+    p.write_bytes(_png_bytes(size=(64, 64)))
+    loader = _loader_with({})
+    with pytest.raises(InputImageTooLarge):
+        resolve_reference(str(p), loader=loader, allow_local_files=True, max_bytes=10)
+
+
+def test_gallery_non_image_bytes_rejected() -> None:
+    loader = _loader_with({"0123456789ab": (b"not an image", "image/png")})
+    with pytest.raises(InvalidInputImage):
+        resolve_reference(
+            "0123456789ab", loader=loader, allow_local_files=False, max_bytes=10_000
+        )
