@@ -341,16 +341,16 @@ class SdWebuiImageProvider:
         )
 
         is_img2img = bool(reference_images)
-        if is_img2img:
-            if len(reference_images) > _MAX_INPUT_IMAGES:  # type: ignore[arg-type]
+        if reference_images:
+            if len(reference_images) > _MAX_INPUT_IMAGES:
                 raise TooManyInputImages(
                     "sd_webui",
                     effective_model,
                     _MAX_INPUT_IMAGES,
-                    len(reference_images),  # type: ignore[arg-type]
+                    len(reference_images),
                 )
             payload["init_images"] = [
-                base64.b64encode(reference_images[0].data).decode("ascii")  # type: ignore[index]
+                base64.b64encode(reference_images[0].data).decode("ascii")
             ]
             payload["denoising_strength"] = (
                 strength if strength is not None else _DEFAULT_DENOISING_STRENGTH
