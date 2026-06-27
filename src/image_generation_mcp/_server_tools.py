@@ -541,9 +541,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Supply one or more reference images (gallery ``image_id``, an
         ``image://`` URI, or — when enabled — a local file path) plus a
-        prompt describing the change.  Currently served by Gemini models
-        (single reference image); call ``list_providers`` and check
-        ``supports_image_input`` / ``max_input_images`` to route.
+        prompt describing the change.  Served by providers that report
+        ``supports_image_input`` in ``list_providers`` (currently Gemini,
+        single reference image); check ``supports_image_input`` /
+        ``max_input_images`` there to route.
 
         Returns immediately; poll ``check_generation_status(image_id)``
         and then ``show_image(uri=original_uri)`` once completed — same
@@ -602,7 +603,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if not _any_provider_supports_image_input(service):
             raise ValueError(
                 "No configured provider supports reference-image input. "
-                "Configure Gemini (IMAGE_GENERATION_MCP_GOOGLE_API_KEY)."
+                "See list_providers and the README for supported providers."
             )
 
         # Build a loader that maps gallery image_id → (bytes, content_type)
