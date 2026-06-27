@@ -563,8 +563,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true``) local
                 file paths to use as the source image(s).
             provider: Provider to use, or ``"auto"`` to select
-                automatically.  Use a Gemini provider for image-to-image
-                tasks; check ``supports_image_input`` in ``list_providers``.
+                automatically.  Image-to-image is served by providers that
+                report ``supports_image_input`` in ``list_providers``
+                (currently Gemini).
             negative_prompt: Things to avoid in the result (provider
                 support varies).
             aspect_ratio: Desired aspect ratio of the output image.
@@ -656,6 +657,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             prompt,
             background=background,
         )
+        # caps is always present here: resolved_name is a registered provider
+        # and discover_all_capabilities populates _capabilities for every
+        # registered provider (even degraded ones). The ``else ()`` is a
+        # defensive fallback only.
         caps = service.capabilities.get(resolved_name)
         capable = [
             m
@@ -667,7 +672,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if not capable:
             raise ValueError(
                 f"Provider '{resolved_name}' has no model accepting "
-                f"{len(resolved)} reference image(s). Use a Gemini model."
+                f"{len(resolved)} reference image(s). See list_providers "
+                "for models supporting reference-image input."
             )
 
         cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
