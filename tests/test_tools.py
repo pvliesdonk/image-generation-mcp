@@ -1775,6 +1775,45 @@ class TestTransformImageTool:
             f"2-image auto request must route to openai (cap 16), got {chosen}"
         )
 
+    async def test_transform_image_auto_no_provider_for_count_raises(
+        self, tmp_path: Path
+    ) -> None:
+        """auto-routing raises when no provider accepts the requested ref count."""
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("gemini", PlaceholderImageProvider())
+        svc._capabilities["gemini"] = ProviderCapabilities(
+            provider_name="gemini",
+            models=(
+                ModelCapabilities(
+                    model_id="gemini-flash",
+                    display_name="Gemini",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+        ids: list[str] = []
+        for i in range(2):
+            res = await PlaceholderImageProvider().generate(
+                f"src {i}", aspect_ratio="1:1"
+            )
+            ids.append(svc.register_image(res, "gemini", prompt=f"src {i}").id)
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+        with pytest.raises(ValueError, match="No configured provider accepts"):
+            await tool.fn(
+                prompt="two refs",
+                reference_images=ids,
+                provider="auto",
+                service=svc,
+                config=await self._make_cfg(),
+                ctx=await self._make_ctx(),
+            )
+
     # F1: missing backing file raises ValueError (not raw OSError)
     async def test_transform_image_missing_backing_file_raises_value_error(
         self, tmp_path: Path

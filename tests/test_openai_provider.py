@@ -564,3 +564,16 @@ class TestOpenAIEdit:
         await provider.generate("x", reference_images=refs)
         provider._client.images.edit.assert_awaited_once()
         assert len(provider._client.images.edit.call_args.kwargs["image"]) == 16
+
+    async def test_edit_gpt_image_2_omits_background(self) -> None:
+        provider = self._mk_provider("gpt-image-2")
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+        await provider.generate(
+            "x",
+            background="transparent",
+            reference_images=[InputImage(data=b"a", content_type="image/png")],
+        )
+        # gpt-image-2 does not accept background; it is omitted from the request.
+        assert "background" not in provider._client.images.edit.call_args.kwargs
