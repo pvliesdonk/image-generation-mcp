@@ -22,11 +22,11 @@ from image_generation_mcp.providers.sd_webui import (
     _resolve_preset,
 )
 from image_generation_mcp.providers.types import (
-    ImageInputUnsupported,
     ImageProvider,
     ImageProviderConnectionError,
     ImageProviderError,
     InputImage,
+    TooManyInputImages,
 )
 
 
@@ -639,12 +639,82 @@ class _HttpxMock:
         self._monkeypatch.setattr(httpx.AsyncClient, "get", _mock_get)
 
 
-async def test_sd_webui_rejects_reference_images() -> None:
-    """SD WebUI provider raises ImageInputUnsupported when reference_images are given."""
-    provider = SdWebuiImageProvider(host="http://localhost:7860")
+# -- img2img tests -------------------------------------------------------
 
-    with pytest.raises(ImageInputUnsupported):
-        await provider.generate(
-            "a cat",
-            reference_images=[InputImage(data=b"x", content_type="image/png")],
+
+class TestImg2Img:
+    """Tests for SD WebUI img2img (reference-image) dispatch."""
+
+    async def test_img2img_with_reference_posts_to_img2img(self, httpx_mock) -> None:
+        """When reference_images is given, POST goes to /sdapi/v1/img2img."""
+        raw_bytes = b"fake-raw-png"
+        b64_image = base64.b64encode(b"output-png").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/img2img",
+            json={"images": [b64_image], "info": "{}"},
         )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        result = await provider.generate(
+            "edit this",
+            reference_images=[InputImage(data=raw_bytes, content_type="image/png")],
+            strength=0.4,
+        )
+
+        request = httpx_mock.get_request()
+        assert "/sdapi/v1/img2img" in str(request.url)
+        payload = json.loads(request.content)
+        assert payload["init_images"] == [base64.b64encode(raw_bytes).decode("ascii")]
+        assert payload["denoising_strength"] == 0.4
+        assert result.provider_metadata["edited"] is True
+
+    async def test_img2img_default_denoising_when_strength_none(
+        self, httpx_mock
+    ) -> None:
+        """When strength is None, denoising_strength defaults to 0.75."""
+        b64_image = base64.b64encode(b"output-png").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/img2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        await provider.generate(
+            "edit this",
+            reference_images=[InputImage(data=b"raw", content_type="image/png")],
+            strength=None,
+        )
+
+        request = httpx_mock.get_request()
+        payload = json.loads(request.content)
+        assert payload["denoising_strength"] == 0.75
+
+    async def test_img2img_too_many_references_raises(self) -> None:
+        """Two reference images raises TooManyInputImages before any HTTP call."""
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+
+        with pytest.raises(TooManyInputImages):
+            await provider.generate(
+                "edit this",
+                reference_images=[
+                    InputImage(data=b"img1", content_type="image/png"),
+                    InputImage(data=b"img2", content_type="image/png"),
+                ],
+            )
+
+    async def test_txt2img_unaffected_when_no_references(self, httpx_mock) -> None:
+        """With no reference_images, POSTs to /txt2img and has no img2img fields."""
+        b64_image = base64.b64encode(b"output-png").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/txt2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        await provider.generate("a cat", strength=0.3)
+
+        request = httpx_mock.get_request()
+        assert "/sdapi/v1/txt2img" in str(request.url)
+        payload = json.loads(request.content)
+        assert "init_images" not in payload
+        assert "denoising_strength" not in payload

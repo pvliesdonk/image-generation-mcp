@@ -11,6 +11,7 @@ Ported from questfoundry — prompt distillation removed entirely.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import time
@@ -26,12 +27,12 @@ from image_generation_mcp.providers.capabilities import (
 )
 from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
-    ImageInputUnsupported,
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
     InputImage,
     ProgressCallback,
+    TooManyInputImages,
 )
 
 if TYPE_CHECKING:
@@ -41,6 +42,8 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT = 180.0  # SDXL at high res can be slow on consumer GPUs
 _PROGRESS_POLL_INTERVAL = 2.0  # seconds between /sdapi/v1/progress polls
+_MAX_INPUT_IMAGES = 1
+_DEFAULT_DENOISING_STRENGTH = 0.75
 
 
 # -- Model-aware generation presets -------------------------------------------
@@ -223,6 +226,56 @@ class SdWebuiImageProvider:
         """Close the underlying HTTP client."""
         await self._client.aclose()
 
+    def _build_payload(
+        self,
+        *,
+        prompt: str,
+        negative_prompt: str | None,
+        aspect_ratio: str,
+        effective_model: str | None,
+        preset: _SdWebuiPreset,
+    ) -> tuple[dict[str, Any], int, int]:
+        """Build the shared SD WebUI request payload.
+
+        Args:
+            prompt: Positive text prompt.
+            negative_prompt: Negative prompt, or None.
+            aspect_ratio: Desired aspect ratio string (e.g. ``"1:1"``).
+            effective_model: Resolved checkpoint name, or None.
+            preset: Architecture preset for this model.
+
+        Returns:
+            Tuple of ``(payload_dict, width, height)``.
+        """
+        default_size = preset.sizes["1:1"]
+        width, height = preset.sizes.get(aspect_ratio, default_size)
+
+        payload: dict[str, Any] = {
+            "prompt": prompt,
+            "width": width,
+            "height": height,
+            "steps": preset.steps,
+            "cfg_scale": preset.cfg_scale,
+            "sampler_name": preset.sampler,
+            "scheduler": preset.scheduler,
+        }
+
+        # Flux models do not support negative prompts — omit entirely.
+        # Other architectures always include the field (empty string if None).
+        if preset.supports_negative_prompt:
+            payload["negative_prompt"] = negative_prompt or ""
+        elif negative_prompt:
+            logger.debug("Model does not support negative prompts, ignoring")
+
+        # distilled_cfg_scale is a Forge-specific parameter for Flux models
+        if preset.distilled_cfg_scale is not None:
+            payload["distilled_cfg_scale"] = preset.distilled_cfg_scale
+
+        if effective_model:
+            payload["override_settings"] = {"sd_model_checkpoint": effective_model}
+
+        return payload, width, height
+
     async def generate(
         self,
         prompt: str,
@@ -233,10 +286,14 @@ class SdWebuiImageProvider:
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
-        strength: float | None = None,  # noqa: ARG002
+        strength: float | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
-        """Generate an image via SD WebUI txt2img API.
+        """Generate or edit an image via the SD WebUI API.
+
+        When ``reference_images`` is empty or None, calls ``/sdapi/v1/txt2img``
+        (standard text-to-image).  When a single reference image is supplied,
+        calls ``/sdapi/v1/img2img`` using that image as the init image.
 
         Args:
             prompt: Positive text prompt (SD tag format recommended).
@@ -248,24 +305,25 @@ class SdWebuiImageProvider:
             model: Specific checkpoint name to use for this call. Overrides
                 the constructor model for preset detection and
                 ``override_settings``.
-            reference_images: Not supported by this provider. Raises
-                :class:`ImageInputUnsupported` when non-empty.
-            strength: Denoising strength for image-to-image generation
-                (0.0-1.0). Reserved for Task 2 (img2img); not yet consumed.
+            reference_images: Optional single reference image used as the
+                img2img init image.  Pass exactly one :class:`InputImage`;
+                passing more than one raises :class:`TooManyInputImages`.
+            strength: Denoising strength for img2img (0.0-1.0). Ignored for
+                txt2img.  Defaults to 0.75 when reference_images is supplied
+                and strength is None.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  When provided,
                 ``/sdapi/v1/progress`` is polled concurrently.
 
         Returns:
-            ImageResult with PNG data and provider metadata.
+            ImageResult with PNG data and provider metadata.  Metadata
+            includes ``edited=True`` when img2img was used.
 
         Raises:
             ImageProviderConnectionError: If SD WebUI is unreachable.
             ImageProviderError: On API errors.
-            ImageInputUnsupported: When reference_images are supplied.
+            TooManyInputImages: When more than one reference image is supplied.
         """
-        if reference_images:
-            raise ImageInputUnsupported("sd_webui", model)
         effective_model = model or self._model
         effective_preset = _resolve_preset(effective_model)
 
@@ -273,44 +331,44 @@ class SdWebuiImageProvider:
             logger.debug(
                 "SD WebUI does not support background transparency control, ignoring"
             )
-        default_size = effective_preset.sizes["1:1"]
-        width, height = effective_preset.sizes.get(aspect_ratio, default_size)
 
-        payload: dict[str, Any] = {
-            "prompt": prompt,
-            "width": width,
-            "height": height,
-            "steps": effective_preset.steps,
-            "cfg_scale": effective_preset.cfg_scale,
-            "sampler_name": effective_preset.sampler,
-            "scheduler": effective_preset.scheduler,
-        }
+        payload, width, height = self._build_payload(
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            effective_model=effective_model,
+            preset=effective_preset,
+        )
 
-        # Flux models do not support negative prompts — omit entirely.
-        # Other architectures always include the field (empty string if None).
-        if effective_preset.supports_negative_prompt:
-            payload["negative_prompt"] = negative_prompt or ""
-        elif negative_prompt:
-            logger.debug("Model does not support negative prompts, ignoring")
-
-        # distilled_cfg_scale is a Forge-specific parameter for Flux models
-        if effective_preset.distilled_cfg_scale is not None:
-            payload["distilled_cfg_scale"] = effective_preset.distilled_cfg_scale
-
-        if effective_model:
-            payload["override_settings"] = {"sd_model_checkpoint": effective_model}
-
-        url = f"{self._host}/sdapi/v1/txt2img"
+        is_img2img = bool(reference_images)
+        if is_img2img:
+            if len(reference_images) > _MAX_INPUT_IMAGES:  # type: ignore[arg-type]
+                raise TooManyInputImages(
+                    "sd_webui",
+                    effective_model,
+                    _MAX_INPUT_IMAGES,
+                    len(reference_images),  # type: ignore[arg-type]
+                )
+            payload["init_images"] = [
+                base64.b64encode(reference_images[0].data).decode("ascii")  # type: ignore[index]
+            ]
+            payload["denoising_strength"] = (
+                strength if strength is not None else _DEFAULT_DENOISING_STRENGTH
+            )
+            url = f"{self._host}/sdapi/v1/img2img"
+        else:
+            url = f"{self._host}/sdapi/v1/txt2img"
 
         logger.debug(
-            "SD WebUI generate: host=%s model=%s size=%dx%d",
+            "SD WebUI generate: host=%s model=%s size=%dx%d img2img=%s",
             self._host,
             effective_model,
             width,
             height,
+            is_img2img,
         )
 
-        # Run txt2img with concurrent progress polling when callback provided
+        # Run generation with concurrent progress polling when callback provided
         progress_task: asyncio.Task[None] | None = None
         if progress_callback is not None:
             progress_task = asyncio.create_task(
@@ -374,13 +432,16 @@ class SdWebuiImageProvider:
         }
         if seed is not None:
             metadata["seed"] = seed
+        if is_img2img:
+            metadata["edited"] = True
 
         logger.info(
-            "SD WebUI image generated: model=%s size=%dx%d seed=%s",
+            "SD WebUI image generated: model=%s size=%dx%d seed=%s img2img=%s",
             active_model,
             width,
             height,
             seed,
+            is_img2img,
         )
 
         return ImageResult.from_base64(
@@ -484,6 +545,8 @@ class SdWebuiImageProvider:
                     supported_formats=("png",),
                     supports_negative_prompt=preset.supports_negative_prompt,
                     supports_background=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
                     max_resolution=max_resolution,
                     default_steps=preset.steps,
                     default_cfg=preset.cfg_scale,
