@@ -608,9 +608,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         def _loader(image_id: str) -> tuple[bytes, str]:
             try:
                 record = service.get_image(image_id)
+                return record.original_path.read_bytes(), record.content_type
             except ImageProviderError as exc:
                 raise KeyError(image_id) from exc
-            return record.original_path.read_bytes(), record.content_type
+            except OSError as exc:
+                # Record exists but its backing file is gone/unreadable.
+                raise KeyError(image_id) from exc
 
         try:
             resolved = await asyncio.to_thread(
@@ -1352,7 +1355,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Called by the image editor UI after the user confirms their edits.
         Applies the transforms server-side via Pillow and persists the
-        result as a new image with ``source_image_id`` provenance.
+        result as a new image with ``source_image_ids`` provenance.
 
         Args:
             source_image_id: ID of the original image being edited.

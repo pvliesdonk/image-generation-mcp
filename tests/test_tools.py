@@ -1688,3 +1688,188 @@ class TestTransformImageTool:
         assert chosen_provider_name == ["fakegen"], (
             f"Expected auto-routing to select 'fakegen'; got {chosen_provider_name}"
         )
+
+    # F1: missing backing file raises ValueError (not raw OSError)
+    async def test_transform_image_missing_backing_file_raises_value_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Gallery record exists but backing file deleted → ValueError 'not found'.
+
+        If the file read is outside the try block, OSError leaks past the
+        resolver's KeyError→ImageReferenceNotFound mapping and surfaces as a
+        raw OSError instead of a clean ValueError.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject image-input-capable capabilities for the placeholder provider
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real gallery image so a record exists in the in-memory registry
+        src_result = await provider.generate("source image", aspect_ratio="1:1")
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        # Delete the backing file from disk — record stays in memory registry
+        backing_path = svc.get_image(source_image_id).original_path
+        backing_path.unlink()
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="not found"):
+            await tool.fn(
+                prompt="make it blue",
+                reference_images=[source_image_id],
+                provider="placeholder",
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    # F10: capability-filter rejection when too many images for the model
+    async def test_transform_image_too_many_images_for_model_raises_value_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Provider has max_input_images=1 but two references passed → ValueError.
+
+        This exercises the ``m.max_input_images >= len(resolved)`` branch in
+        the capability-filter that rejects the request synchronously before
+        spawning any background task.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject image-input-capable capabilities with max_input_images=1
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register two real gallery images
+        src1 = await provider.generate("source image 1", aspect_ratio="1:1")
+        rec1 = svc.register_image(src1, "placeholder", prompt="source image 1")
+        src2 = await provider.generate("source image 2", aspect_ratio="1:1")
+        rec2 = svc.register_image(src2, "placeholder", prompt="source image 2")
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="no model accepting"):
+            await tool.fn(
+                prompt="combine them",
+                reference_images=[rec1.id, rec2.id],
+                provider="placeholder",
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    # F11: parameter-validation guards for transform_image
+    @pytest.mark.parametrize(
+        "param,value,match",
+        [
+            ("aspect_ratio", "5:4", "Unsupported aspect_ratio"),
+            ("quality", "ultra", "Unsupported quality"),
+            ("background", "blurred", "Unsupported background"),
+        ],
+    )
+    async def test_transform_image_invalid_enum_params_raise(
+        self,
+        tmp_path: Path,
+        param: str,
+        value: str,
+        match: str,
+    ) -> None:
+        """Invalid aspect_ratio / quality / background raise ValueError before resolution.
+
+        reference_images is non-empty so the empty-list guard does not fire
+        first; the enum guard is what raises.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("placeholder", PlaceholderImageProvider())
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        kwargs: dict[str, object] = {
+            "prompt": "test",
+            "reference_images": ["0123456789ab"],
+            "service": svc,
+            "config": cfg,
+            "ctx": ctx,
+            param: value,
+        }
+        with pytest.raises(ValueError, match=match):
+            await tool.fn(**kwargs)
+
+    async def test_transform_image_empty_reference_images_raises(
+        self, service: ImageService
+    ) -> None:
+        """transform_image raises ValueError when reference_images is empty."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="reference_images must not be empty"):
+            await tool.fn(
+                prompt="test",
+                reference_images=[],
+                service=service,
+                config=cfg,
+                ctx=ctx,
+            )
