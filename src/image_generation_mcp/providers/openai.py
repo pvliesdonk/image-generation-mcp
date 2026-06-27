@@ -29,6 +29,7 @@ from image_generation_mcp.providers.types import (
     ImageResult,
     InputImage,
     ProgressCallback,
+    TooManyInputImages,
 )
 
 if TYPE_CHECKING:
@@ -86,6 +87,34 @@ def _is_gpt_image_model(model: str) -> bool:
 # ``discover_capabilities()`` for the same model_ids.
 _NO_BACKGROUND_GPT_IMAGE: frozenset[str] = frozenset({"gpt-image-2"})
 
+# OpenAI's images.edit endpoint accepts up to 16 reference images for the
+# gpt-image family (multi-image composition). dall-e-3 has no edit endpoint;
+# dall-e-2 edit is mask-only (out of scope here).
+_MAX_INPUT_IMAGES: int = 16
+
+_CONTENT_TYPE_TO_EXT: dict[str, str] = {
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/webp": ".webp",
+}
+
+
+def _ext_for(content_type: str) -> str:
+    """Return the filename extension for a supported input image content type.
+
+    Raises:
+        ImageProviderError: If the content type is not a supported input format.
+    """
+    ext = _CONTENT_TYPE_TO_EXT.get(content_type)
+    if ext is None:
+        supported = ", ".join(sorted(_CONTENT_TYPE_TO_EXT))
+        raise ImageProviderError(
+            "openai",
+            f"Unsupported reference-image content type {content_type!r}. "
+            f"Supported: {supported}",
+        )
+    return ext
+
 
 class OpenAIImageProvider:
     """Image generation via OpenAI's Images API.
@@ -134,6 +163,62 @@ class OpenAIImageProvider:
             ) from e
         return _AsyncOpenAI(api_key=api_key)
 
+    def _gpt_image_request(
+        self,
+        *,
+        effective_model: str,
+        prompt: str,
+        negative_prompt: str | None,
+        aspect_ratio: str,
+        quality: str,
+        background: str,
+    ) -> tuple[dict[str, Any], str]:
+        """Build the shared gpt-image request kwargs and resolved content type.
+
+        Returns ``(kwargs, content_type)`` where ``kwargs`` carries prompt, n,
+        size, quality, output_format and (when the model supports it)
+        background — everything common to ``images.generate`` and
+        ``images.edit`` for the gpt-image family. The caller adds ``model`` and,
+        for edits, ``image``.
+
+        Args:
+            effective_model: The resolved model name (post-override).
+            prompt: Positive text prompt.
+            negative_prompt: Appended as ``"Avoid: ..."`` when non-None.
+            aspect_ratio: Maps to OpenAI size parameter.
+            quality: ``"standard"`` or ``"hd"``; mapped to API values.
+            background: Background transparency (``opaque``, ``transparent``).
+
+        Returns:
+            Tuple of (kwargs dict, content_type string).
+
+        Raises:
+            ImageProviderError: When aspect_ratio is not supported.
+        """
+        size = _GPT_IMAGE_SIZES.get(aspect_ratio)
+        if size is None:
+            supported = ", ".join(sorted(_GPT_IMAGE_SIZES))
+            raise ImageProviderError(
+                "openai",
+                f"Unsupported aspect_ratio '{aspect_ratio}'. Supported: {supported}",
+            )
+        effective_prompt = prompt
+        if negative_prompt:
+            effective_prompt = f"{prompt}\n\nAvoid: {negative_prompt}"
+        api_quality = {"standard": "auto", "hd": "high"}.get(quality, quality)
+        kwargs: dict[str, Any] = {
+            "prompt": effective_prompt,
+            "n": 1,
+            "size": size,
+            "quality": api_quality,
+            "output_format": self._output_format,
+        }
+        if effective_model not in _NO_BACKGROUND_GPT_IMAGE:
+            kwargs["background"] = background
+        elif background == "transparent":
+            logger.debug("background_param_skipped model=%s", effective_model)
+        return kwargs, _FORMAT_TO_CONTENT_TYPE[self._output_format]
+
     async def generate(
         self,
         prompt: str,
@@ -155,12 +240,17 @@ class OpenAIImageProvider:
             quality: ``"standard"`` maps to ``"auto"`` for gpt-image-1
                 (lets OpenAI choose). ``"hd"`` maps to ``"high"``.
             background: Background transparency (``opaque``, ``transparent``).
-                Only supported for gpt-image-1; ignored for dall-e-3.
+                Supported for gpt-image-1, gpt-image-1.5, and gpt-image-1-mini;
+                not sent to gpt-image-2 (no alpha support) or dall-e.
             model: Specific model to use for this call (e.g., ``"dall-e-3"``).
                 Overrides the constructor model. Size table selection adjusts
                 automatically.
-            reference_images: Not supported by this provider. Raises
-                :class:`ImageInputUnsupported` when non-empty.
+            reference_images: For gpt-image models, triggers image-to-image
+                editing / multi-image composition via ``images.edit``. Up to
+                16 reference images are accepted. Raises
+                :class:`ImageInputUnsupported` for dall-e models (no
+                no-mask edit endpoint). Raises :class:`TooManyInputImages`
+                when more than 16 references are supplied.
 
         Returns:
             ImageResult with generated image.
@@ -169,34 +259,61 @@ class OpenAIImageProvider:
             ImageProviderError: On API errors.
             ImageContentPolicyError: On content policy rejection.
             ImageProviderConnectionError: On network errors.
-            ImageInputUnsupported: When reference_images are supplied.
+            ImageInputUnsupported: When reference_images are supplied to a
+                non-gpt-image model (dall-e or unknown).
+            TooManyInputImages: When more than 16 reference_images are given.
         """
         if reference_images:
-            raise ImageInputUnsupported("openai", model)
+            return await self._edit(
+                prompt,
+                reference_images=reference_images,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                model=model,
+            )
         effective_model = model or self._model
         # NOTE: any model not matching 'gpt-image*' (e.g. dall-e-2) falls back to
         # DALL-E 3 sizes/format. Unknown models will fail at the API level.
         is_gpt_image = _is_gpt_image_model(effective_model)
-        sizes = _GPT_IMAGE_SIZES if is_gpt_image else _DALLE3_SIZES
-        # dall-e-3 only produces PNG; gpt-image-* uses configured format
-        effective_format = self._output_format if is_gpt_image else "png"
-        content_type = _FORMAT_TO_CONTENT_TYPE[effective_format]
 
-        effective_prompt = prompt
-        if negative_prompt:
-            effective_prompt = f"{prompt}\n\nAvoid: {negative_prompt}"
-
-        api_quality = quality
         if is_gpt_image:
-            api_quality = {"standard": "auto", "hd": "high"}.get(quality, quality)
-
-        size = sizes.get(aspect_ratio)
-        if size is None:
-            supported = ", ".join(sorted(sizes))
-            raise ImageProviderError(
-                "openai",
-                f"Unsupported aspect_ratio '{aspect_ratio}'. Supported: {supported}",
+            gpt_kwargs, content_type = self._gpt_image_request(
+                effective_model=effective_model,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
             )
+            api_kwargs: dict[str, Any] = {"model": effective_model, **gpt_kwargs}
+            size = gpt_kwargs["size"]
+            api_quality = gpt_kwargs["quality"]
+        else:
+            # dall-e-3 only produces PNG; has its own size table
+            sizes = _DALLE3_SIZES
+            size = sizes.get(aspect_ratio)
+            if size is None:
+                supported = ", ".join(sorted(sizes))
+                raise ImageProviderError(
+                    "openai",
+                    f"Unsupported aspect_ratio '{aspect_ratio}'. Supported: {supported}",
+                )
+            effective_prompt = prompt
+            if negative_prompt:
+                effective_prompt = f"{prompt}\n\nAvoid: {negative_prompt}"
+            api_quality = quality
+            content_type = _FORMAT_TO_CONTENT_TYPE["png"]
+            api_kwargs = {
+                "model": effective_model,
+                "prompt": effective_prompt,
+                "n": 1,
+                "size": size,
+                "quality": api_quality,
+                "response_format": "b64_json",
+            }
+            logger.debug("dall-e-3 does not support background parameter, ignoring")
 
         logger.debug(
             "OpenAI image generation: model=%s size=%s quality=%s",
@@ -206,25 +323,6 @@ class OpenAIImageProvider:
         )
 
         try:
-            api_kwargs: dict[str, Any] = {
-                "model": effective_model,
-                "prompt": effective_prompt,
-                "n": 1,
-                "size": size,
-                "quality": api_quality,
-            }
-            if is_gpt_image:
-                api_kwargs["output_format"] = effective_format
-                if effective_model not in _NO_BACKGROUND_GPT_IMAGE:
-                    api_kwargs["background"] = background
-                elif background == "transparent":
-                    logger.debug(
-                        "%s does not support background parameter, ignoring",
-                        effective_model,
-                    )
-            else:
-                api_kwargs["response_format"] = "b64_json"
-                logger.debug("dall-e-3 does not support background parameter, ignoring")
             response = await self._client.images.generate(**api_kwargs)
         except ImageProviderError:
             raise
@@ -255,6 +353,93 @@ class OpenAIImageProvider:
             b64_data,
             content_type=content_type,
             **metadata,
+        )
+
+    async def _edit(
+        self,
+        prompt: str,
+        *,
+        reference_images: Sequence[InputImage],
+        negative_prompt: str | None,
+        aspect_ratio: str,
+        quality: str,
+        background: str,
+        model: str | None,
+    ) -> ImageResult:
+        """Edit/compose using OpenAI ``images.edit`` (gpt-image family only).
+
+        Args:
+            prompt: Edit description.
+            reference_images: 1..16 input images (gpt-image composition).
+            negative_prompt: Appended as ``"Avoid: ..."``.
+            aspect_ratio: Maps to OpenAI size parameter.
+            quality: ``"standard"`` or ``"hd"``; mapped to API values.
+            background: Background transparency (``opaque``, ``transparent``).
+            model: Override model; must be a gpt-image model.
+
+        Returns:
+            ImageResult with edited image and ``edited=True`` in metadata.
+
+        Raises:
+            ImageInputUnsupported: model has no no-mask edit endpoint (dall-e).
+            TooManyInputImages: more than 16 references supplied.
+            ImageProviderError: On API errors.
+            ImageContentPolicyError: On content policy rejection.
+            ImageProviderConnectionError: On network errors.
+        """
+        effective_model = model or self._model
+        if not _is_gpt_image_model(effective_model):
+            raise ImageInputUnsupported("openai", effective_model)
+        if len(reference_images) > _MAX_INPUT_IMAGES:
+            raise TooManyInputImages(
+                "openai", effective_model, _MAX_INPUT_IMAGES, len(reference_images)
+            )
+
+        kwargs, content_type = self._gpt_image_request(
+            effective_model=effective_model,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            background=background,
+        )
+        kwargs["model"] = effective_model
+        kwargs["image"] = [
+            (f"reference_{i}{_ext_for(ref.content_type)}", ref.data, ref.content_type)
+            for i, ref in enumerate(reference_images)
+        ]
+
+        logger.debug(
+            "OpenAI image edit: model=%s refs=%d size=%s",
+            effective_model,
+            len(reference_images),
+            kwargs["size"],
+        )
+        try:
+            response = await self._client.images.edit(**kwargs)
+        except ImageProviderError:
+            raise
+        except Exception as e:
+            self._handle_error(e)
+
+        if not response.data:
+            raise ImageProviderError("openai", "Empty response from image edit API")
+        b64_data = response.data[0].b64_json
+        if not b64_data:
+            raise ImageProviderError("openai", "No image data in edit response")
+        logger.info(
+            "OpenAI image edited: model=%s refs=%d",
+            effective_model,
+            len(reference_images),
+        )
+        return ImageResult.from_base64(
+            b64_data,
+            content_type=content_type,
+            model=effective_model,
+            size=kwargs["size"],
+            quality=quality,
+            api_quality=kwargs["quality"],
+            edited=True,
         )
 
     def _handle_error(self, error: Exception) -> NoReturn:
@@ -326,6 +511,8 @@ class OpenAIImageProvider:
                     supports_mask=True,
                     supports_background=True,
                     supports_negative_prompt=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
                     supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
                     supported_formats=("png", "jpeg", "webp"),
                     supported_qualities=("standard", "hd"),
@@ -350,6 +537,8 @@ class OpenAIImageProvider:
                         supports_mask=True,
                         supports_background=True,
                         supports_negative_prompt=False,
+                        supports_image_input=True,
+                        max_input_images=_MAX_INPUT_IMAGES,
                         supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
                         supported_formats=("png", "jpeg", "webp"),
                         supported_qualities=("standard", "hd"),
@@ -375,6 +564,8 @@ class OpenAIImageProvider:
                     supports_mask=True,
                     supports_background=False,
                     supports_negative_prompt=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
                     supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
                     supported_formats=("png", "jpeg", "webp"),
                     supported_qualities=("standard", "hd"),

@@ -19,6 +19,7 @@ The provider registers automatically when this variable is set.
 | `gpt-image-1` | Current (default) | PNG, JPEG, WebP | Best quality, native format selection |
 | `gpt-image-1.5` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
 | `gpt-image-1-mini` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
+| `gpt-image-2` | Flagship (when listed) | PNG, JPEG, WebP | No transparent background; entry stays dormant until OpenAI's models.list returns the id |
 | `dall-e-3` | Legacy | PNG only | Deprecated May 2026 |
 
 ## Aspect ratios and sizes
@@ -114,6 +115,31 @@ If the API call fails (network error, invalid key), the provider is marked as **
 OpenAI charges per image generated. Pricing varies by model, size, and quality level. See the [OpenAI pricing page](https://openai.com/api/pricing/) for current rates.
 
 `gpt-image-1` is generally more expensive than `dall-e-3` but produces higher quality output with more flexible format options.
+
+## Image input (editing and composition)
+
+The gpt-image family (`gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gpt-image-1-mini`) accepts reference images through the `transform_image` tool. The provider routes these requests through OpenAI's `images.edit` endpoint, supporting both single-image edits and multi-image composition with up to 16 reference images per call.
+
+`dall-e-3` and `dall-e-2` do not support reference-image input. Supplying reference images to either model raises an unsupported-input error (`ImageInputUnsupported`).
+
+### Capability fields
+
+The `list_providers` response includes two fields on each model entry that clients use to determine routing:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `supports_image_input` | bool | `true` for all gpt-image models; `false` for dall-e models |
+| `max_input_images` | int | `16` for gpt-image models; absent for dall-e models |
+
+Use these fields to decide which provider and model to pass to `transform_image`. When `supports_image_input` is `false`, pass the images to a Gemini provider instead.
+
+### Supported reference image formats
+
+The endpoint accepts PNG, JPEG, and WebP references. Each reference image is sent as a named file tuple using the source image's content type.
+
+### Masks
+
+The `transform_image` tool does not send a mask, so edits apply globally using the reference images as compositional context. The underlying `images.edit` endpoint supports masks for region-targeted editing, which `list_providers` reports through `supports_mask`.
 
 ## Error handling
 

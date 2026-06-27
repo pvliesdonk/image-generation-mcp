@@ -542,8 +542,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         Supply one or more reference images (gallery ``image_id``, an
         ``image://`` URI, or — when enabled — a local file path) plus a
         prompt describing the change.  Served by providers that report
-        ``supports_image_input`` in ``list_providers`` (currently Gemini,
-        single reference image); check ``supports_image_input`` /
+        ``supports_image_input`` in ``list_providers`` (Gemini accepts one
+        reference image; OpenAI gpt-image models accept up to 16 for
+        multi-image composition); check ``supports_image_input`` /
         ``max_input_images`` there to route.
 
         Returns immediately; poll ``check_generation_status(image_id)``
@@ -566,7 +567,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             provider: Provider to use, or ``"auto"`` to select
                 automatically.  Image-to-image is served by providers that
                 report ``supports_image_input`` in ``list_providers``
-                (currently Gemini).
+                (Gemini, one reference image; OpenAI gpt-image, up to 16).
             negative_prompt: Things to avoid in the result (provider
                 support varies).
             aspect_ratio: Desired aspect ratio of the output image.
@@ -633,23 +634,29 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         ) as exc:
             raise ValueError(str(exc)) from exc
 
-        # Resolve provider name. For "auto", restrict candidates to
-        # image-input-capable providers so auto-selection cannot pick a
-        # text-only provider and then reject a transform a capable provider
-        # could serve. The _any_provider_supports_image_input guard above
-        # guarantees at least one capable provider exists here.
+        # Resolve provider name. For "auto", restrict candidates to providers
+        # whose capabilities include a model that supports image input AND
+        # accepts at least len(resolved) references, so auto-selection cannot
+        # pick a provider that would then reject this request's reference count
+        # (Gemini caps at 1; OpenAI accepts up to 16). Prefer Gemini among the
+        # eligible providers (higher-quality edits); otherwise the first
+        # eligible provider alphabetically for determinism.
         if provider == "auto":
-            capable_providers = sorted(
+            eligible = sorted(
                 name
                 for name, caps in service.capabilities.items()
-                if any(m.supports_image_input for m in caps.models)
+                if any(
+                    m.supports_image_input and m.max_input_images >= len(resolved)
+                    for m in caps.models
+                )
             )
-            # Prefer Gemini (most capable image-input model) when available;
-            # otherwise pick the first capable provider alphabetically for determinism.
-            # A future explicit priority order can replace this once more providers gain image input.
-            chosen_provider = (
-                "gemini" if "gemini" in capable_providers else capable_providers[0]
-            )
+            if not eligible:
+                raise ValueError(
+                    f"No configured provider accepts {len(resolved)} reference "
+                    "image(s). See list_providers (max_input_images) for "
+                    "per-model limits."
+                )
+            chosen_provider = "gemini" if "gemini" in eligible else eligible[0]
         else:
             chosen_provider = provider
         resolved_name = await asyncio.to_thread(

@@ -110,8 +110,8 @@ Edit or transform an existing image using a model that accepts image input (imag
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `prompt` | str | *(required)* | Description of the desired edit or transformation (natural language) |
-| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source images; currently limited to one image per call (Gemini), check `max_input_images` in `list_providers` |
-| `provider` | str | `"auto"` | Provider to use, or `"auto"`. Use a Gemini provider for image-to-image tasks; check `supports_image_input` in `list_providers` |
+| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source images; Gemini supports one reference image per call, OpenAI gpt-image models support up to 16 (multi-image composition); check `max_input_images` in `list_providers` |
+| `provider` | str | `"auto"` | Provider to use, or `"auto"`. Use a Gemini or OpenAI provider for image-to-image tasks; check `supports_image_input` in `list_providers` |
 | `negative_prompt` | str | `null` | Things to avoid in the result (provider support varies) |
 | `aspect_ratio` | str | `"1:1"` | Desired aspect ratio of the output image |
 | `quality` | str | `"standard"` | Quality level: `standard` or `hd` |
@@ -126,7 +126,7 @@ Each entry in `reference_images` is resolved in order:
 2. **`image://` URI**: a full resource URI, such as `"image://a1b2c3d4e5f6/view"`.
 3. **Local file path**: absolute path on the server host, such as `"/home/user/photo.png"`. Only accepted when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`; rejected with an error otherwise.
 
-Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. This release serves single-reference-image transformations via Gemini models.
+Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. Gemini supports one reference image per call. OpenAI gpt-image models (`gpt-image-1`, `gpt-image-1.5`, `gpt-image-1-mini`, `gpt-image-2`) support up to 16 reference images for multi-image composition. `dall-e-3` and `dall-e-2` do not accept reference images.
 
 ### Return value
 
