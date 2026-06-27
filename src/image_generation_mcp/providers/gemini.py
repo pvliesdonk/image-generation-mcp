@@ -64,6 +64,8 @@ _THINKING_MODELS: frozenset[str] = frozenset(
 # Known Gemini image-capable models in preference order.
 # Discovery returns this static list — models.list() does not reliably filter
 # image-generation models, so we maintain the known set here.
+# When adding a model, also add its reference-image cap to
+# _MAX_INPUT_IMAGES_BY_MODEL below; otherwise the conservative default applies.
 _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
     ("gemini-2.5-flash-image", "Gemini 2.5 Flash Image"),
     ("gemini-3.1-flash-image-preview", "Gemini 3.1 Flash Image Preview"),

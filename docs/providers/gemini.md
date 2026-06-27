@@ -104,6 +104,17 @@ transform_image(
 )
 ```
 
+Multi-image composition passes several reference IDs (Gemini 3 models):
+
+```
+transform_image(
+  prompt="Place the character from the first image into the scene of the second",
+  reference_images=["a1b2c3d4e5f6", "0f1e2d3c4b5a", "9a8b7c6d5e4f"],
+  provider="gemini",
+  model="gemini-3-pro-image-preview"
+)
+```
+
 The same fire-and-forget pattern applies: `transform_image` returns immediately with a pending `image_id`; poll `check_generation_status(image_id)` and call `show_image(uri=original_uri)` once completed.
 
 ## Prompt style
