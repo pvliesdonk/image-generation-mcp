@@ -254,3 +254,33 @@ class TestLoadConfigDeprecatedEnvVars:
         with caplog.at_level(logging.WARNING):
             load_config()
         assert "deprecated" in caplog.text.lower()
+
+
+def test_allow_local_file_input_defaults_false(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT", raising=False)
+    from image_generation_mcp.config import load_config
+
+    assert load_config().allow_local_file_input is False
+
+
+def test_allow_local_file_input_parsed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT", "true")
+    from image_generation_mcp.config import load_config
+
+    assert load_config().allow_local_file_input is True
+
+
+def test_max_input_image_bytes_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES", raising=False)
+    from image_generation_mcp.config import load_config
+
+    assert load_config().max_input_image_bytes == 20 * 1024 * 1024
+
+
+def test_max_input_image_bytes_invalid_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES", "notanumber")
+    from image_generation_mcp.config import load_config
+
+    assert load_config().max_input_image_bytes == 20 * 1024 * 1024

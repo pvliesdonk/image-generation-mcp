@@ -43,6 +43,8 @@ class ProjectConfig:
     transform_cache_size: int = 64
     paid_providers: frozenset[str] = frozenset({"openai"})
     styles_dir: Path = field(default_factory=lambda: _DEFAULT_STYLES_DIR)
+    allow_local_file_input: bool = False
+    max_input_image_bytes: int = 20 * 1024 * 1024
     # CONFIG-FIELDS-END
 
 
@@ -61,6 +63,8 @@ def load_config() -> ProjectConfig:
     - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
     - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list; default ``"openai"``.
     - ``IMAGE_GENERATION_MCP_STYLES_DIR``: style preset dir; default ``~/.image-generation-mcp/styles/``.
+    - ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT``: enable local file input; default ``false``.
+    - ``IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES``: max input image size in bytes; default ``20971520`` (20 MiB).
 
     Plus all generic ``ServerConfig`` env vars (BASE_URL, BEARER_TOKEN,
     OIDC_*, EVENT_STORE_URL, SERVER_NAME, INSTRUCTIONS) — see
@@ -124,6 +128,22 @@ def load_config() -> ProjectConfig:
 
     styles_dir = Path(env(_ENV_PREFIX, "STYLES_DIR") or _DEFAULT_STYLES_DIR)
 
+    allow_local_file_input = parse_bool(
+        env(_ENV_PREFIX, "ALLOW_LOCAL_FILE_INPUT", "false")
+    )
+
+    raw_max_input = env(_ENV_PREFIX, "MAX_INPUT_IMAGE_BYTES")
+    max_input_image_bytes = 20 * 1024 * 1024
+    if raw_max_input:
+        try:
+            max_input_image_bytes = int(raw_max_input)
+        except ValueError:
+            logger.warning(
+                "Invalid MAX_INPUT_IMAGE_BYTES=%r — using default %d",
+                raw_max_input,
+                max_input_image_bytes,
+            )
+
     config = ProjectConfig(
         server=server,
         server_name=server_name,
@@ -137,6 +157,8 @@ def load_config() -> ProjectConfig:
         transform_cache_size=transform_cache_size,
         paid_providers=paid_providers,
         styles_dir=styles_dir,
+        allow_local_file_input=allow_local_file_input,
+        max_input_image_bytes=max_input_image_bytes,
     )
     # CONFIG-FROM-ENV-END
 
