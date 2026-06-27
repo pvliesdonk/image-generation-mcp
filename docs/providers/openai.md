@@ -138,7 +138,7 @@ The endpoint accepts PNG, JPEG, and WebP references. Each reference image is sen
 
 ### Masks
 
-Mask support (inpainting) is not yet implemented for the `images.edit` endpoint. All edits are applied globally using the reference images as compositional context; targeted region editing is a future enhancement.
+The `transform_image` tool does not send a mask, so edits apply globally using the reference images as compositional context. The underlying `images.edit` endpoint supports masks for region-targeted editing, which `list_providers` reports through `supports_mask`.
 
 ## Error handling
 

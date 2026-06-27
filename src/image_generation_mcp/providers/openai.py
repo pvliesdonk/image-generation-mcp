@@ -100,8 +100,20 @@ _CONTENT_TYPE_TO_EXT: dict[str, str] = {
 
 
 def _ext_for(content_type: str) -> str:
-    """Return a filename extension for an input image content type."""
-    return _CONTENT_TYPE_TO_EXT.get(content_type, ".png")
+    """Return the filename extension for a supported input image content type.
+
+    Raises:
+        ImageProviderError: If the content type is not a supported input format.
+    """
+    ext = _CONTENT_TYPE_TO_EXT.get(content_type)
+    if ext is None:
+        supported = ", ".join(sorted(_CONTENT_TYPE_TO_EXT))
+        raise ImageProviderError(
+            "openai",
+            f"Unsupported reference-image content type {content_type!r}. "
+            f"Supported: {supported}",
+        )
+    return ext
 
 
 class OpenAIImageProvider:
@@ -204,9 +216,7 @@ class OpenAIImageProvider:
         if effective_model not in _NO_BACKGROUND_GPT_IMAGE:
             kwargs["background"] = background
         elif background == "transparent":
-            logger.debug(
-                "%s does not support background parameter, ignoring", effective_model
-            )
+            logger.debug("background_param_skipped model=%s", effective_model)
         return kwargs, _FORMAT_TO_CONTENT_TYPE[self._output_format]
 
     async def generate(
@@ -230,7 +240,8 @@ class OpenAIImageProvider:
             quality: ``"standard"`` maps to ``"auto"`` for gpt-image-1
                 (lets OpenAI choose). ``"hd"`` maps to ``"high"``.
             background: Background transparency (``opaque``, ``transparent``).
-                Only supported for gpt-image-1; ignored for dall-e-3.
+                Supported for gpt-image-1, gpt-image-1.5, and gpt-image-1-mini;
+                not sent to gpt-image-2 (no alpha support) or dall-e.
             model: Specific model to use for this call (e.g., ``"dall-e-3"``).
                 Overrides the constructor model. Size table selection adjusts
                 automatically.
@@ -249,7 +260,7 @@ class OpenAIImageProvider:
             ImageContentPolicyError: On content policy rejection.
             ImageProviderConnectionError: On network errors.
             ImageInputUnsupported: When reference_images are supplied to a
-                dall-e model.
+                non-gpt-image model (dall-e or unknown).
             TooManyInputImages: When more than 16 reference_images are given.
         """
         if reference_images:

@@ -473,7 +473,11 @@ class TestOpenAIEdit:
             InputImage(data=b"b", content_type="image/jpeg"),
         ]
         await provider.generate("compose", reference_images=refs)
-        assert len(provider._client.images.edit.call_args.kwargs["image"]) == 2
+        image_arg = provider._client.images.edit.call_args.kwargs["image"]
+        assert len(image_arg) == 2
+        # filenames carry the content-type's extension
+        assert image_arg[0][0].endswith(".png")
+        assert image_arg[1][0].endswith(".jpg")
 
     async def test_edit_too_many_references_raises(self) -> None:
         from image_generation_mcp.providers.types import TooManyInputImages
@@ -517,3 +521,36 @@ class TestOpenAIEdit:
             await provider.generate(
                 "x", reference_images=[InputImage(data=b"a", content_type="image/png")]
             )
+
+    async def test_edit_api_error_is_funneled(self) -> None:
+        from openai import APIConnectionError
+
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(
+            side_effect=APIConnectionError(request=MagicMock())
+        )
+        with pytest.raises(ImageProviderConnectionError):
+            await provider.generate(
+                "x", reference_images=[InputImage(data=b"a", content_type="image/png")]
+            )
+
+    async def test_edit_per_call_dalle_override_rejected(self) -> None:
+        provider = self._mk_provider("gpt-image-1")
+        with pytest.raises(ImageInputUnsupported):
+            await provider.generate(
+                "x",
+                model="dall-e-3",
+                reference_images=[InputImage(data=b"a", content_type="image/png")],
+            )
+
+    async def test_edit_exactly_16_references_accepted(self) -> None:
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+        refs = [InputImage(data=b"x", content_type="image/png") for _ in range(16)]
+        await provider.generate("x", reference_images=refs)
+        provider._client.images.edit.assert_awaited_once()
+        assert len(provider._client.images.edit.call_args.kwargs["image"]) == 16
