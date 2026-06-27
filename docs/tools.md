@@ -98,6 +98,8 @@ Edit or transform an existing image using a model that accepts image input (imag
 
 `transform_image` is distinct from `edit_image` (which applies local geometry transforms such as crop, rotate, and flip directly in the server) and from `generate_image` (text-only, no reference image).
 
+For task-oriented walkthroughs (editing, composition, masking, and SD `strength`), see the [Image input guide](guides/image-input.md).
+
 | Property | Value |
 |----------|-------|
 | **Tags** | `write` (hidden in read-only mode) |
@@ -128,7 +130,7 @@ Each entry in `reference_images` is resolved in order:
 2. **`image://` URI**: a full resource URI, such as `"image://a1b2c3d4e5f6/view"`.
 3. **Local file path**: absolute path on the server host, such as `"/home/user/photo.png"`. Only accepted when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`; rejected with an error otherwise.
 
-Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. Gemini and SD WebUI support one reference image per call. OpenAI gpt-image models (`gpt-image-1`, `gpt-image-1.5`, `gpt-image-1-mini`, `gpt-image-2`) support up to 16 reference images for multi-image composition. `dall-e-3` and `dall-e-2` do not accept reference images.
+Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. Reference-count limits vary by model: SD WebUI accepts a single reference, Gemini accepts several (more on the Gemini 3 models), and OpenAI's gpt-image family accepts the most for multi-image composition. `max_input_images` carries the authoritative per-model value; `dall-e-3` and `dall-e-2` do not accept reference images. See the [Image input guide](guides/image-input.md) for the current capability matrix.
 
 ### Return value
 

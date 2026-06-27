@@ -67,11 +67,39 @@ class ImageProvider(Protocol):
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult: ...
 
     async def discover_capabilities(self) -> ProviderCapabilities: ...
 ```
+
+## Image-input primitive
+
+Reference-image input (image-to-image, composition, masking) extends the same
+`generate()` method rather than adding a parallel method. Three optional
+parameters carry it:
+
+- `reference_images`: a sequence of `InputImage` value objects (decoded bytes
+  plus content type and optional `source_id` provenance). Empty or `None`
+  means text-to-image.
+- `strength`: denoising strength for SD WebUI img2img (`0.0`-`1.0`). Other
+  providers ignore it with a debug log; it has no effect without a reference
+  image.
+- `mask`: a single `InputImage` inpainting mask. Only OpenAI gpt-image models
+  consume it; the other providers raise `ImageProviderError` when a mask is
+  supplied.
+
+Input resolution lives in `_input_images.py`, the only module aware of input
+sources. It maps a gallery `image_id`, an `image://` URI, or a gated local
+file path to an `InputImage`. The `transform_image` tool resolves references,
+then routes on three capability fields exposed by `discover_capabilities`:
+`supports_image_input`, `max_input_images`, and `supports_mask`. Auto-routing
+selects a provider whose model accepts the supplied reference count, and a
+mask request is routed only to a mask-capable model. Result provenance is
+generalized to `source_image_ids: list[str]`.
 
 The optional `model` parameter allows per-call model selection. When set, it
 overrides the provider's constructor default. SD WebUI uses it for both preset
@@ -232,7 +260,7 @@ and injected via FastMCP's `Depends()` system.
 
 1. **Provider registry** -- `register_provider(name, provider)` at startup
 2. **Capability discovery** -- `discover_all_capabilities()` introspects each provider (graceful degradation)
-3. **Generation dispatch** -- `generate(prompt, *, provider, ..., progress_callback=...)` resolves provider and delegates (forwards `progress_callback` to the provider)
+3. **Generation dispatch** -- `generate(prompt, *, provider, ..., reference_images=..., strength=..., mask=..., progress_callback=...)` resolves provider and delegates (forwards reference-image input and `progress_callback` to the provider)
 4. **Image registry** -- `register_image()` saves original + sidecar JSON, indexes in memory
 5. **Image retrieval** -- `get_image(id)` and `list_images()` for registered images
 6. **Startup rebuild** -- `_load_registry()` reconstructs in-memory registry from sidecar files
@@ -368,7 +396,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 - **More providers:** BFL/FLUX, Stability, Ideogram, FAL, Replicate
 - **ComfyUI provider:** Workflow-based API with CLIP text encode nodes
-- **Image editing:** Masks, inpainting, background removal
+- **Background removal:** Automated subject isolation (editing, composition, and masking shipped in epic #256)
 - **Rate limiting:** Per-provider request throttling
 - **Auto-cleanup:** TTL-based scratch directory cleanup
 - **Response caching:** Cache frequently-requested transforms
