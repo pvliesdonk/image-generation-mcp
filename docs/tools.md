@@ -92,6 +92,79 @@ When picking `model`, consult each entry's `style_profile.style_hints` and `styl
 
 ---
 
+## transform_image
+
+Edit or transform an existing image using a model that accepts image input (image-to-image). Accepts one or more reference images alongside a prompt describing the desired change. Returns immediately with a `status: "generating"` response while the transformation runs in the background. Use `check_generation_status(image_id)` to wait for completion, then call `show_image(uri=original_uri)` **once** to display the result.
+
+`transform_image` is distinct from `edit_image` (which applies local geometry transforms — crop, rotate, flip — directly in the server) and from `generate_image` (text-only, no reference image).
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
+| **Task** | `task=True` |
+| **Pattern** | Fire-and-forget — returns in &lt;1s, poll via `check_generation_status`, display via `show_image` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `prompt` | str | *(required)* | Description of the desired edit or transformation (natural language) |
+| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source image(s) |
+| `provider` | str | `"auto"` | Provider to use, or `"auto"`. Use a Gemini provider for image-to-image tasks; check `supports_image_input` in `list_providers` |
+| `negative_prompt` | str | `null` | Things to avoid in the result (provider support varies) |
+| `aspect_ratio` | str | `"1:1"` | Desired aspect ratio of the output image |
+| `quality` | str | `"standard"` | Quality level: `standard` or `hd` |
+| `background` | str | `"opaque"` | Background mode: `opaque` or `transparent` (provider-dependent) |
+| `model` | str | `null` | Specific model ID; see `list_providers` |
+
+### Reference image input forms
+
+Each entry in `reference_images` is resolved in order:
+
+1. **Gallery `image_id`** — a 12-character hex ID from a prior `generate_image` or `transform_image` call (e.g. `"a1b2c3d4e5f6"`).
+2. **`image://` URI** — a full resource URI (e.g. `"image://a1b2c3d4e5f6/view"`).
+3. **Local file path** — absolute path on the server host (e.g. `"/home/user/photo.png"`). Only accepted when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`; rejected with an error otherwise.
+
+Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. This release serves single-reference-image transformations via Gemini models.
+
+### Return value
+
+Returns immediately with a `ToolResult` containing:
+
+1. **TextContent** — JSON metadata with `status: "generating"`:
+2. **ResourceLink** — URI reference to `image://{id}/view` (image pending)
+
+```json
+{
+  "status": "generating",
+  "image_id": "b2c3d4e5f6a1",
+  "prompt": "replace the background with a sunset sky",
+  "provider": "gemini",
+  "source_image_ids": ["a1b2c3d4e5f6"],
+  "original_uri": "image://b2c3d4e5f6a1/view",
+  "metadata_uri": "image://b2c3d4e5f6a1/metadata"
+}
+```
+
+The `source_image_ids` field records the gallery IDs of the resolved reference images for provenance.
+
+Use `check_generation_status(image_id)` to poll for completion, then call `show_image(uri=original_uri)` **once** to display the finished image.
+
+### Example
+
+```
+User: Replace the background of my last image with a sunset sky
+
+Tool call: transform_image
+  prompt: "Replace the background with a dramatic sunset sky, warm orange and pink tones"
+  reference_images: ["a1b2c3d4e5f6"]
+  provider: "gemini"
+  aspect_ratio: "16:9"
+```
+
+---
+
 ## check_generation_status
 
 Lightweight status check for background image generation. Returns a short JSON string with `status`, `image_id`, and progress info — no image data, no heavy UI card.

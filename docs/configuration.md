@@ -59,6 +59,16 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | int | `64` | Maximum number of transformed image results (resize/crop/convert) to keep in memory. Repeated requests for the same transform parameters are served from cache. Set to `0` to disable caching. |
 
+## Reference image input (`transform_image`)
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | bool | `false` | Enable local filesystem paths as `transform_image` reference images. When `false` (default), only gallery `image_id` values and `image://` URIs are accepted. |
+| `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` | int | `20971520` | Per-reference maximum byte size for input images (default 20 MiB). References exceeding this limit are rejected before the provider call. |
+
+!!! warning "Security: local file input"
+    Setting `ALLOW_LOCAL_FILE_INPUT=true` grants callers read access to any file readable by the server process — they can pass arbitrary paths. Enable only for trusted callers (e.g. a local single-user Claude Desktop installation). Leave disabled on shared or network-accessible deployments.
+
 ## Session persistence (HTTP transport)
 
 | Variable | Type | Default | Description |

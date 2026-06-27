@@ -31,6 +31,7 @@ With this server mounted in an MCP client, you can ask:
 - **"Crop this image to a 1:1 square centred on the subject and resize to 512px."** Uses `image://{id}/view?width=512&height=512&crop_x=...` resource transforms.
 - **"Show me my recent generations."** Browses the gallery via the `image://list` resource and the MCP Apps gallery viewer.
 - **"Save this style as 'cyberpunk-night' so I can apply it to future requests."** Uses the style library — markdown briefs the LLM interprets per-provider.
+- **"Replace the background of my last photo with a sunset sky."** Uses `transform_image` with the gallery `image_id` as a reference — image-to-image via Gemini.
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -232,6 +233,13 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |---|---|---|---|
 | `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | `openai,gemini` | No | Comma-separated paid provider names. Triggers elicitation confirmation on capable clients. Set to empty to disable. |
 | `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | `64` | No | Max cached transforms. Set to `0` to disable caching. |
+
+### Reference image input (`transform_image`)
+
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | `false` | No | Enable local filesystem paths as `transform_image` reference images. **Security:** grants callers server-filesystem read access via path — enable only for trusted callers or local single-user deployments. |
+| `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` | `20971520` | No | Per-reference maximum byte size for input images (default 20 MiB). |
 
 ### File Exchange (MCP downloads)
 
