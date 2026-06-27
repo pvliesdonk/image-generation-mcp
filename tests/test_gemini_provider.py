@@ -528,14 +528,15 @@ class TestGeminiProvider:
         mock_response = MagicMock()
         mock_response.parts = [mock_part]
         provider._client = MagicMock()
-        provider._client.aio.models.generate_content = AsyncMock(
-            return_value=mock_response
-        )
+        gen = AsyncMock(return_value=mock_response)
+        provider._client.aio.models.generate_content = gen
         refs = [InputImage(data=b"x", content_type="image/png") for _ in range(5)]
         # 5 refs exceeds 2.5-flash's cap (3) but is within gemini-3-pro's (14).
         await provider.generate(
             "compose", model="gemini-3-pro-image-preview", reference_images=refs
         )  # no raise
+        # [prompt, 5 image parts]
+        assert len(gen.call_args.kwargs["contents"]) == 6
 
     async def test_generate_ignores_strength(self) -> None:
         """Passing strength=0.5 is accepted and not forwarded to generate_content kwargs."""
