@@ -34,9 +34,14 @@ PROVIDERS_IN_ORDER: tuple[tuple[str, str], ...] = (
 
 
 def _profile_block(profile: StyleProfile) -> str:
-    lifecycle_marker = (
-        "" if profile.lifecycle == "current" else f" ({profile.lifecycle})"
-    )
+    # Append a lifecycle marker for non-current models, unless the label already
+    # states it (several labels embed "(legacy)" / "(deprecated)" themselves).
+    lifecycle_marker = ""
+    if (
+        profile.lifecycle != "current"
+        and profile.lifecycle not in profile.label.lower()
+    ):
+        lifecycle_marker = f" ({profile.lifecycle})"
     note_line = f"\n> {profile.deprecation_note}\n" if profile.deprecation_note else ""
     return (
         f"### {profile.label}{lifecycle_marker}\n"

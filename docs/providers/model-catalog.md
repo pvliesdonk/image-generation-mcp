@@ -19,7 +19,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 | `gpt-image-1.5` | OpenAI GPT Image 1.5 | current |
 | `gpt-image-2` | OpenAI GPT Image 2 | current |
 
-### OpenAI DALL-E 2 (legacy) (legacy)
+### OpenAI DALL-E 2 (legacy)
 
 > Use only for inpainting on legacy flows. Prefer gpt-image-1.5 for any new generation work.
 
@@ -31,7 +31,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 **Bad prompt:** `Detailed photoreal product shot for a marketing campaign (use gpt-image-1.5 instead; DALL-E 2 quality is well behind)`
 
-### OpenAI DALL-E 3 (deprecated) (deprecated)
+### OpenAI DALL-E 3 (deprecated)
 
 > OpenAI API removal scheduled 2026-05-12. Migrate to gpt-image-1.5 for new long-lived workflows.
 
@@ -43,7 +43,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 **Bad prompt:** `A birthday cake that says "HAPPY BIRTHDAY SARAH" in elegant script (DALL-E 3 will likely garble the text; route to gpt-image-1.5 for typography-critical work)`
 
-### OpenAI GPT Image 1 (legacy) (legacy)
+### OpenAI GPT Image 1 (legacy)
 
 > Newer OpenAI image models (gpt-image-1.5) offer better fidelity. This model remains available for compatibility.
 
