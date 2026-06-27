@@ -64,6 +64,29 @@ class ImageResult:
         )
 
 
+@dataclass(frozen=True)
+class InputImage:
+    """A reference image supplied as input to a generation call.
+
+    The input counterpart of :class:`ImageResult`.
+
+    Attributes:
+        data: Raw image bytes.
+        content_type: MIME type (e.g., ``image/png``).
+        source_id: Gallery image id when resolved from the store, else
+            ``None`` (e.g. for local-file sources).
+    """
+
+    data: bytes
+    content_type: str = "image/png"
+    source_id: str | None = None
+
+    @property
+    def size_bytes(self) -> int:
+        """Size of the image data in bytes."""
+        return len(self.data)
+
+
 @runtime_checkable
 class ImageProvider(Protocol):
     """Protocol for image generation backends.
@@ -146,3 +169,29 @@ class ImageContentPolicyError(ImageProviderError):
 
 class ImageProviderConnectionError(ImageProviderError):
     """Raised when the image provider is unreachable."""
+
+
+class ImageInputUnsupported(ImageProviderError):
+    """Raised when a provider/model cannot accept reference images."""
+
+    def __init__(self, provider: str, model: str | None = None) -> None:
+        target = f" model {model!r}" if model else ""
+        super().__init__(
+            provider,
+            f"does not support reference-image input{target}. "
+            "Use a Gemini model for image-to-image edits.",
+        )
+
+
+class TooManyInputImages(ImageProviderError):
+    """Raised when more reference images are supplied than a model accepts."""
+
+    def __init__(
+        self, provider: str, model: str | None, max_input_images: int, given: int
+    ) -> None:
+        target = f" model {model!r}" if model else ""
+        super().__init__(
+            provider,
+            f"{target} accepts at most {max_input_images} reference image(s); "
+            f"{given} were given.",
+        )

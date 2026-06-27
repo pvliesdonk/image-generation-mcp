@@ -126,3 +126,31 @@ class TestExceptions:
             ImageProviderConnectionError,
         ):
             assert issubclass(cls, Exception)
+
+
+def test_input_image_size_bytes() -> None:
+    from image_generation_mcp.providers.types import InputImage
+
+    img = InputImage(data=b"1234", content_type="image/png", source_id="abc123")
+    assert img.size_bytes == 4
+    assert img.source_id == "abc123"
+
+
+def test_image_input_unsupported_message() -> None:
+    from image_generation_mcp.providers.types import (
+        ImageInputUnsupported,
+        ImageProviderError,
+    )
+
+    exc = ImageInputUnsupported("openai", "gpt-image-2")
+    assert isinstance(exc, ImageProviderError)
+    assert "gpt-image-2" in str(exc)
+    assert exc.provider == "openai"
+
+
+def test_too_many_input_images_message() -> None:
+    from image_generation_mcp.providers.types import TooManyInputImages
+
+    exc = TooManyInputImages("gemini", "gemini-2.5-flash-image", 1, 3)
+    assert "1" in str(exc)
+    assert "3" in str(exc)
