@@ -117,6 +117,7 @@ Edit or transform an existing image using a model that accepts image input (imag
 | `quality` | str | `"standard"` | Quality level: `standard` or `hd` |
 | `background` | str | `"opaque"` | Background mode: `opaque` or `transparent` (provider-dependent) |
 | `model` | str | `null` | Specific model ID; see `list_providers` |
+| `strength` | float | `null` | SD WebUI only: denoising strength for image-to-image (0.0 to 1.0, default 0.75 when omitted). Lower values preserve more of the reference image; higher values regenerate more. Ignored by Gemini and OpenAI. Has no effect without a reference image. |
 
 ### Reference image input forms
 
