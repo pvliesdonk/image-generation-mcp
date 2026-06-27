@@ -18,8 +18,11 @@ import logging
 import re
 import time
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
@@ -58,6 +61,7 @@ from .providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    InputImage,
 )
 from .service import ImageRecord, ImageService, PendingGeneration
 
@@ -68,6 +72,183 @@ _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
 _GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
+
+async def _confirm_paid_or_cancel(
+    ctx: Context,
+    config: ProjectConfig,
+    resolved_name: str,
+    model: str | None,
+) -> ToolResult | None:
+    """Confirm a paid provider via elicitation; return a cancel result or None.
+
+    Returns ``None`` when generation may proceed (provider is free, the client
+    lacks elicitation support, or the user accepted). Returns a cancellation
+    :class:`ToolResult` when the user declined.
+
+    Args:
+        ctx: The MCP request context.
+        config: The project configuration (used to check ``paid_providers``).
+        resolved_name: The resolved provider name.
+        model: The model override, if any (included in the elicitation prompt).
+
+    Returns:
+        ``None`` when generation may proceed, or a cancellation
+        :class:`ToolResult` when the user declined.
+    """
+    if resolved_name not in config.paid_providers:
+        return None
+    try:
+        supports_elicit = ctx.session.check_client_capability(
+            ClientCapabilities(elicitation=ElicitationCapability())
+        )
+    except Exception:
+        logger.debug(
+            "check_client_capability failed; assuming no elicitation support",
+            exc_info=True,
+        )
+        supports_elicit = False
+    if not supports_elicit:
+        return None
+    elicit_result = await ctx.elicit(
+        f"This will use {resolved_name}"
+        f"{f' ({model})' if model else ''}"
+        ", which costs money. Proceed?",
+        response_type=None,
+    )
+    if not isinstance(elicit_result, AcceptedElicitation):
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=(
+                        f"Image generation cancelled — {resolved_name} "
+                        "was not confirmed."
+                    ),
+                )
+            ]
+        )
+    return None
+
+
+def _start_background_generation(
+    service: ImageService,
+    *,
+    image_id: str,
+    prompt: str,
+    resolved_name: str,
+    negative_prompt: str | None,
+    aspect_ratio: str,
+    quality: str,
+    background: str,
+    model: str | None,
+    reference_images: Sequence[InputImage] | None = None,
+    source_image_ids: list[str] | None = None,
+    label: str = "generation",
+) -> None:
+    """Register a pending entry and spawn the background generation task.
+
+    Shared by ``generate_image`` (text-to-image) and ``transform_image``
+    (reference-image input). ``reference_images`` and ``source_image_ids``
+    are empty for plain text-to-image.
+
+    Args:
+        service: The :class:`ImageService` instance.
+        image_id: Pre-allocated image ID for this generation.
+        prompt: Text description of the desired image.
+        resolved_name: The resolved provider name.
+        negative_prompt: Things to avoid in the image, or ``None``.
+        aspect_ratio: Desired aspect ratio (e.g. ``"1:1"``).
+        quality: Quality level (``"standard"`` or ``"hd"``).
+        background: Background transparency (``"opaque"`` or ``"transparent"``).
+        model: Specific model override, or ``None``.
+        reference_images: Optional reference images for image-to-image tasks.
+        source_image_ids: Optional list of source image IDs to record as
+            provenance on the resulting :class:`ImageRecord`.
+        label: Short label used in log messages (e.g. ``"generation"`` or
+            ``"transformation"``).
+    """
+    service.register_pending(
+        image_id=image_id,
+        prompt=prompt,
+        provider=resolved_name,
+        negative_prompt=negative_prompt,
+        aspect_ratio=aspect_ratio,
+        quality=quality,
+        background=background,
+        model=model,
+    )
+
+    async def _run() -> None:
+        try:
+            pending = service.get_pending(image_id)
+            if pending is None:
+                logger.warning(
+                    "get_pending(%s) returned None; progress updates will be lost",
+                    image_id,
+                )
+
+            def _on_progress(fraction: float, message: str) -> None:
+                if pending is not None:
+                    pending.progress = fraction
+                    pending.progress_message = message
+
+            provider_name, result = await service.generate(
+                prompt,
+                provider=resolved_name,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                model=model,
+                reference_images=reference_images,
+                progress_callback=_on_progress,
+            )
+            await asyncio.to_thread(
+                service.register_image,
+                result,
+                provider_name,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                image_id=image_id,
+                source_image_ids=source_image_ids or [],
+            )
+            service.complete_pending(image_id)
+            logger.info("Background %s completed: %s", label, image_id)
+        except ImageContentPolicyError as exc:
+            service.fail_pending(
+                image_id,
+                "Content policy rejected the prompt. "
+                "Try rephrasing or use a different provider.",
+            )
+            logger.error(
+                "Background %s failed (content policy): %s: %s", label, image_id, exc
+            )
+        except ImageProviderConnectionError as exc:
+            service.fail_pending(
+                image_id,
+                "Provider is unreachable. "
+                "Check that it is running, or try a different provider.",
+            )
+            logger.error(
+                "Background %s failed (connection): %s: %s", label, image_id, exc
+            )
+        except Exception as exc:
+            service.fail_pending(image_id, str(exc))
+            logger.error(
+                "Background %s failed: %s: %s",
+                label,
+                image_id,
+                exc,
+                exc_info=True,
+            )
+
+    task = asyncio.create_task(_run())
+    _BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_BACKGROUND_TASKS.discard)
 
 
 def _build_lifecycle_warnings(
@@ -244,123 +425,23 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         # If the resolved provider is paid and the client supports
         # elicitation, ask for confirmation before spending money.
-        if resolved_name in config.paid_providers:
-            try:
-                supports_elicit = ctx.session.check_client_capability(
-                    ClientCapabilities(elicitation=ElicitationCapability())
-                )
-            except Exception:
-                logger.debug(
-                    "check_client_capability failed; assuming no elicitation support",
-                    exc_info=True,
-                )
-                supports_elicit = False
+        cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
+        if cancel is not None:
+            return cancel
 
-            if supports_elicit:
-                elicit_result = await ctx.elicit(
-                    f"This will use {resolved_name}"
-                    f"{f' ({model})' if model else ''}"
-                    ", which costs money. Proceed?",
-                    response_type=None,
-                )
-                if not isinstance(elicit_result, AcceptedElicitation):
-                    return ToolResult(
-                        content=[
-                            TextContent(
-                                type="text",
-                                text=f"Image generation cancelled — {resolved_name} was not confirmed.",
-                            )
-                        ]
-                    )
-
-        # Pre-allocate image ID and register as pending
+        # Pre-allocate image ID and spawn background generation task
         image_id = service.allocate_image_id()
-        service.register_pending(
+        _start_background_generation(
+            service,
             image_id=image_id,
             prompt=prompt,
-            provider=resolved_name,
+            resolved_name=resolved_name,
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             quality=quality,
             background=background,
             model=model,
         )
-
-        # Spawn background generation task
-        async def _background_generate() -> None:
-            try:
-                # Progress callback updates PendingGeneration so show_image
-                # polling returns step-level detail for SD WebUI.
-                pending = service.get_pending(image_id)
-                if pending is None:
-                    logger.warning(
-                        "get_pending(%s) returned None; progress updates will be lost",
-                        image_id,
-                    )
-
-                def _on_progress(fraction: float, message: str) -> None:
-                    if pending is not None:
-                        pending.progress = fraction
-                        pending.progress_message = message
-
-                provider_name, result = await service.generate(
-                    prompt,
-                    provider=resolved_name,
-                    negative_prompt=negative_prompt,
-                    aspect_ratio=aspect_ratio,
-                    quality=quality,
-                    background=background,
-                    model=model,
-                    progress_callback=_on_progress,
-                )
-                await asyncio.to_thread(
-                    service.register_image,
-                    result,
-                    provider_name,
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    aspect_ratio=aspect_ratio,
-                    quality=quality,
-                    background=background,
-                    image_id=image_id,
-                )
-                service.complete_pending(image_id)
-                logger.info("Background generation completed: %s", image_id)
-            except ImageContentPolicyError as exc:
-                service.fail_pending(
-                    image_id,
-                    "Content policy rejected the prompt. "
-                    "Try rephrasing or use a different provider.",
-                )
-                logger.error(
-                    "Background generation failed (content policy): %s: %s",
-                    image_id,
-                    exc,
-                )
-            except ImageProviderConnectionError as exc:
-                service.fail_pending(
-                    image_id,
-                    "Provider is unreachable. "
-                    "Check that it is running, or try a different provider.",
-                )
-                logger.error(
-                    "Background generation failed (connection): %s: %s",
-                    image_id,
-                    exc,
-                )
-            except Exception as exc:
-                service.fail_pending(image_id, str(exc))
-                logger.error(
-                    "Background generation failed: %s: %s",
-                    image_id,
-                    exc,
-                    exc_info=True,
-                )
-
-        task = asyncio.create_task(_background_generate())
-        # Hold a strong reference to prevent GC before completion
-        _BACKGROUND_TASKS.add(task)
-        task.add_done_callback(_BACKGROUND_TASKS.discard)
 
         # Resolve prompt_style from capabilities for the response
         prompt_style = None

@@ -151,6 +151,24 @@ class TestGenerateImageReturnShape:
         link_items = [c for c in result.content if isinstance(c, ResourceLink)]
         assert str(link_items[0].uri) == f"image://{image_id}/view"
 
+    async def test_generate_image_background_completes(
+        self, service: ImageService
+    ) -> None:
+        """Background task completes and persists an ImageRecord (covers _start_background_generation)."""
+        result = await self._call_generate(service)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        image_id = json.loads(text_items[0].text)["image_id"]
+
+        pending = None
+        for _ in range(100):
+            pending = service.get_pending(image_id)
+            if pending and pending.status in ("completed", "failed"):
+                break
+            await asyncio.sleep(0.02)
+
+        assert pending is not None and pending.status == "completed"
+        assert service.get_image(image_id).id == image_id
+
 
 # ---------------------------------------------------------------------------
 # generate_image: tool registration properties
