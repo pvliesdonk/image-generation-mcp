@@ -434,6 +434,7 @@ class ImageService:
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> tuple[str, ImageResult]:
         """Generate an image using a provider.
@@ -453,6 +454,10 @@ class ImageService:
             strength: Denoising strength (0.0-1.0) for image-to-image. Only
                 SD WebUI uses it; other providers ignore it. Has no effect
                 without ``reference_images``.
+            mask: Optional mask image for inpainting. Only OpenAI gpt-image
+                models support it; other providers raise
+                :class:`ImageProviderError`. Applies to the first reference
+                image.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  Only SD WebUI
                 uses this; other providers ignore it.
@@ -493,6 +498,7 @@ class ImageService:
             model=model,
             reference_images=reference_images,
             strength=strength,
+            mask=mask,
             progress_callback=progress_callback,
         )
 

@@ -4,8 +4,8 @@ Supports the ``gpt-image-*`` family (``gpt-image-2`` current flagship,
 ``gpt-image-1.5`` previous-generation flagship — the right pick for
 transparent backgrounds since gpt-image-2 dropped alpha support;
 ``gpt-image-1`` / ``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
-(deprecated, API removal scheduled 2026-05-12) plus ``dall-e-2`` (legacy,
-inpainting-only). Lifecycle metadata flows through
+(deprecated, API removal scheduled 2026-05-12) plus ``dall-e-2`` (legacy;
+this server does not route edits or masks to it). Lifecycle metadata flows through
 ``providers.model_styles.MODEL_STYLES`` into ``list_providers``.
 """
 
@@ -110,7 +110,7 @@ def _ext_for(content_type: str) -> str:
         supported = ", ".join(sorted(_CONTENT_TYPE_TO_EXT))
         raise ImageProviderError(
             "openai",
-            f"Unsupported reference-image content type {content_type!r}. "
+            f"Unsupported input image content type {content_type!r}. "
             f"Supported: {supported}",
         )
     return ext
@@ -230,6 +230,7 @@ class OpenAIImageProvider:
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
@@ -249,10 +250,14 @@ class OpenAIImageProvider:
             reference_images: For gpt-image models, triggers image-to-image
                 editing / multi-image composition via ``images.edit``. Up to
                 16 reference images are accepted. Raises
-                :class:`ImageInputUnsupported` for dall-e models (no
-                no-mask edit endpoint). Raises :class:`TooManyInputImages`
+                :class:`ImageInputUnsupported` for non-gpt-image models
+                (no edit endpoint). Raises :class:`TooManyInputImages`
                 when more than 16 references are supplied.
             strength: Ignored — OpenAI does not support denoising strength.
+            mask: Optional mask image for inpainting. Forwarded to
+                ``images.edit`` when reference images are present. Must match
+                the first reference image's size and format and carry an alpha
+                channel; format/size mismatches return a 400 from OpenAI.
 
         Returns:
             ImageResult with generated image.
@@ -277,7 +282,12 @@ class OpenAIImageProvider:
                 quality=quality,
                 background=background,
                 model=model,
+                mask=mask,
             )
+        if mask is not None:
+            # A mask only applies to the img2img (edit) path; reject rather than
+            # silently drop it on the text-to-image path.
+            raise ImageProviderError("openai", "mask requires reference_images")
         effective_model = model or self._model
         # NOTE: any model not matching 'gpt-image*' (e.g. dall-e-2) falls back to
         # DALL-E 3 sizes/format. Unknown models will fail at the API level.
@@ -370,6 +380,7 @@ class OpenAIImageProvider:
         quality: str,
         background: str,
         model: str | None,
+        mask: InputImage | None = None,
     ) -> ImageResult:
         """Edit/compose using OpenAI ``images.edit`` (gpt-image family only).
 
@@ -381,12 +392,17 @@ class OpenAIImageProvider:
             quality: ``"standard"`` or ``"hd"``; mapped to API values.
             background: Background transparency (``opaque``, ``transparent``).
             model: Override model; must be a gpt-image model.
+            mask: Optional inpainting mask forwarded to ``images.edit`` as a
+                file tuple. Must match the first reference image's size and
+                format and carry an alpha channel; format/size mismatches are
+                enforced by OpenAI and surface as 400 errors via
+                :meth:`_handle_error`.
 
         Returns:
             ImageResult with edited image and ``edited=True`` in metadata.
 
         Raises:
-            ImageInputUnsupported: model has no no-mask edit endpoint (dall-e).
+            ImageInputUnsupported: model has no edit endpoint (dall-e-3).
             TooManyInputImages: more than 16 references supplied.
             ImageProviderError: On API errors.
             ImageContentPolicyError: On content policy rejection.
@@ -413,11 +429,18 @@ class OpenAIImageProvider:
             (f"reference_{i}{_ext_for(ref.content_type)}", ref.data, ref.content_type)
             for i, ref in enumerate(reference_images)
         ]
+        if mask is not None:
+            kwargs["mask"] = (
+                f"mask{_ext_for(mask.content_type)}",
+                mask.data,
+                mask.content_type,
+            )
 
         logger.debug(
-            "OpenAI image edit: model=%s refs=%d size=%s",
+            "OpenAI image edit: model=%s refs=%d mask=%s size=%s",
             effective_model,
             len(reference_images),
+            mask is not None,
             kwargs["size"],
         )
         try:
@@ -604,7 +627,10 @@ class OpenAIImageProvider:
                     display_name="DALL-E 2",
                     can_generate=True,
                     can_edit=True,
-                    supports_mask=True,
+                    # The server's edit/mask path is gpt-image-only, and
+                    # supports_image_input defaults to False, so masks can never
+                    # route here; advertise supports_mask=False to match.
+                    supports_mask=False,
                     supports_background=False,
                     supports_negative_prompt=False,
                     supported_aspect_ratios=("1:1",),

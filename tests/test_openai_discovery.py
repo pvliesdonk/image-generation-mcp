@@ -286,7 +286,9 @@ class TestDiscoverDalle2Fields:
         assert m.display_name == "DALL-E 2"
         assert m.can_generate is True
         assert m.can_edit is True
-        assert m.supports_mask is True
+        # The server's edit/mask path is gpt-image-only and dall-e-2 has no
+        # image-input support, so masks can never route here.
+        assert m.supports_mask is False
         assert m.supports_background is False
         assert m.supported_aspect_ratios == ("1:1",)
         assert m.supported_formats == ("png",)

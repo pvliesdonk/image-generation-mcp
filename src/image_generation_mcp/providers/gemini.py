@@ -142,6 +142,7 @@ class GeminiImageProvider:
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image using the Gemini generateContent API.
@@ -165,6 +166,8 @@ class GeminiImageProvider:
                 When provided, the image bytes are sent as inline image parts
                 alongside the prompt for guided generation.
             strength: Ignored — Gemini does not support denoising strength.
+            mask: Not supported — Gemini does not support inpainting masks.
+                Raises :class:`ImageProviderError` when supplied.
             progress_callback: Ignored — Gemini does not report progress.
 
         Returns:
@@ -177,6 +180,11 @@ class GeminiImageProvider:
             TooManyInputImages: If more reference images than the model's cap
                 are supplied.
         """
+        # Reject unsupported masks before importing the SDK, so the guard is
+        # reachable even if google-genai is missing.
+        if mask is not None:
+            raise ImageProviderError("gemini", "mask is not supported by this provider")
+
         from google.genai import types
 
         if strength is not None:

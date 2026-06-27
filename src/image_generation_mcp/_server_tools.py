@@ -169,6 +169,7 @@ def _start_background_generation(
     model: str | None,
     reference_images: Sequence[InputImage] | None = None,
     strength: float | None = None,
+    mask: InputImage | None = None,
     source_image_ids: list[str] | None = None,
     label: str = "generation",
 ) -> None:
@@ -192,6 +193,9 @@ def _start_background_generation(
         strength: Denoising strength (0.0-1.0) for image-to-image. Forwarded
             to the provider; only SD WebUI uses it. Has no effect without
             ``reference_images``.
+        mask: Optional resolved mask image for inpainting. Only OpenAI
+            gpt-image models support it; other providers raise
+            :class:`ImageProviderError`. Applies to the first reference image.
         source_image_ids: Optional list of source image IDs to record as
             provenance on the resulting :class:`ImageRecord`.
         label: Short label used in log messages (e.g. ``"generation"`` or
@@ -232,6 +236,7 @@ def _start_background_generation(
                 model=model,
                 reference_images=reference_images,
                 strength=strength,
+                mask=mask,
                 progress_callback=_on_progress,
             )
             await asyncio.to_thread(
@@ -539,6 +544,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         background: str = "opaque",
         model: str | None = None,
         strength: float | None = None,
+        mask: str | None = None,
         service: ImageService = Depends(get_service),
         config: ProjectConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
@@ -551,6 +557,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         ``supports_image_input`` in ``list_providers``; each provider's
         ``max_input_images`` there gives its reference-image limit (some
         accept one, others up to 16 for multi-image composition).
+
+        Optionally supply a ``mask`` image (gallery ``image_id`` or URI) for
+        inpainting — the mask defines which region of the first reference image
+        to repaint.  Only mask-capable providers (currently OpenAI gpt-image
+        family) are routed when a mask is given.
 
         Returns immediately; poll ``check_generation_status(image_id)``
         and then ``show_image(uri=original_uri)`` once completed — same
@@ -585,6 +596,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 reference image). Used only by SD WebUI and only with a
                 reference image; other providers and the text-to-image
                 path ignore it.
+            mask: Optional gallery ``image_id`` or ``image://`` URI of a
+                mask image for inpainting. Defines which region of the
+                first reference image to repaint. Only mask-capable
+                providers (currently OpenAI gpt-image models) are routed
+                when this is supplied; other providers raise an error.
+                Applies to the first reference image.
 
         Returns:
             JSON with ``status``, ``image_id``, ``original_uri`` (pending).
@@ -646,29 +663,60 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         ) as exc:
             raise ValueError(str(exc)) from exc
 
+        # Resolve mask image when provided
+        resolved_mask: InputImage | None = None
+        if mask is not None:
+            try:
+                resolved_mask = (
+                    await asyncio.to_thread(
+                        resolve_references,
+                        [mask],
+                        loader=_loader,
+                        allow_local_files=config.allow_local_file_input,
+                        max_bytes=config.max_input_image_bytes,
+                    )
+                )[0]
+            except (
+                ImageReferenceNotFound,
+                LocalFileInputDisabled,
+                InputImageTooLarge,
+                InvalidInputImage,
+            ) as exc:
+                raise ValueError(str(exc)) from exc
+
         # Resolve provider name. For "auto", restrict candidates to providers
         # whose capabilities include a model that supports image input AND
         # accepts at least len(resolved) references, so auto-selection cannot
         # pick a provider that would then reject this request's reference count
         # (caps vary by model and are read from max_input_images below).
+        # When a mask is given, additionally require supports_mask.
         # Prefer Gemini among the eligible providers (higher-quality edits);
         # the explicit check keeps that preference robust if a future provider
         # would otherwise sort ahead of "gemini". Else pick the first eligible
         # provider alphabetically for determinism.
         if provider == "auto":
+            # The mask gate uses the original `mask` str param (not
+            # resolved_mask): either being non-None means a mask was requested;
+            # resolved_mask is None only when mask is None.
             eligible = sorted(
                 name
                 for name, caps in service.capabilities.items()
                 if any(
-                    m.supports_image_input and m.max_input_images >= len(resolved)
+                    m.supports_image_input
+                    and m.max_input_images >= len(resolved)
+                    and (mask is None or m.supports_mask)
                     for m in caps.models
                 )
             )
             if not eligible:
+                ref_clause = (
+                    f"{len(resolved)} reference image(s) with a mask"
+                    if mask is not None
+                    else f"{len(resolved)} reference image(s)"
+                )
                 raise ValueError(
-                    f"No configured provider accepts {len(resolved)} reference "
-                    "image(s). See list_providers (max_input_images) for "
-                    "per-model limits."
+                    f"No configured provider accepts {ref_clause}. See "
+                    "list_providers (max_input_images) for per-model limits."
                 )
             chosen_provider = "gemini" if "gemini" in eligible else eligible[0]
         else:
@@ -693,12 +741,17 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             if m.supports_image_input
             and (model is None or m.model_id == model)
             and m.max_input_images >= len(resolved)
+            and (mask is None or m.supports_mask)
         ]
         if not capable:
+            ref_clause = (
+                f"{len(resolved)} reference image(s) with a mask"
+                if mask is not None
+                else f"{len(resolved)} reference image(s)"
+            )
             raise ValueError(
-                f"Provider '{resolved_name}' has no model accepting "
-                f"{len(resolved)} reference image(s). See list_providers "
-                "for models supporting reference-image input."
+                f"Provider '{resolved_name}' has no model accepting {ref_clause}. "
+                "See list_providers for models supporting reference-image input."
             )
 
         cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
@@ -718,6 +771,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 prompt_style = caps.models[0].prompt_style
 
         source_ids = [r.source_id for r in resolved if r.source_id]
+        if resolved_mask and resolved_mask.source_id:
+            source_ids.append(resolved_mask.source_id)
         image_id = service.allocate_image_id()
         _start_background_generation(
             service,
@@ -731,6 +786,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             model=model,
             reference_images=resolved,
             strength=strength,
+            mask=resolved_mask,
             source_image_ids=source_ids,
             label="transform",
         )

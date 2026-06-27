@@ -26,8 +26,8 @@ class ModelCapabilities:
         model_id: Model identifier (e.g., ``"gpt-image-1"``).
         display_name: Human-readable display name.
         can_generate: Supports text-to-image generation.
-        can_edit: Supports image editing (future).
-        supports_mask: Supports inpainting masks (future).
+        can_edit: Supports image editing (image-to-image).
+        supports_mask: Supports inpainting masks (an alpha-channel mask image).
         supported_aspect_ratios: Aspect ratio strings this model accepts.
         supported_qualities: Quality level strings this model accepts.
         supported_formats: Output format strings (e.g., ``"png"``, ``"webp"``).
