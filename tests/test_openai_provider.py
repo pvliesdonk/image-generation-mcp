@@ -548,7 +548,7 @@ class TestOpenAIEdit:
     async def test_edit_unsupported_content_type_raises(self) -> None:
         provider = self._mk_provider()
         with pytest.raises(
-            ImageProviderError, match="Unsupported reference-image content type"
+            ImageProviderError, match="Unsupported input image content type"
         ):
             await provider.generate(
                 "x",

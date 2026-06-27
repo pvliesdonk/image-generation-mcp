@@ -110,7 +110,7 @@ def _ext_for(content_type: str) -> str:
         supported = ", ".join(sorted(_CONTENT_TYPE_TO_EXT))
         raise ImageProviderError(
             "openai",
-            f"Unsupported reference-image content type {content_type!r}. "
+            f"Unsupported input image content type {content_type!r}. "
             f"Supported: {supported}",
         )
     return ext
