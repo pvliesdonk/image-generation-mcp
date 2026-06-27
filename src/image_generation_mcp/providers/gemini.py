@@ -160,8 +160,8 @@ class GeminiImageProvider:
             model: Override the default model for this call.
             reference_images: Optional list of reference images for
                 image-to-image editing and multi-image composition. The
-                per-model cap is 3 for gemini-2.5-flash-image and up to 14 for
-                Gemini 3 models; passing more raises ``TooManyInputImages``.
+                per-model cap is reported as ``max_input_images`` in
+                ``list_providers``; passing more raises ``TooManyInputImages``.
                 When provided, the image bytes are sent as inline image parts
                 alongside the prompt for guided generation.
             strength: Ignored — Gemini does not support denoising strength.

@@ -514,6 +514,29 @@ class TestGeminiProvider:
         with pytest.raises(TooManyInputImages):
             await provider.generate("x", reference_images=refs15)
 
+    async def test_per_call_model_override_uses_override_cap(self) -> None:
+        """The cap follows the per-call model override, not the constructor model."""
+        from image_generation_mcp.providers.types import InputImage
+
+        # Constructed as 2.5-flash (cap 3) but called with a Gemini 3 model.
+        provider = GeminiImageProvider(api_key="AIza-test")
+        mock_inline = MagicMock()
+        mock_inline.data = b"out-png"
+        mock_inline.mime_type = "image/png"
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+        provider._client = MagicMock()
+        provider._client.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+        refs = [InputImage(data=b"x", content_type="image/png") for _ in range(5)]
+        # 5 refs exceeds 2.5-flash's cap (3) but is within gemini-3-pro's (14).
+        await provider.generate(
+            "compose", model="gemini-3-pro-image-preview", reference_images=refs
+        )  # no raise
+
     async def test_generate_ignores_strength(self) -> None:
         """Passing strength=0.5 is accepted and not forwarded to generate_content kwargs."""
         provider = GeminiImageProvider(api_key="AIza-test")
