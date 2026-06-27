@@ -396,7 +396,7 @@ All environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 - **More providers:** BFL/FLUX, Stability, Ideogram, FAL, Replicate
 - **ComfyUI provider:** Workflow-based API with CLIP text encode nodes
-- **Image editing:** Masks, inpainting, background removal
+- **Background removal:** Automated subject isolation (editing, composition, and masking shipped in epic #256)
 - **Rate limiting:** Per-provider request throttling
 - **Auto-cleanup:** TTL-based scratch directory cleanup
 - **Response caching:** Cache frequently-requested transforms
