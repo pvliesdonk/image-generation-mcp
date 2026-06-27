@@ -16,6 +16,7 @@ import tempfile
 import time
 import uuid
 from collections import OrderedDict
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,6 +40,7 @@ from image_generation_mcp.providers.types import (
     ImageProvider,
     ImageProviderError,
     ImageResult,
+    InputImage,
     ProgressCallback,
 )
 from image_generation_mcp.styles import StyleEntry, scan_styles
@@ -63,7 +65,7 @@ class ImageRecord:
         str, Any
     ]  # treat as read-only; frozen prevents reassignment
     created_at: float
-    source_image_id: str | None = None
+    source_image_ids: list[str] = field(default_factory=list)
 
 
 _PENDING_TTL_S = 600  # 10 minutes — clean up stale pending entries
@@ -430,6 +432,7 @@ class ImageService:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> tuple[str, ImageResult]:
         """Generate an image using a provider.
@@ -444,6 +447,8 @@ class ImageService:
                 Provider support varies.
             model: Specific model to use (e.g., a checkpoint name for SD WebUI,
                 or ``"dall-e-3"`` for OpenAI). Passed through to the provider.
+            reference_images: Optional list of input images for image-to-image
+                generation. Passed through to the provider unchanged.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  Only SD WebUI
                 uses this; other providers ignore it.
@@ -482,6 +487,7 @@ class ImageService:
             quality=quality,
             background=background,
             model=model,
+            reference_images=reference_images,
             progress_callback=progress_callback,
         )
 
@@ -617,7 +623,7 @@ class ImageService:
         quality: str = "standard",
         background: str = "opaque",
         image_id: str | None = None,
-        source_image_id: str | None = None,
+        source_image_ids: list[str] | None = None,
     ) -> ImageRecord:
         """Register a generated image in the scratch directory.
 
@@ -635,6 +641,7 @@ class ImageService:
             image_id: Pre-allocated image ID (from :meth:`allocate_image_id`).
                 If ``None``, a content-addressed ID is derived from the
                 image data.
+            source_image_ids: IDs of source images this was derived from.
 
         Returns:
             The created ImageRecord.
@@ -656,6 +663,7 @@ class ImageService:
         original_path.write_bytes(result.image_data)
 
         # Build record
+        ids = list(source_image_ids or [])
         record = ImageRecord(
             id=image_id,
             original_path=original_path,
@@ -668,7 +676,7 @@ class ImageService:
             original_dimensions=original_dimensions,
             provider_metadata=result.provider_metadata,
             created_at=time.time(),
-            source_image_id=source_image_id,
+            source_image_ids=ids,
         )
 
         # Write sidecar JSON
@@ -687,7 +695,7 @@ class ImageService:
             "original_dimensions": list(record.original_dimensions),
             "provider_metadata": record.provider_metadata,
             "created_at": datetime.fromtimestamp(record.created_at, tz=UTC).isoformat(),
-            "source_image_id": record.source_image_id,
+            "source_image_ids": record.source_image_ids,
         }
         sidecar_path.write_text(json.dumps(sidecar_data, indent=2))
 
@@ -921,6 +929,10 @@ class ImageService:
                 # Parse ISO timestamp back to epoch
                 created_at = datetime.fromisoformat(data["created_at"]).timestamp()
 
+                source_ids = data.get("source_image_ids")
+                if source_ids is None:
+                    legacy = data.get("source_image_id")
+                    source_ids = [legacy] if legacy else []
                 record = ImageRecord(
                     id=image_id,
                     original_path=original_path,
@@ -933,7 +945,7 @@ class ImageService:
                     original_dimensions=tuple(data["original_dimensions"]),
                     provider_metadata=data.get("provider_metadata", {}),
                     created_at=created_at,
-                    source_image_id=data.get("source_image_id"),
+                    source_image_ids=source_ids,
                 )
                 self._images[image_id] = record
                 count += 1

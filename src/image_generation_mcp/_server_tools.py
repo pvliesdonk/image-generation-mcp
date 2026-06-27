@@ -1098,7 +1098,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 result,
                 "edited",
                 prompt=record.prompt,
-                source_image_id=source_image_id,
+                source_image_ids=[source_image_id],
             )
             return new_record
 

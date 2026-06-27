@@ -1360,13 +1360,13 @@ class TestSaveEditedImageTool:
     async def test_save_records_source_image_id(
         self, registered_image: tuple[ImageService, str]
     ) -> None:
-        """New record has source_image_id set to the original image_id."""
+        """New record has source_image_ids set to a list with the original image_id."""
         service, image_id = registered_image
         result = await self._call_save(service, image_id)
         text_item = next(c for c in result.content if c.type == "text")
         new_id = json.loads(text_item.text)["image_id"]
         new_record = service.get_image(new_id)
-        assert new_record.source_image_id == image_id
+        assert new_record.source_image_ids == [image_id]
 
     async def test_save_invalid_crop_raises(
         self, registered_image: tuple[ImageService, str]
