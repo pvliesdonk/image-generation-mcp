@@ -284,6 +284,10 @@ class OpenAIImageProvider:
                 model=model,
                 mask=mask,
             )
+        if mask is not None:
+            # A mask only applies to the img2img (edit) path; reject rather than
+            # silently drop it on the text-to-image path.
+            raise ImageProviderError("openai", "mask requires reference_images")
         effective_model = model or self._model
         # NOTE: any model not matching 'gpt-image*' (e.g. dall-e-2) falls back to
         # DALL-E 3 sizes/format. Unknown models will fail at the API level.
@@ -623,7 +627,10 @@ class OpenAIImageProvider:
                     display_name="DALL-E 2",
                     can_generate=True,
                     can_edit=True,
-                    supports_mask=True,
+                    # The server's edit/mask path is gpt-image-only, and
+                    # supports_image_input defaults to False, so masks can never
+                    # route here; advertise supports_mask=False to match.
+                    supports_mask=False,
                     supports_background=False,
                     supports_negative_prompt=False,
                     supported_aspect_ratios=("1:1",),

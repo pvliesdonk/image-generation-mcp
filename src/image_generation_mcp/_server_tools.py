@@ -709,13 +709,14 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 )
             )
             if not eligible:
-                mask_note = (
-                    " A mask requires a mask-capable model." if mask is not None else ""
+                ref_clause = (
+                    f"{len(resolved)} reference image(s) with a mask"
+                    if mask is not None
+                    else f"{len(resolved)} reference image(s)"
                 )
                 raise ValueError(
-                    f"No configured provider accepts {len(resolved)} reference "
-                    "image(s). See list_providers (max_input_images) for "
-                    f"per-model limits.{mask_note}"
+                    f"No configured provider accepts {ref_clause}. See "
+                    "list_providers (max_input_images) for per-model limits."
                 )
             chosen_provider = "gemini" if "gemini" in eligible else eligible[0]
         else:
@@ -743,13 +744,14 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             and (mask is None or m.supports_mask)
         ]
         if not capable:
-            mask_note = (
-                " A mask requires a mask-capable model." if mask is not None else ""
+            ref_clause = (
+                f"{len(resolved)} reference image(s) with a mask"
+                if mask is not None
+                else f"{len(resolved)} reference image(s)"
             )
             raise ValueError(
-                f"Provider '{resolved_name}' has no model accepting "
-                f"{len(resolved)} reference image(s). See list_providers "
-                f"for models supporting reference-image input.{mask_note}"
+                f"Provider '{resolved_name}' has no model accepting {ref_clause}. "
+                "See list_providers for models supporting reference-image input."
             )
 
         cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)

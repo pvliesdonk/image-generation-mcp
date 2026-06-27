@@ -2223,6 +2223,60 @@ class TestTransformImageTool:
                 ctx=ctx,
             )
 
+    async def test_transform_image_mask_source_id_in_provenance(
+        self, tmp_path: Path
+    ) -> None:
+        """A resolved mask's source_id is folded into the response source_image_ids.
+
+        Covers the happy path through mask resolution to the provenance step
+        (the prior mask tests all raise before it).
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                    supports_mask=True,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+        base = svc.register_image(
+            await provider.generate("base", aspect_ratio="1:1"),
+            "placeholder",
+            prompt="base",
+        )
+        msk = svc.register_image(
+            await provider.generate("mask", aspect_ratio="1:1"),
+            "placeholder",
+            prompt="mask",
+        )
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+        # The response carries source_image_ids synchronously (before the
+        # background task runs), so the mask provenance is observable here.
+        result = await tool.fn(
+            prompt="inpaint",
+            reference_images=[base.id],
+            mask=msk.id,
+            provider="placeholder",
+            service=svc,
+            config=await self._make_cfg(),
+            ctx=await self._make_ctx(),
+        )
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        metadata = json.loads(text_items[0].text)
+        assert base.id in metadata["source_image_ids"]
+        assert msk.id in metadata["source_image_ids"]
+
     # F12: strength parameter validation
     @pytest.mark.parametrize("bad", [-0.1, 1.5, 2.0])
     async def test_transform_image_rejects_out_of_range_strength(
