@@ -1591,3 +1591,100 @@ class TestTransformImageTool:
         assert len(reference_images) == 1
         # reference_images[0] is an InputImage; verify its source_id matches
         assert reference_images[0].source_id == source_image_id
+
+    async def test_transform_image_auto_routes_to_capable_provider(
+        self, tmp_path: Path
+    ) -> None:
+        """With provider='auto', transform_image routes to an image-input-capable provider.
+
+        The default PlaceholderImageProvider has supports_image_input=False.
+        A second "fakegen" provider has supports_image_input=True.
+        With provider='auto', the tool must select "fakegen" instead of raising.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+
+        # Register the default placeholder (NOT image-capable)
+        svc.register_provider("placeholder", PlaceholderImageProvider())
+        # No capabilities injected for placeholder → supports_image_input=False by default
+
+        # Register a fake image-capable provider (PlaceholderImageProvider instance
+        # is fine — we stub svc.generate so the guard never hits the real impl)
+        fake_provider = PlaceholderImageProvider()
+        svc.register_provider("fakegen", fake_provider)
+
+        # Inject image-input-capable capabilities ONLY for fakegen
+        svc._capabilities["fakegen"] = ProviderCapabilities(
+            provider_name="fakegen",
+            models=(
+                ModelCapabilities(
+                    model_id="fakegen",
+                    display_name="FakeGen",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real gallery source image via the placeholder provider
+        src_result = await PlaceholderImageProvider().generate(
+            "source image", aspect_ratio="1:1"
+        )
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        # Stub svc.generate to capture which provider is chosen
+        stub_result = await PlaceholderImageProvider().generate(
+            "auto route test", aspect_ratio="1:1"
+        )
+        chosen_provider_name: list[str] = []
+
+        async def _fake_generate(
+            *_args: object, **_kwargs: object
+        ) -> tuple[str, ImageResult]:
+            chosen_provider_name.append("fakegen")
+            return "fakegen", stub_result
+
+        mock_generate = AsyncMock(side_effect=_fake_generate)
+        svc.generate = mock_generate  # type: ignore[assignment]
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        # Call with provider="auto" (the default) — should NOT raise
+        result = await tool.fn(
+            prompt="auto route test",
+            reference_images=[source_image_id],
+            provider="auto",
+            service=svc,
+            config=cfg,
+            ctx=ctx,
+        )
+
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        assert len(text_items) == 1
+        metadata = json.loads(text_items[0].text)
+        assert metadata["status"] == "generating"
+        image_id = metadata["image_id"]
+
+        # Poll until background task completes
+        pending = None
+        for _ in range(100):
+            pending = svc.get_pending(image_id)
+            if pending and pending.status in ("completed", "failed"):
+                break
+            await asyncio.sleep(0.02)
+
+        assert pending is not None and pending.status == "completed"
+
+        # The capable provider ("fakegen") must have been selected
+        assert chosen_provider_name == ["fakegen"], (
+            f"Expected auto-routing to select 'fakegen'; got {chosen_provider_name}"
+        )

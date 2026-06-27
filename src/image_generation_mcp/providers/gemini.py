@@ -201,6 +201,9 @@ class GeminiImageProvider:
             thinking_config=thinking_config,
         )
 
+        # google-genai normalizes a single-element [str] identically to a bare
+        # str, so always using a list (even with no reference images) keeps one
+        # code path without changing text-to-image behavior.
         contents: list[Any] = [full_prompt]
         for ref in reference_images or []:
             contents.append(

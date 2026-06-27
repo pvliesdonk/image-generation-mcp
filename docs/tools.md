@@ -110,7 +110,7 @@ Edit or transform an existing image using a model that accepts image input (imag
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `prompt` | str | *(required)* | Description of the desired edit or transformation (natural language) |
-| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source image(s) |
+| `reference_images` | list[str] | *(required)* | One or more gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths to use as source image(s); currently limited to one image per call (Gemini) — check `max_input_images` in `list_providers` |
 | `provider` | str | `"auto"` | Provider to use, or `"auto"`. Use a Gemini provider for image-to-image tasks; check `supports_image_input` in `list_providers` |
 | `negative_prompt` | str | `null` | Things to avoid in the result (provider support varies) |
 | `aspect_ratio` | str | `"1:1"` | Desired aspect ratio of the output image |

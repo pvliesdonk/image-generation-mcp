@@ -628,10 +628,25 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         ) as exc:
             raise ValueError(str(exc)) from exc
 
-        # Resolve provider name, then verify it has an image-input-capable model
+        # Resolve provider name. For "auto", restrict candidates to
+        # image-input-capable providers so auto-selection cannot pick a
+        # text-only provider and then reject a transform a capable provider
+        # could serve. The _any_provider_supports_image_input guard above
+        # guarantees at least one capable provider exists here.
+        if provider == "auto":
+            capable_providers = sorted(
+                name
+                for name, caps in service.capabilities.items()
+                if any(m.supports_image_input for m in caps.models)
+            )
+            chosen_provider = (
+                "gemini" if "gemini" in capable_providers else capable_providers[0]
+            )
+        else:
+            chosen_provider = provider
         resolved_name = await asyncio.to_thread(
             service.resolve_provider_name,
-            provider,
+            chosen_provider,
             prompt,
             background=background,
         )
