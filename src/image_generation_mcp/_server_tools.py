@@ -191,7 +191,7 @@ def _start_background_generation(
         source_image_ids: Optional list of source image IDs to record as
             provenance on the resulting :class:`ImageRecord`.
         label: Short label used in log messages (e.g. ``"generation"`` or
-            ``"transformation"``).
+            ``"transform"``).
     """
     service.register_pending(
         image_id=image_id,
@@ -681,17 +681,17 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         if cancel is not None:
             return cancel
 
-        # Resolve prompt_style from capabilities for the response
+        # Resolve prompt_style for the response, reusing the capability
+        # lookup from the routing check above.
         prompt_style = None
-        transform_caps = service.capabilities.get(resolved_name)
-        if transform_caps:
+        if caps:
             if model:
-                for m in transform_caps.models:
+                for m in caps.models:
                     if m.model_id == model:
                         prompt_style = m.prompt_style
                         break
-            elif len(transform_caps.models) == 1:
-                prompt_style = transform_caps.models[0].prompt_style
+            elif len(caps.models) == 1:
+                prompt_style = caps.models[0].prompt_style
 
         source_ids = [r.source_id for r in resolved if r.source_id]
         image_id = service.allocate_image_id()
