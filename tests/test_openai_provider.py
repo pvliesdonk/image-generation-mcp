@@ -545,6 +545,16 @@ class TestOpenAIEdit:
                 reference_images=[InputImage(data=b"a", content_type="image/png")],
             )
 
+    async def test_edit_unsupported_content_type_raises(self) -> None:
+        provider = self._mk_provider()
+        with pytest.raises(
+            ImageProviderError, match="Unsupported reference-image content type"
+        ):
+            await provider.generate(
+                "x",
+                reference_images=[InputImage(data=b"a", content_type="image/gif")],
+            )
+
     async def test_edit_exactly_16_references_accepted(self) -> None:
         provider = self._mk_provider()
         provider._client = MagicMock()

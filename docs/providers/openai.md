@@ -19,6 +19,7 @@ The provider registers automatically when this variable is set.
 | `gpt-image-1` | Current (default) | PNG, JPEG, WebP | Best quality, native format selection |
 | `gpt-image-1.5` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
 | `gpt-image-1-mini` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
+| `gpt-image-2` | Flagship (when listed) | PNG, JPEG, WebP | No transparent background; entry stays dormant until OpenAI's models.list returns the id |
 | `dall-e-3` | Legacy | PNG only | Deprecated May 2026 |
 
 ## Aspect ratios and sizes

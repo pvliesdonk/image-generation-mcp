@@ -567,7 +567,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             provider: Provider to use, or ``"auto"`` to select
                 automatically.  Image-to-image is served by providers that
                 report ``supports_image_input`` in ``list_providers``
-                (currently Gemini).
+                (Gemini, one reference image; OpenAI gpt-image, up to 16).
             negative_prompt: Things to avoid in the result (provider
                 support varies).
             aspect_ratio: Desired aspect ratio of the output image.
