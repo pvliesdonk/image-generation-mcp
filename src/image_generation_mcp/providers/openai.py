@@ -398,7 +398,7 @@ class OpenAIImageProvider:
             ImageResult with edited image and ``edited=True`` in metadata.
 
         Raises:
-            ImageInputUnsupported: model has no no-mask edit endpoint (dall-e).
+            ImageInputUnsupported: model has no edit endpoint (dall-e-3).
             TooManyInputImages: more than 16 references supplied.
             ImageProviderError: On API errors.
             ImageContentPolicyError: On content policy rejection.
@@ -433,9 +433,10 @@ class OpenAIImageProvider:
             )
 
         logger.debug(
-            "OpenAI image edit: model=%s refs=%d size=%s",
+            "OpenAI image edit: model=%s refs=%d mask=%s size=%s",
             effective_model,
             len(reference_images),
+            mask is not None,
             kwargs["size"],
         )
         try:

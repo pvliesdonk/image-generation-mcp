@@ -695,6 +695,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # would otherwise sort ahead of "gemini". Else pick the first eligible
         # provider alphabetically for determinism.
         if provider == "auto":
+            # The mask gate uses the original `mask` str param (not
+            # resolved_mask): either being non-None means a mask was requested;
+            # resolved_mask is None only when mask is None.
             eligible = sorted(
                 name
                 for name, caps in service.capabilities.items()
@@ -707,14 +710,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             )
             if not eligible:
                 mask_note = (
-                    " (a mask requires a mask-capable model)"
-                    if mask is not None
-                    else ""
+                    " A mask requires a mask-capable model." if mask is not None else ""
                 )
                 raise ValueError(
                     f"No configured provider accepts {len(resolved)} reference "
-                    f"image(s).{mask_note} See list_providers (max_input_images) for "
-                    "per-model limits."
+                    "image(s). See list_providers (max_input_images) for "
+                    f"per-model limits.{mask_note}"
                 )
             chosen_provider = "gemini" if "gemini" in eligible else eligible[0]
         else:
@@ -743,12 +744,12 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         ]
         if not capable:
             mask_note = (
-                " (a mask requires a mask-capable model)" if mask is not None else ""
+                " A mask requires a mask-capable model." if mask is not None else ""
             )
             raise ValueError(
                 f"Provider '{resolved_name}' has no model accepting "
-                f"{len(resolved)} reference image(s).{mask_note} See list_providers "
-                "for models supporting reference-image input."
+                f"{len(resolved)} reference image(s). See list_providers "
+                f"for models supporting reference-image input.{mask_note}"
             )
 
         cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
