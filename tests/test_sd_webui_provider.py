@@ -22,9 +22,11 @@ from image_generation_mcp.providers.sd_webui import (
     _resolve_preset,
 )
 from image_generation_mcp.providers.types import (
+    ImageInputUnsupported,
     ImageProvider,
     ImageProviderConnectionError,
     ImageProviderError,
+    InputImage,
 )
 
 
@@ -635,3 +637,14 @@ class _HttpxMock:
 
         self._monkeypatch.setattr(httpx.AsyncClient, "post", _mock_post)
         self._monkeypatch.setattr(httpx.AsyncClient, "get", _mock_get)
+
+
+async def test_sd_webui_rejects_reference_images() -> None:
+    """SD WebUI provider raises ImageInputUnsupported when reference_images are given."""
+    provider = SdWebuiImageProvider(host="http://localhost:7860")
+
+    with pytest.raises(ImageInputUnsupported):
+        await provider.generate(
+            "a cat",
+            reference_images=[InputImage(data=b"x", content_type="image/png")],
+        )

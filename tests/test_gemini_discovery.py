@@ -142,6 +142,16 @@ class TestDiscoverCapabilities:
                 f"expected serialised watermark for {model_dict.get('model_id')}"
             )
 
+    async def test_gemini_advertises_image_input(
+        self, gemini_provider: GeminiImageProvider
+    ) -> None:
+        """All Gemini models advertise supports_image_input=True and max_input_images=1."""
+        caps = await gemini_provider.discover_capabilities()
+
+        for m in caps.models:
+            assert m.supports_image_input is True
+            assert m.max_input_images == 1
+
     async def test_degraded_on_unexpected_exception(
         self, gemini_provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch
     ) -> None:

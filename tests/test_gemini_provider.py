@@ -252,7 +252,8 @@ class TestGeminiProvider:
         await provider.generate("a cat", negative_prompt="dogs")
 
         call_kwargs = provider._client.aio.models.generate_content.call_args.kwargs
-        assert "Avoid: dogs" in call_kwargs["contents"]
+        # contents is now a list; the prompt string is always the first element.
+        assert "Avoid: dogs" in call_kwargs["contents"][0]
 
     async def test_unsupported_aspect_ratio_raises(self) -> None:
         provider = GeminiImageProvider(api_key="AIza-test")
@@ -423,3 +424,43 @@ class TestGeminiProvider:
 
         with pytest.raises(ImageProviderConnectionError):
             await provider.generate("test")
+
+    async def test_generate_with_reference_image_sends_parts(self) -> None:
+        """Single reference image is sent as an image part alongside the prompt."""
+        from image_generation_mcp.providers.types import InputImage
+
+        provider = GeminiImageProvider(api_key="AIza-test")
+
+        mock_inline = MagicMock()
+        mock_inline.data = b"out-png"
+        mock_inline.mime_type = "image/png"
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+
+        provider._client = MagicMock()
+        gen = AsyncMock(return_value=mock_response)
+        provider._client.aio.models.generate_content = gen
+
+        ref = InputImage(data=b"in-png", content_type="image/png", source_id="abc")
+        result = await provider.generate("make it blue", reference_images=[ref])
+
+        assert result.image_data == b"out-png"
+        # contents is a list: [prompt, <image part>]
+        contents = gen.call_args.kwargs["contents"]
+        assert isinstance(contents, list)
+        assert len(contents) == 2
+
+    async def test_generate_rejects_two_reference_images(self) -> None:
+        """More than one reference image raises TooManyInputImages."""
+        from image_generation_mcp.providers.types import InputImage, TooManyInputImages
+
+        provider = GeminiImageProvider(api_key="AIza-test")
+        provider._client = MagicMock()
+        refs = [
+            InputImage(data=b"a", content_type="image/png"),
+            InputImage(data=b"b", content_type="image/png"),
+        ]
+        with pytest.raises(TooManyInputImages):
+            await provider.generate("x", reference_images=refs)

@@ -151,6 +151,24 @@ class TestGenerateImageReturnShape:
         link_items = [c for c in result.content if isinstance(c, ResourceLink)]
         assert str(link_items[0].uri) == f"image://{image_id}/view"
 
+    async def test_generate_image_background_completes(
+        self, service: ImageService
+    ) -> None:
+        """Background task completes and persists an ImageRecord (covers _start_background_generation)."""
+        result = await self._call_generate(service)
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        image_id = json.loads(text_items[0].text)["image_id"]
+
+        pending = None
+        for _ in range(100):
+            pending = service.get_pending(image_id)
+            if pending and pending.status in ("completed", "failed"):
+                break
+            await asyncio.sleep(0.02)
+
+        assert pending is not None and pending.status == "completed"
+        assert service.get_image(image_id).id == image_id
+
 
 # ---------------------------------------------------------------------------
 # generate_image: tool registration properties
@@ -1360,13 +1378,13 @@ class TestSaveEditedImageTool:
     async def test_save_records_source_image_id(
         self, registered_image: tuple[ImageService, str]
     ) -> None:
-        """New record has source_image_id set to the original image_id."""
+        """New record has source_image_ids set to a list with the original image_id."""
         service, image_id = registered_image
         result = await self._call_save(service, image_id)
         text_item = next(c for c in result.content if c.type == "text")
         new_id = json.loads(text_item.text)["image_id"]
         new_record = service.get_image(new_id)
-        assert new_record.source_image_id == image_id
+        assert new_record.source_image_ids == [image_id]
 
     async def test_save_invalid_crop_raises(
         self, registered_image: tuple[ImageService, str]
@@ -1381,3 +1399,549 @@ class TestSaveEditedImageTool:
                 # missing required keys
                 crop={"x": 0, "y": 0},
             )
+
+
+# ---------------------------------------------------------------------------
+# transform_image tool
+# ---------------------------------------------------------------------------
+
+
+class TestTransformImageTool:
+    """transform_image tool: registration, validation, and provenance."""
+
+    async def _make_ctx(self) -> MagicMock:
+        ctx = MagicMock()
+        ctx.report_progress = AsyncMock()
+        ctx.info = AsyncMock()
+        ctx.session.check_client_capability.return_value = False
+        return ctx
+
+    async def _make_cfg(self) -> MagicMock:
+        cfg = MagicMock()
+        cfg.allow_local_file_input = False
+        cfg.max_input_image_bytes = 20 * 1024 * 1024
+        cfg.paid_providers = frozenset()
+        return cfg
+
+    async def test_transform_image_registered(self) -> None:
+        """transform_image is registered and tagged 'write'."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+        assert "write" in tool.tags
+
+    async def test_transform_image_errors_without_image_input(
+        self, service: ImageService
+    ) -> None:
+        """With no image-input-capable provider, transform_image raises ValueError."""
+        # The default 'service' fixture uses PlaceholderImageProvider which has
+        # supports_image_input=False by default (no capabilities injected).
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match=r"image.input"):
+            await tool.fn(
+                prompt="make it blue",
+                reference_images=["0123456789ab"],
+                service=service,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    async def test_transform_image_rejects_unknown_reference(
+        self, tmp_path: Path
+    ) -> None:
+        """Unknown reference image raises ValueError containing 'not found'."""
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("placeholder", PlaceholderImageProvider())
+        # Inject image-input-capable capabilities for the placeholder provider
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="not found"):
+            await tool.fn(
+                prompt="make it blue",
+                reference_images=["deadbeef0000"],
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    async def test_transform_image_completes_with_provenance(
+        self, tmp_path: Path
+    ) -> None:
+        """transform_image spawns a background task and records source_image_ids."""
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject image-input-capable capabilities
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real source image in the gallery
+        src_result = await provider.generate("source image", aspect_ratio="1:1")
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        # Stub service.generate to return a real image without hitting
+        # PlaceholderImageProvider's image-input guard (it raises
+        # ImageInputUnsupported for reference_images).
+        stub_result = await provider.generate("make it blue", aspect_ratio="1:1")
+
+        # Capture reference_images kwarg with AsyncMock
+        async def _fake_generate(
+            *_args: object, **_kwargs: object
+        ) -> tuple[str, ImageResult]:
+            return "placeholder", stub_result
+
+        mock_generate = AsyncMock(side_effect=_fake_generate)
+        svc.generate = mock_generate  # type: ignore[assignment]
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        result = await tool.fn(
+            prompt="make it blue",
+            reference_images=[source_image_id],
+            provider="placeholder",
+            service=svc,
+            config=cfg,
+            ctx=ctx,
+        )
+
+        # Result must be a ToolResult with TextContent + ResourceLink
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        link_items = [c for c in result.content if isinstance(c, ResourceLink)]
+        assert len(text_items) == 1
+        assert len(link_items) == 1
+
+        metadata = json.loads(text_items[0].text)
+        assert metadata["status"] == "generating"
+        assert "image_id" in metadata
+        image_id = metadata["image_id"]
+
+        # source_image_ids propagated into response
+        assert source_image_id in metadata["source_image_ids"]
+
+        # ResourceLink URI matches image_id
+        assert str(link_items[0].uri) == f"image://{image_id}/view"
+        assert "Transformed" in link_items[0].name
+
+        # Poll until background task completes
+        pending = None
+        for _ in range(100):
+            pending = svc.get_pending(image_id)
+            if pending and pending.status in ("completed", "failed"):
+                break
+            await asyncio.sleep(0.02)
+
+        assert pending is not None and pending.status == "completed"
+        completed_record = svc.get_image(image_id)
+        assert completed_record.id == image_id
+        assert completed_record.source_image_ids == [source_image_id]
+
+        # Verify generate was called with reference_images kwarg
+        assert mock_generate.await_count >= 1
+        call_kwargs = mock_generate.call_args.kwargs
+        assert "reference_images" in call_kwargs
+        reference_images = call_kwargs["reference_images"]
+        assert isinstance(reference_images, list)
+        assert len(reference_images) == 1
+        # reference_images[0] is an InputImage; verify its source_id matches
+        assert reference_images[0].source_id == source_image_id
+
+    async def test_transform_image_auto_routes_to_capable_provider(
+        self, tmp_path: Path
+    ) -> None:
+        """With provider='auto', transform_image routes to an image-input-capable provider.
+
+        The default PlaceholderImageProvider has supports_image_input=False.
+        A second "fakegen" provider has supports_image_input=True.
+        With provider='auto', the tool must select "fakegen" instead of raising.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+
+        # Register the default placeholder (NOT image-capable)
+        svc.register_provider("placeholder", PlaceholderImageProvider())
+        # No capabilities injected for placeholder → supports_image_input=False by default
+
+        # Register a fake image-capable provider (PlaceholderImageProvider instance
+        # is fine — we stub svc.generate so the guard never hits the real impl)
+        fake_provider = PlaceholderImageProvider()
+        svc.register_provider("fakegen", fake_provider)
+
+        # Inject image-input-capable capabilities ONLY for fakegen
+        svc._capabilities["fakegen"] = ProviderCapabilities(
+            provider_name="fakegen",
+            models=(
+                ModelCapabilities(
+                    model_id="fakegen",
+                    display_name="FakeGen",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real gallery source image via the placeholder provider
+        src_result = await PlaceholderImageProvider().generate(
+            "source image", aspect_ratio="1:1"
+        )
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        # Stub svc.generate to capture which provider is chosen
+        stub_result = await PlaceholderImageProvider().generate(
+            "auto route test", aspect_ratio="1:1"
+        )
+        chosen_provider_name: list[str] = []
+
+        async def _fake_generate(
+            *_args: object, **_kwargs: object
+        ) -> tuple[str, ImageResult]:
+            chosen_provider_name.append("fakegen")
+            return "fakegen", stub_result
+
+        mock_generate = AsyncMock(side_effect=_fake_generate)
+        svc.generate = mock_generate  # type: ignore[assignment]
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        # Call with provider="auto" (the default) — should NOT raise
+        result = await tool.fn(
+            prompt="auto route test",
+            reference_images=[source_image_id],
+            provider="auto",
+            service=svc,
+            config=cfg,
+            ctx=ctx,
+        )
+
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        assert len(text_items) == 1
+        metadata = json.loads(text_items[0].text)
+        assert metadata["status"] == "generating"
+        image_id = metadata["image_id"]
+
+        # Poll until background task completes
+        pending = None
+        for _ in range(100):
+            pending = svc.get_pending(image_id)
+            if pending and pending.status in ("completed", "failed"):
+                break
+            await asyncio.sleep(0.02)
+
+        assert pending is not None and pending.status == "completed"
+
+        # The capable provider ("fakegen") must have been selected
+        assert chosen_provider_name == ["fakegen"], (
+            f"Expected auto-routing to select 'fakegen'; got {chosen_provider_name}"
+        )
+
+    # F1: missing backing file raises ValueError (not raw OSError)
+    async def test_transform_image_missing_backing_file_raises_value_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Gallery record exists but backing file deleted → ValueError 'not found'.
+
+        If the file read is outside the try block, OSError leaks past the
+        resolver's KeyError→ImageReferenceNotFound mapping and surfaces as a
+        raw OSError instead of a clean ValueError.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject image-input-capable capabilities for the placeholder provider
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real gallery image so a record exists in the in-memory registry
+        src_result = await provider.generate("source image", aspect_ratio="1:1")
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        # Delete the backing file from disk — record stays in memory registry
+        backing_path = svc.get_image(source_image_id).original_path
+        backing_path.unlink()
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="not found"):
+            await tool.fn(
+                prompt="make it blue",
+                reference_images=[source_image_id],
+                provider="placeholder",
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    # F10: capability-filter rejection when too many images for the model
+    async def test_transform_image_too_many_images_for_model_raises_value_error(
+        self, tmp_path: Path
+    ) -> None:
+        """Provider has max_input_images=1 but two references passed → ValueError.
+
+        This exercises the ``m.max_input_images >= len(resolved)`` branch in
+        the capability-filter that rejects the request synchronously before
+        spawning any background task.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject image-input-capable capabilities with max_input_images=1
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register two real gallery images
+        src1 = await provider.generate("source image 1", aspect_ratio="1:1")
+        rec1 = svc.register_image(src1, "placeholder", prompt="source image 1")
+        src2 = await provider.generate("source image 2", aspect_ratio="1:1")
+        rec2 = svc.register_image(src2, "placeholder", prompt="source image 2")
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="no model accepting"):
+            await tool.fn(
+                prompt="combine them",
+                reference_images=[rec1.id, rec2.id],
+                provider="placeholder",
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    # F11: parameter-validation guards for transform_image
+    @pytest.mark.parametrize(
+        "param,value,match",
+        [
+            ("aspect_ratio", "5:4", "Unsupported aspect_ratio"),
+            ("quality", "ultra", "Unsupported quality"),
+            ("background", "blurred", "Unsupported background"),
+        ],
+    )
+    async def test_transform_image_invalid_enum_params_raise(
+        self,
+        tmp_path: Path,
+        param: str,
+        value: str,
+        match: str,
+    ) -> None:
+        """Invalid aspect_ratio / quality / background raise ValueError before resolution.
+
+        reference_images is non-empty so the empty-list guard does not fire
+        first; the enum guard is what raises.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        svc.register_provider("placeholder", PlaceholderImageProvider())
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=1,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        kwargs: dict[str, object] = {
+            "prompt": "test",
+            "reference_images": ["0123456789ab"],
+            "service": svc,
+            "config": cfg,
+            "ctx": ctx,
+            param: value,
+        }
+        with pytest.raises(ValueError, match=match):
+            await tool.fn(**kwargs)
+
+    async def test_transform_image_empty_reference_images_raises(
+        self, service: ImageService
+    ) -> None:
+        """transform_image raises ValueError when reference_images is empty."""
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="reference_images must not be empty"):
+            await tool.fn(
+                prompt="test",
+                reference_images=[],
+                service=service,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    async def test_transform_image_metadata_includes_prompt_style_and_resource_template(
+        self, tmp_path: Path
+    ) -> None:
+        """transform_image response metadata includes prompt_style and resource_template keys.
+
+        These fields must be present to match the symmetry with generate_image response.
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        src_result = await provider.generate("source image", aspect_ratio="1:1")
+        src_record = svc.register_image(
+            src_result, "placeholder", prompt="source image"
+        )
+        source_image_id = src_record.id
+
+        stub_result = await provider.generate("transform test", aspect_ratio="1:1")
+
+        async def _fake_generate(
+            *_args: object, **_kwargs: object
+        ) -> tuple[str, ImageResult]:
+            return "placeholder", stub_result
+
+        svc.generate = AsyncMock(side_effect=_fake_generate)  # type: ignore[assignment]
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        result = await tool.fn(
+            prompt="make it blue",
+            reference_images=[source_image_id],
+            provider="placeholder",
+            service=svc,
+            config=cfg,
+            ctx=ctx,
+        )
+
+        text_items = [c for c in result.content if isinstance(c, TextContent)]
+        assert len(text_items) == 1
+        metadata = json.loads(text_items[0].text)
+
+        assert "prompt_style" in metadata, (
+            "transform_image must include 'prompt_style' in metadata"
+        )
+        assert "resource_template" in metadata, (
+            "transform_image must include 'resource_template' in metadata"
+        )
+        image_id = metadata["image_id"]
+        assert metadata["resource_template"] == (
+            f"image://{image_id}/view"
+            "{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}"
+        )

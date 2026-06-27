@@ -10,7 +10,7 @@ included; MCP clients write prompts directly.
 from __future__ import annotations
 
 import base64
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
@@ -64,6 +64,29 @@ class ImageResult:
         )
 
 
+@dataclass(frozen=True)
+class InputImage:
+    """A reference image supplied as input to a generation call.
+
+    The input counterpart of :class:`ImageResult`.
+
+    Attributes:
+        data: Raw image bytes.
+        content_type: MIME type (e.g., ``image/png``).
+        source_id: Gallery image id when resolved from the store, else
+            ``None`` (e.g. for local-file sources).
+    """
+
+    data: bytes
+    content_type: str = "image/png"
+    source_id: str | None = None
+
+    @property
+    def size_bytes(self) -> int:
+        """Size of the image data in bytes."""
+        return len(self.data)
+
+
 @runtime_checkable
 class ImageProvider(Protocol):
     """Protocol for image generation backends.
@@ -81,6 +104,7 @@ class ImageProvider(Protocol):
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image from a text prompt.
@@ -95,6 +119,9 @@ class ImageProvider(Protocol):
             model: Specific model to use (e.g., a checkpoint name for SD WebUI,
                 or ``"dall-e-3"`` for OpenAI). Overrides the provider's
                 configured default for this call.
+            reference_images: Optional input images for image-to-image edits
+                or composition. Providers that do not support image input
+                raise :class:`ImageInputUnsupported` when this is non-empty.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  Only supported
                 by SD WebUI; other providers ignore this parameter.
@@ -146,3 +173,29 @@ class ImageContentPolicyError(ImageProviderError):
 
 class ImageProviderConnectionError(ImageProviderError):
     """Raised when the image provider is unreachable."""
+
+
+class ImageInputUnsupported(ImageProviderError):
+    """Raised when a provider/model cannot accept reference images."""
+
+    def __init__(self, provider: str, model: str | None = None) -> None:
+        target = f" model {model!r}" if model else ""
+        super().__init__(
+            provider,
+            f"does not support reference-image input{target}. "
+            "Use a model that reports supports_image_input — see list_providers.",
+        )
+
+
+class TooManyInputImages(ImageProviderError):
+    """Raised when more reference images are supplied than a model accepts."""
+
+    def __init__(
+        self, provider: str, model: str | None, max_input_images: int, given: int
+    ) -> None:
+        subject = f"Model {model!r}" if model else "This model"
+        super().__init__(
+            provider,
+            f"{subject} accepts at most {max_input_images} reference image(s); "
+            f"{given} were given.",
+        )

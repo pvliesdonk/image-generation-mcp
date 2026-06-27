@@ -23,13 +23,17 @@ from image_generation_mcp.providers.capabilities import (
 from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
+    ImageInputUnsupported,
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    InputImage,
     ProgressCallback,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
@@ -139,6 +143,7 @@ class OpenAIImageProvider:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
@@ -154,6 +159,8 @@ class OpenAIImageProvider:
             model: Specific model to use for this call (e.g., ``"dall-e-3"``).
                 Overrides the constructor model. Size table selection adjusts
                 automatically.
+            reference_images: Not supported by this provider. Raises
+                :class:`ImageInputUnsupported` when non-empty.
 
         Returns:
             ImageResult with generated image.
@@ -162,7 +169,10 @@ class OpenAIImageProvider:
             ImageProviderError: On API errors.
             ImageContentPolicyError: On content policy rejection.
             ImageProviderConnectionError: On network errors.
+            ImageInputUnsupported: When reference_images are supplied.
         """
+        if reference_images:
+            raise ImageInputUnsupported("openai", model)
         effective_model = model or self._model
         # NOTE: any model not matching 'gpt-image*' (e.g. dall-e-2) falls back to
         # DALL-E 3 sizes/format. Unknown models will fail at the API level.

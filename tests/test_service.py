@@ -94,34 +94,104 @@ class TestGenerate:
 
 
 # ---------------------------------------------------------------------------
-# ImageRecord.source_image_id
+# ImageRecord.source_image_ids
 # ---------------------------------------------------------------------------
 
 
-async def test_source_image_id_defaults_none(tmp_path: Path) -> None:
-    """ImageRecord.source_image_id defaults to None for normal images."""
+async def test_source_image_ids_defaults_empty(tmp_path: Path) -> None:
+    """ImageRecord.source_image_ids defaults to an empty list."""
     provider = PlaceholderImageProvider()
     result = await provider.generate("test", aspect_ratio="1:1")
     svc = ImageService(scratch_dir=tmp_path)
     record = svc.register_image(result, "placeholder", prompt="test")
-    assert record.source_image_id is None
+    assert record.source_image_ids == []
 
 
-async def test_source_image_id_persisted_in_sidecar(tmp_path: Path) -> None:
-    """source_image_id is written to and read back from the sidecar JSON."""
+async def test_source_image_ids_persisted_in_sidecar(tmp_path: Path) -> None:
+    """source_image_ids is written to and read back from the sidecar JSON."""
     provider = PlaceholderImageProvider()
     result = await provider.generate("test", aspect_ratio="1:1")
     svc = ImageService(scratch_dir=tmp_path)
     record = svc.register_image(
-        result, "placeholder", prompt="test", source_image_id="abc123"
+        result, "placeholder", prompt="test", source_image_ids=["abc123"]
     )
-    assert record.source_image_id == "abc123"
+    assert record.source_image_ids == ["abc123"]
 
     # Check sidecar
     sidecar = json.loads((tmp_path / f"{record.id}.json").read_text())
-    assert sidecar["source_image_id"] == "abc123"
+    assert sidecar["source_image_ids"] == ["abc123"]
 
     # Reload from disk
     svc2 = ImageService(scratch_dir=tmp_path)
     reloaded = svc2.get_image(record.id)
-    assert reloaded.source_image_id == "abc123"
+    assert reloaded.source_image_ids == ["abc123"]
+
+
+def test_register_image_records_source_ids(tmp_path: Path) -> None:
+    """register_image stores multiple source_image_ids on the record."""
+    import io
+
+    from PIL import Image
+
+    from image_generation_mcp.providers.types import ImageResult
+
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buf, format="PNG")
+    service = ImageService(scratch_dir=tmp_path)
+    record = service.register_image(
+        ImageResult(image_data=buf.getvalue(), content_type="image/png"),
+        "gemini",
+        prompt="p",
+        source_image_ids=["abc", "def"],
+    )
+    assert record.source_image_ids == ["abc", "def"]
+
+
+def test_load_registry_reads_legacy_source_image_id(tmp_path: Path) -> None:
+    """_load_registry falls back to legacy scalar source_image_id in sidecar."""
+    import io
+
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), "red").save(buf, format="PNG")
+    (tmp_path / "aaaaaaaaaaaa-original.png").write_bytes(buf.getvalue())
+    (tmp_path / "aaaaaaaaaaaa.json").write_text(
+        json.dumps(
+            {
+                "id": "aaaaaaaaaaaa",
+                "prompt": "p",
+                "negative_prompt": None,
+                "provider": "gemini",
+                "aspect_ratio": "1:1",
+                "quality": "standard",
+                "content_type": "image/png",
+                "original_filename": "aaaaaaaaaaaa-original.png",
+                "original_dimensions": [4, 4],
+                "provider_metadata": {},
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "source_image_id": "legacy123456",
+            }
+        )
+    )
+    service = ImageService(scratch_dir=tmp_path)
+    assert service.get_image("aaaaaaaaaaaa").source_image_ids == ["legacy123456"]
+
+
+async def test_generate_passes_reference_images_to_provider(tmp_path: Path) -> None:
+    """generate() forwards reference_images to the resolved provider."""
+    from unittest.mock import AsyncMock
+
+    from image_generation_mcp.providers.types import ImageResult, InputImage
+
+    service = ImageService(scratch_dir=tmp_path, default_provider="fake")
+    fake = AsyncMock()
+    fake.generate = AsyncMock(
+        return_value=ImageResult(image_data=b"x", content_type="image/png")
+    )
+    service.register_provider("fake", fake)
+
+    refs = [InputImage(data=b"in", content_type="image/png", source_id="abc")]
+    await service.generate("p", provider="fake", reference_images=refs)
+
+    assert fake.generate.call_args.kwargs["reference_images"] == refs

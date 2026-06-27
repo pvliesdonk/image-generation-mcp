@@ -1,11 +1,12 @@
 """MCP tool registrations for image generation.
 
-Exposes ``generate_image``, ``show_image``, ``browse_gallery``,
-``gallery_page``, ``gallery_full_image``, ``delete_image``, and
-``list_providers`` tools to MCP clients.  ``generate_image`` and
-``delete_image`` are tagged ``write`` (hidden in read-only mode).
-``gallery_page`` and ``gallery_full_image`` are app-only
-(``visibility=["app"]``) and not shown to the model.
+Exposes ``generate_image``, ``transform_image``, ``show_image``,
+``browse_gallery``, ``gallery_page``, ``gallery_full_image``,
+``delete_image``, and ``list_providers`` tools to MCP clients.
+``generate_image``, ``transform_image``, and ``delete_image`` are tagged
+``write`` (hidden in read-only mode).  ``gallery_page`` and
+``gallery_full_image`` are app-only (``visibility=["app"]``) and not shown
+to the model.
 """
 
 from __future__ import annotations
@@ -18,8 +19,11 @@ import logging
 import re
 import time
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
@@ -38,6 +42,13 @@ from mcp.types import (
 from PIL import Image as PILImage
 from pydantic import AnyUrl
 
+from ._input_images import (
+    ImageReferenceNotFound,
+    InputImageTooLarge,
+    InvalidInputImage,
+    LocalFileInputDisabled,
+    resolve_references,
+)
 from ._server_deps import get_config, get_service
 from ._server_resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
 from .config import ProjectConfig
@@ -58,6 +69,7 @@ from .providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    InputImage,
 )
 from .service import ImageRecord, ImageService, PendingGeneration
 
@@ -68,6 +80,200 @@ _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
 _GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
+
+def _any_provider_supports_image_input(service: ImageService) -> bool:
+    """Return True if any discovered model supports reference-image input.
+
+    Args:
+        service: The :class:`ImageService` instance to query.
+
+    Returns:
+        ``True`` when at least one model in the discovered capabilities
+        reports ``supports_image_input=True``; ``False`` otherwise.
+    """
+    return any(
+        m.supports_image_input
+        for caps in service.capabilities.values()
+        for m in caps.models
+    )
+
+
+async def _confirm_paid_or_cancel(
+    ctx: Context,
+    config: ProjectConfig,
+    resolved_name: str,
+    model: str | None,
+) -> ToolResult | None:
+    """Confirm a paid provider via elicitation; return a cancel result or None.
+
+    Returns ``None`` when generation may proceed (provider is free, the client
+    lacks elicitation support, or the user accepted). Returns a cancellation
+    :class:`ToolResult` when the user declined.
+
+    Args:
+        ctx: The MCP request context.
+        config: The project configuration (used to check ``paid_providers``).
+        resolved_name: The resolved provider name.
+        model: The model override, if any (included in the elicitation prompt).
+
+    Returns:
+        ``None`` when generation may proceed, or a cancellation
+        :class:`ToolResult` when the user declined.
+    """
+    if resolved_name not in config.paid_providers:
+        return None
+    try:
+        supports_elicit = ctx.session.check_client_capability(
+            ClientCapabilities(elicitation=ElicitationCapability())
+        )
+    except Exception:
+        logger.debug(
+            "check_client_capability failed; assuming no elicitation support",
+            exc_info=True,
+        )
+        supports_elicit = False
+    if not supports_elicit:
+        return None
+    elicit_result = await ctx.elicit(
+        f"This will use {resolved_name}"
+        f"{f' ({model})' if model else ''}"
+        ", which costs money. Proceed?",
+        response_type=None,
+    )
+    if not isinstance(elicit_result, AcceptedElicitation):
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=(
+                        f"Image generation cancelled — {resolved_name} "
+                        "was not confirmed."
+                    ),
+                )
+            ]
+        )
+    return None
+
+
+def _start_background_generation(
+    service: ImageService,
+    *,
+    image_id: str,
+    prompt: str,
+    resolved_name: str,
+    negative_prompt: str | None,
+    aspect_ratio: str,
+    quality: str,
+    background: str,
+    model: str | None,
+    reference_images: Sequence[InputImage] | None = None,
+    source_image_ids: list[str] | None = None,
+    label: str = "generation",
+) -> None:
+    """Register a pending entry and spawn the background generation task.
+
+    Shared by ``generate_image`` (text-to-image) and ``transform_image``
+    (reference-image input). ``reference_images`` and ``source_image_ids``
+    are empty for plain text-to-image.
+
+    Args:
+        service: The :class:`ImageService` instance.
+        image_id: Pre-allocated image ID for this generation.
+        prompt: Text description of the desired image.
+        resolved_name: The resolved provider name.
+        negative_prompt: Things to avoid in the image, or ``None``.
+        aspect_ratio: Desired aspect ratio (e.g. ``"1:1"``).
+        quality: Quality level (``"standard"`` or ``"hd"``).
+        background: Background transparency (``"opaque"`` or ``"transparent"``).
+        model: Specific model override, or ``None``.
+        reference_images: Optional reference images for image-to-image tasks.
+        source_image_ids: Optional list of source image IDs to record as
+            provenance on the resulting :class:`ImageRecord`.
+        label: Short label used in log messages (e.g. ``"generation"`` or
+            ``"transform"``).
+    """
+    service.register_pending(
+        image_id=image_id,
+        prompt=prompt,
+        provider=resolved_name,
+        negative_prompt=negative_prompt,
+        aspect_ratio=aspect_ratio,
+        quality=quality,
+        background=background,
+        model=model,
+    )
+
+    async def _run() -> None:
+        try:
+            pending = service.get_pending(image_id)
+            if pending is None:
+                logger.warning(
+                    "get_pending(%s) returned None; progress updates will be lost",
+                    image_id,
+                )
+
+            def _on_progress(fraction: float, message: str) -> None:
+                if pending is not None:
+                    pending.progress = fraction
+                    pending.progress_message = message
+
+            provider_name, result = await service.generate(
+                prompt,
+                provider=resolved_name,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                model=model,
+                reference_images=reference_images,
+                progress_callback=_on_progress,
+            )
+            await asyncio.to_thread(
+                service.register_image,
+                result,
+                provider_name,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                image_id=image_id,
+                source_image_ids=source_image_ids or [],
+            )
+            service.complete_pending(image_id)
+            logger.info("Background %s completed: %s", label, image_id)
+        except ImageContentPolicyError as exc:
+            service.fail_pending(
+                image_id,
+                "Content policy rejected the prompt. "
+                "Try rephrasing or use a different provider.",
+            )
+            logger.error(
+                "Background %s failed (content policy): %s: %s", label, image_id, exc
+            )
+        except ImageProviderConnectionError as exc:
+            service.fail_pending(
+                image_id,
+                "Provider is unreachable. "
+                "Check that it is running, or try a different provider.",
+            )
+            logger.error(
+                "Background %s failed (connection): %s: %s", label, image_id, exc
+            )
+        except Exception as exc:
+            service.fail_pending(image_id, str(exc))
+            logger.error(
+                "Background %s failed: %s: %s",
+                label,
+                image_id,
+                exc,
+                exc_info=True,
+            )
+
+    task = asyncio.create_task(_run())
+    _BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_BACKGROUND_TASKS.discard)
 
 
 def _build_lifecycle_warnings(
@@ -244,123 +450,23 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         # If the resolved provider is paid and the client supports
         # elicitation, ask for confirmation before spending money.
-        if resolved_name in config.paid_providers:
-            try:
-                supports_elicit = ctx.session.check_client_capability(
-                    ClientCapabilities(elicitation=ElicitationCapability())
-                )
-            except Exception:
-                logger.debug(
-                    "check_client_capability failed; assuming no elicitation support",
-                    exc_info=True,
-                )
-                supports_elicit = False
+        cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
+        if cancel is not None:
+            return cancel
 
-            if supports_elicit:
-                elicit_result = await ctx.elicit(
-                    f"This will use {resolved_name}"
-                    f"{f' ({model})' if model else ''}"
-                    ", which costs money. Proceed?",
-                    response_type=None,
-                )
-                if not isinstance(elicit_result, AcceptedElicitation):
-                    return ToolResult(
-                        content=[
-                            TextContent(
-                                type="text",
-                                text=f"Image generation cancelled — {resolved_name} was not confirmed.",
-                            )
-                        ]
-                    )
-
-        # Pre-allocate image ID and register as pending
+        # Pre-allocate image ID and spawn background generation task
         image_id = service.allocate_image_id()
-        service.register_pending(
+        _start_background_generation(
+            service,
             image_id=image_id,
             prompt=prompt,
-            provider=resolved_name,
+            resolved_name=resolved_name,
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             quality=quality,
             background=background,
             model=model,
         )
-
-        # Spawn background generation task
-        async def _background_generate() -> None:
-            try:
-                # Progress callback updates PendingGeneration so show_image
-                # polling returns step-level detail for SD WebUI.
-                pending = service.get_pending(image_id)
-                if pending is None:
-                    logger.warning(
-                        "get_pending(%s) returned None; progress updates will be lost",
-                        image_id,
-                    )
-
-                def _on_progress(fraction: float, message: str) -> None:
-                    if pending is not None:
-                        pending.progress = fraction
-                        pending.progress_message = message
-
-                provider_name, result = await service.generate(
-                    prompt,
-                    provider=resolved_name,
-                    negative_prompt=negative_prompt,
-                    aspect_ratio=aspect_ratio,
-                    quality=quality,
-                    background=background,
-                    model=model,
-                    progress_callback=_on_progress,
-                )
-                await asyncio.to_thread(
-                    service.register_image,
-                    result,
-                    provider_name,
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    aspect_ratio=aspect_ratio,
-                    quality=quality,
-                    background=background,
-                    image_id=image_id,
-                )
-                service.complete_pending(image_id)
-                logger.info("Background generation completed: %s", image_id)
-            except ImageContentPolicyError as exc:
-                service.fail_pending(
-                    image_id,
-                    "Content policy rejected the prompt. "
-                    "Try rephrasing or use a different provider.",
-                )
-                logger.error(
-                    "Background generation failed (content policy): %s: %s",
-                    image_id,
-                    exc,
-                )
-            except ImageProviderConnectionError as exc:
-                service.fail_pending(
-                    image_id,
-                    "Provider is unreachable. "
-                    "Check that it is running, or try a different provider.",
-                )
-                logger.error(
-                    "Background generation failed (connection): %s: %s",
-                    image_id,
-                    exc,
-                )
-            except Exception as exc:
-                service.fail_pending(image_id, str(exc))
-                logger.error(
-                    "Background generation failed: %s: %s",
-                    image_id,
-                    exc,
-                    exc_info=True,
-                )
-
-        task = asyncio.create_task(_background_generate())
-        # Hold a strong reference to prevent GC before completion
-        _BACKGROUND_TASKS.add(task)
-        task.add_done_callback(_BACKGROUND_TASKS.discard)
 
         # Resolve prompt_style from capabilities for the response
         prompt_style = None
@@ -404,6 +510,232 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     type="resource_link",
                     uri=AnyUrl(f"image://{image_id}/view"),
                     name="Generated image (generating)",
+                ),
+            ]
+        )
+
+    @mcp.tool(
+        tags={"write"},
+        task=True,
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": True,
+        },
+        icons=[Icon(src=_LUCIDE.format("images"), mimeType="image/svg+xml")],
+    )
+    async def transform_image(
+        prompt: str,
+        reference_images: list[str],
+        provider: str = "auto",
+        negative_prompt: str | None = None,
+        aspect_ratio: str = "1:1",
+        quality: str = "standard",
+        background: str = "opaque",
+        model: str | None = None,
+        service: ImageService = Depends(get_service),
+        config: ProjectConfig = Depends(get_config),
+        ctx: Context = CurrentContext(),
+    ) -> ToolResult:
+        """Edit or transform image(s) using a model that accepts image input.
+
+        Supply one or more reference images (gallery ``image_id``, an
+        ``image://`` URI, or — when enabled — a local file path) plus a
+        prompt describing the change.  Served by providers that report
+        ``supports_image_input`` in ``list_providers`` (currently Gemini,
+        single reference image); check ``supports_image_input`` /
+        ``max_input_images`` there to route.
+
+        Returns immediately; poll ``check_generation_status(image_id)``
+        and then ``show_image(uri=original_uri)`` once completed — same
+        flow as ``generate_image``.
+
+        **After calling this tool:**
+
+        1. Tell the user the image is being transformed.
+        2. Call ``check_generation_status(image_id)`` to wait for completion.
+        3. Only when status is ``"completed"``, call
+           ``show_image(uri=original_uri)`` once to display the result.
+
+        Args:
+            prompt: Description of the desired edit or transformation.
+            reference_images: One or more gallery ``image_id`` values,
+                ``image://`` URIs, or (when
+                ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true``) local
+                file paths to use as the source image(s).
+            provider: Provider to use, or ``"auto"`` to select
+                automatically.  Image-to-image is served by providers that
+                report ``supports_image_input`` in ``list_providers``
+                (currently Gemini).
+            negative_prompt: Things to avoid in the result (provider
+                support varies).
+            aspect_ratio: Desired aspect ratio of the output image.
+            quality: ``"standard"`` or ``"hd"``.
+            background: ``"opaque"`` or ``"transparent"``
+                (provider-dependent).
+            model: Specific model id; see ``list_providers``.
+
+        Returns:
+            JSON with ``status``, ``image_id``, ``original_uri`` (pending).
+            Use ``check_generation_status(image_id)`` to poll, then
+            ``show_image(uri=original_uri)`` when completed.
+        """
+        if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
+            msg = (
+                f"Unsupported aspect_ratio '{aspect_ratio}'. "
+                f"Supported: {list(SUPPORTED_ASPECT_RATIOS)}"
+            )
+            raise ValueError(msg)
+        if quality not in SUPPORTED_QUALITY_LEVELS:
+            msg = (
+                f"Unsupported quality '{quality}'. "
+                f"Supported: {list(SUPPORTED_QUALITY_LEVELS)}"
+            )
+            raise ValueError(msg)
+        if background not in SUPPORTED_BACKGROUNDS:
+            msg = (
+                f"Unsupported background '{background}'. "
+                f"Supported: {', '.join(SUPPORTED_BACKGROUNDS)}"
+            )
+            raise ValueError(msg)
+        if not reference_images:
+            raise ValueError("reference_images must not be empty.")
+        if not _any_provider_supports_image_input(service):
+            raise ValueError(
+                "No configured provider supports reference-image input. "
+                "See list_providers and the README for supported providers."
+            )
+
+        # Build a loader that maps gallery image_id → (bytes, content_type)
+        def _loader(image_id: str) -> tuple[bytes, str]:
+            try:
+                record = service.get_image(image_id)
+                return record.original_path.read_bytes(), record.content_type
+            except ImageProviderError as exc:
+                raise KeyError(image_id) from exc
+            except OSError as exc:
+                # Record exists but its backing file is gone/unreadable.
+                raise KeyError(image_id) from exc
+
+        try:
+            resolved = await asyncio.to_thread(
+                resolve_references,
+                reference_images,
+                loader=_loader,
+                allow_local_files=config.allow_local_file_input,
+                max_bytes=config.max_input_image_bytes,
+            )
+        except (
+            ImageReferenceNotFound,
+            LocalFileInputDisabled,
+            InputImageTooLarge,
+            InvalidInputImage,
+        ) as exc:
+            raise ValueError(str(exc)) from exc
+
+        # Resolve provider name. For "auto", restrict candidates to
+        # image-input-capable providers so auto-selection cannot pick a
+        # text-only provider and then reject a transform a capable provider
+        # could serve. The _any_provider_supports_image_input guard above
+        # guarantees at least one capable provider exists here.
+        if provider == "auto":
+            capable_providers = sorted(
+                name
+                for name, caps in service.capabilities.items()
+                if any(m.supports_image_input for m in caps.models)
+            )
+            # Prefer Gemini (most capable image-input model) when available;
+            # otherwise pick the first capable provider alphabetically for determinism.
+            # A future explicit priority order can replace this once more providers gain image input.
+            chosen_provider = (
+                "gemini" if "gemini" in capable_providers else capable_providers[0]
+            )
+        else:
+            chosen_provider = provider
+        resolved_name = await asyncio.to_thread(
+            service.resolve_provider_name,
+            chosen_provider,
+            prompt,
+            background=background,
+        )
+        # caps is always present here: resolved_name is a registered provider
+        # and discover_all_capabilities populates _capabilities for every
+        # registered provider (even degraded ones). The ``else ()`` is a
+        # defensive fallback only.
+        caps = service.capabilities.get(resolved_name)
+        # Pre-flight guard, not a model selector: ``capable`` is only checked
+        # for emptiness below to reject early. The provider still picks the
+        # actual model at generation time.
+        capable = [
+            m
+            for m in (caps.models if caps else ())
+            if m.supports_image_input
+            and (model is None or m.model_id == model)
+            and m.max_input_images >= len(resolved)
+        ]
+        if not capable:
+            raise ValueError(
+                f"Provider '{resolved_name}' has no model accepting "
+                f"{len(resolved)} reference image(s). See list_providers "
+                "for models supporting reference-image input."
+            )
+
+        cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
+        if cancel is not None:
+            return cancel
+
+        # Resolve prompt_style for the response, reusing the capability
+        # lookup from the routing check above.
+        prompt_style = None
+        if caps:
+            if model:
+                for m in caps.models:
+                    if m.model_id == model:
+                        prompt_style = m.prompt_style
+                        break
+            elif len(caps.models) == 1:
+                prompt_style = caps.models[0].prompt_style
+
+        source_ids = [r.source_id for r in resolved if r.source_id]
+        image_id = service.allocate_image_id()
+        _start_background_generation(
+            service,
+            image_id=image_id,
+            prompt=prompt,
+            resolved_name=resolved_name,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            background=background,
+            model=model,
+            reference_images=resolved,
+            source_image_ids=source_ids,
+            label="transform",
+        )
+
+        metadata: dict[str, Any] = {
+            "status": "generating",
+            "image_id": image_id,
+            "prompt": prompt,
+            "provider": resolved_name,
+            "prompt_style": prompt_style,
+            "source_image_ids": source_ids,
+            "original_uri": f"image://{image_id}/view",
+            "metadata_uri": f"image://{image_id}/metadata",
+            "resource_template": (
+                f"image://{image_id}/view{{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}}"
+            ),
+        }
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=json.dumps(metadata, indent=2),
+                ),
+                ResourceLink(
+                    type="resource_link",
+                    uri=AnyUrl(f"image://{image_id}/view"),
+                    name="Transformed image (generating)",
                 ),
             ]
         )
@@ -1052,7 +1384,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
 
         Called by the image editor UI after the user confirms their edits.
         Applies the transforms server-side via Pillow and persists the
-        result as a new image with ``source_image_id`` provenance.
+        result as a new image with ``source_image_ids`` provenance.
 
         Args:
             source_image_id: ID of the original image being edited.
@@ -1098,7 +1430,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 result,
                 "edited",
                 prompt=record.prompt,
-                source_image_id=source_image_id,
+                source_image_ids=[source_image_id],
             )
             return new_record
 
