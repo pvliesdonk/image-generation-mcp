@@ -145,12 +145,17 @@ class TestDiscoverCapabilities:
     async def test_gemini_advertises_image_input(
         self, gemini_provider: GeminiImageProvider
     ) -> None:
-        """All Gemini models advertise supports_image_input=True and max_input_images=1."""
+        """Gemini models advertise supports_image_input=True with per-model caps."""
         caps = await gemini_provider.discover_capabilities()
 
+        by_id = {m.model_id: m for m in caps.models}
         for m in caps.models:
             assert m.supports_image_input is True
-            assert m.max_input_images == 1
+        # Gemini 3 image models accept up to 14 reference images; the older
+        # 2.5-flash-image uses a conservative cap.
+        assert by_id["gemini-2.5-flash-image"].max_input_images == 3
+        assert by_id["gemini-3.1-flash-image-preview"].max_input_images == 14
+        assert by_id["gemini-3-pro-image-preview"].max_input_images == 14
 
     async def test_degraded_on_unexpected_exception(
         self, gemini_provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch

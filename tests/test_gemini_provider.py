@@ -452,18 +452,67 @@ class TestGeminiProvider:
         assert isinstance(contents, list)
         assert len(contents) == 2
 
-    async def test_generate_rejects_two_reference_images(self) -> None:
-        """More than one reference image raises TooManyInputImages."""
-        from image_generation_mcp.providers.types import InputImage, TooManyInputImages
+    async def test_generate_accepts_multiple_reference_images(self) -> None:
+        """Multiple reference images (within the model cap) are all sent as parts."""
+        from image_generation_mcp.providers.types import InputImage
 
-        provider = GeminiImageProvider(api_key="AIza-test")
+        provider = GeminiImageProvider(api_key="AIza-test")  # 2.5-flash, cap 3
+        mock_inline = MagicMock()
+        mock_inline.data = b"out-png"
+        mock_inline.mime_type = "image/png"
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
         provider._client = MagicMock()
+        gen = AsyncMock(return_value=mock_response)
+        provider._client.aio.models.generate_content = gen
+
         refs = [
             InputImage(data=b"a", content_type="image/png"),
             InputImage(data=b"b", content_type="image/png"),
+            InputImage(data=b"c", content_type="image/png"),
         ]
+        await provider.generate("compose", reference_images=refs)
+        contents = gen.call_args.kwargs["contents"]
+        # [prompt, part, part, part]
+        assert len(contents) == 4
+
+    async def test_generate_rejects_over_cap_reference_images(self) -> None:
+        """More references than the model's cap raises TooManyInputImages."""
+        from image_generation_mcp.providers.types import InputImage, TooManyInputImages
+
+        provider = GeminiImageProvider(api_key="AIza-test")  # 2.5-flash, cap 3
+        provider._client = MagicMock()
+        refs = [InputImage(data=b"x", content_type="image/png") for _ in range(4)]
         with pytest.raises(TooManyInputImages):
             await provider.generate("x", reference_images=refs)
+
+    async def test_generate_gemini3_accepts_up_to_14_references(self) -> None:
+        """Gemini 3 models accept up to 14 reference images."""
+        from image_generation_mcp.providers.types import InputImage, TooManyInputImages
+
+        provider = GeminiImageProvider(
+            api_key="AIza-test", model="gemini-3-pro-image-preview"
+        )
+        mock_inline = MagicMock()
+        mock_inline.data = b"out-png"
+        mock_inline.mime_type = "image/png"
+        mock_part = MagicMock()
+        mock_part.inline_data = mock_inline
+        mock_response = MagicMock()
+        mock_response.parts = [mock_part]
+        provider._client = MagicMock()
+        gen = AsyncMock(return_value=mock_response)
+        provider._client.aio.models.generate_content = gen
+        refs14 = [InputImage(data=b"x", content_type="image/png") for _ in range(14)]
+        await provider.generate("compose", reference_images=refs14)  # no raise
+        # [prompt, 14 image parts]
+        assert len(gen.call_args.kwargs["contents"]) == 15
+
+        refs15 = [InputImage(data=b"x", content_type="image/png") for _ in range(15)]
+        with pytest.raises(TooManyInputImages):
+            await provider.generate("x", reference_images=refs15)
 
     async def test_generate_ignores_strength(self) -> None:
         """Passing strength=0.5 is accepted and not forwarded to generate_content kwargs."""

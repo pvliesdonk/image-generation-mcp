@@ -73,8 +73,22 @@ _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
 _SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = tuple(_ASPECT_RATIOS)
 _SUPPORTED_QUALITIES: tuple[str, ...] = ("standard", "hd")
 
-# Maximum number of reference images accepted per generate() call.
-_MAX_INPUT_IMAGES = 1
+# Maximum reference images per generate() call, by model. Gemini 3 image
+# models accept up to 14 reference images for multi-image composition (per the
+# ai.google.dev image-generation docs). The older gemini-2.5-flash-image has no
+# documented multi-image limit, so a conservative cap is applied. Unknown
+# models fall back to the conservative default.
+_MAX_INPUT_IMAGES_BY_MODEL: dict[str, int] = {
+    "gemini-2.5-flash-image": 3,
+    "gemini-3.1-flash-image-preview": 14,
+    "gemini-3-pro-image-preview": 14,
+}
+_DEFAULT_MAX_INPUT_IMAGES = 3
+
+
+def _max_input_images(model: str) -> int:
+    """Return the reference-image cap for a Gemini model."""
+    return _MAX_INPUT_IMAGES_BY_MODEL.get(model, _DEFAULT_MAX_INPUT_IMAGES)
 
 
 class GeminiImageProvider:
@@ -143,8 +157,9 @@ class GeminiImageProvider:
             background: Ignored — Gemini does not support transparent backgrounds.
             model: Override the default model for this call.
             reference_images: Optional list of reference images for
-                image-to-image editing. At most one image is accepted;
-                passing more than one raises ``TooManyInputImages``.
+                image-to-image editing and multi-image composition. The
+                per-model cap is 3 for gemini-2.5-flash-image and up to 14 for
+                Gemini 3 models; passing more raises ``TooManyInputImages``.
                 When provided, the image bytes are sent as inline image parts
                 alongside the prompt for guided generation.
             strength: Ignored — Gemini does not support denoising strength.
@@ -157,7 +172,8 @@ class GeminiImageProvider:
             ImageProviderError: If generation fails or returns no image.
             ImageContentPolicyError: If the prompt violates content policy.
             ImageProviderConnectionError: If the Gemini API is unreachable.
-            TooManyInputImages: If more than one reference image is supplied.
+            TooManyInputImages: If more reference images than the model's cap
+                are supplied.
         """
         from google.genai import types
 
@@ -173,9 +189,10 @@ class GeminiImageProvider:
 
         effective_model = model or self._model
 
-        if reference_images and len(reference_images) > _MAX_INPUT_IMAGES:
+        max_refs = _max_input_images(effective_model)
+        if reference_images and len(reference_images) > max_refs:
             raise TooManyInputImages(
-                "gemini", effective_model, _MAX_INPUT_IMAGES, len(reference_images)
+                "gemini", effective_model, max_refs, len(reference_images)
             )
 
         full_prompt = prompt
@@ -263,7 +280,7 @@ class GeminiImageProvider:
                     supports_negative_prompt=False,
                     supports_background=False,
                     supports_image_input=True,
-                    max_input_images=_MAX_INPUT_IMAGES,
+                    max_input_images=_max_input_images(model_id),
                     prompt_style="natural_language",
                     style_profile=resolve_style("gemini", model_id),
                     # SynthID watermark: see docs/providers/gemini.md.

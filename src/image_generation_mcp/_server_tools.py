@@ -650,9 +650,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # whose capabilities include a model that supports image input AND
         # accepts at least len(resolved) references, so auto-selection cannot
         # pick a provider that would then reject this request's reference count
-        # (Gemini and SD WebUI cap at 1; OpenAI accepts up to 16). Prefer
-        # Gemini among the eligible providers (higher-quality edits); the
-        # explicit check keeps that preference robust if a future provider
+        # (caps vary by model and are read from max_input_images below).
+        # Prefer Gemini among the eligible providers (higher-quality edits);
+        # the explicit check keeps that preference robust if a future provider
         # would otherwise sort ahead of "gemini". Else pick the first eligible
         # provider alphabetically for determinism.
         if provider == "auto":

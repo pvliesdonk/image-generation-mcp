@@ -80,11 +80,21 @@ The watermark is invisible to the human eye and does not affect image quality or
 
 ## Image input (image-to-image)
 
-Gemini models accept a reference image alongside a text prompt via the `transform_image` tool. Use this for description-driven edits such as swapping backgrounds or applying a different visual style.
+Gemini models accept one or more reference images alongside a text prompt via the `transform_image` tool. Use this for description-driven edits such as swapping backgrounds or applying a different visual style, and for multi-image composition.
 
-**This release accepts one reference image per request.** Pass a gallery `image_id`, an `image://` URI, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) a local file path in the `reference_images` parameter. The reference image is sent as an inline image part alongside the prompt.
+Pass gallery `image_id` values, `image://` URIs, or (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`) local file paths in the `reference_images` parameter. Each reference image is sent as an inline image part alongside the prompt.
 
-Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model entry to confirm image-input availability at runtime.
+### Multi-image composition and character consistency
+
+Supply several reference images to compose a scene from their elements or to keep a character consistent across generations. The per-call reference limit depends on the model:
+
+| Model | Max reference images |
+|-------|----------------------|
+| `gemini-2.5-flash-image` | 3 |
+| `gemini-3.1-flash-image-preview` | 14 |
+| `gemini-3-pro-image-preview` | 14 |
+
+The Gemini 3 models accept up to 14 reference images. For character consistency, give the model a few clear shots of the same subject and describe the scene you want. Reference order is preserved in the request. Exceeding a model's limit raises an error before the API call; check `max_input_images` in `list_providers` to confirm the cap at runtime, and `supports_image_input` for availability.
 
 ```
 transform_image(
