@@ -341,6 +341,8 @@ class SdWebuiImageProvider:
         )
 
         is_img2img = bool(reference_images)
+        if strength is not None and not is_img2img:
+            logger.debug("strength_ignored reason=no_reference_images endpoint=txt2img")
         if reference_images:
             if len(reference_images) > _MAX_INPUT_IMAGES:
                 raise TooManyInputImages(

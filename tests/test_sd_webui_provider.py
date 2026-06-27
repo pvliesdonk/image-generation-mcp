@@ -689,6 +689,24 @@ class TestImg2Img:
         payload = json.loads(request.content)
         assert payload["denoising_strength"] == 0.75
 
+    async def test_img2img_explicit_zero_strength_preserved(self, httpx_mock) -> None:
+        """strength=0.0 is forwarded as denoising_strength=0.0, not defaulted."""
+        b64_image = base64.b64encode(b"output-png").decode()
+        httpx_mock.post(
+            "http://localhost:7860/sdapi/v1/img2img",
+            json={"images": [b64_image], "info": "{}"},
+        )
+
+        provider = SdWebuiImageProvider(host="http://localhost:7860")
+        await provider.generate(
+            "edit this",
+            reference_images=[InputImage(data=b"raw", content_type="image/png")],
+            strength=0.0,
+        )
+
+        payload = json.loads(httpx_mock.get_request().content)
+        assert payload["denoising_strength"] == 0.0
+
     async def test_img2img_too_many_references_raises(self) -> None:
         """Two reference images raises TooManyInputImages before any HTTP call."""
         provider = SdWebuiImageProvider(host="http://localhost:7860")
