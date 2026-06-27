@@ -325,7 +325,7 @@ When `IMAGE_GENERATION_MCP_BASE_URL` is set, the Claude sandbox domain is auto-c
 
 | State | Trigger | Display |
 |-------|---------|---------|
-| Waiting | Widget loaded, no tool result yet | "Waiting for image..." |
+| Waiting | Widget loaded, no tool result yet | "Waiting for image…" |
 | Generating | `show_image` returns `{"status": "generating", ...}` | Spinner, progress bar, provider info |
 | Failed | `show_image` returns `{"status": "failed", ...}` | Error message |
 | Completed | `show_image` returns image + metadata | Image, prompt, provider, dimensions, file size |

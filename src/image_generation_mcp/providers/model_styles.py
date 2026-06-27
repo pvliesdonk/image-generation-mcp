@@ -99,8 +99,8 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "marketing assets where layout and typography matter. Excels "
             "with descriptive paragraphs ordered scene → subject → details "
             "→ constraints, and with text in image given in quotes with "
-            "explicit typography hints. Supports 1024x1024 / 1024x1536 / "
-            "1536x1024."
+            "explicit typography hints. Supports `1024x1024` / `1024x1536` / "
+            "`1536x1024`."
         ),
         incompatible_styles=(
             "Avoid CLIP-style comma-separated tag dumps, which underperform "
@@ -186,8 +186,8 @@ MODEL_STYLES: dict[str, StyleProfile] = {
         incompatible_styles=(
             "Don't use for in-image text: text rendering is unreliable. "
             "No edits, no inpainting, no transparent background, no "
-            "negative prompts, no aspect ratios beyond 1024x1024 / "
-            "1024x1792 / 1792x1024. Cannot render named real people. "
+            "negative prompts, no aspect ratios beyond `1024x1024` / "
+            "`1024x1792` / `1792x1024`. Cannot render named real people. "
             "Silently rewrites short prompts, so inspect `revised_prompt` "
             "to see what was actually used."
         ),
@@ -213,7 +213,7 @@ MODEL_STYLES: dict[str, StyleProfile] = {
         style_hints=(
             "Older OpenAI model retained mostly for inpainting / mask "
             "edits at low cost. Limited style fidelity vs current "
-            "gpt-image-* family. 1024x1024 only. Useful for cheap edits "
+            "gpt-image-* family. `1024x1024` only. Useful for cheap edits "
             "where new code paths can't be added."
         ),
         incompatible_styles=(
@@ -501,7 +501,7 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
                 "clean cel shading, expressive character art, vivid "
                 "saturated palette, manga panel compositions. Animagine "
                 "4.x recommends '1girl/1boy, character (series), rating, "
-                "..., masterpiece, high score, great score, absurdres'."
+                "…, masterpiece, high score, great score, absurdres'."
             ),
             incompatible_styles=(
                 "Photorealism, photography-style lighting, gritty texture, "
@@ -736,8 +736,8 @@ CHECKPOINT_PATTERNS: tuple[tuple[re.Pattern[str], StyleProfile], ...] = (
             label="SD 1.5 (general-purpose base)",
             style_hints=(
                 "Broad style range. Native latent at 512px; commonly used "
-                "at 512x768 / 768x512 before hires-fix. With hires-fix or "
-                "upscaler chains routinely produces 1024x1536+. "
+                "at `512x768` / `768x512` before hires-fix. With hires-fix or "
+                "upscaler chains routinely produces `1024x1536`+. "
                 "Well-supported by community LoRAs."
             ),
             incompatible_styles=(

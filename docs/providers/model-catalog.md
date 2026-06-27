@@ -23,7 +23,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 > Use only for inpainting on legacy flows. Prefer gpt-image-1.5 for any new generation work.
 
-**Best for:** Older OpenAI model retained mostly for inpainting / mask edits at low cost. Limited style fidelity vs current gpt-image-* family. 1024x1024 only. Useful for cheap edits where new code paths can't be added.
+**Best for:** Older OpenAI model retained mostly for inpainting / mask edits at low cost. Limited style fidelity vs current gpt-image-* family. `1024x1024` only. Useful for cheap edits where new code paths can't be added.
 
 **Avoid:** Don't use for new generation work. Lacks transparent background support, aspect ratios beyond 1:1, in-image text, and negative prompts. Quality is well below current OpenAI models.
 
@@ -37,7 +37,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 **Best for:** Strong creative interpretation and excellent compliance with multi-clause prompts. Good for stylised illustrations, cinematic concept art, and `vivid`-style hero images where you want the model to embellish. The `natural` style produces flatter, more photoreal output suitable for stock-photo and logo work.
 
-**Avoid:** Don't use for in-image text: text rendering is unreliable. No edits, no inpainting, no transparent background, no negative prompts, no aspect ratios beyond 1024x1024 / 1024x1792 / 1792x1024. Cannot render named real people. Silently rewrites short prompts, so inspect `revised_prompt` to see what was actually used.
+**Avoid:** Don't use for in-image text: text rendering is unreliable. No edits, no inpainting, no transparent background, no negative prompts, no aspect ratios beyond `1024x1024` / `1024x1792` / `1792x1024`. Cannot render named real people. Silently rewrites short prompts, so inspect `revised_prompt` to see what was actually used.
 
 **Good prompt:** `A wide cinematic painting in the style of Thomas Cole's "Desolation": overgrown classical ruins on a cliff at dusk, vines reclaiming marble columns, single shaft of warm light. Style: natural.`
 
@@ -67,7 +67,7 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 ### OpenAI GPT Image 1.5
 
-**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs transparent backgrounds (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports 1024x1024 / 1024x1536 / 1536x1024.
+**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs transparent backgrounds (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports `1024x1024` / `1024x1536` / `1536x1024`.
 
 **Avoid:** Avoid CLIP-style comma-separated tag dumps, which underperform vs descriptive sentences. Negative-prompt syntax is not supported; describe exclusions positively. Long, multi-element scenes with strict spatial composition can drift. Real-named-people likenesses are filtered. No identity consistency across calls.
 
@@ -232,7 +232,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### Animagine XL (anime SDXL)
 
-**Best for:** Anime illustration base. Danbooru-style tag vocabulary, clean cel shading, expressive character art, vivid saturated palette, manga panel compositions. Animagine 4.x recommends '1girl/1boy, character (series), rating, ..., masterpiece, high score, great score, absurdres'.
+**Best for:** Anime illustration base. Danbooru-style tag vocabulary, clean cel shading, expressive character art, vivid saturated palette, manga panel compositions. Animagine 4.x recommends '1girl/1boy, character (series), rating, …, masterpiece, high score, great score, absurdres'.
 
 **Avoid:** Photorealism, photography-style lighting, gritty texture, oil painting, detailed backgrounds without anime stylisation. For broader character/style coverage, consider Illustrious-XL or NoobAI-XL.
 
@@ -340,7 +340,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### SD 1.5 (general-purpose base)
 
-**Best for:** Broad style range. Native latent at 512px; commonly used at 512x768 / 768x512 before hires-fix. With hires-fix or upscaler chains routinely produces 1024x1536+. Well-supported by community LoRAs.
+**Best for:** Broad style range. Native latent at 512px; commonly used at `512x768` / `768x512` before hires-fix. With hires-fix or upscaler chains routinely produces `1024x1536`+. Well-supported by community LoRAs.
 
 **Avoid:** Photorealistic skin detail at high resolution without hires-fix; SDXL-native aspect ratios. Don't expect SDXL-tier coherence at SDXL resolutions without upscaling.
 

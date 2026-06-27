@@ -21,11 +21,11 @@ The placeholder provider is **always registered**: no configuration or API key i
 
 | Aspect ratio | Size |
 |-------------|------|
-| `1:1` | 256x256 |
-| `16:9` | 640x360 |
-| `9:16` | 360x640 |
-| `3:2` | 480x320 |
-| `2:3` | 320x480 |
+| `1:1` | `256x256` |
+| `16:9` | `640x360` |
+| `9:16` | `360x640` |
+| `3:2` | `480x320` |
+| `2:3` | `320x480` |
 
 ## Parameters
 
