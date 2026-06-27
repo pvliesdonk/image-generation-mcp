@@ -340,9 +340,8 @@ class SdWebuiImageProvider:
             preset=effective_preset,
         )
 
-        is_img2img = bool(reference_images)
-        if strength is not None and not is_img2img:
-            logger.debug("strength_ignored reason=no_reference_images endpoint=txt2img")
+        # Branch on ``reference_images`` directly (not a precomputed bool) so
+        # mypy narrows ``Sequence | None`` to non-None inside the img2img block.
         if reference_images:
             if len(reference_images) > _MAX_INPUT_IMAGES:
                 raise TooManyInputImages(
@@ -359,7 +358,13 @@ class SdWebuiImageProvider:
             )
             url = f"{self._host}/sdapi/v1/img2img"
         else:
+            if strength is not None:
+                logger.debug(
+                    "strength_ignored provider=sd_webui "
+                    "reason=no_reference_images endpoint=txt2img"
+                )
             url = f"{self._host}/sdapi/v1/txt2img"
+        is_img2img = bool(reference_images)
 
         logger.debug(
             "SD WebUI generate: host=%s model=%s size=%dx%d img2img=%s",
