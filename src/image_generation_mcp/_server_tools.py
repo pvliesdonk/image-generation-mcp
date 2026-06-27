@@ -663,6 +663,9 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         # registered provider (even degraded ones). The ``else ()`` is a
         # defensive fallback only.
         caps = service.capabilities.get(resolved_name)
+        # Pre-flight guard, not a model selector: ``capable`` is only checked
+        # for emptiness below to reject early. The provider still picks the
+        # actual model at generation time.
         capable = [
             m
             for m in (caps.models if caps else ())
