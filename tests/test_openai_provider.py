@@ -495,3 +495,25 @@ class TestOpenAIEdit:
             reference_images=[InputImage(data=b"a", content_type="image/png")],
         )
         assert "Avoid: dogs" in provider._client.images.edit.call_args.kwargs["prompt"]
+
+    async def test_edit_empty_response_raises(self) -> None:
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        empty = MagicMock()
+        empty.data = []
+        provider._client.images.edit = AsyncMock(return_value=empty)
+        with pytest.raises(ImageProviderError, match="Empty response"):
+            await provider.generate(
+                "x", reference_images=[InputImage(data=b"a", content_type="image/png")]
+            )
+
+    async def test_edit_missing_b64_raises(self) -> None:
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response(b64=""))
+        with pytest.raises(ImageProviderError, match="No image data"):
+            await provider.generate(
+                "x", reference_images=[InputImage(data=b"a", content_type="image/png")]
+            )
