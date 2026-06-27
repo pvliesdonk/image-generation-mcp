@@ -1,6 +1,6 @@
 # Client Compatibility
 
-image-generation-mcp works with any MCP client, but image display capabilities vary significantly across clients. This guide covers what works where and how to get the best experience on each platform.
+image-generation-mcp works with any MCP client, but image display capabilities vary across clients. This guide covers what works where and how to get the best experience on each platform.
 
 ## Image display strategies
 
@@ -40,7 +40,7 @@ The server provides multiple ways to deliver images, in order of richness:
 Everything works out of the box:
 
 1. `generate_image` returns metadata + resource link
-2. `show_image` displays a thumbnail preview inline **and** renders the interactive MCP Apps viewer with metadata
+2. `show_image` displays a thumbnail preview inline and renders the interactive MCP Apps viewer with metadata
 3. Full-resolution access via `image://` resource URIs
 
 ### Claude Code
@@ -69,13 +69,13 @@ These clients cannot display `ImageContent` from tool results. Use `show_image` 
 
 ## Known limitations
 
-### Claude Mobile — MCP Apps viewer fails
+### Claude Mobile: MCP Apps viewer fails
 
 The Claude mobile app has a bug in streamable-HTTP session recovery. After the server restarts or a session times out, the mobile app fails to re-establish the MCP session, causing "Failed to fetch app content" errors for the image viewer.
 
-**Root cause:** The mobile app retries with a stale session ID (HTTP 404), then retries without the auth token (HTTP 401), then starts a new session but sends tool calls without completing the `initialize` handshake (HTTP 400). This cycle repeats indefinitely.
+**Root cause:** The mobile app first retries with a stale session ID (HTTP 404), then retries without the auth token (HTTP 401). It then starts a new session but sends tool calls before completing the `initialize` handshake (HTTP 400), and this cycle repeats indefinitely.
 
-**Workaround:** Image generation itself still works — the `generate_image` tool returns metadata with resource URIs. Use `create_download_link` to get an HTTP URL for viewing the image in a browser.
+**Workaround:** Image generation itself still works. The `generate_image` tool returns metadata with resource URIs. Use `create_download_link` to get an HTTP URL for viewing the image in a browser.
 
 **Status:** Upstream bug in the Claude mobile app. The server-side behavior is correct (verified by comparing with successful claude.ai web sessions on the same server).
 

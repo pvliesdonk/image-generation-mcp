@@ -155,7 +155,7 @@ masterpiece, best quality, sharp focus
 - **SD 1.5:** 77 tokens per CLIP chunk
 - **SDXL:** 77 tokens per chunk, but uses two CLIP encoders (ViT-L + ViT-bigG)
 
-Front-load the most important tags -- tokens beyond the first 77-token chunk have diminishing influence.
+Front-load the most important tags. Tokens beyond the first 77-token chunk have diminishing influence.
 
 ---
 

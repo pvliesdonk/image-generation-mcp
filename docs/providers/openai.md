@@ -28,21 +28,21 @@ The provider registers automatically when this variable is set.
 
 | Aspect ratio | Size |
 |-------------|------|
-| `1:1` | 1024x1024 |
-| `16:9` | 1536x1024 |
-| `9:16` | 1024x1536 |
-| `3:2` | 1536x1024 |
-| `2:3` | 1024x1536 |
+| `1:1` | `1024x1024` |
+| `16:9` | `1536x1024` |
+| `9:16` | `1024x1536` |
+| `3:2` | `1536x1024` |
+| `2:3` | `1024x1536` |
 
 ### dall-e-3
 
 | Aspect ratio | Size |
 |-------------|------|
-| `1:1` | 1024x1024 |
-| `16:9` | 1792x1024 |
-| `9:16` | 1024x1792 |
-| `3:2` | 1792x1024 |
-| `2:3` | 1024x1792 |
+| `1:1` | `1024x1024` |
+| `16:9` | `1792x1024` |
+| `9:16` | `1024x1792` |
+| `3:2` | `1792x1024` |
+| `2:3` | `1024x1792` |
 
 ## Quality levels
 
@@ -67,8 +67,8 @@ The `background` parameter controls whether the generated image has a transparen
 
 | Model | `background` support |
 |-------|---------------------|
-| `gpt-image-1` | Supported -- passed to the API as-is (`"opaque"` or `"transparent"`) |
-| `dall-e-3` | Not supported -- parameter is ignored |
+| `gpt-image-1` | Supported (passed to the API as-is: `"opaque"` or `"transparent"`) |
+| `dall-e-3` | Not supported (parameter is ignored) |
 
 When `background="transparent"` is used with `gpt-image-1`, the output PNG includes an alpha channel.
 
@@ -108,7 +108,7 @@ Use `list_providers` to discover available models.
 
 At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-1`, `gpt-image-1-mini`, `gpt-image-1.5`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).
 
-If the API call fails (network error, invalid key), the provider is marked as **degraded** -- it remains available for generation but with an empty model list in the capabilities response.
+If the API call fails (network error, invalid key), the provider is marked as **degraded**: it remains available for generation but with an empty model list in the capabilities response.
 
 ## Cost
 

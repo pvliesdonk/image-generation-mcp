@@ -41,11 +41,11 @@ Used when no XL/Lightning/Turbo tag is found in the checkpoint name.
 
 | Aspect ratio | Size |
 |-------------|------|
-| `1:1` | 768x768 |
-| `16:9` | 912x512 |
-| `9:16` | 512x912 |
-| `3:2` | 768x512 |
-| `2:3` | 512x768 |
+| `1:1` | `768x768` |
+| `16:9` | `912x512` |
+| `9:16` | `512x912` |
+| `3:2` | `768x512` |
+| `2:3` | `512x768` |
 
 ### SDXL
 
@@ -61,11 +61,11 @@ Used when checkpoint name contains `sdxl`, `xl_`, `_xl`, or `-xl`.
 
 | Aspect ratio | Size |
 |-------------|------|
-| `1:1` | 1024x1024 |
-| `16:9` | 1344x768 |
-| `9:16` | 768x1344 |
-| `3:2` | 1216x832 |
-| `2:3` | 832x1216 |
+| `1:1` | `1024x1024` |
+| `16:9` | `1344x768` |
+| `9:16` | `768x1344` |
+| `3:2` | `1216x832` |
+| `2:3` | `832x1216` |
 
 ### SDXL Lightning/Turbo
 
@@ -123,12 +123,12 @@ Use comma-separated CLIP tags ordered by importance. Include quality tags (`mast
 
 ### Flux (`prompt_style: "natural_language"`)
 
-Flux models use a T5 text encoder instead of CLIP. Write prompts as natural language descriptions — complete sentences, not comma-separated tags.
+Flux models use a T5 text encoder instead of CLIP. Write prompts as natural language descriptions: complete sentences, not comma-separated tags.
 
 **Do NOT use with Flux:**
-- Quality tags (`masterpiece`, `best quality`) — meaningless to T5
-- Negative prompts — Flux does not support them (the server omits them automatically)
-- `BREAK` syntax — Flux does not use CLIP chunking
+- Quality tags (`masterpiece`, `best quality`): meaningless to T5
+- Negative prompts: Flux does not support them (the server omits them automatically)
+- `BREAK` syntax: Flux does not use CLIP chunking
 
 **Example:**
 ```
@@ -175,28 +175,28 @@ The `background` parameter is **not supported** by SD WebUI. When `background="t
 
 At startup, the provider calls:
 
-- `GET /sdapi/v1/sd-models` -- lists all installed checkpoints
-- `GET /sdapi/v1/options` -- identifies the currently active checkpoint
+- `GET /sdapi/v1/sd-models`: lists all installed checkpoints
+- `GET /sdapi/v1/options`: identifies the currently active checkpoint
 
 Each checkpoint is mapped to a `ModelCapabilities` object with architecture-specific defaults (resolution, steps, CFG, sampler) based on the same name detection used for generation presets.
 
-If the SD WebUI server is unreachable (connection error or timeout), the provider is marked as **degraded** -- it remains available for generation but with an empty model list in the capabilities response. This prevents a slow or offline SD WebUI instance from blocking server startup.
+If the SD WebUI server is unreachable (connection error or timeout), the provider is marked as **degraded**: it remains available for generation but with an empty model list in the capabilities response. This prevents a slow or offline SD WebUI instance from blocking server startup.
 
 ## Negative prompts
 
 SD WebUI has native negative prompt support via the `negative_prompt` field in the API payload. This is more effective than OpenAI's "Avoid:" workaround.
 
-> **Note:** Flux models do not support negative prompts. When a Flux checkpoint is detected, the `negative_prompt` field is omitted from the API payload entirely. If a negative prompt is provided, it is silently ignored with a debug log.
+Flux models do not support negative prompts. When a Flux checkpoint is detected, the `negative_prompt` field is omitted from the API payload entirely. If a negative prompt is provided, it is silently ignored with a debug log.
 
 See the [Prompt Writing Guide](../guides/prompt-writing.md) for recommended negative prompts.
 
 ## Progress polling
 
-During image generation, the provider concurrently polls `GET /sdapi/v1/progress` every 2 seconds to report step-level progress. Progress updates are surfaced through `show_image` polling responses as `progress` (0.0–1.0) and `progress_message` (e.g., `"Step 9/30 (ETA 12s)"`).
+During image generation, the provider concurrently polls `GET /sdapi/v1/progress` every 2 seconds to report step-level progress. Progress updates are surfaced through `show_image` polling responses as `progress` (0.0 to 1.0) and `progress_message` (such as `"Step 9/30 (ETA 12s)"`).
 
-- **First poll fires immediately** (poll-then-sleep pattern) — even fast generations receive at least one progress update
-- **Polling failures are silently handled** — if the progress endpoint returns an error or is unreachable, generation continues uninterrupted (failures logged at debug level)
-- **Polling stops automatically** when generation completes — the polling task is cancelled in a `finally` block
+- **First poll fires immediately** (poll-then-sleep pattern): even fast generations receive at least one progress update
+- **Polling failures are silently handled**: if the progress endpoint returns an error or is unreachable, generation continues uninterrupted (failures logged at debug level)
+- **Polling stops automatically** when generation completes (the polling task is cancelled in a `finally` block)
 
 No additional configuration is required. Progress polling activates whenever the fire-and-forget pattern is used (which is always, as of v1.1.0).
 
@@ -204,10 +204,10 @@ No additional configuration is required. Progress polling activates whenever the
 
 The provider extracts from the SD WebUI response:
 
-- **seed** -- the random seed used for generation (useful for reproducibility)
-- **model name** -- the active checkpoint name (from response `info` JSON)
-- **size** -- pixel dimensions used
-- **steps** -- number of diffusion steps
+- **seed**: the random seed used for generation (useful for reproducibility)
+- **model name**: the active checkpoint name (from response `info` JSON)
+- **size**: pixel dimensions used
+- **steps**: number of diffusion steps
 
 ## Timeout
 
@@ -227,5 +227,5 @@ The previous `A1111_HOST` and `A1111_MODEL` env var names are still accepted as 
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | Connection error | Cannot reach SD WebUI | Verify WebUI is running with `--api` flag at the configured host |
-| Timeout (180s) | Generation too slow | Check GPU utilization; consider a faster model or lower resolution |
+| Timeout (180 s) | Generation too slow | Check GPU load; consider a faster model or lower resolution |
 | HTTP 404 | Wrong API endpoint | Verify the WebUI version supports `/sdapi/v1/txt2img` |

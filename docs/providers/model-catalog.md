@@ -19,47 +19,47 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 | `gpt-image-1.5` | OpenAI GPT Image 1.5 | current |
 | `gpt-image-2` | OpenAI GPT Image 2 | current |
 
-### OpenAI DALL-E 2 (legacy) — **legacy**
+### OpenAI DALL-E 2 (legacy)
 
 > Use only for inpainting on legacy flows. Prefer gpt-image-1.5 for any new generation work.
 
-**Best for:** Older OpenAI model retained mostly for inpainting / mask edits at low cost. Limited style fidelity vs current gpt-image-* family. 1024x1024 only. Useful for cheap edits where new code paths can't be added.
+**Best for:** Older OpenAI model retained mostly for inpainting / mask edits at low cost. Limited style fidelity vs current gpt-image-* family. `1024x1024` only. Useful for cheap edits where new code paths can't be added.
 
-**Avoid:** Don't use for new generation work. No transparent backgrounds, no aspect ratios beyond 1:1, no in-image text, no negative prompts. Quality is well below current OpenAI models.
+**Avoid:** Don't use for new generation work. Lacks transparent background support, aspect ratios beyond 1:1, in-image text, and negative prompts. Quality is well below current OpenAI models.
 
-**Good prompt:** `Inpaint a missing hand on an existing 1024x1024 image (mask edit only — not for new-from-scratch generation)`
+**Good prompt:** `Inpaint a missing hand on an existing 1024x1024 image (mask edit only, not for new-from-scratch generation)`
 
-**Bad prompt:** `Detailed photoreal product shot for a marketing campaign (use gpt-image-1.5 instead — DALL-E 2 quality is well behind)`
+**Bad prompt:** `Detailed photoreal product shot for a marketing campaign (use gpt-image-1.5 instead; DALL-E 2 quality is well behind)`
 
-### OpenAI DALL-E 3 (deprecated) — **deprecated**
+### OpenAI DALL-E 3 (deprecated)
 
 > OpenAI API removal scheduled 2026-05-12. Migrate to gpt-image-1.5 for new long-lived workflows.
 
 **Best for:** Strong creative interpretation and excellent compliance with multi-clause prompts. Good for stylised illustrations, cinematic concept art, and `vivid`-style hero images where you want the model to embellish. The `natural` style produces flatter, more photoreal output suitable for stock-photo and logo work.
 
-**Avoid:** Don't use for in-image text — text rendering is unreliable. No edits, no inpainting, no transparent background, no negative prompts, no aspect ratios beyond 1024x1024 / 1024x1792 / 1792x1024. Cannot render named real people. Will silently rewrite short prompts — inspect `revised_prompt` to see what was actually used.
+**Avoid:** Don't use for in-image text: text rendering is unreliable. No edits, no inpainting, no transparent background, no negative prompts, no aspect ratios beyond `1024x1024` / `1024x1792` / `1792x1024`. Cannot render named real people. Silently rewrites short prompts, so inspect `revised_prompt` to see what was actually used.
 
-**Good prompt:** `A wide cinematic painting in the style of Thomas Cole's "Desolation" — overgrown classical ruins on a cliff at dusk, vines reclaiming marble columns, single shaft of warm light. Style: natural.`
+**Good prompt:** `A wide cinematic painting in the style of Thomas Cole's "Desolation": overgrown classical ruins on a cliff at dusk, vines reclaiming marble columns, single shaft of warm light. Style: natural.`
 
 **Bad prompt:** `A birthday cake that says "HAPPY BIRTHDAY SARAH" in elegant script (DALL-E 3 will likely garble the text; route to gpt-image-1.5 for typography-critical work)`
 
-### OpenAI GPT Image 1 (legacy) — **legacy**
+### OpenAI GPT Image 1 (legacy)
 
 > Newer OpenAI image models (gpt-image-1.5) offer better fidelity. This model remains available for compatibility.
 
 **Best for:** Earlier flagship; same descriptive-paragraph prompt grammar as gpt-image-1.5. Supports transparent backgrounds and the same three aspect ratios. Still capable for general work; newer siblings give better fidelity and instruction following.
 
-**Avoid:** Avoid CLIP-style tag dumps. No --no negative-prompt syntax. Real-named-people likenesses are filtered. Prefer gpt-image-1.5 for new long-lived workflows.
+**Avoid:** Avoid CLIP-style tag dumps. Negative-prompt syntax is not supported. Real-named-people likenesses are filtered. Prefer gpt-image-1.5 for new long-lived workflows.
 
 **Good prompt:** `Studio portrait of a senior watchmaker examining a movement with a loupe, warm rim light from a window, shallow depth of field, no text in frame.`
 
-**Bad prompt:** `watchmaker, masterpiece, 8k, ultradetailed (tag-soup style — use descriptive sentences instead)`
+**Bad prompt:** `watchmaker, masterpiece, 8k, ultradetailed (tag-soup style; use descriptive sentences instead)`
 
 ### OpenAI GPT Image 1 Mini
 
 **Best for:** Cheaper variant of gpt-image-1 with similar capabilities at a lower per-image cost. Same descriptive-paragraph grammar; same three aspect ratios. Good default for high-volume drafts and iteration where small quality differences vs the full model are acceptable.
 
-**Avoid:** Avoid CLIP-style tag dumps. No --no negative-prompt syntax. Same content filters as the full model. For final-grade output where small quality differences matter, prefer gpt-image-1.5.
+**Avoid:** Avoid CLIP-style tag dumps. Negative-prompt syntax is not supported. Same content filters as the full model. For final-grade output where small quality differences matter, prefer gpt-image-1.5.
 
 **Good prompt:** `Quick draft sketch: a fox curled up on a windowsill at dusk, soft watercolour palette, simple background.`
 
@@ -67,9 +67,9 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 ### OpenAI GPT Image 1.5
 
-**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs transparent backgrounds (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports 1024x1024 / 1024x1536 / 1536x1024.
+**Best for:** Previous-generation OpenAI flagship; still the right pick when the work needs transparent backgrounds (gpt-image-2 dropped alpha support). Strong instruction following for photorealistic shots, illustrations, product mockups, infographics, and marketing assets where layout and typography matter. Excels with descriptive paragraphs ordered scene → subject → details → constraints, and with text in image given in quotes with explicit typography hints. Supports `1024x1024` / `1024x1536` / `1536x1024`.
 
-**Avoid:** Avoid CLIP-style comma-separated tag dumps — they underperform vs descriptive sentences. Don't use --no negative-prompt syntax; describe exclusions positively. Long, multi-element scenes with strict spatial composition can drift. Real-named-people likenesses are filtered. No identity consistency across calls.
+**Avoid:** Avoid CLIP-style comma-separated tag dumps, which underperform vs descriptive sentences. Negative-prompt syntax is not supported; describe exclusions positively. Long, multi-element scenes with strict spatial composition can drift. Real-named-people likenesses are filtered. No identity consistency across calls.
 
 **Good prompt:** `Editorial product photo of a beige ceramic coffee mug on a worn oak table, shallow depth of field, soft window light from the left, warm muted palette. No text, no logos.`
 
@@ -77,9 +77,9 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 ### OpenAI GPT Image 2
 
-**Best for:** Current OpenAI flagship image model. Highest-fidelity instruction following in the family — best for demanding production work, dense in-image typography, complex multi-element compositions, and prompts that require strict adherence to layout / brand / scene direction. Same descriptive-paragraph prompt grammar as gpt-image-1.5; same three aspect ratios. Drops transparent-background support — use gpt-image-1.5 if you need transparency.
+**Best for:** Current OpenAI flagship image model with the highest-fidelity instruction following in the family. Best for demanding production work, dense in-image typography, complex multi-element compositions, and prompts that require strict adherence to layout / brand / scene direction. Same descriptive-paragraph prompt grammar as gpt-image-1.5; same three aspect ratios. Drops transparent-background support, so use gpt-image-1.5 if you need transparency.
 
-**Avoid:** Transparent backgrounds are not supported — pick gpt-image-1.5 for icons / stickers / logos that need alpha. Avoid CLIP-style tag dumps and `--no` negative-prompt syntax. Real-named-people likenesses are filtered. Cost per image is materially higher than gpt-image-1.5 / mini — pick those for drafts.
+**Avoid:** Transparent backgrounds are not supported; pick gpt-image-1.5 for icons / stickers / logos that need alpha. Avoid CLIP-style tag dumps and negative-prompt syntax. Real-named-people likenesses are filtered. Cost per image is materially higher than gpt-image-1.5 / mini, so pick those for drafts.
 
 **Good prompt:** `Magazine cover layout with the headline 'Urban Foragers' set in a bold geometric serif, subhead 'A Field Guide to City Edibles', central full-bleed photo of a moss-covered tree stump in dappled afternoon light. 2:3.`
 
@@ -97,9 +97,9 @@ Models exposed by the `gemini` provider. Each model resolves via exact-key looku
 
 ### Gemini 2.5 Flash Image (Nano Banana)
 
-**Best for:** Fast, low-latency generation and conversational image editing — multi-turn refinement, multi-image compositing (up to 3 inputs), character consistency across iterations, in-image text, and natural-language local edits ('remove the stain', 'change pose to running'). Strong photorealism with photographic vocabulary (lens, lighting, aspect ratio). Supports 10 aspect ratios from 21:9 cinematic to 9:16 vertical. Cheap (~$0.04/image) — good default for high-volume ideation.
+**Best for:** Fast, low-latency generation and conversational image editing with multi-turn refinement, multi-image compositing (up to 3 inputs), character consistency across iterations, in-image text, and natural-language local edits ('remove the stain', 'change pose to running'). Strong photorealism with photographic vocabulary (lens, lighting, aspect ratio). Supports 10 aspect ratios from 21:9 cinematic to 9:16 vertical. Cheap (~$0.04/image), making it a good default for high-volume ideation.
 
-**Avoid:** Avoid Stable-Diffusion-style comma-separated tag lists — performance drops vs descriptive sentences. No negative-prompt parameter; phrase exclusions positively. Do not rely on transparent backgrounds. All outputs carry an invisible SynthID watermark — unsuitable for workflows requiring unmarked pixels. Not the strongest pick for very dense professional typography. Limit reference inputs to 3 images.
+**Avoid:** Avoid Stable-Diffusion-style comma-separated tag lists, which underperform vs descriptive sentences. No negative-prompt parameter; phrase exclusions positively. Do not rely on transparent backgrounds. All outputs carry an invisible SynthID watermark, making them unsuitable for workflows requiring unmarked pixels. Not the strongest pick for dense professional typography. Limit reference inputs to 3 images.
 
 **Good prompt:** `A worn leather-bound journal lying open on a rainy windowsill at dusk. Soft cyan rim-light from outside, warm tungsten lamp on the right. The left page reads, in handwritten script: "Day 42 — still no signal." Shot on 50mm, shallow depth of field. 16:9.`
 
@@ -109,7 +109,7 @@ Models exposed by the `gemini` provider. Each model resolves via exact-key looku
 
 **Best for:** Higher-fidelity Pro tier with reasoning, suited to demanding production-grade work where 2.5 Flash falls short. Better at dense typography and strict brand compliance. Same prompt grammar as the Flash variants; preview-tier so behaviour can change.
 
-**Avoid:** Don't use for cheap drafts — cost per image is materially higher than Flash. Same SynthID-watermark caveat. Tag-soup still underperforms. Preview-tier — surface stability not guaranteed.
+**Avoid:** Don't use for cheap drafts: cost per image is materially higher than Flash. Same SynthID-watermark caveat. Tag-soup still underperforms. Preview-tier model, so surface stability is not guaranteed.
 
 **Good prompt:** `Magazine cover layout for a quarterly architecture journal: headline 'Concrete Futures' in bold serif, subhead 'Brutalism Reconsidered', central full-bleed photo of a weathered Le Corbusier facade at golden hour. 3:4.`
 
@@ -117,9 +117,9 @@ Models exposed by the `gemini` provider. Each model resolves via exact-key looku
 
 ### Gemini 3.1 Flash Image (preview)
 
-**Best for:** Successor to 2.5 Flash with reasoning ('thinking') support. Good for prompts that benefit from layout reasoning — infographics, structured layouts, multi-element compositions where spatial relationships matter. Same descriptive-prose grammar as 2.5 Flash; same 10 aspect ratios.
+**Best for:** Successor to 2.5 Flash with reasoning ('thinking') support. Good for prompts that benefit from layout reasoning: infographics, structured layouts, multi-element compositions where spatial relationships matter. Same descriptive-prose grammar as 2.5 Flash; same 10 aspect ratios.
 
-**Avoid:** Avoid tag-soup; same SynthID-watermark caveat as 2.5 Flash. Preview-tier model — schema may shift before GA, surface text may not be perfectly stable. Don't pin production workflows to it without a fallback.
+**Avoid:** Avoid tag-soup; same SynthID-watermark caveat as 2.5 Flash. Preview-tier model: schema may shift before GA, and surface text may not be perfectly stable. Don't pin production workflows to it without a fallback.
 
 **Good prompt:** `A clean infographic explaining the water cycle on a soft pastel background, four labelled stages arranged in a circle, minimalist line illustration with gentle shadows. 4:3.`
 
@@ -145,7 +145,7 @@ Models exposed by the `placeholder` provider. Each model resolves via exact-key 
 
 ## SD WebUI
 
-SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. **First match wins** — patterns are ordered specific-before-generic, with an empty-pattern fallback as the final entry to guarantee a non-None match for every checkpoint name.
+SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. **First match wins.** Patterns are ordered specific-before-generic, with an empty-pattern fallback as the final entry to guarantee a non-None match for every checkpoint name.
 
 ### Pattern catalog (in match order)
 
@@ -153,15 +153,15 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 |---|---------|-------|
 | 1 | `flux[._-]?2` | FLUX.2 (current photorealistic flagship) |
 | 2 | `flux.*schnell|schnell.*flux` | Flux Schnell (1-4 step distilled) |
-| 3 | `flux` | Flux 1 dev/pro (photorealistic / highly-detailed) |
+| 3 | `flux` | Flux 1 dev/pro (photorealistic / highly detailed) |
 | 4 | `pony|score_9|autismmix` | Pony Diffusion XL (mandatory score_* tag prefix) |
 | 5 | `illustrious|noob.?ai` | Illustrious-XL / NoobAI-XL (modern anime SDXL bases) |
 | 6 | `animagine` | Animagine XL (anime SDXL) |
 | 7 | `coloring.?book` | Coloring Book (line-art SD1.5) |
 | 8 | `juggernaut(?!.*illustrious)` | Juggernaut XL (photorealistic SDXL) |
 | 9 | `dreamshaperxl.*lightning|dreamshaperxl.*alpha` | DreamShaperXL Lightning / Alpha (fast fantasy SDXL) |
-| 10 | `dreamshaperxl|dreamshaper.*xl` | DreamShaperXL (versatile fantasy SDXL) |
-| 11 | `dreamshaper` | DreamShaper (versatile SD1.5) |
+| 10 | `dreamshaperxl|dreamshaper.*xl` | DreamShaperXL (all-purpose fantasy SDXL) |
+| 11 | `dreamshaper` | DreamShaper (adaptable SD1.5) |
 | 12 | `sd3|sd_3|sd3_5|sd3\.5` | SD 3 / 3.5 (triple-encoder; natural-language) |
 | 13 | `sd_xl_base|sdxl_base|sdxl-base` | SDXL Base (general-purpose SDXL) |
 | 14 | `realvisxl|realvis` | RealVisXL (photorealistic SDXL) |
@@ -184,7 +184,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### Flux Schnell (1-4 step distilled)
 
-**Best for:** Distilled Flux variant for very fast drafts (1-4 steps, CFG=1). Same natural-language prompt style as Flux dev. Best for ideation passes where iteration speed dominates.
+**Best for:** Distilled Flux variant for rapid drafts (1-4 steps, CFG=1). Same natural-language prompt style as Flux dev. Best for ideation passes where iteration speed dominates.
 
 **Avoid:** No negative prompts (CFG=1, fully distilled). Quality below Flux dev / FLUX.2; don't use for final-grade output. Highly detailed textures suffer at 1-4 step counts.
 
@@ -194,9 +194,9 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 #### Pattern: `flux`
 
-### Flux 1 dev/pro (photorealistic / highly-detailed)
+### Flux 1 dev/pro (photorealistic / highly detailed)
 
-**Best for:** Photorealistic imagery, extreme fine detail, architectural photography, natural lighting, product shots, documentary portraiture, coherent text in scene. Natural-language prose; T5 encoder; CFG=1 distilled.
+**Best for:** Strong photorealistic output with extreme fine detail. Suited to architectural photography, natural lighting, product shots, documentary portraiture, and coherent text in scene. Natural-language prose; T5 encoder; CFG=1 distilled.
 
 **Avoid:** Negative prompts are unsupported (CFG=1 distilled). Anime / cel-shading / heavy painterly textures fight the model. Don't use SD-style weighted parens or BREAK.
 
@@ -208,9 +208,9 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### Pony Diffusion XL (mandatory score_* tag prefix)
 
-**Best for:** Highly versatile SDXL fine-tune. Excellent for stylised character art, anime, and varied art styles when prompted with the mandatory leading tag block: 'score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up, source_anime, rating_safe' (or source_pony/source_furry, rating_questionable, etc.). Without the score_* prefix, output quality collapses.
+**Best for:** Wide-ranging SDXL fine-tune. Excellent for stylised character art, anime, and varied art styles when prompted with the mandatory leading tag block: 'score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up, source_anime, rating_safe' (or source_pony/source_furry, rating_questionable, etc.). Without the score_* prefix, output quality collapses.
 
-**Avoid:** Bare prompts without the score_* prefix produce visibly degraded results. Photorealistic catalog work — Pony is stylised by design. Natural-language prose underperforms vs Booru-style tag grammar.
+**Avoid:** Bare prompts without the score_* prefix produce visibly degraded results. Photorealistic catalog work is out of scope: Pony is stylised by design. Natural-language prose underperforms vs Booru-style tag grammar.
 
 **Good prompt:** `score_9, score_8_up, score_7_up, score_6_up, source_anime, rating_safe, 1girl, school uniform, cherry blossoms, soft lighting`
 
@@ -222,7 +222,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 **Best for:** Current-generation anime SDXL bases that have largely supplanted Animagine in 2025-26. Danbooru-style tag grammar (artist tags, character tags, e6/Danbooru-style). Much larger character/style dataset than Animagine 3.x. Strong cel-shading and expressive character art.
 
-**Avoid:** Photorealism — anime-specialised. NoobAI v-prediction variants need the v-prediction sampler config; wrong sampler produces noise. Natural-language prose underperforms vs tag grammar.
+**Avoid:** Photorealism (these bases are anime-specialised). NoobAI v-prediction variants need the v-prediction sampler config; wrong sampler produces noise. Natural-language prose underperforms vs tag grammar.
 
 **Good prompt:** `1girl, long hair, blue eyes, school uniform, cherry blossoms, masterpiece, best quality, very aesthetic`
 
@@ -232,7 +232,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### Animagine XL (anime SDXL)
 
-**Best for:** Anime illustration base. Danbooru-style tag vocabulary, clean cel shading, expressive character art, vivid saturated palette, manga panel compositions. Animagine 4.x recommends '1girl/1boy, character (series), rating, ..., masterpiece, high score, great score, absurdres'.
+**Best for:** Anime illustration base. Danbooru-style tag vocabulary, clean cel shading, expressive character art, vivid saturated palette, manga panel compositions. Animagine 4.x recommends '1girl/1boy, character (series), rating, …, masterpiece, high score, great score, absurdres'.
 
 **Avoid:** Photorealism, photography-style lighting, gritty texture, oil painting, detailed backgrounds without anime stylisation. For broader character/style coverage, consider Illustrious-XL or NoobAI-XL.
 
@@ -256,9 +256,9 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### Juggernaut XL (photorealistic SDXL)
 
-**Best for:** Photorealistic portraits, cinematic lighting, sharp textural detail, skin pores, fabric weave, dramatic rim lighting, environmental storytelling. Recent Juggernaut X / XI handle some stylised work too.
+**Best for:** Photorealistic SDXL checkpoint. Strong at rendering skin pores, fabric weave, and fine material textures under cinematic or dramatic rim lighting, with good environmental storytelling. Recent Juggernaut X / XI handle some stylised work too.
 
-**Avoid:** Anime, cartoon, flat illustration. Watercolor and comic-ink styles are weaker than dedicated stylised checkpoints — usable but not the model's strength.
+**Avoid:** Anime, cartoon, flat illustration. Watercolor and comic-ink styles are weaker than dedicated stylised checkpoints (usable but not the model's strength).
 
 **Good prompt:** `style="gritty photorealistic urban", medium="digital photo"`
 
@@ -268,9 +268,9 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### DreamShaperXL Lightning / Alpha (fast fantasy SDXL)
 
-**Best for:** Fantasy concept art, painterly illustration, vibrant color, dramatic character portraits. Run at 3-6 steps with CFG ~2 and DPM++ SDE Karras (per Civitai). Fast ideation pass for stylised work.
+**Best for:** Suited to fantasy concept art and painterly illustration with rich color and dramatic character portraits. Run at 3-6 steps with CFG ~2 and DPM++ SDE Karras (per Civitai). Fast ideation pass for stylised work.
 
-**Avoid:** Photorealism (stylised by design), highly detailed textures at very low step counts, strict architectural accuracy.
+**Avoid:** Photorealism (stylised by design) and strict architectural accuracy are a poor fit. Highly detailed textures suffer at low step counts.
 
 **Good prompt:** `style="dramatic fantasy concept art", medium="painterly digital illustration"`
 
@@ -278,7 +278,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 #### Pattern: `dreamshaperxl|dreamshaper.*xl`
 
-### DreamShaperXL (versatile fantasy SDXL)
+### DreamShaperXL (all-purpose fantasy SDXL)
 
 **Best for:** Fantasy illustration, painterly portraits, concept-art style, stylised environments, strong use of negative space.
 
@@ -290,9 +290,9 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 #### Pattern: `dreamshaper`
 
-### DreamShaper (versatile SD1.5)
+### DreamShaper (adaptable SD1.5)
 
-**Best for:** General-purpose stylised illustration, fantasy character art, soft painterly lighting, portrait and environmental compositions; notably versatile — adapt style tags rather than leaning on a single category.
+**Best for:** General-purpose stylised illustration, fantasy character art, soft painterly lighting, portrait and environmental compositions. Adapts well across style tags rather than locking to a single category.
 
 **Avoid:** Extreme photorealism (slightly stylised by design), Danbooru/anime tag grammar (use natural descriptors).
 
@@ -304,9 +304,9 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### SD 3 / 3.5 (triple-encoder; natural-language)
 
-**Best for:** Triple-encoder architecture (CLIP-L + OpenCLIP-bigG + T5-XXL). Benefits from natural-language prose for the T5 stream — same prose-friendly profile as Flux. Supports negative prompts (unlike Flux). 3.5 Large Turbo is 4-step distilled.
+**Best for:** Triple-encoder architecture (CLIP-L + OpenCLIP-bigG + T5-XXL). Benefits from natural-language prose for the T5 stream, sharing a prose-friendly profile with Flux. Supports negative prompts (unlike Flux). 3.5 Large Turbo is 4-step distilled.
 
-**Avoid:** CLIP tag-soup underperforms vs descriptive prose. Architecturally distinct from SDXL — don't expect SDXL fine-tune behaviour to carry over.
+**Avoid:** CLIP tag-soup underperforms vs descriptive prose. Architecturally distinct from SDXL, so don't expect SDXL fine-tune behaviour to carry over.
 
 **Good prompt:** `A weathered fishing boat moored at a stone harbour at dawn, gulls circling overhead, soft cool light, painterly yet photoreal, 16:9 cinematic framing.`
 
@@ -318,7 +318,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 **Best for:** Broad style range, photography, illustration, concept art. Responds well to explicit style tokens. Works at 25-30+ steps for coherence.
 
-**Avoid:** Anime-specific Danbooru vocabulary without style priming. Very low step counts (needs 25-30+ for coherence). The SDXL refiner is rarely used in 2026 workflows; modern fine-tunes drop it in favour of hires-fix / upscalers.
+**Avoid:** Anime-specific Danbooru vocabulary without style priming. Low step counts produce incoherent output (needs 25-30+ for coherence). The SDXL refiner is rarely used in 2026 workflows; modern fine-tunes drop it in favour of hires-fix / upscalers.
 
 **Good prompt:** `style="cinematic illustration with explicit style tokens", medium="digital art"`
 
@@ -340,7 +340,7 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 ### SD 1.5 (general-purpose base)
 
-**Best for:** Broad style range. Native latent at 512px; commonly used at 512x768 / 768x512 before hires-fix. With hires-fix or upscaler chains routinely produces 1024x1536+. Well-supported by community LoRAs.
+**Best for:** Broad style range. Native latent at 512px; commonly used at `512x768` / `768x512` before hires-fix. With hires-fix or upscaler chains routinely produces `1024x1536`+. Well-supported by community LoRAs.
 
 **Avoid:** Photorealistic skin detail at high resolution without hires-fix; SDXL-native aspect ratios. Don't expect SDXL-tier coherence at SDXL resolutions without upscaling.
 
@@ -348,11 +348,11 @@ SD WebUI checkpoints resolve via the regex-ordered `CHECKPOINT_PATTERNS` table. 
 
 **Bad prompt:** `style="hyperrealistic skin at 1024px", medium="macro studio photograph" (SD 1.5 native latent is 512²; use SDXL or run hires-fix)`
 
-#### Pattern: _(default fallback — empty pattern)_
+#### Pattern: _(default fallback, empty pattern)_
 
 ### Unknown checkpoint (SD general-purpose defaults)
 
-**Best for:** Stable Diffusion generally excels at stylised imagery, fantasy environments, and character portraiture. Use explicit style tokens (e.g. 'watercolor painting', 'cinematic photograph') for best results.
+**Best for:** Stable Diffusion is well suited to stylised work such as fantasy environments and character art. Use explicit style tokens (such as 'watercolor painting', 'cinematic photograph') for best results.
 
 **Avoid:** Coherent embedded text and photographic product catalogs without specialised fine-tuning.
 

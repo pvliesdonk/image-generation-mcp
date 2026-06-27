@@ -34,9 +34,14 @@ PROVIDERS_IN_ORDER: tuple[tuple[str, str], ...] = (
 
 
 def _profile_block(profile: StyleProfile) -> str:
-    lifecycle_marker = (
-        "" if profile.lifecycle == "current" else f" — **{profile.lifecycle}**"
-    )
+    # Append a lifecycle marker for non-current models, unless the label already
+    # states it (several labels embed "(legacy)" / "(deprecated)" themselves).
+    lifecycle_marker = ""
+    if (
+        profile.lifecycle != "current"
+        and profile.lifecycle not in profile.label.lower()
+    ):
+        lifecycle_marker = f" ({profile.lifecycle})"
     note_line = f"\n> {profile.deprecation_note}\n" if profile.deprecation_note else ""
     return (
         f"### {profile.label}{lifecycle_marker}\n"
@@ -79,7 +84,7 @@ def _render_sd_section() -> str:
     lines = ["## SD WebUI\n"]
     lines.append(
         "SD WebUI checkpoints resolve via the regex-ordered "
-        "`CHECKPOINT_PATTERNS` table. **First match wins** — patterns are "
+        "`CHECKPOINT_PATTERNS` table. **First match wins.** Patterns are "
         "ordered specific-before-generic, with an empty-pattern fallback "
         "as the final entry to guarantee a non-None match for every "
         "checkpoint name.\n"
@@ -99,7 +104,7 @@ def _render_sd_section() -> str:
         regex_display = (
             f"`{pattern.pattern}`"
             if pattern.pattern
-            else "_(default fallback — empty pattern)_"
+            else "_(default fallback, empty pattern)_"
         )
         lines.append(f"#### Pattern: {regex_display}\n")
         lines.append(_profile_block(profile))
