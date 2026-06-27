@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
@@ -21,15 +21,15 @@ from image_generation_mcp.providers.types import (
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    InputImage,
     ProgressCallback,
+    TooManyInputImages,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from google import genai as genai_type
-
-    from image_generation_mcp.providers.types import InputImage
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,9 @@ _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
 
 _SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = tuple(_ASPECT_RATIOS)
 _SUPPORTED_QUALITIES: tuple[str, ...] = ("standard", "hd")
+
+# Maximum number of reference images accepted per generate() call.
+_MAX_INPUT_IMAGES = 1
 
 
 class GeminiImageProvider:
@@ -121,7 +124,7 @@ class GeminiImageProvider:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
-        reference_images: Sequence[InputImage] | None = None,  # noqa: ARG002
+        reference_images: Sequence[InputImage] | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image using the Gemini generateContent API.
@@ -138,8 +141,11 @@ class GeminiImageProvider:
                 for improved composition.
             background: Ignored — Gemini does not support transparent backgrounds.
             model: Override the default model for this call.
-            reference_images: Reserved for future image-to-image support.
-                Currently ignored.
+            reference_images: Optional list of reference images for
+                image-to-image editing. At most one image is accepted;
+                passing more than one raises ``TooManyInputImages``.
+                When provided, the image bytes are sent as inline image parts
+                alongside the prompt for guided generation.
             progress_callback: Ignored — Gemini does not report progress.
 
         Returns:
@@ -149,6 +155,7 @@ class GeminiImageProvider:
             ImageProviderError: If generation fails or returns no image.
             ImageContentPolicyError: If the prompt violates content policy.
             ImageProviderConnectionError: If the Gemini API is unreachable.
+            TooManyInputImages: If more than one reference image is supplied.
         """
         from google.genai import types
 
@@ -160,6 +167,11 @@ class GeminiImageProvider:
             )
 
         effective_model = model or self._model
+
+        if reference_images and len(reference_images) > _MAX_INPUT_IMAGES:
+            raise TooManyInputImages(
+                "gemini", effective_model, _MAX_INPUT_IMAGES, len(reference_images)
+            )
 
         full_prompt = prompt
         if negative_prompt:
@@ -189,10 +201,16 @@ class GeminiImageProvider:
             thinking_config=thinking_config,
         )
 
+        contents: list[Any] = [full_prompt]
+        for ref in reference_images or []:
+            contents.append(
+                types.Part.from_bytes(data=ref.data, mime_type=ref.content_type)
+            )
+
         try:
             response = await self._client.aio.models.generate_content(
                 model=effective_model,
-                contents=full_prompt,
+                contents=contents,
                 config=config,
             )
         except Exception as exc:
@@ -236,6 +254,8 @@ class GeminiImageProvider:
                     supported_formats=("image/png",),
                     supports_negative_prompt=False,
                     supports_background=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
                     prompt_style="natural_language",
                     style_profile=resolve_style("gemini", model_id),
                     # SynthID watermark: see docs/providers/gemini.md.
