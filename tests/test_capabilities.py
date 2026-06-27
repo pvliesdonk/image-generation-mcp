@@ -288,3 +288,25 @@ def test_model_capabilities_watermark_none_string_is_preserved():
     caps = ModelCapabilities(model_id="x", display_name="X", watermark="none")
     result = caps.to_dict()
     assert result["watermark"] == "none"
+
+
+def test_model_caps_image_input_defaults() -> None:
+    from image_generation_mcp.providers.capabilities import ModelCapabilities
+
+    cap = ModelCapabilities(model_id="m", display_name="M")
+    assert cap.supports_image_input is False
+    assert cap.max_input_images == 0
+
+
+def test_model_caps_image_input_in_to_dict() -> None:
+    from image_generation_mcp.providers.capabilities import ModelCapabilities
+
+    cap = ModelCapabilities(
+        model_id="m",
+        display_name="M",
+        supports_image_input=True,
+        max_input_images=1,
+    )
+    d = cap.to_dict()
+    assert d["supports_image_input"] is True
+    assert d["max_input_images"] == 1

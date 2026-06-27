@@ -33,6 +33,8 @@ class ModelCapabilities:
         supported_formats: Output format strings (e.g., ``"png"``, ``"webp"``).
         supports_negative_prompt: Accepts negative prompt parameter.
         supports_background: Supports background transparency control.
+        supports_image_input: Supports reference image input for generation.
+        max_input_images: Maximum number of reference images this model accepts.
         max_resolution: Maximum dimension in pixels, or ``None`` if unlimited.
         default_steps: Default inference steps (SD WebUI-specific), or ``None``.
         default_cfg: Default CFG scale (SD WebUI-specific), or ``None``.
@@ -63,6 +65,8 @@ class ModelCapabilities:
     supported_formats: tuple[str, ...] = ()
     supports_negative_prompt: bool = False
     supports_background: bool = False
+    supports_image_input: bool = False
+    max_input_images: int = 0
     max_resolution: int | None = None
     default_steps: int | None = None
     default_cfg: float | None = None
@@ -88,6 +92,8 @@ class ModelCapabilities:
             "supported_formats": list(self.supported_formats),
             "supports_negative_prompt": self.supports_negative_prompt,
             "supports_background": self.supports_background,
+            "supports_image_input": self.supports_image_input,
+            "max_input_images": self.max_input_images,
             "max_resolution": self.max_resolution,
             "default_steps": self.default_steps,
             "default_cfg": self.default_cfg,
