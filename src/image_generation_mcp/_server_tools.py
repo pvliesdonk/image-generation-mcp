@@ -1,11 +1,12 @@
 """MCP tool registrations for image generation.
 
-Exposes ``generate_image``, ``show_image``, ``browse_gallery``,
-``gallery_page``, ``gallery_full_image``, ``delete_image``, and
-``list_providers`` tools to MCP clients.  ``generate_image`` and
-``delete_image`` are tagged ``write`` (hidden in read-only mode).
-``gallery_page`` and ``gallery_full_image`` are app-only
-(``visibility=["app"]``) and not shown to the model.
+Exposes ``generate_image``, ``transform_image``, ``show_image``,
+``browse_gallery``, ``gallery_page``, ``gallery_full_image``,
+``delete_image``, and ``list_providers`` tools to MCP clients.
+``generate_image``, ``transform_image``, and ``delete_image`` are tagged
+``write`` (hidden in read-only mode).  ``gallery_page`` and
+``gallery_full_image`` are app-only (``visibility=["app"]``) and not shown
+to the model.
 """
 
 from __future__ import annotations
@@ -41,6 +42,13 @@ from mcp.types import (
 from PIL import Image as PILImage
 from pydantic import AnyUrl
 
+from ._input_images import (
+    ImageReferenceNotFound,
+    InputImageTooLarge,
+    InvalidInputImage,
+    LocalFileInputDisabled,
+    resolve_references,
+)
 from ._server_deps import get_config, get_service
 from ._server_resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
 from .config import ProjectConfig
@@ -72,6 +80,23 @@ _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
 _GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
+
+def _any_provider_supports_image_input(service: ImageService) -> bool:
+    """Return True if any discovered model supports reference-image input.
+
+    Args:
+        service: The :class:`ImageService` instance to query.
+
+    Returns:
+        ``True`` when at least one model in the discovered capabilities
+        reports ``supports_image_input=True``; ``False`` otherwise.
+    """
+    return any(
+        m.supports_image_input
+        for caps in service.capabilities.values()
+        for m in caps.models
+    )
 
 
 async def _confirm_paid_or_cancel(
@@ -485,6 +510,185 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                     type="resource_link",
                     uri=AnyUrl(f"image://{image_id}/view"),
                     name="Generated image (generating)",
+                ),
+            ]
+        )
+
+    @mcp.tool(
+        tags={"write"},
+        task=True,
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": True,
+        },
+        icons=[Icon(src=_LUCIDE.format("images"), mimeType="image/svg+xml")],
+    )
+    async def transform_image(
+        prompt: str,
+        reference_images: list[str],
+        provider: str = "auto",
+        negative_prompt: str | None = None,
+        aspect_ratio: str = "1:1",
+        quality: str = "standard",
+        background: str = "opaque",
+        model: str | None = None,
+        service: ImageService = Depends(get_service),
+        config: ProjectConfig = Depends(get_config),
+        ctx: Context = CurrentContext(),
+    ) -> ToolResult:
+        """Edit or transform image(s) using a model that accepts image input.
+
+        Supply one or more reference images (gallery ``image_id``, an
+        ``image://`` URI, or — when enabled — a local file path) plus a
+        prompt describing the change.  Currently served by Gemini models
+        (single reference image); call ``list_providers`` and check
+        ``supports_image_input`` / ``max_input_images`` to route.
+
+        Returns immediately; poll ``check_generation_status(image_id)``
+        and then ``show_image(uri=original_uri)`` once completed — same
+        flow as ``generate_image``.
+
+        **After calling this tool:**
+
+        1. Tell the user the image is being transformed.
+        2. Call ``check_generation_status(image_id)`` to wait for completion.
+        3. Only when status is ``"completed"``, call
+           ``show_image(uri=original_uri)`` once to display the result.
+
+        Args:
+            prompt: Description of the desired edit or transformation.
+            reference_images: One or more gallery ``image_id`` values,
+                ``image://`` URIs, or (when
+                ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true``) local
+                file paths to use as the source image(s).
+            provider: Provider to use, or ``"auto"`` to select
+                automatically.  Use a Gemini provider for image-to-image
+                tasks; check ``supports_image_input`` in ``list_providers``.
+            negative_prompt: Things to avoid in the result (provider
+                support varies).
+            aspect_ratio: Desired aspect ratio of the output image.
+            quality: ``"standard"`` or ``"hd"``.
+            background: ``"opaque"`` or ``"transparent"``
+                (provider-dependent).
+            model: Specific model id; see ``list_providers``.
+
+        Returns:
+            JSON with ``status``, ``image_id``, ``original_uri`` (pending).
+            Use ``check_generation_status(image_id)`` to poll, then
+            ``show_image(uri=original_uri)`` when completed.
+        """
+        if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
+            msg = (
+                f"Unsupported aspect_ratio '{aspect_ratio}'. "
+                f"Supported: {list(SUPPORTED_ASPECT_RATIOS)}"
+            )
+            raise ValueError(msg)
+        if quality not in SUPPORTED_QUALITY_LEVELS:
+            msg = (
+                f"Unsupported quality '{quality}'. "
+                f"Supported: {list(SUPPORTED_QUALITY_LEVELS)}"
+            )
+            raise ValueError(msg)
+        if background not in SUPPORTED_BACKGROUNDS:
+            msg = (
+                f"Unsupported background '{background}'. "
+                f"Supported: {', '.join(SUPPORTED_BACKGROUNDS)}"
+            )
+            raise ValueError(msg)
+        if not reference_images:
+            raise ValueError("reference_images must not be empty.")
+        if not _any_provider_supports_image_input(service):
+            raise ValueError(
+                "No configured provider supports reference-image input. "
+                "Configure Gemini (IMAGE_GENERATION_MCP_GOOGLE_API_KEY)."
+            )
+
+        # Build a loader that maps gallery image_id → (bytes, content_type)
+        def _loader(image_id: str) -> tuple[bytes, str]:
+            try:
+                record = service.get_image(image_id)
+            except ImageProviderError as exc:
+                raise KeyError(image_id) from exc
+            return record.original_path.read_bytes(), record.content_type
+
+        try:
+            resolved = await asyncio.to_thread(
+                resolve_references,
+                reference_images,
+                loader=_loader,
+                allow_local_files=config.allow_local_file_input,
+                max_bytes=config.max_input_image_bytes,
+            )
+        except (
+            ImageReferenceNotFound,
+            LocalFileInputDisabled,
+            InputImageTooLarge,
+            InvalidInputImage,
+        ) as exc:
+            raise ValueError(str(exc)) from exc
+
+        # Resolve provider name, then verify it has an image-input-capable model
+        resolved_name = await asyncio.to_thread(
+            service.resolve_provider_name,
+            provider,
+            prompt,
+            background=background,
+        )
+        caps = service.capabilities.get(resolved_name)
+        capable = [
+            m
+            for m in (caps.models if caps else ())
+            if m.supports_image_input
+            and (model is None or m.model_id == model)
+            and m.max_input_images >= len(resolved)
+        ]
+        if not capable:
+            raise ValueError(
+                f"Provider '{resolved_name}' has no model accepting "
+                f"{len(resolved)} reference image(s). Use a Gemini model."
+            )
+
+        cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
+        if cancel is not None:
+            return cancel
+
+        source_ids = [r.source_id for r in resolved if r.source_id]
+        image_id = service.allocate_image_id()
+        _start_background_generation(
+            service,
+            image_id=image_id,
+            prompt=prompt,
+            resolved_name=resolved_name,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            background=background,
+            model=model,
+            reference_images=resolved,
+            source_image_ids=source_ids,
+            label="transform",
+        )
+
+        metadata: dict[str, Any] = {
+            "status": "generating",
+            "image_id": image_id,
+            "prompt": prompt,
+            "provider": resolved_name,
+            "source_image_ids": source_ids,
+            "original_uri": f"image://{image_id}/view",
+            "metadata_uri": f"image://{image_id}/metadata",
+        }
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=json.dumps(metadata, indent=2),
+                ),
+                ResourceLink(
+                    type="resource_link",
+                    uri=AnyUrl(f"image://{image_id}/view"),
+                    name="Transformed image (generating)",
                 ),
             ]
         )
