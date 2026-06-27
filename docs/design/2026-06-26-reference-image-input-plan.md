@@ -31,7 +31,7 @@
 - **Modify** `src/image_generation_mcp/providers/gemini.py` — accept + send reference images; advertise `supports_image_input=True, max_input_images=1`; enforce `TooManyInputImages`.
 - **Modify** `src/image_generation_mcp/providers/openai.py`, `providers/sd_webui.py`, `providers/placeholder.py` — accept the new param; raise `ImageInputUnsupported` when given non-empty references.
 - **Modify** `src/image_generation_mcp/service.py` — thread `reference_images` through `generate()`; generalize provenance to `source_image_ids: list[str]` in `ImageRecord`, `register_image`, and the sidecar (with legacy-singular read in `_load_registry`).
-- **Modify** `src/image_generation_mcp/_server_tools.py` — register the new `transform_image` tool (conditional on a provider supporting image input).
+- **Modify** `src/image_generation_mcp/_server_tools.py` — extract shared `_confirm_paid_or_cancel` + `_start_background_generation` helpers (Task 7.5, refactoring `generate_image`); register the new `transform_image` tool that reuses them.
 - **Modify** `src/image_generation_mcp/_server_resources.py` — surface `source_image_ids` in the `image://{id}/metadata` resource (and keep `source_image_id` working if currently emitted).
 - **Tests:** `tests/test_input_images.py` (new), `tests/test_config.py`, `tests/test_capabilities.py`, `tests/test_types.py`, `tests/test_gemini_provider.py`, `tests/test_openai_provider.py`, `tests/test_sd_webui_provider.py`, `tests/test_placeholder.py`, `tests/test_service.py`, `tests/test_tools.py`, `tests/test_mcp_integration.py`.
 - **Docs:** `README.md`, `docs/tools.md`, `docs/configuration.md`, `docs/providers/gemini.md`.
@@ -1061,6 +1061,241 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ---
 
+## Task 7.5: Extract shared elicitation + background-generation helpers
+
+**Files:**
+- Modify: `src/image_generation_mcp/_server_tools.py`
+- Test: `tests/test_tools.py` (existing `generate_image` tests must stay green — they are the regression net for this refactor)
+
+**Interfaces:**
+- Consumes: `ImageService` (existing), `InputImage` (Task 2).
+- Produces two module-level helpers in `_server_tools.py`, reused by both `generate_image` (refactored here) and `transform_image` (Task 8):
+  - `async def _confirm_paid_or_cancel(ctx: Context, config: ProjectConfig, resolved_name: str, model: str | None) -> ToolResult | None` — returns a cancellation `ToolResult` if a paid provider was declined via elicitation, else `None` (proceed).
+  - `def _start_background_generation(service: ImageService, *, image_id: str, prompt: str, resolved_name: str, negative_prompt: str | None, aspect_ratio: str, quality: str, background: str, model: str | None, reference_images: Sequence[InputImage] | None = None, source_image_ids: list[str] | None = None, label: str = "generation") -> None` — registers the pending entry, spawns the background task (progress callback + `service.generate(...)` + `service.register_image(...)` + `complete_pending`/`fail_pending` with the standard exception mapping), and tracks the task in `_BACKGROUND_TASKS`.
+
+**Rationale:** the controller and human agreed (pre-flight) to extract these rather than duplicate them into `transform_image`. This is a pure refactor of `generate_image` plus two new shared functions; behavior must be identical, proven by the unchanged `generate_image` tests.
+
+- [ ] **Step 1: Verify the regression net exists and is green first**
+
+Run: `uv run pytest tests/test_tools.py -k "generate_image" -v`
+Expected: PASS (the current `generate_image` tests). These are the contract this refactor must preserve. If `tests/test_tools.py` lacks a test that drives `generate_image` through to a completed/failed pending state (background task body), add one first:
+
+```python
+async def test_generate_image_completes_in_background(generate_image_server) -> None:
+    # Use the file's existing fake-provider tool harness. Call generate_image,
+    # await the pending entry to reach "completed", assert an ImageRecord exists.
+    result = await generate_image_server.call_tool(
+        "generate_image", {"prompt": "a cat", "provider": "fake"}
+    )
+    image_id = json.loads(_text_of(result))["image_id"]
+    await _await_pending(generate_image_server, image_id, "completed")  # helper per file conventions
+```
+
+> If the harness/helpers named here don't exist in `tests/test_tools.py`, follow that file's actual pattern for invoking a tool against a service with a fake provider and for awaiting a background task (see `tests/test_background.py` for the await-pending pattern). The requirement is: a test that exercises the background-task body of `generate_image` before refactoring it.
+
+- [ ] **Step 2: Write the two helpers (no behavior change)**
+
+Add near the top of `_server_tools.py` (after imports, before `register_tools`). Move the verbatim logic out of `generate_image`'s body into these functions:
+
+```python
+async def _confirm_paid_or_cancel(
+    ctx: Context,
+    config: ProjectConfig,
+    resolved_name: str,
+    model: str | None,
+) -> ToolResult | None:
+    """Confirm a paid provider via elicitation; return a cancel result or None.
+
+    Returns ``None`` when generation may proceed (provider is free, the client
+    lacks elicitation support, or the user accepted). Returns a cancellation
+    :class:`ToolResult` when the user declined.
+    """
+    if resolved_name not in config.paid_providers:
+        return None
+    try:
+        supports_elicit = ctx.session.check_client_capability(
+            ClientCapabilities(elicitation=ElicitationCapability())
+        )
+    except Exception:
+        logger.debug(
+            "check_client_capability failed; assuming no elicitation support",
+            exc_info=True,
+        )
+        supports_elicit = False
+    if not supports_elicit:
+        return None
+    elicit_result = await ctx.elicit(
+        f"This will use {resolved_name}"
+        f"{f' ({model})' if model else ''}"
+        ", which costs money. Proceed?",
+        response_type=None,
+    )
+    if not isinstance(elicit_result, AcceptedElicitation):
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text",
+                    text=(
+                        f"Image generation cancelled — {resolved_name} "
+                        "was not confirmed."
+                    ),
+                )
+            ]
+        )
+    return None
+
+
+def _start_background_generation(
+    service: ImageService,
+    *,
+    image_id: str,
+    prompt: str,
+    resolved_name: str,
+    negative_prompt: str | None,
+    aspect_ratio: str,
+    quality: str,
+    background: str,
+    model: str | None,
+    reference_images: Sequence[InputImage] | None = None,
+    source_image_ids: list[str] | None = None,
+    label: str = "generation",
+) -> None:
+    """Register a pending entry and spawn the background generation task.
+
+    Shared by ``generate_image`` (text-to-image) and ``transform_image``
+    (reference-image input). ``reference_images`` and ``source_image_ids``
+    are empty for plain text-to-image.
+    """
+    service.register_pending(
+        image_id=image_id,
+        prompt=prompt,
+        provider=resolved_name,
+        negative_prompt=negative_prompt,
+        aspect_ratio=aspect_ratio,
+        quality=quality,
+        background=background,
+        model=model,
+    )
+
+    async def _run() -> None:
+        try:
+            pending = service.get_pending(image_id)
+            if pending is None:
+                logger.warning(
+                    "get_pending(%s) returned None; progress updates will be lost",
+                    image_id,
+                )
+
+            def _on_progress(fraction: float, message: str) -> None:
+                if pending is not None:
+                    pending.progress = fraction
+                    pending.progress_message = message
+
+            provider_name, result = await service.generate(
+                prompt,
+                provider=resolved_name,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                model=model,
+                reference_images=reference_images,
+                progress_callback=_on_progress,
+            )
+            await asyncio.to_thread(
+                service.register_image,
+                result,
+                provider_name,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                image_id=image_id,
+                source_image_ids=source_image_ids or [],
+            )
+            service.complete_pending(image_id)
+            logger.info("Background %s completed: %s", label, image_id)
+        except ImageContentPolicyError as exc:
+            service.fail_pending(
+                image_id,
+                "Content policy rejected the prompt. "
+                "Try rephrasing or use a different provider.",
+            )
+            logger.error(
+                "Background %s failed (content policy): %s: %s", label, image_id, exc
+            )
+        except ImageProviderConnectionError as exc:
+            service.fail_pending(
+                image_id,
+                "Provider is unreachable. "
+                "Check that it is running, or try a different provider.",
+            )
+            logger.error(
+                "Background %s failed (connection): %s: %s", label, image_id, exc
+            )
+        except Exception as exc:
+            service.fail_pending(image_id, str(exc))
+            logger.error(
+                "Background %s failed: %s: %s",
+                label,
+                image_id,
+                exc,
+                exc_info=True,
+            )
+
+    task = asyncio.create_task(_run())
+    _BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_BACKGROUND_TASKS.discard)
+```
+
+> Note: `service.generate(...)` gains `reference_images` in Task 7 and `register_image(...)` gains `source_image_ids` in Task 7 — both are in place before this task runs. Add `from collections.abc import Sequence` and `from image_generation_mcp.providers.types import InputImage` to `_server_tools.py` imports if not already present.
+
+- [ ] **Step 3: Refactor `generate_image` to use the helpers**
+
+Replace `generate_image`'s inline paid-provider elicitation block with:
+
+```python
+        cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
+        if cancel is not None:
+            return cancel
+```
+
+Replace its inline `image_id = service.allocate_image_id()` + `register_pending(...)` + `async def _background_generate()` + `asyncio.create_task(...)` block with:
+
+```python
+        image_id = service.allocate_image_id()
+        _start_background_generation(
+            service,
+            image_id=image_id,
+            prompt=prompt,
+            resolved_name=resolved_name,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            quality=quality,
+            background=background,
+            model=model,
+        )
+```
+
+Leave the rest of `generate_image` (enum validation, provider resolution, `prompt_style` lookup, the returned `ToolResult` metadata + `ResourceLink`) unchanged.
+
+- [ ] **Step 4: Run the generate_image tests to verify behavior is preserved**
+
+Run: `uv run pytest tests/test_tools.py tests/test_background.py -k "generate" -v`
+Expected: PASS (same tests as Step 1, plus the new background-completion test).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/image_generation_mcp/_server_tools.py tests/test_tools.py
+git commit -m "refactor: extract shared elicitation + background-generation helpers
+
+Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
 ## Task 8: `transform_image` MCP tool
 
 **Files:**
@@ -1068,14 +1303,14 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 - Test: `tests/test_tools.py`, `tests/test_mcp_integration.py`
 
 **Interfaces:**
-- Consumes: `resolve_references` (Task 4), `ImageService.generate(reference_images=...)` + `register_image(source_image_ids=...)` (Task 7), capability fields (Task 3).
+- Consumes: `resolve_references` (Task 4), `ImageService.generate(reference_images=...)` + `register_image(source_image_ids=...)` (Task 7), capability fields (Task 3), and the shared `_confirm_paid_or_cancel` + `_start_background_generation` helpers (Task 7.5).
 - Produces: a `transform_image` tool registered only when ≥1 provider model reports `supports_image_input`.
 
 Behavior contract:
 1. Validate `aspect_ratio`/`quality`/`background` exactly as `generate_image` does.
 2. Resolve `reference_images` **synchronously** via `resolve_references` (loader built from `service.get_image`), so resolution errors surface in the tool result, not the background task. Map resolver exceptions to `ValueError` with the resolver message.
 3. Resolve provider name; verify the chosen provider has a model with `supports_image_input` and `max_input_images >= len(refs)`; otherwise raise `ValueError` naming Gemini.
-4. Enqueue a background task mirroring `generate_image`, calling `service.generate(..., reference_images=resolved)` and `service.register_image(..., source_image_ids=[r.source_id for r in resolved if r.source_id])`.
+4. Reuse `_confirm_paid_or_cancel` (Task 7.5) for the paid-provider gate, then `_start_background_generation` (Task 7.5) passing `reference_images=resolved` and `source_image_ids=[r.source_id for r in resolved if r.source_id]`. **Do not duplicate** the elicitation or background-runner logic.
 5. Return the same pending-status `ToolResult` + `ResourceLink` shape.
 
 - [ ] **Step 1: Write the failing test**
@@ -1243,72 +1478,34 @@ Tool body:
                 f"{len(resolved)} reference image(s). Use a Gemini model."
             )
 
-        # 4. Paid-provider elicitation (reuse generate_image's block verbatim)
-        #    -> copy the elicitation confirmation block from generate_image here.
+        # 4. Paid-provider confirmation + background task (shared helpers, Task 7.5)
+        cancel = await _confirm_paid_or_cancel(ctx, config, resolved_name, model)
+        if cancel is not None:
+            return cancel
 
-        # 5. Enqueue background task (mirror generate_image)
+        source_ids = [r.source_id for r in resolved if r.source_id]
         image_id = service.allocate_image_id()
-        service.register_pending(
+        _start_background_generation(
+            service,
             image_id=image_id,
             prompt=prompt,
-            provider=resolved_name,
+            resolved_name=resolved_name,
             negative_prompt=negative_prompt,
             aspect_ratio=aspect_ratio,
             quality=quality,
             background=background,
             model=model,
+            reference_images=resolved,
+            source_image_ids=source_ids,
+            label="transform",
         )
-
-        async def _background_transform() -> None:
-            try:
-                provider_name, result = await service.generate(
-                    prompt,
-                    provider=resolved_name,
-                    negative_prompt=negative_prompt,
-                    aspect_ratio=aspect_ratio,
-                    quality=quality,
-                    background=background,
-                    model=model,
-                    reference_images=resolved,
-                )
-                await asyncio.to_thread(
-                    service.register_image,
-                    result,
-                    provider_name,
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    aspect_ratio=aspect_ratio,
-                    quality=quality,
-                    background=background,
-                    image_id=image_id,
-                    source_image_ids=[r.source_id for r in resolved if r.source_id],
-                )
-                service.complete_pending(image_id)
-            except ImageContentPolicyError:
-                service.fail_pending(
-                    image_id,
-                    "Content policy rejected the request. Try rephrasing.",
-                )
-            except ImageProviderConnectionError:
-                service.fail_pending(
-                    image_id, "Provider is unreachable. Try again later."
-                )
-            except Exception as exc:
-                service.fail_pending(image_id, str(exc))
-                logger.error(
-                    "Background transform failed: %s: %s", image_id, exc, exc_info=True
-                )
-
-        task = asyncio.create_task(_background_transform())
-        _BACKGROUND_TASKS.add(task)
-        task.add_done_callback(_BACKGROUND_TASKS.discard)
 
         metadata: dict[str, Any] = {
             "status": "generating",
             "image_id": image_id,
             "prompt": prompt,
             "provider": resolved_name,
-            "source_image_ids": [r.source_id for r in resolved if r.source_id],
+            "source_image_ids": source_ids,
             "original_uri": f"image://{image_id}/view",
             "metadata_uri": f"image://{image_id}/metadata",
         }
@@ -1336,7 +1533,7 @@ from image_generation_mcp._input_images import (
 )
 ```
 
-Copy the paid-provider elicitation block from `generate_image` (lines around the `config.paid_providers` check) into step 4 verbatim, adapted to `transform_image`'s variables.
+The paid-provider gate and background task come from the Task 7.5 shared helpers (`_confirm_paid_or_cancel`, `_start_background_generation`) — no duplication.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
