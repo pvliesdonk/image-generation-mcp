@@ -233,6 +233,7 @@ class SdWebuiImageProvider:
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,  # noqa: ARG002
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image via SD WebUI txt2img API.
@@ -249,6 +250,8 @@ class SdWebuiImageProvider:
                 ``override_settings``.
             reference_images: Not supported by this provider. Raises
                 :class:`ImageInputUnsupported` when non-empty.
+            strength: Denoising strength for image-to-image generation
+                (0.0-1.0). Reserved for Task 2 (img2img); not yet consumed.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  When provided,
                 ``/sdapi/v1/progress`` is polled concurrently.

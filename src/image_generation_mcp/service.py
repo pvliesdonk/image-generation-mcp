@@ -433,6 +433,7 @@ class ImageService:
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> tuple[str, ImageResult]:
         """Generate an image using a provider.
@@ -449,6 +450,9 @@ class ImageService:
                 or ``"dall-e-3"`` for OpenAI). Passed through to the provider.
             reference_images: Optional list of input images for image-to-image
                 generation. Passed through to the provider unchanged.
+            strength: Denoising strength (0.0-1.0) for image-to-image. Only
+                SD WebUI uses it; other providers ignore it. Has no effect
+                without ``reference_images``.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  Only SD WebUI
                 uses this; other providers ignore it.
@@ -488,6 +492,7 @@ class ImageService:
             background=background,
             model=model,
             reference_images=reference_images,
+            strength=strength,
             progress_callback=progress_callback,
         )
 

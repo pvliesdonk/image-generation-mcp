@@ -105,6 +105,7 @@ class ImageProvider(Protocol):
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image from a text prompt.
@@ -122,6 +123,9 @@ class ImageProvider(Protocol):
             reference_images: Optional input images for image-to-image edits
                 or composition. Providers that do not support image input
                 raise :class:`ImageInputUnsupported` when this is non-empty.
+            strength: Denoising strength (0.0-1.0) for image-to-image. Only
+                SD WebUI uses it (as ``denoising_strength``); other providers
+                ignore it. Has no effect without ``reference_images``.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  Only supported
                 by SD WebUI; other providers ignore this parameter.

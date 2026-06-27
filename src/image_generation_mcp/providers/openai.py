@@ -229,6 +229,7 @@ class OpenAIImageProvider:
         background: str = "opaque",
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
+        strength: float | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
@@ -251,6 +252,7 @@ class OpenAIImageProvider:
                 :class:`ImageInputUnsupported` for dall-e models (no
                 no-mask edit endpoint). Raises :class:`TooManyInputImages`
                 when more than 16 references are supplied.
+            strength: Ignored — OpenAI does not support denoising strength.
 
         Returns:
             ImageResult with generated image.
@@ -263,6 +265,9 @@ class OpenAIImageProvider:
                 non-gpt-image model (dall-e or unknown).
             TooManyInputImages: When more than 16 reference_images are given.
         """
+        if strength is not None:
+            logger.debug("strength is not supported by openai; ignoring")
+
         if reference_images:
             return await self._edit(
                 prompt,

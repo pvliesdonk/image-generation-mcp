@@ -195,3 +195,21 @@ async def test_generate_passes_reference_images_to_provider(tmp_path: Path) -> N
     await service.generate("p", provider="fake", reference_images=refs)
 
     assert fake.generate.call_args.kwargs["reference_images"] == refs
+
+
+async def test_generate_forwards_strength_to_provider(tmp_path: Path) -> None:
+    """generate() forwards strength to the resolved provider."""
+    from unittest.mock import AsyncMock
+
+    from image_generation_mcp.providers.types import ImageResult
+
+    service = ImageService(scratch_dir=tmp_path, default_provider="fake")
+    fake = AsyncMock()
+    fake.generate = AsyncMock(
+        return_value=ImageResult(image_data=b"x", content_type="image/png")
+    )
+    service.register_provider("fake", fake)
+
+    await service.generate("p", provider="fake", strength=0.5)
+
+    assert fake.generate.call_args.kwargs["strength"] == 0.5

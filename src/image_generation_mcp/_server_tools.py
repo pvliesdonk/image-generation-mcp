@@ -168,6 +168,7 @@ def _start_background_generation(
     background: str,
     model: str | None,
     reference_images: Sequence[InputImage] | None = None,
+    strength: float | None = None,
     source_image_ids: list[str] | None = None,
     label: str = "generation",
 ) -> None:
@@ -188,6 +189,9 @@ def _start_background_generation(
         background: Background transparency (``"opaque"`` or ``"transparent"``).
         model: Specific model override, or ``None``.
         reference_images: Optional reference images for image-to-image tasks.
+        strength: Denoising strength (0.0-1.0) for image-to-image. Forwarded
+            to the provider; only SD WebUI uses it. Has no effect without
+            ``reference_images``.
         source_image_ids: Optional list of source image IDs to record as
             provenance on the resulting :class:`ImageRecord`.
         label: Short label used in log messages (e.g. ``"generation"`` or
@@ -227,6 +231,7 @@ def _start_background_generation(
                 background=background,
                 model=model,
                 reference_images=reference_images,
+                strength=strength,
                 progress_callback=_on_progress,
             )
             await asyncio.to_thread(
@@ -533,6 +538,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        strength: float | None = None,
         service: ImageService = Depends(get_service),
         config: ProjectConfig = Depends(get_config),
         ctx: Context = CurrentContext(),
@@ -575,6 +581,11 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             background: ``"opaque"`` or ``"transparent"``
                 (provider-dependent).
             model: Specific model id; see ``list_providers``.
+            strength: Denoising strength for image-to-image generation
+                (0.0-1.0, where 1.0 ignores the reference image entirely
+                and 0.0 changes nothing). Only used by SD WebUI; Gemini
+                and OpenAI ignore this parameter. Has no effect without
+                an SD WebUI provider.
 
         Returns:
             JSON with ``status``, ``image_id``, ``original_uri`` (pending).
@@ -601,6 +612,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             raise ValueError(msg)
         if not reference_images:
             raise ValueError("reference_images must not be empty.")
+        if strength is not None and not 0.0 <= strength <= 1.0:
+            raise ValueError(f"strength must be between 0.0 and 1.0; got {strength}.")
         if not _any_provider_supports_image_input(service):
             raise ValueError(
                 "No configured provider supports reference-image input. "
@@ -716,6 +729,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             background=background,
             model=model,
             reference_images=resolved,
+            strength=strength,
             source_image_ids=source_ids,
             label="transform",
         )
