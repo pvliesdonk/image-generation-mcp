@@ -419,12 +419,79 @@ class TestErrorHandling:
 
 
 @pytest.mark.usefixtures("_mock_openai")
-async def test_openai_rejects_reference_images() -> None:
-    """OpenAI provider raises ImageInputUnsupported when reference_images are given."""
-    provider = OpenAIImageProvider(api_key="sk-test")
+async def test_openai_rejects_reference_images_for_non_edit_model() -> None:
+    """dall-e-3 has no edit endpoint -> reference_images raises ImageInputUnsupported."""
+    provider = OpenAIImageProvider(api_key="sk-test", model="dall-e-3")
 
     with pytest.raises(ImageInputUnsupported):
         await provider.generate(
             "a cat",
             reference_images=[InputImage(data=b"x", content_type="image/png")],
         )
+
+
+@pytest.mark.usefixtures("_mock_openai")
+class TestOpenAIEdit:
+    """Tests for the OpenAI images.edit (image-to-image / composition) path."""
+
+    def _mk_provider(self, model: str = "gpt-image-1") -> OpenAIImageProvider:
+        return OpenAIImageProvider(api_key="sk-test", model=model)
+
+    def _mk_response(self, b64: str = "aGk=") -> MagicMock:
+        item = MagicMock()
+        item.b64_json = b64
+        resp = MagicMock()
+        resp.data = [item]
+        return resp
+
+    async def test_edit_with_single_reference_calls_images_edit(self) -> None:
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+
+        ref = InputImage(data=b"png-bytes", content_type="image/png", source_id="a")
+        result = await provider.generate("make it blue", reference_images=[ref])
+
+        provider._client.images.edit.assert_awaited_once()
+        kwargs = provider._client.images.edit.call_args.kwargs
+        assert kwargs["model"] == "gpt-image-1"
+        assert isinstance(kwargs["image"], list) and len(kwargs["image"]) == 1
+        # file tuple: (filename, data, content_type)
+        _fname, data, ctype = kwargs["image"][0]
+        assert data == b"png-bytes"
+        assert ctype == "image/png"
+        assert result.provider_metadata.get("edited") is True
+
+    async def test_edit_with_multiple_references(self) -> None:
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+        refs = [
+            InputImage(data=b"a", content_type="image/png"),
+            InputImage(data=b"b", content_type="image/jpeg"),
+        ]
+        await provider.generate("compose", reference_images=refs)
+        assert len(provider._client.images.edit.call_args.kwargs["image"]) == 2
+
+    async def test_edit_too_many_references_raises(self) -> None:
+        from image_generation_mcp.providers.types import TooManyInputImages
+
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        refs = [InputImage(data=b"x", content_type="image/png") for _ in range(17)]
+        with pytest.raises(TooManyInputImages):
+            await provider.generate("x", reference_images=refs)
+
+    async def test_edit_negative_prompt_appended(self) -> None:
+        provider = self._mk_provider()
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.edit = AsyncMock(return_value=self._mk_response())
+        await provider.generate(
+            "x",
+            negative_prompt="dogs",
+            reference_images=[InputImage(data=b"a", content_type="image/png")],
+        )
+        assert "Avoid: dogs" in provider._client.images.edit.call_args.kwargs["prompt"]
