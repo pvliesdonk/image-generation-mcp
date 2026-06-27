@@ -22,6 +22,7 @@ from image_generation_mcp.providers.capabilities import (
 from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
     ImageInputUnsupported,
+    ImageProviderError,
     ImageResult,
     InputImage,
     ProgressCallback,
@@ -111,6 +112,7 @@ class PlaceholderImageProvider:
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate a placeholder PNG.
@@ -126,15 +128,22 @@ class PlaceholderImageProvider:
             reference_images: Not supported by this provider. Raises
                 :class:`ImageInputUnsupported` when non-empty.
             strength: Ignored by the placeholder provider.
+            mask: Not supported by this provider. Raises
+                :class:`ImageProviderError` when supplied.
 
         Returns:
             ImageResult with a solid-color PNG.
 
         Raises:
             ImageInputUnsupported: When reference_images are supplied.
+            ImageProviderError: When mask is supplied.
         """
         if reference_images:
             raise ImageInputUnsupported("placeholder", model)
+        if mask is not None:
+            raise ImageProviderError(
+                "placeholder", "mask is not supported by this provider"
+            )
         if strength is not None:
             logger.debug("strength_ignored provider=placeholder reason=unsupported")
         if model is not None:

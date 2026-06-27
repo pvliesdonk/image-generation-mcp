@@ -287,6 +287,7 @@ class SdWebuiImageProvider:
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate or edit an image via the SD WebUI API.
@@ -311,6 +312,8 @@ class SdWebuiImageProvider:
             strength: Denoising strength for img2img (0.0-1.0). Ignored for
                 txt2img.  Defaults to 0.75 when reference_images is supplied
                 and strength is None.
+            mask: Not supported — SD WebUI inpainting is not wired to this
+                parameter. Raises :class:`ImageProviderError` when supplied.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  When provided,
                 ``/sdapi/v1/progress`` is polled concurrently.
@@ -324,6 +327,11 @@ class SdWebuiImageProvider:
             ImageProviderError: On API errors.
             TooManyInputImages: When more than one reference image is supplied.
         """
+        if mask is not None:
+            raise ImageProviderError(
+                "sd_webui", "mask is not supported by this provider"
+            )
+
         effective_model = model or self._model
         effective_preset = _resolve_preset(effective_model)
 
