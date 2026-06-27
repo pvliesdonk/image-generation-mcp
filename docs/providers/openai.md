@@ -139,7 +139,11 @@ The endpoint accepts PNG, JPEG, and WebP references. Each reference image is sen
 
 ### Masks
 
-The `transform_image` tool does not send a mask, so edits apply globally using the reference images as compositional context. The underlying `images.edit` endpoint supports masks for region-targeted editing, which `list_providers` reports through `supports_mask`.
+The `transform_image` tool accepts a `mask` parameter for region-targeted inpainting on gpt-image models. When supplied, the mask is forwarded to OpenAI's `images.edit` endpoint alongside the reference images. When no mask is supplied, edits apply globally using the reference images as compositional context.
+
+The mask must match the first reference image's dimensions and format and carry an alpha channel. OpenAI enforces this at the API level; a mismatch returns an HTTP 400 error.
+
+Use `list_providers` to check the `supports_mask` field on each model before passing a mask. Currently `true` for all gpt-image models (`gpt-image-1`, `gpt-image-1.5`, `gpt-image-1-mini`, `gpt-image-2`); `false` for dall-e models. Passing a mask to a provider or model that does not support it raises an error.
 
 ## Error handling
 

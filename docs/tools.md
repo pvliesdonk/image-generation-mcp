@@ -118,6 +118,7 @@ Edit or transform an existing image using a model that accepts image input (imag
 | `background` | str | `"opaque"` | Background mode: `opaque` or `transparent` (provider-dependent) |
 | `model` | str | `null` | Specific model ID; see `list_providers` |
 | `strength` | float | `null` | SD WebUI only: denoising strength for image-to-image (0.0 to 1.0, default 0.75 when omitted). Lower values preserve more of the reference image; higher values regenerate more. Other providers ignore it. Has no effect without a reference image. |
+| `mask` | str | `null` | Inpainting mask: a gallery `image_id`, `image://` URI, or local file path (when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`). The mask defines the region to repaint and is applied against the first reference image. Only providers with `supports_mask: true` in `list_providers` accept this parameter (currently OpenAI gpt-image models). At least one `reference_images` entry is required when a mask is supplied. Providers without mask support return an error if a mask is passed. |
 
 ### Reference image input forms
 
