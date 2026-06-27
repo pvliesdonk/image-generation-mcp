@@ -13,13 +13,22 @@ import logging
 import struct
 import time
 import zlib
+from typing import TYPE_CHECKING
 
 from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
     ProviderCapabilities,
 )
 from image_generation_mcp.providers.model_styles import resolve_style
-from image_generation_mcp.providers.types import ImageResult, ProgressCallback
+from image_generation_mcp.providers.types import (
+    ImageInputUnsupported,
+    ImageResult,
+    InputImage,
+    ProgressCallback,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +109,7 @@ class PlaceholderImageProvider:
         quality: str = "standard",  # noqa: ARG002
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate a placeholder PNG.
@@ -112,10 +122,17 @@ class PlaceholderImageProvider:
             background: When ``"transparent"``, generates an RGBA PNG with
                 alpha=0. When ``"opaque"`` (default), generates an RGB PNG.
             model: Ignored by the placeholder provider.
+            reference_images: Not supported by this provider. Raises
+                :class:`ImageInputUnsupported` when non-empty.
 
         Returns:
             ImageResult with a solid-color PNG.
+
+        Raises:
+            ImageInputUnsupported: When reference_images are supplied.
         """
+        if reference_images:
+            raise ImageInputUnsupported("placeholder", model)
         if model is not None:
             logger.debug("Placeholder provider ignores model parameter: %r", model)
         if aspect_ratio not in _ASPECT_RATIO_TO_SIZE:

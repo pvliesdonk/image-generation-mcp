@@ -15,7 +15,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import httpx
 
@@ -26,11 +26,16 @@ from image_generation_mcp.providers.capabilities import (
 )
 from image_generation_mcp.providers.model_styles import resolve_style
 from image_generation_mcp.providers.types import (
+    ImageInputUnsupported,
     ImageProviderConnectionError,
     ImageProviderError,
     ImageResult,
+    InputImage,
     ProgressCallback,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -227,6 +232,7 @@ class SdWebuiImageProvider:
         quality: str = "standard",  # noqa: ARG002
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image via SD WebUI txt2img API.
@@ -241,6 +247,8 @@ class SdWebuiImageProvider:
             model: Specific checkpoint name to use for this call. Overrides
                 the constructor model for preset detection and
                 ``override_settings``.
+            reference_images: Not supported by this provider. Raises
+                :class:`ImageInputUnsupported` when non-empty.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  When provided,
                 ``/sdapi/v1/progress`` is polled concurrently.
@@ -251,7 +259,10 @@ class SdWebuiImageProvider:
         Raises:
             ImageProviderConnectionError: If SD WebUI is unreachable.
             ImageProviderError: On API errors.
+            ImageInputUnsupported: When reference_images are supplied.
         """
+        if reference_images:
+            raise ImageInputUnsupported("sd_webui", model)
         effective_model = model or self._model
         effective_preset = _resolve_preset(effective_model)
 

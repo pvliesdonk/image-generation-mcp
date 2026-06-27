@@ -5,7 +5,11 @@ from __future__ import annotations
 import pytest
 
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
-from image_generation_mcp.providers.types import ImageProvider
+from image_generation_mcp.providers.types import (
+    ImageInputUnsupported,
+    ImageProvider,
+    InputImage,
+)
 
 
 class TestPlaceholderProvider:
@@ -100,3 +104,14 @@ class TestPlaceholderProvider:
                 f"expected style_profile for {model_caps.model_id}"
             )
             assert model_caps.style_profile.label
+
+
+async def test_placeholder_rejects_reference_images() -> None:
+    """Placeholder provider raises ImageInputUnsupported when reference_images are given."""
+    provider = PlaceholderImageProvider()
+
+    with pytest.raises(ImageInputUnsupported):
+        await provider.generate(
+            "x",
+            reference_images=[InputImage(data=b"x", content_type="image/png")],
+        )

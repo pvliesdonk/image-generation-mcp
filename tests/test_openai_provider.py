@@ -14,9 +14,11 @@ from image_generation_mcp.providers.openai import (
 )
 from image_generation_mcp.providers.types import (
     ImageContentPolicyError,
+    ImageInputUnsupported,
     ImageProvider,
     ImageProviderConnectionError,
     ImageProviderError,
+    InputImage,
 )
 
 
@@ -414,3 +416,15 @@ class TestErrorHandling:
 
         with pytest.raises(ImageContentPolicyError):
             await provider.generate("test")
+
+
+@pytest.mark.usefixtures("_mock_openai")
+async def test_openai_rejects_reference_images() -> None:
+    """OpenAI provider raises ImageInputUnsupported when reference_images are given."""
+    provider = OpenAIImageProvider(api_key="sk-test")
+
+    with pytest.raises(ImageInputUnsupported):
+        await provider.generate(
+            "a cat",
+            reference_images=[InputImage(data=b"x", content_type="image/png")],
+        )

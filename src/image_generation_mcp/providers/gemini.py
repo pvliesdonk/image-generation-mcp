@@ -25,7 +25,11 @@ from image_generation_mcp.providers.types import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from google import genai as genai_type
+
+    from image_generation_mcp.providers.types import InputImage
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +121,7 @@ class GeminiImageProvider:
         quality: str = "standard",
         background: str = "opaque",
         model: str | None = None,
+        reference_images: Sequence[InputImage] | None = None,  # noqa: ARG002
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image using the Gemini generateContent API.
@@ -133,6 +138,8 @@ class GeminiImageProvider:
                 for improved composition.
             background: Ignored — Gemini does not support transparent backgrounds.
             model: Override the default model for this call.
+            reference_images: Reserved for future image-to-image support.
+                Currently ignored.
             progress_callback: Ignored — Gemini does not report progress.
 
         Returns:
