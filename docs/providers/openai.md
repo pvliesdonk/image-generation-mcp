@@ -115,6 +115,31 @@ OpenAI charges per image generated. Pricing varies by model, size, and quality l
 
 `gpt-image-1` is generally more expensive than `dall-e-3` but produces higher quality output with more flexible format options.
 
+## Image input (editing and composition)
+
+The gpt-image family (`gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gpt-image-1-mini`) accepts reference images through the `transform_image` tool. The provider routes these requests through OpenAI's `images.edit` endpoint, supporting both single-image edits and multi-image composition with up to 16 reference images per call.
+
+`dall-e-3` and `dall-e-2` do not support reference-image input. Supplying reference images to either model raises an unsupported-input error (`ImageInputUnsupported`).
+
+### Capability fields
+
+The `list_providers` response includes two fields on each model entry that clients use to determine routing:
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `supports_image_input` | bool | `true` for all gpt-image models; `false` for dall-e models |
+| `max_input_images` | int | `16` for gpt-image models; absent for dall-e models |
+
+Use these fields to decide which provider and model to pass to `transform_image`. When `supports_image_input` is `false`, pass the images to a Gemini provider instead.
+
+### Supported reference image formats
+
+The endpoint accepts PNG, JPEG, and WebP references. Each reference image is sent as a named file tuple using the source image's content type.
+
+### Masks
+
+Mask support (inpainting) is not yet implemented for the `images.edit` endpoint. All edits are applied globally using the reference images as compositional context; targeted region editing is a future enhancement.
+
 ## Error handling
 
 | Error | Cause | Resolution |

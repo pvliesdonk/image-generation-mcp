@@ -55,6 +55,7 @@ edit_image
 frontmatter
 gallery_full_image
 generate_image
+inpainting
 lightbox
 Lightbox
 list_providers
