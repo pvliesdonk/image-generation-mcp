@@ -561,3 +561,14 @@ class TestGeminiProvider:
         # strength must NOT be forwarded to the Gemini SDK call
         call_kwargs = gen.call_args.kwargs
         assert "strength" not in call_kwargs
+
+    async def test_generate_rejects_mask(self) -> None:
+        """Gemini provider raises ImageProviderError when mask is given."""
+        from image_generation_mcp.providers.types import InputImage
+
+        provider = GeminiImageProvider(api_key="AIza-test")
+
+        with pytest.raises(ImageProviderError, match="mask"):
+            await provider.generate(
+                "x", mask=InputImage(data=b"m", content_type="image/png")
+            )

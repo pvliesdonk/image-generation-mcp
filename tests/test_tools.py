@@ -2071,6 +2071,108 @@ class TestTransformImageTool:
             "{?format,width,height,quality,crop_x,crop_y,crop_w,crop_h,rotate,flip}"
         )
 
+    # F13: mask parameter — requires supports_mask model
+    async def test_transform_image_mask_requires_supports_mask(
+        self, tmp_path: Path
+    ) -> None:
+        """transform_image raises ValueError matching 'mask' when the chosen model
+        supports image input but not masks (supports_mask=False)."""
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject capabilities: image-input capable but supports_mask=False
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                    supports_mask=False,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register two gallery images (base + mask)
+        base_result = await provider.generate("base image", aspect_ratio="1:1")
+        base_record = svc.register_image(
+            base_result, "placeholder", prompt="base image"
+        )
+        mask_result = await provider.generate("mask image", aspect_ratio="1:1")
+        mask_record = svc.register_image(
+            mask_result, "placeholder", prompt="mask image"
+        )
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="mask"):
+            await tool.fn(
+                prompt="inpaint this",
+                reference_images=[base_record.id],
+                mask=mask_record.id,
+                provider="placeholder",
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
+    # F14: mask parameter — unknown reference raises ValueError
+    async def test_transform_image_mask_unknown_reference(self, tmp_path: Path) -> None:
+        """transform_image raises ValueError containing 'not found' when the mask
+        reference ID does not exist in the gallery."""
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+
+        # Inject capabilities: supports both image input and masks
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                    supports_mask=True,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+
+        # Register a real base image
+        base_result = await provider.generate("base image", aspect_ratio="1:1")
+        base_record = svc.register_image(
+            base_result, "placeholder", prompt="base image"
+        )
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+
+        ctx = await self._make_ctx()
+        cfg = await self._make_cfg()
+
+        with pytest.raises(ValueError, match="not found"):
+            await tool.fn(
+                prompt="inpaint this",
+                reference_images=[base_record.id],
+                mask="deadbeef0000",
+                provider="placeholder",
+                service=svc,
+                config=cfg,
+                ctx=ctx,
+            )
+
     # F12: strength parameter validation
     @pytest.mark.parametrize("bad", [-0.1, 1.5, 2.0])
     async def test_transform_image_rejects_out_of_range_strength(

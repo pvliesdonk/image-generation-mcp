@@ -92,6 +92,26 @@ class TestGenerate:
         # Placeholder ignores model, result is still valid
         assert result.image_data
 
+    async def test_generate_forwards_mask_to_provider(self, scratch_dir: Path) -> None:
+        """ImageService.generate forwards mask= kwarg to the provider."""
+        from unittest.mock import AsyncMock
+
+        from image_generation_mcp.providers.types import ImageResult, InputImage
+
+        svc = ImageService(scratch_dir=scratch_dir)
+
+        fake_result = ImageResult(image_data=b"\x89PNG", content_type="image/png")
+        fake_provider = AsyncMock()
+        fake_provider.generate = AsyncMock(return_value=fake_result)
+        svc.register_provider("fake", fake_provider)
+
+        mask_image = InputImage(data=b"mask", content_type="image/png")
+        await svc.generate("test", provider="fake", mask=mask_image)
+
+        assert fake_provider.generate.await_count == 1
+        call_kwargs = fake_provider.generate.call_args.kwargs
+        assert call_kwargs["mask"] is mask_image
+
 
 # ---------------------------------------------------------------------------
 # ImageRecord.source_image_ids

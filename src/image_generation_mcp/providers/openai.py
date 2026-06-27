@@ -230,6 +230,7 @@ class OpenAIImageProvider:
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Generate an image via OpenAI Images API.
@@ -253,6 +254,10 @@ class OpenAIImageProvider:
                 no-mask edit endpoint). Raises :class:`TooManyInputImages`
                 when more than 16 references are supplied.
             strength: Ignored — OpenAI does not support denoising strength.
+            mask: Optional mask image for inpainting. Forwarded to
+                ``images.edit`` when reference images are present. Currently
+                accepted by the signature but not forwarded to the API until
+                the inpainting endpoint is wired up.
 
         Returns:
             ImageResult with generated image.
@@ -277,6 +282,7 @@ class OpenAIImageProvider:
                 quality=quality,
                 background=background,
                 model=model,
+                mask=mask,
             )
         effective_model = model or self._model
         # NOTE: any model not matching 'gpt-image*' (e.g. dall-e-2) falls back to
@@ -370,6 +376,7 @@ class OpenAIImageProvider:
         quality: str,
         background: str,
         model: str | None,
+        mask: InputImage | None = None,  # noqa: ARG002
     ) -> ImageResult:
         """Edit/compose using OpenAI ``images.edit`` (gpt-image family only).
 
@@ -381,6 +388,8 @@ class OpenAIImageProvider:
             quality: ``"standard"`` or ``"hd"``; mapped to API values.
             background: Background transparency (``opaque``, ``transparent``).
             model: Override model; must be a gpt-image model.
+            mask: Optional mask image for inpainting (accepted but not yet
+                forwarded to the API).
 
         Returns:
             ImageResult with edited image and ``edited=True`` in metadata.

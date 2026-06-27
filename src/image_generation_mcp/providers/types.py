@@ -106,6 +106,7 @@ class ImageProvider(Protocol):
         model: str | None = None,
         reference_images: Sequence[InputImage] | None = None,
         strength: float | None = None,
+        mask: InputImage | None = None,
         progress_callback: ProgressCallback | None = None,
     ) -> ImageResult:
         """Generate an image from a text prompt.
@@ -126,6 +127,10 @@ class ImageProvider(Protocol):
             strength: Denoising strength (0.0-1.0) for image-to-image. Only
                 SD WebUI uses it (as ``denoising_strength``); other providers
                 ignore it. Has no effect without ``reference_images``.
+            mask: Optional mask image for inpainting. Only OpenAI gpt-image
+                models support it; other providers raise
+                :class:`ImageProviderError`. Applies to the first reference
+                image.
             progress_callback: Optional callback invoked with
                 ``(fraction, message)`` during generation.  Only supported
                 by SD WebUI; other providers ignore this parameter.

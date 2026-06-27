@@ -736,3 +736,15 @@ class TestImg2Img:
         payload = json.loads(request.content)
         assert "init_images" not in payload
         assert "denoising_strength" not in payload
+
+
+async def test_sd_webui_rejects_mask() -> None:
+    """SD WebUI provider raises ImageProviderError when mask is given."""
+    from image_generation_mcp.providers.types import ImageProviderError, InputImage
+
+    provider = SdWebuiImageProvider(host="http://localhost:7860")
+
+    with pytest.raises(ImageProviderError, match="mask"):
+        await provider.generate(
+            "x", mask=InputImage(data=b"m", content_type="image/png")
+        )

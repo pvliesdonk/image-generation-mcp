@@ -123,3 +123,13 @@ async def test_placeholder_ignores_strength() -> None:
 
     result = await provider.generate("x", strength=0.5)
     assert result.image_data  # produced normally, strength ignored
+
+
+async def test_placeholder_rejects_mask() -> None:
+    """Placeholder provider raises ImageProviderError when mask is given."""
+    from image_generation_mcp.providers.types import ImageProviderError
+
+    with pytest.raises(ImageProviderError, match="mask"):
+        await PlaceholderImageProvider().generate(
+            "x", mask=InputImage(data=b"m", content_type="image/png")
+        )
