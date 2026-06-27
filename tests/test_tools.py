@@ -1525,12 +1525,14 @@ class TestTransformImageTool:
         # ImageInputUnsupported for reference_images).
         stub_result = await provider.generate("make it blue", aspect_ratio="1:1")
 
+        # Capture reference_images kwarg with AsyncMock
         async def _fake_generate(
             *_args: object, **_kwargs: object
         ) -> tuple[str, ImageResult]:
             return "placeholder", stub_result
 
-        svc.generate = _fake_generate  # type: ignore[assignment]
+        mock_generate = AsyncMock(side_effect=_fake_generate)
+        svc.generate = mock_generate  # type: ignore[assignment]
 
         mcp = FastMCP("test")
         register_tools(mcp)
@@ -1579,3 +1581,13 @@ class TestTransformImageTool:
         completed_record = svc.get_image(image_id)
         assert completed_record.id == image_id
         assert completed_record.source_image_ids == [source_image_id]
+
+        # Verify generate was called with reference_images kwarg
+        assert mock_generate.await_count >= 1
+        call_kwargs = mock_generate.call_args.kwargs
+        assert "reference_images" in call_kwargs
+        reference_images = call_kwargs["reference_images"]
+        assert isinstance(reference_images, list)
+        assert len(reference_images) == 1
+        # reference_images[0] is an InputImage; verify its source_id matches
+        assert reference_images[0].source_id == source_image_id
