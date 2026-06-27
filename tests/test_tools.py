@@ -2125,6 +2125,56 @@ class TestTransformImageTool:
                 ctx=ctx,
             )
 
+    async def test_transform_image_mask_auto_no_mask_capable_provider(
+        self, tmp_path: Path
+    ) -> None:
+        """provider='auto' with a mask but no mask-capable provider → ValueError.
+
+        Exercises the auto `eligible` filter's supports_mask clause (the
+        explicit-provider test above covers the `capable` filter).
+        """
+        svc = ImageService(scratch_dir=tmp_path)
+        provider = PlaceholderImageProvider()
+        svc.register_provider("placeholder", provider)
+        # image-input capable but supports_mask=False — not eligible for a mask
+        svc._capabilities["placeholder"] = ProviderCapabilities(
+            provider_name="placeholder",
+            models=(
+                ModelCapabilities(
+                    model_id="placeholder",
+                    display_name="Placeholder",
+                    supports_image_input=True,
+                    max_input_images=4,
+                    supports_mask=False,
+                ),
+            ),
+            discovered_at=1000.0,
+        )
+        base = svc.register_image(
+            await provider.generate("base", aspect_ratio="1:1"),
+            "placeholder",
+            prompt="base",
+        )
+        msk = svc.register_image(
+            await provider.generate("mask", aspect_ratio="1:1"),
+            "placeholder",
+            prompt="mask",
+        )
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+        with pytest.raises(ValueError, match="mask"):
+            await tool.fn(
+                prompt="inpaint",
+                reference_images=[base.id],
+                mask=msk.id,
+                provider="auto",
+                service=svc,
+                config=await self._make_cfg(),
+                ctx=await self._make_ctx(),
+            )
+
     # F14: mask parameter — unknown reference raises ValueError
     async def test_transform_image_mask_unknown_reference(self, tmp_path: Path) -> None:
         """transform_image raises ValueError containing 'not found' when the mask
