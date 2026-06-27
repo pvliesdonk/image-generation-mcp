@@ -138,12 +138,12 @@ class PlaceholderImageProvider:
             ImageInputUnsupported: When reference_images are supplied.
             ImageProviderError: When mask is supplied.
         """
-        if reference_images:
-            raise ImageInputUnsupported("placeholder", model)
         if mask is not None:
             raise ImageProviderError(
                 "placeholder", "mask is not supported by this provider"
             )
+        if reference_images:
+            raise ImageInputUnsupported("placeholder", model)
         if strength is not None:
             logger.debug("strength_ignored provider=placeholder reason=unsupported")
         if model is not None:

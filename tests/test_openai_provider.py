@@ -632,3 +632,12 @@ class TestOpenAIEdit:
         provider._client.images.edit.assert_awaited_once()
         kwargs = provider._client.images.edit.call_args.kwargs
         assert "mask" not in kwargs
+
+    async def test_generate_mask_without_reference_images_raises(self) -> None:
+        """A mask on the text-to-image path (no reference_images) is rejected."""
+        provider = self._mk_provider()
+        with pytest.raises(ImageProviderError, match="mask requires reference_images"):
+            await provider.generate(
+                "txt2img with a stray mask",
+                mask=InputImage(data=b"msk", content_type="image/png"),
+            )

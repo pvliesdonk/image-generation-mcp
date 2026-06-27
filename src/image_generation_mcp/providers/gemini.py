@@ -180,13 +180,15 @@ class GeminiImageProvider:
             TooManyInputImages: If more reference images than the model's cap
                 are supplied.
         """
+        # Reject unsupported masks before importing the SDK, so the guard is
+        # reachable even if google-genai is missing.
+        if mask is not None:
+            raise ImageProviderError("gemini", "mask is not supported by this provider")
+
         from google.genai import types
 
         if strength is not None:
             logger.debug("strength_ignored provider=gemini reason=unsupported")
-
-        if mask is not None:
-            raise ImageProviderError("gemini", "mask is not supported by this provider")
 
         if aspect_ratio not in _ASPECT_RATIOS:
             raise ImageProviderError(

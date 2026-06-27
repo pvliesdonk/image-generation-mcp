@@ -2114,7 +2114,7 @@ class TestTransformImageTool:
         ctx = await self._make_ctx()
         cfg = await self._make_cfg()
 
-        with pytest.raises(ValueError, match="mask"):
+        with pytest.raises(ValueError, match=r"reference image\(s\) with a mask"):
             await tool.fn(
                 prompt="inpaint this",
                 reference_images=[base_record.id],
@@ -2164,7 +2164,7 @@ class TestTransformImageTool:
         register_tools(mcp)
         tool = await mcp.get_tool("transform_image")
         assert tool is not None
-        with pytest.raises(ValueError, match="mask"):
+        with pytest.raises(ValueError, match=r"reference image\(s\) with a mask"):
             await tool.fn(
                 prompt="inpaint",
                 reference_images=[base.id],
