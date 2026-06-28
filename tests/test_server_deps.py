@@ -24,7 +24,7 @@ from image_generation_mcp._server_deps import (
     make_service_lifespan,
 )
 from image_generation_mcp.config import ProjectConfig
-from image_generation_mcp.service import ImageService
+from image_generation_mcp.domain import ImageService
 
 # ---------------------------------------------------------------------------
 # get_service and get_config (DI helpers)

@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 
 import json
 
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageProviderError
-from image_generation_mcp.service import ImageService
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@
 
 Downloads the pinned SDK version, verifies its integrity, and writes a
 Python module containing the base64-encoded bundle.  The generated module
-is imported by ``_server_resources.py`` to build an ES import-map that
+is imported by ``resources.py`` to build an ES import-map that
 replaces the runtime CDN dependency.
 
 Usage::

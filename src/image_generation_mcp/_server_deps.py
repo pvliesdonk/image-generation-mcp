@@ -17,8 +17,8 @@ from fastmcp.dependencies import CurrentContext
 from fastmcp.server.context import Context
 from fastmcp.server.lifespan import lifespan
 
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
-from image_generation_mcp.service import ImageService
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -38,7 +38,7 @@ def _get_service_from_store() -> ImageService:
     request-context dependency injection.
 
     Returns:
-        The active :class:`~image_generation_mcp.service.ImageService`.
+        The active :class:`~image_generation_mcp.domain.ImageService`.
 
     Raises:
         RuntimeError: If the server lifespan has not yet run.

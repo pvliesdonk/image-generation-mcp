@@ -104,11 +104,11 @@ ignore = ["E501"]
 "src/image_generation_mcp/server.py" = ["B008", "TC001", "TC002"]
 "src/image_generation_mcp/cli.py" = ["B008"]
 "src/image_generation_mcp/_server_deps.py" = ["B008", "TC002", "TC003"]
-"src/image_generation_mcp/_server_tools.py" = ["B008", "TC001", "TC002"]
-"src/image_generation_mcp/_server_resources.py" = ["B008", "TC001", "TC002"]
-"src/image_generation_mcp/_server_prompts.py" = ["B008", "TC002"]
+"src/image_generation_mcp/tools.py" = ["B008", "TC001", "TC002"]
+"src/image_generation_mcp/resources.py" = ["B008", "TC001", "TC002"]
+"src/image_generation_mcp/prompts.py" = ["B008", "TC002"]
 # Path is used at runtime in ImageRecord dataclass.
-"src/image_generation_mcp/service.py" = ["TC003"]
+"src/image_generation_mcp/domain.py" = ["TC003"]
 "src/image_generation_mcp/providers/*.py" = ["TC002"]
 # pytest fixtures need runtime imports; TC003 also broadly suppressed to match
 # the template's intent (template targets `tests/conftest.py` + `tests/test_smoke.py`

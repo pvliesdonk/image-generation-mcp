@@ -17,10 +17,10 @@ import pytest
 from fastmcp import FastMCP
 from starlette.testclient import TestClient
 
-from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.artifacts import ArtifactStore, TokenRecord
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
-from image_generation_mcp.service import ImageService
+from image_generation_mcp.tools import register_tools
 
 if TYPE_CHECKING:
     from pathlib import Path

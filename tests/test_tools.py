@@ -30,7 +30,7 @@ from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, ResourceLink, TextContent
 from PIL import Image
 
-from image_generation_mcp._server_tools import register_tools
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
     ProviderCapabilities,
@@ -38,7 +38,7 @@ from image_generation_mcp.providers.capabilities import (
 from image_generation_mcp.providers.model_styles import MODEL_STYLES
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageResult
-from image_generation_mcp.service import ImageService
+from image_generation_mcp.tools import register_tools
 from tests._helpers import get_tool_including_app_only
 
 # ---------------------------------------------------------------------------

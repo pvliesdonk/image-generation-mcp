@@ -11,10 +11,10 @@ import pytest
 from fastmcp import FastMCP
 from PIL import Image as PILImage
 
-from image_generation_mcp._server_tools import register_tools
+from image_generation_mcp.domain import ImageRecord, ImageService, PendingGeneration
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.server import make_server
-from image_generation_mcp.service import ImageRecord, ImageService, PendingGeneration
+from image_generation_mcp.tools import register_tools
 from tests._helpers import get_tool_including_app_only
 
 if TYPE_CHECKING:

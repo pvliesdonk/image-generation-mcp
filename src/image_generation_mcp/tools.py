@@ -50,8 +50,8 @@ from ._input_images import (
     resolve_references,
 )
 from ._server_deps import get_config, get_service
-from ._server_resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
 from .config import ProjectConfig
+from .domain import ImageRecord, ImageService, PendingGeneration
 from .processing import (
     convert_format,
     crop_region,
@@ -71,7 +71,7 @@ from .providers.types import (
     ImageResult,
     InputImage,
 )
-from .service import ImageRecord, ImageService, PendingGeneration
+from .resources import _IMAGE_GALLERY_URI, _IMAGE_VIEWER_URI
 
 logger = logging.getLogger(__name__)
 

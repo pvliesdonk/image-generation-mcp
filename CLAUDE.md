@@ -16,9 +16,10 @@ src/image_generation_mcp/
   config.py            -- env var loading; add domain config fields here
   cli.py               -- CLI entry point (serve command)
   _server_deps.py      -- lifespan + Depends() DI; replace placeholder service
-  _server_tools.py     -- MCP tools; replace example tools with domain tools
-  _server_resources.py -- MCP resources; add domain resources here
-  _server_prompts.py   -- MCP prompts; add domain prompts here
+  tools.py             -- MCP tools; replace example tools with domain tools
+  resources.py         -- MCP resources; add domain resources here
+  prompts.py           -- MCP prompts; add domain prompts here
+  domain.py            -- ImageService + domain types (the service placeholder)
 ```
 <!-- DOMAIN-END -->
 

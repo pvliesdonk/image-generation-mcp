@@ -26,13 +26,13 @@ from image_generation_mcp._vendored_sdk import (
     SDK_BASE64 as _SDK_B64,
 )
 from image_generation_mcp.config import _ENV_PREFIX
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.types import (
     SUPPORTED_ASPECT_RATIOS,
     SUPPORTED_BACKGROUNDS,
     SUPPORTED_QUALITY_LEVELS,
     ImageProviderError,
 )
-from image_generation_mcp.service import ImageService
 
 logger = logging.getLogger(__name__)
 

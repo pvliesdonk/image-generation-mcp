@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from image_generation_mcp._server_prompts import (
+from image_generation_mcp.prompts import (
     _SD_PROMPT_GUIDE,
     _SELECT_PROVIDER_PROMPT,
 )

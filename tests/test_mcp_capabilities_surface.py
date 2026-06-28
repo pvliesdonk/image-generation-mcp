@@ -9,13 +9,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
     ProviderCapabilities,
 )
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.selector import select_provider
-from image_generation_mcp.service import ImageService
 
 if TYPE_CHECKING:
     from pathlib import Path

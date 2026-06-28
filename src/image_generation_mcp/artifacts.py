@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from starlette.requests import Request
 
-    from image_generation_mcp.service import ImageService
+    from image_generation_mcp.domain import ImageService
 
 logger = logging.getLogger(__name__)
 

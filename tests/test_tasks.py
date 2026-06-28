@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 from fastmcp import FastMCP
 from mcp.types import TextContent
 
-from image_generation_mcp._server_tools import _BACKGROUND_TASKS, register_tools
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
-from image_generation_mcp.service import ImageService
+from image_generation_mcp.tools import _BACKGROUND_TASKS, register_tools
 
 
 async def test_task_decorator_present() -> None:
@@ -413,8 +413,8 @@ async def test_image_list_includes_pending_generation(
     from fastmcp import Client
 
     from image_generation_mcp._server_deps import make_service_lifespan
-    from image_generation_mcp._server_resources import register_resources
     from image_generation_mcp.config import ProjectConfig
+    from image_generation_mcp.resources import register_resources
 
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
 
