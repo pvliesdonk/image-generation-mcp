@@ -231,7 +231,7 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | `openai,gemini` | No | Comma-separated paid provider names. Triggers elicitation confirmation on capable clients. Set to empty to disable. |
+| `IMAGE_GENERATION_MCP_PAID_PROVIDERS` | `openai` | No | Comma-separated paid provider names. Triggers an elicitation cost-confirmation on capable clients. Gemini is omitted by default (generous free tier); add `gemini` if you rely on `quality="hd"`, which bills thinking tokens. Set to empty to disable. |
 | `IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE` | `64` | No | Max cached transforms. Set to `0` to disable caching. |
 
 ### Reference image input (`transform_image`)
