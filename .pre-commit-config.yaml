@@ -38,3 +38,12 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
       - id: check-json
+
+  # gitleaks secret scanning — the same scanner as the ci.yml secrets job
+  # (which runs gitleaks/gitleaks-action); versions are pinned independently.
+  # Satisfies CLAUDE.md's pre-commit/CI secret-scanning alignment. pre-commit
+  # fetches the gitleaks binary itself and honours the repo's .gitleaks.toml.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
