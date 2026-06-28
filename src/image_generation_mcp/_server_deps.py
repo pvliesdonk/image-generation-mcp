@@ -2,8 +2,10 @@
 
 Provides :func:`get_service` / :func:`get_config` (imported by the tool,
 resource, and prompt registration modules) and :func:`server_lifespan`, the
-template-conformant lifespan wired into
-:func:`~image_generation_mcp.server.make_server`.
+template-conformant standalone (env-loading) lifespan.
+:func:`~image_generation_mcp.server.make_server` binds its own already-resolved
+config via :func:`_service_context` rather than calling ``server_lifespan``
+directly (so config is not loaded twice).
 
 Also exposes :func:`_get_service_from_store`, a module-level accessor used by
 the artifact HTTP handler (which runs outside FastMCP request context).
@@ -60,10 +62,10 @@ def _get_service_from_store() -> ImageService:
 async def _service_context(config: ProjectConfig) -> AsyncIterator[dict[str, Any]]:
     """Initialise the ImageService for ``config`` and yield the lifespan state.
 
-    Split out from :func:`server_lifespan` so tests can drive provider
-    registration with a crafted :class:`ProjectConfig` without routing through
-    environment variables. ``server_lifespan`` is the production entry point;
-    this is the config-injectable core.
+    Split out so ``make_server`` can bind its already-resolved config (avoiding
+    a second env load) and tests can drive provider registration with a crafted
+    :class:`ProjectConfig`. :func:`server_lifespan` wraps this with
+    :meth:`ProjectConfig.from_env` for standalone (no-``make_server``) use.
 
     Args:
         config: A fully-loaded :class:`~image_generation_mcp.config.ProjectConfig`.
@@ -133,6 +135,7 @@ async def _service_context(config: ProjectConfig) -> AsyncIterator[dict[str, Any
         yield {"service": service, "config": config}
     finally:
         _service_store = None
+        set_artifact_store(None)
         await service.aclose()
         logger.info("Service shut down")
 
@@ -141,10 +144,11 @@ async def _service_context(config: ProjectConfig) -> AsyncIterator[dict[str, Any
 async def server_lifespan(_mcp: object) -> AsyncIterator[dict[str, Any]]:
     """Start the service on startup; stop it on shutdown.
 
-    Template-conformant lifespan entry point passed to ``FastMCP(lifespan=...)``
-    in :func:`~image_generation_mcp.server.make_server`. Loads
-    :class:`ProjectConfig` from the environment; tests needing a crafted config
-    drive :func:`_service_context` directly.
+    Template-conformant standalone lifespan that loads :class:`ProjectConfig`
+    from the environment. ``make_server`` does NOT wire this directly — it binds
+    its already-resolved config to :func:`_service_context` (avoiding a second
+    load). Use ``server_lifespan`` to wire ``FastMCP(lifespan=...)`` without
+    ``make_server``.
     """
     from image_generation_mcp.config import ProjectConfig
 

@@ -201,3 +201,28 @@ class TestServiceContextGeminiRegistration:
             async with _service_context(config) as ctx:
                 service = ctx["service"]
                 assert "gemini" in service.providers
+
+
+class TestMakeServerSingleLoad:
+    """make_server binds its resolved config without reloading from env."""
+
+    async def test_injected_config_not_reloaded_from_env(self, tmp_path: Path) -> None:
+        """make_server(config=X) runs the lifespan from X; from_env is not re-called.
+
+        Guards the single-load contract (PR #280): a re-introduced
+        ``ProjectConfig.from_env()`` inside the lifespan would fire the patched
+        side-effect and fail this test.
+        """
+        from fastmcp import Client
+
+        from image_generation_mcp.server import make_server
+
+        config = ProjectConfig(scratch_dir=tmp_path)
+        with patch.object(
+            ProjectConfig,
+            "from_env",
+            side_effect=AssertionError("config must not be reloaded from env"),
+        ):
+            server = make_server(transport="stdio", config=config)
+            async with Client(server) as client:
+                await client.ping()
