@@ -2,11 +2,37 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable
+
     from fastmcp import FastMCP
     from fastmcp.tools import Tool
+
+    from image_generation_mcp.config import ProjectConfig
+
+
+def service_lifespan(
+    config: ProjectConfig,
+) -> Callable[[object], Any]:
+    """Build a FastMCP lifespan that initialises the service from ``config``.
+
+    Test-only wrapper around the production
+    :func:`image_generation_mcp._server_deps._service_context`: production
+    ``server_lifespan`` loads :class:`ProjectConfig` from the environment, but
+    tests need to inject a crafted config (temp scratch dir, specific provider
+    keys) into a ``FastMCP(lifespan=...)`` server.
+    """
+    from image_generation_mcp._server_deps import _service_context
+
+    @asynccontextmanager
+    async def _lifespan(_mcp: object) -> AsyncIterator[dict[str, Any]]:
+        async with _service_context(config) as state:
+            yield state
+
+    return _lifespan
 
 
 async def get_tool_including_app_only(mcp: FastMCP, name: str) -> Tool | None:

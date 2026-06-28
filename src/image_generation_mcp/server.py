@@ -8,11 +8,12 @@ server surface and the fastmcp-pvl-core README for the helpers used here.
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
+from typing import TYPE_CHECKING, Any
 
 from fastmcp import FastMCP
-from fastmcp.server.event_store import EventStore
 from fastmcp.server.transforms import ResourcesAsTools
 from fastmcp_pvl_core import (
     ServerConfig,
@@ -24,16 +25,16 @@ from fastmcp_pvl_core import (
     resolve_auth_mode,
     wire_middleware_stack,
 )
-from fastmcp_pvl_core import (
-    build_event_store as _core_build_event_store,
-)
 from mcp.types import Icon
 
-from image_generation_mcp._server_deps import make_service_lifespan
+from image_generation_mcp._server_deps import _service_context
 from image_generation_mcp.config import _ENV_PREFIX, ProjectConfig
 from image_generation_mcp.prompts import register_prompts
 from image_generation_mcp.resources import register_resources
 from image_generation_mcp.tools import register_tools
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 logger = logging.getLogger(__name__)
 
@@ -94,22 +95,6 @@ def _build_oidc_auth() -> object | None:
     return build_oidc_proxy_auth(_load_server_config())
 
 
-def build_event_store(url: str | None = None) -> EventStore:
-    """Build an ``EventStore`` for SSE polling/resumability.
-
-    Thin shim over :func:`fastmcp_pvl_core.build_event_store`: wraps the
-    legacy URL-only call shape used by ``cli.py`` and delegates the actual
-    backend selection to the shared core helper.
-
-    Args:
-        url: Event store URL from ``IMAGE_GENERATION_MCP_EVENT_STORE_URL``.
-
-    Returns:
-        A configured :class:`~mcp.server.streamable_http.EventStore`.
-    """
-    return _core_build_event_store(_ENV_PREFIX, ServerConfig(event_store_url=url))
-
-
 def make_server(
     *,
     transport: str = "stdio",
@@ -154,6 +139,17 @@ def make_server(
         "read-only" if config.read_only else "read-write",
     )
 
+    @asynccontextmanager
+    async def _lifespan(_mcp: object) -> AsyncIterator[dict[str, Any]]:
+        """Bind the config ``make_server`` resolved to the service lifespan.
+
+        ``server_lifespan`` is the env-loading standalone entry; here we reuse
+        the already-resolved ``config`` so a caller-injected config governs the
+        service and config is not loaded a second time at startup.
+        """
+        async with _service_context(config) as state:
+            yield state
+
     mcp = FastMCP(
         name=server_name,
         instructions=build_instructions(
@@ -167,7 +163,7 @@ def make_server(
             ),
         ),
         icons=[Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")],
-        lifespan=make_service_lifespan(config),
+        lifespan=_lifespan,
         auth=auth,
     )
 

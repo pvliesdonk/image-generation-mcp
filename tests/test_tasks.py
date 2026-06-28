@@ -412,9 +412,9 @@ async def test_image_list_includes_pending_generation(
     """image://list includes in-progress generations with 'generating' status."""
     from fastmcp import Client
 
-    from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp.config import ProjectConfig
     from image_generation_mcp.resources import register_resources
+    from tests._helpers import service_lifespan
 
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
 
@@ -431,7 +431,7 @@ async def test_image_list_includes_pending_generation(
 
     original_provider.generate = gated_generate  # type: ignore[assignment]
 
-    mcp = FastMCP("test-list-pending", lifespan=make_service_lifespan(config))
+    mcp = FastMCP("test-list-pending", lifespan=service_lifespan(config))
     register_tools(mcp)
     register_resources(mcp)
 

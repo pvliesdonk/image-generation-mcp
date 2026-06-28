@@ -203,14 +203,14 @@ async def test_image_view_resource_via_server(tmp_path: Path) -> None:
     from fastmcp import Client, FastMCP
     from mcp.types import TextContent
 
-    from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp.config import ProjectConfig
     from image_generation_mcp.resources import register_resources
     from image_generation_mcp.tools import register_tools
+    from tests._helpers import service_lifespan
 
     # Build a minimal server with service lifespan
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
-    mcp = FastMCP("test-view", lifespan=make_service_lifespan(config))
+    mcp = FastMCP("test-view", lifespan=service_lifespan(config))
     register_tools(mcp)
     register_resources(mcp)
 
@@ -251,13 +251,13 @@ async def test_image_metadata_resource_via_server(tmp_path: Path) -> None:
     from fastmcp import Client, FastMCP
     from mcp.types import TextContent
 
-    from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp.config import ProjectConfig
     from image_generation_mcp.resources import register_resources
     from image_generation_mcp.tools import register_tools
+    from tests._helpers import service_lifespan
 
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
-    mcp = FastMCP("test-meta", lifespan=make_service_lifespan(config))
+    mcp = FastMCP("test-meta", lifespan=service_lifespan(config))
     register_tools(mcp)
     register_resources(mcp)
 
@@ -299,13 +299,13 @@ async def test_image_metadata_resource_missing_sidecar(tmp_path: Path) -> None:
     from fastmcp import Client, FastMCP
     from mcp.types import TextContent
 
-    from image_generation_mcp._server_deps import make_service_lifespan
     from image_generation_mcp.config import ProjectConfig
     from image_generation_mcp.resources import register_resources
     from image_generation_mcp.tools import register_tools
+    from tests._helpers import service_lifespan
 
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
-    mcp = FastMCP("test-missing-sidecar", lifespan=make_service_lifespan(config))
+    mcp = FastMCP("test-missing-sidecar", lifespan=service_lifespan(config))
     register_tools(mcp)
     register_resources(mcp)
 
