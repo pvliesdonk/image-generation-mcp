@@ -1,34 +1,41 @@
-"""Shared dependency injection and lifespan for the MCP server.
+"""Service lifespan + dependency injection for the MCP server.
 
-Provides :func:`get_service` and :func:`make_service_lifespan` which are
-imported by the tool, resource, and prompt registration modules.
+Provides :func:`get_service` / :func:`get_config` (imported by the tool,
+resource, and prompt registration modules) and :func:`server_lifespan`, the
+template-conformant lifespan wired into
+:func:`~image_generation_mcp.server.make_server`.
 
-Also exposes :func:`_get_service_from_store`, a module-level accessor used
-by the artifact HTTP handler (which runs outside FastMCP request context).
+Also exposes :func:`_get_service_from_store`, a module-level accessor used by
+the artifact HTTP handler (which runs outside FastMCP request context).
 """
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, Any, TypedDict
 
-from fastmcp import FastMCP
 from fastmcp.dependencies import CurrentContext
 from fastmcp.server.context import Context
-from fastmcp.server.lifespan import lifespan
 
 from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
-
     from image_generation_mcp.config import ProjectConfig
 
 logger = logging.getLogger(__name__)
 
 # Module-level reference for non-MCP-context callers (e.g. artifact handler).
 _service_store: ImageService | None = None
+
+
+class LifespanState(TypedDict):
+    """Shape of the lifespan context yielded to request handlers."""
+
+    service: ImageService
+    config: ProjectConfig
 
 
 def _get_service_from_store() -> ImageService:
@@ -49,90 +56,100 @@ def _get_service_from_store() -> ImageService:
     return _service_store
 
 
-def make_service_lifespan(config: ProjectConfig) -> Any:
-    """Create a lifespan function that closes over a pre-loaded config.
+@asynccontextmanager
+async def _service_context(config: ProjectConfig) -> AsyncIterator[dict[str, Any]]:
+    """Initialise the ImageService for ``config`` and yield the lifespan state.
+
+    Split out from :func:`server_lifespan` so tests can drive provider
+    registration with a crafted :class:`ProjectConfig` without routing through
+    environment variables. ``server_lifespan`` is the production entry point;
+    this is the config-injectable core.
 
     Args:
-        config: A fully-loaded :class:`~image_generation_mcp.config.ProjectConfig`
-            instance produced by a single :meth:`ProjectConfig.from_env` call
-            in :func:`~image_generation_mcp.server.make_server`.
+        config: A fully-loaded :class:`~image_generation_mcp.config.ProjectConfig`.
 
-    Returns:
-        A FastMCP lifespan coroutine that initialises the service object and
-        yields ``{"service": service, "config": config}`` to the lifespan
+    Yields:
+        ``{"service": ImageService, "config": ProjectConfig}`` for the lifespan
         context.
     """
+    global _service_store
 
-    @lifespan
-    async def _service_lifespan(
-        server: FastMCP,  # noqa: ARG001
-    ) -> AsyncIterator[dict[str, Any]]:
-        """Initialise the ImageService at server startup."""
-        global _service_store
+    logger.info("Service starting up (read_only=%s)", config.read_only)
 
-        logger.info("Service starting up (read_only=%s)", config.read_only)
+    service = ImageService(
+        scratch_dir=config.scratch_dir,
+        default_provider=config.default_provider,
+        transform_cache_size=config.transform_cache_size,
+    )
 
-        service = ImageService(
-            scratch_dir=config.scratch_dir,
-            default_provider=config.default_provider,
-            transform_cache_size=config.transform_cache_size,
+    # Always register placeholder (zero-cost, no API key needed)
+    service.register_provider("placeholder", PlaceholderImageProvider())
+
+    # Register OpenAI if API key is configured
+    if config.openai_api_key:
+        from image_generation_mcp.providers.openai import OpenAIImageProvider
+
+        service.register_provider(
+            "openai",
+            OpenAIImageProvider(api_key=config.openai_api_key),
         )
 
-        # Always register placeholder (zero-cost, no API key needed)
-        service.register_provider("placeholder", PlaceholderImageProvider())
+    # Register Gemini if API key is configured
+    if config.google_api_key:
+        from image_generation_mcp.providers.gemini import GeminiImageProvider
 
-        # Register OpenAI if API key is configured
-        if config.openai_api_key:
-            from image_generation_mcp.providers.openai import OpenAIImageProvider
+        service.register_provider(
+            "gemini",
+            GeminiImageProvider(api_key=config.google_api_key),
+        )
 
-            service.register_provider(
-                "openai",
-                OpenAIImageProvider(api_key=config.openai_api_key),
-            )
+    # Register SD WebUI if host is configured
+    if config.sd_webui_host:
+        from image_generation_mcp.providers.sd_webui import SdWebuiImageProvider
 
-        # Register Gemini if API key is configured
-        if config.google_api_key:
-            from image_generation_mcp.providers.gemini import GeminiImageProvider
+        service.register_provider(
+            "sd_webui",
+            SdWebuiImageProvider(
+                host=config.sd_webui_host, model=config.sd_webui_model
+            ),
+        )
 
-            service.register_provider(
-                "gemini",
-                GeminiImageProvider(api_key=config.google_api_key),
-            )
+    # Discover capabilities for all registered providers
+    await service.discover_all_capabilities()
 
-        # Register SD WebUI if host is configured
-        if config.sd_webui_host:
-            from image_generation_mcp.providers.sd_webui import SdWebuiImageProvider
+    # Load style library
+    service.load_styles(config.styles_dir)
 
-            service.register_provider(
-                "sd_webui",
-                SdWebuiImageProvider(
-                    host=config.sd_webui_host, model=config.sd_webui_model
-                ),
-            )
+    # Populate module-level store for artifact handler access
+    _service_store = service
 
-        # Discover capabilities for all registered providers
-        await service.discover_all_capabilities()
+    # Initialise artifact store
+    from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
 
-        # Load style library
-        service.load_styles(config.styles_dir)
+    artifact_store = ArtifactStore()
+    set_artifact_store(artifact_store)
 
-        # Populate module-level store for artifact handler access
-        _service_store = service
+    try:
+        yield {"service": service, "config": config}
+    finally:
+        _service_store = None
+        await service.aclose()
+        logger.info("Service shut down")
 
-        # Initialise artifact store
-        from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
 
-        artifact_store = ArtifactStore()
-        set_artifact_store(artifact_store)
+@asynccontextmanager
+async def server_lifespan(_mcp: object) -> AsyncIterator[dict[str, Any]]:
+    """Start the service on startup; stop it on shutdown.
 
-        try:
-            yield {"service": service, "config": config}
-        finally:
-            _service_store = None
-            await service.aclose()
-            logger.info("Service shut down")
+    Template-conformant lifespan entry point passed to ``FastMCP(lifespan=...)``
+    in :func:`~image_generation_mcp.server.make_server`. Loads
+    :class:`ProjectConfig` from the environment; tests needing a crafted config
+    drive :func:`_service_context` directly.
+    """
+    from image_generation_mcp.config import ProjectConfig
 
-    return _service_lifespan
+    async with _service_context(ProjectConfig.from_env()) as state:
+        yield state
 
 
 def get_service(ctx: Context = CurrentContext()) -> ImageService:

@@ -3,9 +3,9 @@
 Covers:
 - get_service() raises when lifespan context missing
 - get_config() raises when lifespan context missing
-- make_service_lifespan registers OpenAI provider when openai_api_key is set
-- make_service_lifespan registers SD WebUI provider when sd_webui_host is set
-- make_service_lifespan registers placeholder always
+- _service_context registers OpenAI provider when openai_api_key is set
+- _service_context registers SD WebUI provider when sd_webui_host is set
+- _service_context registers placeholder always
 """
 
 from __future__ import annotations
@@ -19,9 +19,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from image_generation_mcp._server_deps import (
+    _service_context,
     get_config,
     get_service,
-    make_service_lifespan,
+    server_lifespan,
 )
 from image_generation_mcp.config import ProjectConfig
 from image_generation_mcp.domain import ImageService
@@ -84,21 +85,16 @@ class TestGetConfig:
 
 
 # ---------------------------------------------------------------------------
-# make_service_lifespan — provider registration
+# _service_context — provider registration
 # ---------------------------------------------------------------------------
 
 
-class TestMakeServiceLifespan:
-    """Tests for make_service_lifespan() provider initialization logic."""
+class TestServiceContext:
+    """Tests for _service_context() provider initialization logic."""
 
     async def _run_lifespan(self, config: ProjectConfig) -> ImageService:
-        """Run lifespan as async context manager and return the service from context."""
-        from fastmcp import FastMCP
-
-        server = FastMCP("test-lifespan")
-        lifespan_fn = make_service_lifespan(config)
-
-        async with lifespan_fn(server) as ctx:
+        """Run the service context and return the service it yields."""
+        async with _service_context(config) as ctx:
             return ctx["service"]
 
     async def test_placeholder_always_registered(self, tmp_path: Path) -> None:
@@ -132,16 +128,12 @@ def _make_mock_provider() -> MagicMock:
     return mock_provider
 
 
-class TestMakeServiceLifespanOpenAIRegistration:
+class TestServiceContextOpenAIRegistration:
     """Tests that OpenAI provider registration path is exercised."""
 
     async def test_openai_provider_registered(self, tmp_path: Path) -> None:
         """When openai_api_key is set, 'openai' appears in service.providers."""
-        from fastmcp import FastMCP
-
         config = ProjectConfig(scratch_dir=tmp_path, openai_api_key="sk-fake-key")
-        server = FastMCP("test-openai")
-        lifespan_fn = make_service_lifespan(config)
 
         # OpenAIImageProvider is imported locally inside the lifespan function —
         # patch it where it lives in the openai module.
@@ -151,25 +143,21 @@ class TestMakeServiceLifespanOpenAIRegistration:
             "image_generation_mcp.providers.openai.OpenAIImageProvider",
             return_value=mock_provider,
         ):
-            async with lifespan_fn(server) as ctx:
+            async with _service_context(config) as ctx:
                 service = ctx["service"]
                 assert "openai" in service.providers
 
 
-class TestMakeServiceLifespanSdWebuiRegistration:
+class TestServiceContextSdWebuiRegistration:
     """Tests that SD WebUI provider registration path is exercised."""
 
     async def test_sd_webui_provider_registered(self, tmp_path: Path) -> None:
         """When sd_webui_host is set, 'sd_webui' appears in service.providers."""
-        from fastmcp import FastMCP
-
         config = ProjectConfig(
             scratch_dir=tmp_path,
             sd_webui_host="http://localhost:7860",
             sd_webui_model="dreamshaper",
         )
-        server = FastMCP("test-sd-webui")
-        lifespan_fn = make_service_lifespan(config)
 
         # SdWebuiImageProvider is imported locally inside the lifespan function —
         # patch it where it lives in the sd_webui module.
@@ -179,21 +167,30 @@ class TestMakeServiceLifespanSdWebuiRegistration:
             "image_generation_mcp.providers.sd_webui.SdWebuiImageProvider",
             return_value=mock_provider,
         ):
-            async with lifespan_fn(server) as ctx:
+            async with _service_context(config) as ctx:
                 service = ctx["service"]
                 assert "sd_webui" in service.providers
 
 
-class TestMakeServiceLifespanGeminiRegistration:
+class TestServerLifespan:
+    """Tests for the env-loading ``server_lifespan`` entry point."""
+
+    async def test_loads_config_from_env(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """server_lifespan reads config from env and yields a started service."""
+        monkeypatch.setenv("IMAGE_GENERATION_MCP_SCRATCH_DIR", str(tmp_path))
+        async with server_lifespan(None) as ctx:
+            assert "placeholder" in ctx["service"].providers
+            assert ctx["config"].scratch_dir == tmp_path
+
+
+class TestServiceContextGeminiRegistration:
     """Tests that Gemini provider registration path is exercised."""
 
     async def test_gemini_provider_registered(self, tmp_path: Path) -> None:
         """When google_api_key is set, 'gemini' appears in service.providers."""
-        from fastmcp import FastMCP
-
         config = ProjectConfig(scratch_dir=tmp_path, google_api_key="AIza-fake-key")
-        server = FastMCP("test-gemini")
-        lifespan_fn = make_service_lifespan(config)
 
         mock_provider = _make_mock_provider()
 
@@ -201,6 +198,6 @@ class TestMakeServiceLifespanGeminiRegistration:
             "image_generation_mcp.providers.gemini.GeminiImageProvider",
             return_value=mock_provider,
         ):
-            async with lifespan_fn(server) as ctx:
+            async with _service_context(config) as ctx:
                 service = ctx["service"]
                 assert "gemini" in service.providers
