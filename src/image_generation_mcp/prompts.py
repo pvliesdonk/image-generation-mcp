@@ -18,7 +18,7 @@ from mcp.types import Icon
 from image_generation_mcp._server_deps import get_service
 
 if TYPE_CHECKING:
-    from image_generation_mcp.service import ImageService
+    from image_generation_mcp.domain import ImageService
     from image_generation_mcp.styles import StyleEntry
 
 _SELECT_PROVIDER_PROMPT = """\

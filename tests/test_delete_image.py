@@ -9,11 +9,11 @@ import pytest
 from fastmcp import FastMCP
 from PIL import Image as PILImage
 
-from image_generation_mcp._server_tools import register_tools
+from image_generation_mcp.domain import ImageRecord, ImageService
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageProviderError, ImageResult
 from image_generation_mcp.server import make_server
-from image_generation_mcp.service import ImageRecord, ImageService
+from image_generation_mcp.tools import register_tools
 
 if TYPE_CHECKING:
     from pathlib import Path

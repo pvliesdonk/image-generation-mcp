@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.providers.capabilities import (
     ModelCapabilities,
     ProviderCapabilities,
@@ -14,7 +15,6 @@ from image_generation_mcp.providers.capabilities import (
 )
 from image_generation_mcp.providers.model_styles import StyleProfile
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
-from image_generation_mcp.service import ImageService
 
 if TYPE_CHECKING:
     from pathlib import Path

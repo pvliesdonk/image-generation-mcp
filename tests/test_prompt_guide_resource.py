@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from image_generation_mcp._server_resources import _PROMPT_GUIDE
+from image_generation_mcp.resources import _PROMPT_GUIDE
 from image_generation_mcp.server import make_server
 
 

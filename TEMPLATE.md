@@ -55,7 +55,7 @@ class ServerConfig:
     api_key: str | None = None               # your field
 ```
 
-### Tools (`_server_tools.py`)
+### Tools (`tools.py`)
 
 Replace the example tools with your domain tools. Tag write tools with `tags={"write"}`:
 
@@ -74,7 +74,7 @@ def set_alert(city: str, threshold_c: float, ctx: Any = Depends(get_service)) ->
 
 ### Resources and prompts
 
-Add domain resources to `_server_resources.py` and prompts to `_server_prompts.py`.
+Add domain resources to `resources.py` and prompts to `prompts.py`.
 
 ## Step 4: Configure GitHub
 
@@ -103,9 +103,9 @@ All checks should pass before you start building.
 | Service lifespan | `_server_deps.py` | Replace placeholder with your service init |
 | Config | `config.py` | Add your domain env vars |
 | CLI | `cli.py` | `serve` command — extend if needed |
-| Tools | `_server_tools.py` | Your domain tools go here |
-| Resources | `_server_resources.py` | Your domain resources go here |
-| Prompts | `_server_prompts.py` | Your domain prompts go here |
+| Tools | `tools.py` | Your domain tools go here |
+| Resources | `resources.py` | Your domain resources go here |
+| Prompts | `prompts.py` | Your domain prompts go here |
 | CI | `.github/workflows/ci.yml` | Test matrix, lint, audit — no changes needed |
 | Release | `.github/workflows/release.yml` | semantic-release → PyPI + Docker |
 | Docker | `Dockerfile` + `docker-entrypoint.sh` | Multi-arch, PUID/PGID support |

@@ -205,7 +205,7 @@ class TestScanStyles:
 
 class TestServiceStyles:
     def test_load_styles(self, tmp_path: Path, styles_dir: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         _write_style(styles_dir, "website.md", _VALID_STYLE)
         _write_style(styles_dir, "minimal.md", _MINIMAL_STYLE)
@@ -216,7 +216,7 @@ class TestServiceStyles:
         assert len(svc.list_styles()) == 2
 
     def test_get_style_found(self, tmp_path: Path, styles_dir: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         _write_style(styles_dir, "website.md", _VALID_STYLE)
         svc = ImageService(scratch_dir=tmp_path / "images")
@@ -227,13 +227,13 @@ class TestServiceStyles:
         assert entry.name == "website"
 
     def test_get_style_not_found(self, tmp_path: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         svc = ImageService(scratch_dir=tmp_path / "images")
         assert svc.get_style("nonexistent") is None
 
     def test_list_styles_ordering(self, tmp_path: Path, styles_dir: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         _write_style(styles_dir, "website.md", _VALID_STYLE)
         _write_style(styles_dir, "minimal.md", _MINIMAL_STYLE)
@@ -245,7 +245,7 @@ class TestServiceStyles:
         assert names == sorted(names)
 
     def test_save_style_new(self, tmp_path: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         svc = ImageService(scratch_dir=tmp_path / "images")
         styles_dir = tmp_path / "styles"
@@ -274,7 +274,7 @@ class TestServiceStyles:
         assert svc.get_style("test-style") is not None
 
     def test_save_style_overwrites(self, tmp_path: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         svc = ImageService(scratch_dir=tmp_path / "images")
         styles_dir = tmp_path / "styles"
@@ -287,7 +287,7 @@ class TestServiceStyles:
         assert "Version 2." in entry.body
 
     def test_delete_style(self, tmp_path: Path, styles_dir: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         _write_style(styles_dir, "website.md", _VALID_STYLE)
         svc = ImageService(scratch_dir=tmp_path / "images")
@@ -298,7 +298,7 @@ class TestServiceStyles:
         assert not (styles_dir / "website.md").exists()
 
     def test_delete_style_not_found(self, tmp_path: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         svc = ImageService(scratch_dir=tmp_path / "images")
         with pytest.raises(KeyError, match="Style not found"):
@@ -312,8 +312,8 @@ class TestServiceStyles:
 
 class TestApplyStylePrompt:
     def test_apply_style_with_valid_style(self, tmp_path: Path) -> None:
-        from image_generation_mcp._server_prompts import _build_apply_style_text
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
+        from image_generation_mcp.prompts import _build_apply_style_text
 
         styles_dir = tmp_path / "styles"
         styles_dir.mkdir()
@@ -334,7 +334,7 @@ class TestApplyStylePrompt:
         assert "CLIP" in text
 
     def test_apply_style_not_found(self, tmp_path: Path) -> None:
-        from image_generation_mcp.service import ImageService
+        from image_generation_mcp.domain import ImageService
 
         svc = ImageService(scratch_dir=tmp_path / "images")
         result = svc.get_style("nonexistent")

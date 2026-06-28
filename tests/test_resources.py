@@ -12,10 +12,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 from PIL import Image
 
+from image_generation_mcp.domain import ImageService
 from image_generation_mcp.processing import convert_format
 from image_generation_mcp.providers.placeholder import PlaceholderImageProvider
 from image_generation_mcp.providers.types import ImageProviderError, ImageResult
-from image_generation_mcp.service import ImageService
 
 
 @pytest.fixture
@@ -204,9 +204,9 @@ async def test_image_view_resource_via_server(tmp_path: Path) -> None:
     from mcp.types import TextContent
 
     from image_generation_mcp._server_deps import make_service_lifespan
-    from image_generation_mcp._server_resources import register_resources
-    from image_generation_mcp._server_tools import register_tools
     from image_generation_mcp.config import ProjectConfig
+    from image_generation_mcp.resources import register_resources
+    from image_generation_mcp.tools import register_tools
 
     # Build a minimal server with service lifespan
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
@@ -252,9 +252,9 @@ async def test_image_metadata_resource_via_server(tmp_path: Path) -> None:
     from mcp.types import TextContent
 
     from image_generation_mcp._server_deps import make_service_lifespan
-    from image_generation_mcp._server_resources import register_resources
-    from image_generation_mcp._server_tools import register_tools
     from image_generation_mcp.config import ProjectConfig
+    from image_generation_mcp.resources import register_resources
+    from image_generation_mcp.tools import register_tools
 
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
     mcp = FastMCP("test-meta", lifespan=make_service_lifespan(config))
@@ -300,9 +300,9 @@ async def test_image_metadata_resource_missing_sidecar(tmp_path: Path) -> None:
     from mcp.types import TextContent
 
     from image_generation_mcp._server_deps import make_service_lifespan
-    from image_generation_mcp._server_resources import register_resources
-    from image_generation_mcp._server_tools import register_tools
     from image_generation_mcp.config import ProjectConfig
+    from image_generation_mcp.resources import register_resources
+    from image_generation_mcp.tools import register_tools
 
     config = ProjectConfig(scratch_dir=tmp_path, read_only=False)
     mcp = FastMCP("test-missing-sidecar", lifespan=make_service_lifespan(config))

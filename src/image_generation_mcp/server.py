@@ -30,10 +30,10 @@ from fastmcp_pvl_core import (
 from mcp.types import Icon
 
 from image_generation_mcp._server_deps import make_service_lifespan
-from image_generation_mcp._server_prompts import register_prompts
-from image_generation_mcp._server_resources import register_resources
-from image_generation_mcp._server_tools import register_tools
 from image_generation_mcp.config import _ENV_PREFIX, ProjectConfig
+from image_generation_mcp.prompts import register_prompts
+from image_generation_mcp.resources import register_resources
+from image_generation_mcp.tools import register_tools
 
 logger = logging.getLogger(__name__)
 

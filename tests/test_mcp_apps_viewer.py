@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from image_generation_mcp._server_resources import _inject_sdk
+from image_generation_mcp.resources import _inject_sdk
 from image_generation_mcp.server import make_server
 
 
@@ -282,10 +282,10 @@ class TestGenerateImageMetadataShape:
         """file_path must NOT appear in tool result metadata (CWE-200)."""
         import inspect
 
-        from image_generation_mcp import _server_tools
+        from image_generation_mcp import tools
 
         # Read the source to verify no file_path in metadata dict
-        source = inspect.getsource(_server_tools)
+        source = inspect.getsource(tools)
         assert "file_path" not in source
 
 
