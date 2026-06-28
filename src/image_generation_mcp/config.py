@@ -47,120 +47,120 @@ class ProjectConfig:
     max_input_image_bytes: int = 20 * 1024 * 1024
     # CONFIG-FIELDS-END
 
+    @classmethod
+    def from_env(cls) -> ProjectConfig:
+        """Load configuration from environment variables.
 
-def load_config() -> ProjectConfig:
-    """Load configuration from environment variables.
+        Reads:
 
-    Reads:
+        - ``IMAGE_GENERATION_MCP_READ_ONLY``: disable write tools; default ``true``.
+        - ``IMAGE_GENERATION_MCP_SCRATCH_DIR``: image save directory.
+        - ``IMAGE_GENERATION_MCP_OPENAI_API_KEY``: OpenAI API key.
+        - ``IMAGE_GENERATION_MCP_GOOGLE_API_KEY``: Google API key (Gemini).
+        - ``IMAGE_GENERATION_MCP_SD_WEBUI_HOST``: SD WebUI URL (also accepts deprecated ``A1111_HOST``).
+        - ``IMAGE_GENERATION_MCP_SD_WEBUI_MODEL``: SD WebUI checkpoint name (also accepts deprecated ``A1111_MODEL``).
+        - ``IMAGE_GENERATION_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
+        - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
+        - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list; default ``"openai"``.
+        - ``IMAGE_GENERATION_MCP_STYLES_DIR``: style preset dir; default ``~/.image-generation-mcp/styles/``.
+        - ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT``: enable local file input; default ``false``.
+        - ``IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES``: max input image size in bytes; default ``20971520`` (20 MiB).
 
-    - ``IMAGE_GENERATION_MCP_READ_ONLY``: disable write tools; default ``true``.
-    - ``IMAGE_GENERATION_MCP_SCRATCH_DIR``: image save directory.
-    - ``IMAGE_GENERATION_MCP_OPENAI_API_KEY``: OpenAI API key.
-    - ``IMAGE_GENERATION_MCP_GOOGLE_API_KEY``: Google API key (Gemini).
-    - ``IMAGE_GENERATION_MCP_SD_WEBUI_HOST``: SD WebUI URL (also accepts deprecated ``A1111_HOST``).
-    - ``IMAGE_GENERATION_MCP_SD_WEBUI_MODEL``: SD WebUI checkpoint name (also accepts deprecated ``A1111_MODEL``).
-    - ``IMAGE_GENERATION_MCP_DEFAULT_PROVIDER``: default provider; default ``"auto"``.
-    - ``IMAGE_GENERATION_MCP_TRANSFORM_CACHE_SIZE``: transform LRU cache size; default ``64``.
-    - ``IMAGE_GENERATION_MCP_PAID_PROVIDERS``: comma-separated list; default ``"openai"``.
-    - ``IMAGE_GENERATION_MCP_STYLES_DIR``: style preset dir; default ``~/.image-generation-mcp/styles/``.
-    - ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT``: enable local file input; default ``false``.
-    - ``IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES``: max input image size in bytes; default ``20971520`` (20 MiB).
+        Plus all generic ``ServerConfig`` env vars (BASE_URL, BEARER_TOKEN,
+        OIDC_*, EVENT_STORE_URL, SERVER_NAME, INSTRUCTIONS) — see
+        ``fastmcp_pvl_core.ServerConfig.from_env``.
 
-    Plus all generic ``ServerConfig`` env vars (BASE_URL, BEARER_TOKEN,
-    OIDC_*, EVENT_STORE_URL, SERVER_NAME, INSTRUCTIONS) — see
-    ``fastmcp_pvl_core.ServerConfig.from_env``.
+        Returns:
+            A populated :class:`ProjectConfig` instance.
+        """
+        server = ServerConfig.from_env(_ENV_PREFIX)
 
-    Returns:
-        A populated :class:`ProjectConfig` instance.
-    """
-    server = ServerConfig.from_env(env_prefix=_ENV_PREFIX)
+        # CONFIG-FROM-ENV-START — image-generation domain reads; kept across copier update
+        # SERVER_NAME is an IG-domain field — core's ServerConfig does not carry it,
+        # so this is the only place it's read.
+        server_name = env(_ENV_PREFIX, "SERVER_NAME")
+        read_only = parse_bool(env(_ENV_PREFIX, "READ_ONLY", "true"))
 
-    # CONFIG-FROM-ENV-START — image-generation domain reads; kept across copier update
-    # SERVER_NAME is an IG-domain field — core's ServerConfig does not carry it,
-    # so this is the only place it's read.
-    server_name = env(_ENV_PREFIX, "SERVER_NAME")
-    read_only = parse_bool(env(_ENV_PREFIX, "READ_ONLY", "true"))
+        scratch_dir = Path(env(_ENV_PREFIX, "SCRATCH_DIR") or _DEFAULT_SCRATCH_DIR)
 
-    scratch_dir = Path(env(_ENV_PREFIX, "SCRATCH_DIR") or _DEFAULT_SCRATCH_DIR)
+        openai_api_key = env(_ENV_PREFIX, "OPENAI_API_KEY")
+        google_api_key = env(_ENV_PREFIX, "GOOGLE_API_KEY")
 
-    openai_api_key = env(_ENV_PREFIX, "OPENAI_API_KEY")
-    google_api_key = env(_ENV_PREFIX, "GOOGLE_API_KEY")
-
-    sd_webui_host = env(_ENV_PREFIX, "SD_WEBUI_HOST")
-    if not sd_webui_host and (legacy := env(_ENV_PREFIX, "A1111_HOST")):
-        logger.warning(
-            "IMAGE_GENERATION_MCP_A1111_HOST is deprecated — "
-            "use IMAGE_GENERATION_MCP_SD_WEBUI_HOST instead"
-        )
-        sd_webui_host = legacy
-
-    sd_webui_model = env(_ENV_PREFIX, "SD_WEBUI_MODEL")
-    if not sd_webui_model and (legacy := env(_ENV_PREFIX, "A1111_MODEL")):
-        logger.warning(
-            "IMAGE_GENERATION_MCP_A1111_MODEL is deprecated — "
-            "use IMAGE_GENERATION_MCP_SD_WEBUI_MODEL instead"
-        )
-        sd_webui_model = legacy
-
-    default_provider = env(_ENV_PREFIX, "DEFAULT_PROVIDER") or "auto"
-    if default_provider == "a1111":
-        logger.warning(
-            "DEFAULT_PROVIDER='a1111' is deprecated — use 'sd_webui' instead"
-        )
-        default_provider = "sd_webui"
-
-    raw_cache = env(_ENV_PREFIX, "TRANSFORM_CACHE_SIZE")
-    transform_cache_size = 64
-    if raw_cache:
-        try:
-            transform_cache_size = int(raw_cache)
-        except ValueError:
+        sd_webui_host = env(_ENV_PREFIX, "SD_WEBUI_HOST")
+        if not sd_webui_host and (legacy := env(_ENV_PREFIX, "A1111_HOST")):
             logger.warning(
-                "Invalid TRANSFORM_CACHE_SIZE=%r — using default 64", raw_cache
+                "IMAGE_GENERATION_MCP_A1111_HOST is deprecated — "
+                "use IMAGE_GENERATION_MCP_SD_WEBUI_HOST instead"
             )
+            sd_webui_host = legacy
 
-    raw_paid = env(_ENV_PREFIX, "PAID_PROVIDERS")
-    paid_providers = (
-        frozenset(p.lower() for p in parse_list(raw_paid))
-        if raw_paid is not None
-        else frozenset({"openai"})
-    )
-
-    styles_dir = Path(env(_ENV_PREFIX, "STYLES_DIR") or _DEFAULT_STYLES_DIR)
-
-    allow_local_file_input = parse_bool(
-        env(_ENV_PREFIX, "ALLOW_LOCAL_FILE_INPUT", "false")
-    )
-
-    raw_max_input = env(_ENV_PREFIX, "MAX_INPUT_IMAGE_BYTES")
-    max_input_image_bytes = 20 * 1024 * 1024
-    if raw_max_input:
-        try:
-            max_input_image_bytes = int(raw_max_input)
-        except ValueError:
+        sd_webui_model = env(_ENV_PREFIX, "SD_WEBUI_MODEL")
+        if not sd_webui_model and (legacy := env(_ENV_PREFIX, "A1111_MODEL")):
             logger.warning(
-                "Invalid MAX_INPUT_IMAGE_BYTES=%r — using default %d",
-                raw_max_input,
-                max_input_image_bytes,
+                "IMAGE_GENERATION_MCP_A1111_MODEL is deprecated — "
+                "use IMAGE_GENERATION_MCP_SD_WEBUI_MODEL instead"
             )
+            sd_webui_model = legacy
 
-    config = ProjectConfig(
-        server=server,
-        server_name=server_name,
-        read_only=read_only,
-        scratch_dir=scratch_dir,
-        openai_api_key=openai_api_key,
-        google_api_key=google_api_key,
-        sd_webui_host=sd_webui_host,
-        sd_webui_model=sd_webui_model,
-        default_provider=default_provider,
-        transform_cache_size=transform_cache_size,
-        paid_providers=paid_providers,
-        styles_dir=styles_dir,
-        allow_local_file_input=allow_local_file_input,
-        max_input_image_bytes=max_input_image_bytes,
-    )
-    # CONFIG-FROM-ENV-END
+        default_provider = env(_ENV_PREFIX, "DEFAULT_PROVIDER") or "auto"
+        if default_provider == "a1111":
+            logger.warning(
+                "DEFAULT_PROVIDER='a1111' is deprecated — use 'sd_webui' instead"
+            )
+            default_provider = "sd_webui"
 
-    logger.debug("load_config: read_only=%s", config.read_only)
-    return config
+        raw_cache = env(_ENV_PREFIX, "TRANSFORM_CACHE_SIZE")
+        transform_cache_size = 64
+        if raw_cache:
+            try:
+                transform_cache_size = int(raw_cache)
+            except ValueError:
+                logger.warning(
+                    "Invalid TRANSFORM_CACHE_SIZE=%r — using default 64", raw_cache
+                )
+
+        raw_paid = env(_ENV_PREFIX, "PAID_PROVIDERS")
+        paid_providers = (
+            frozenset(p.lower() for p in parse_list(raw_paid))
+            if raw_paid is not None
+            else frozenset({"openai"})
+        )
+
+        styles_dir = Path(env(_ENV_PREFIX, "STYLES_DIR") or _DEFAULT_STYLES_DIR)
+
+        allow_local_file_input = parse_bool(
+            env(_ENV_PREFIX, "ALLOW_LOCAL_FILE_INPUT", "false")
+        )
+
+        raw_max_input = env(_ENV_PREFIX, "MAX_INPUT_IMAGE_BYTES")
+        max_input_image_bytes = 20 * 1024 * 1024
+        if raw_max_input:
+            try:
+                max_input_image_bytes = int(raw_max_input)
+            except ValueError:
+                logger.warning(
+                    "Invalid MAX_INPUT_IMAGE_BYTES=%r — using default %d",
+                    raw_max_input,
+                    max_input_image_bytes,
+                )
+
+        config = cls(
+            server=server,
+            server_name=server_name,
+            read_only=read_only,
+            scratch_dir=scratch_dir,
+            openai_api_key=openai_api_key,
+            google_api_key=google_api_key,
+            sd_webui_host=sd_webui_host,
+            sd_webui_model=sd_webui_model,
+            default_provider=default_provider,
+            transform_cache_size=transform_cache_size,
+            paid_providers=paid_providers,
+            styles_dir=styles_dir,
+            allow_local_file_input=allow_local_file_input,
+            max_input_image_bytes=max_input_image_bytes,
+        )
+        # CONFIG-FROM-ENV-END
+
+        logger.debug("from_env: read_only=%s", config.read_only)
+        return config

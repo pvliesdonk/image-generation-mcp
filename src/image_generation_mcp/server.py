@@ -127,9 +127,7 @@ def make_server(
         A configured :class:`fastmcp.FastMCP` instance.
     """
     if config is None:
-        from image_generation_mcp.config import load_config
-
-        config = load_config()
+        config = ProjectConfig.from_env()
     configure_logging_from_env()
 
     auth = build_auth(config.server)

@@ -36,7 +36,7 @@ def _normalise_http_path(path: str | None) -> str:
 def _cmd_serve(args: argparse.Namespace) -> None:
     """Run the MCP server."""
     try:
-        from image_generation_mcp.config import load_config
+        from image_generation_mcp.config import ProjectConfig
         from image_generation_mcp.server import make_server
     except ImportError:
         logger.error(
@@ -45,7 +45,7 @@ def _cmd_serve(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     transport = args.transport
-    config = load_config()
+    config = ProjectConfig.from_env()
     server = make_server(transport=transport, config=config)
     env_http_path = os.environ.get(f"{_ENV_PREFIX}_HTTP_PATH")
     http_path = _normalise_http_path(args.path or env_http_path)
