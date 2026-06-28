@@ -193,7 +193,6 @@ disable_error_code = [
     "misc",              # async-generator return-type quirks
     "arg-type",          # narrow dict[str, X] vs dict[str, object] in helpers
     "assignment",        # tuple-narrowing in fixture rebinding
-    "comparison-overlap",# middleware identity checks in test_http_logging
 ]
 
 [tool.pyright]
