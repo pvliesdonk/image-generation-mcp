@@ -30,6 +30,7 @@ async def test_get_server_info_tool_registered(client: Client[Any]) -> None:
     assert "get_server_info" in tools
 
     result = await client.call_tool("get_server_info", {})
+    assert result.content, "get_server_info returned no content"
     first = result.content[0]
     assert hasattr(first, "text"), (
         f"expected text tool content, got {type(first).__name__}"
