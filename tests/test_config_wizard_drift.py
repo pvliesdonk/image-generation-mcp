@@ -38,7 +38,11 @@ _WIZARD_SPEC = (
 # AUTH_MODE: ServerConfig infers the auth mode from which auth vars are set (the
 # ``auth`` select is a no-var routing key — see the Config wizard section of
 # CLAUDE.md), so there is no AUTH_MODE control to offer.
-_COVERED_BY_INFERENCE = frozenset({"AUTH_MODE"})
+# A1111_HOST / A1111_MODEL: deprecated aliases of SD_WEBUI_HOST / SD_WEBUI_MODEL
+# (ProjectConfig.from_env reads them only for back-compat, with a deprecation
+# warning); the wizard offers the canonical SD_WEBUI_* controls and never the
+# deprecated names by design.
+_COVERED_BY_INFERENCE = frozenset({"AUTH_MODE", "A1111_HOST", "A1111_MODEL"})
 
 
 def _spec() -> dict[str, Any]:
