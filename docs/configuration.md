@@ -11,6 +11,18 @@ All configuration is via environment variables prefixed with `IMAGE_GENERATION_M
 | `IMAGE_GENERATION_MCP_DEFAULT_PROVIDER` | str | `auto` | Default provider selection. Options: `auto` (keyword-based selection), `gemini`, `openai`, `sd_webui`, `placeholder`. |
 | `IMAGE_GENERATION_MCP_STYLES_DIR` | Path | `~/.image-generation-mcp/styles/` | Directory for style preset files (`.md` with YAML frontmatter). Created automatically if it does not exist. See the [Style Library Guide](guides/styles.md). |
 
+## Server identity
+
+These two are read by the scaffold's `make_server()` (not by
+`ServerConfig`), so an operator can rename an instance or override its
+instructions without editing template-owned code:
+
+- `IMAGE_GENERATION_MCP_SERVER_NAME`: the server name reported to clients and
+  by `get_server_info`. Defaults to `image-generation-mcp`.
+- `IMAGE_GENERATION_MCP_INSTRUCTIONS`: replaces the default MCP instructions
+  text. Unset, the scaffold builds the default (which advertises this
+  override).
+
 <!-- DOMAIN-CONFIG-VARS-START -->
 ## Providers
 
