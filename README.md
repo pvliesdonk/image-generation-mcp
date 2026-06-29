@@ -1,4 +1,3 @@
-<!-- mcp-name: io.github.pvliesdonk/image-generation-mcp -->
 # Image Generation MCP
 
 <!-- mcp-name: io.github.pvliesdonk/image-generation-mcp -->
