@@ -21,6 +21,7 @@ from fastmcp_pvl_core import (
     build_instructions,
     build_kv_store,  # noqa: F401  — re-exported for downstream projects' convenience
     configure_logging_from_env,
+    env,
     register_server_info_tool,
     resolve_auth_mode,
     wire_middleware_stack,
@@ -115,6 +116,21 @@ def make_server(
         config = ProjectConfig.from_env()
     configure_logging_from_env()
 
+    # Operator override: INSTRUCTIONS replaces the default instructions text
+    # (the override build_instructions' hint advertises), falling back to the
+    # domain default when unset/empty. server_name is resolved from config below
+    # (config.server_name, honouring an injected make_server(config=...)).
+    instructions = env(_ENV_PREFIX, "INSTRUCTIONS") or build_instructions(
+        read_only=config.read_only,
+        env_prefix=_ENV_PREFIX,
+        domain_line=(
+            "AI image generation server supporting multiple providers "
+            "(OpenAI gpt-image-1/dall-e-3, Google Gemini image, "
+            "Stable Diffusion via SD WebUI, and a zero-cost placeholder). "
+            "Start by calling list_providers to see configured providers."
+        ),
+    )
+
     auth = build_auth(config.server)
     auth_mode = resolve_auth_mode(config.server) if auth is not None else "none"
     if auth_mode == "none":
@@ -152,16 +168,7 @@ def make_server(
 
     mcp = FastMCP(
         name=server_name,
-        instructions=build_instructions(
-            read_only=config.read_only,
-            env_prefix=_ENV_PREFIX,
-            domain_line=(
-                "AI image generation server supporting multiple providers "
-                "(OpenAI gpt-image-1/dall-e-3, Google Gemini image, "
-                "Stable Diffusion via SD WebUI, and a zero-cost placeholder). "
-                "Start by calling list_providers to see configured providers."
-            ),
-        ),
+        instructions=instructions,
         icons=[Icon(src=_LUCIDE.format("palette"), mimeType="image/svg+xml")],
         lifespan=_lifespan,
         auth=auth,
@@ -175,7 +182,7 @@ def make_server(
 
     register_server_info_tool(
         mcp,
-        server_name="image-generation-mcp",
+        server_name=server_name,
         server_version=pkg_ver,
         # DOMAIN-UPSTREAM-START — wire upstream version reporting for servers
         # that talk to a remote service (paperless-mcp, etc.). The provider is

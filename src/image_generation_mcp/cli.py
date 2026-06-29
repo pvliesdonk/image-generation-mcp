@@ -58,8 +58,12 @@ def serve(
     transport: Transport = typer.Option(
         "stdio", help="MCP transport (stdio / http / sse)."
     ),
-    host: str = typer.Option("0.0.0.0", help="Bind host (http only)."),
-    port: int = typer.Option(8000, help="Bind port (http only)."),
+    host: str | None = typer.Option(
+        None, help=f"Bind host (http only; default: ${_ENV_PREFIX}_HOST or 127.0.0.1)."
+    ),
+    port: int | None = typer.Option(
+        None, help=f"Bind port (http only; default: ${_ENV_PREFIX}_PORT or 8000)."
+    ),
     http_path: str | None = typer.Option(
         None,
         "--http-path",
@@ -100,8 +104,8 @@ def serve(
         # containers (Docker/k8s) stop cleanly.
         uvicorn.run(
             server.http_app(path=path, event_store=event_store),
-            host=host,
-            port=port,
+            host=host if host is not None else config.server.host,
+            port=port if port is not None else config.server.port,
             lifespan="on",
             timeout_graceful_shutdown=3,
         )
