@@ -309,6 +309,7 @@ class TestDiscoverStyleProfile:
                 "gpt-image-1",
                 "gpt-image-1-mini",
                 "gpt-image-1.5",
+                "chatgpt-image-latest",
                 "dall-e-3",
                 "dall-e-2",
             )
@@ -365,6 +366,34 @@ class TestDiscoverNewGptImageModels:
         assert m.model_id == "gpt-image-1.5"
         assert m.display_name == "GPT Image 1.5"
         assert m.can_generate is True
+
+    async def test_chatgpt_image_latest_discovered(
+        self, provider: OpenAIImageProvider
+    ) -> None:
+        """chatgpt-image-latest (floating alias) is discovered with gpt-image caps."""
+        provider._client.models = MagicMock()
+        provider._client.models.list = AsyncMock(
+            return_value=_make_model("chatgpt-image-latest")
+        )
+
+        caps = await provider.discover_capabilities()
+
+        assert len(caps.models) == 1
+        m = caps.models[0]
+        assert m.model_id == "chatgpt-image-latest"
+        assert m.display_name == "ChatGPT Image (latest)"
+        assert m.can_generate is True
+        assert m.can_edit is True
+        assert m.supports_image_input is True
+        assert m.max_input_images == 16
+        # Floating alias currently resolves to gpt-image-2, which drops
+        # transparency; advertise no-background conservatively.
+        assert m.supports_background is False
+        # Reference-image edits route through the gpt-image edit path, so the
+        # alias must be recognised as a gpt-image-family model.
+        from image_generation_mcp.providers.openai import _is_gpt_image_model
+
+        assert _is_gpt_image_model("chatgpt-image-latest") is True
 
     async def test_all_five_models_discovered(
         self, provider: OpenAIImageProvider

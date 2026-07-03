@@ -12,12 +12,23 @@ Models exposed by the `openai` provider. Each model resolves via exact-key looku
 
 | Model ID | Label | Lifecycle |
 |----------|-------|-----------|
+| `chatgpt-image-latest` | OpenAI ChatGPT Image (latest) | current |
 | `dall-e-2` | OpenAI DALL-E 2 (legacy) | legacy |
 | `dall-e-3` | OpenAI DALL-E 3 (deprecated) | deprecated |
 | `gpt-image-1` | OpenAI GPT Image 1 (legacy) | legacy |
 | `gpt-image-1-mini` | OpenAI GPT Image 1 Mini | current |
 | `gpt-image-1.5` | OpenAI GPT Image 1.5 | current |
 | `gpt-image-2` | OpenAI GPT Image 2 | current |
+
+### OpenAI ChatGPT Image (latest)
+
+**Best for:** Floating alias that always points at the image model currently powering ChatGPT. Capabilities track whichever gpt-image model is latest (gpt-image-2 at time of writing). Use when you want 'always newest' without pinning a version. Same descriptive-paragraph prompt grammar as the gpt-image family.
+
+**Avoid:** Its capability surface can shift under you as OpenAI moves the alias, so pin a concrete id (gpt-image-2 / gpt-image-1.5) for reproducible production workflows. Transparent backgrounds are not guaranteed (the alias currently resolves to gpt-image-2, which dropped alpha); pick gpt-image-1.5 if you need transparency. Avoid CLIP-style tag dumps and negative-prompt syntax; real-named-people likenesses are filtered.
+
+**Good prompt:** `A cozy isometric illustration of a corner reading nook: overstuffed armchair, tall bookshelf, warm floor lamp, potted monstera, soft afternoon light. 1:1.`
+
+**Bad prompt:** `reading nook, cozy, isometric, 8k (tag-soup — the gpt-image family wants descriptive sentences)`
 
 ### OpenAI DALL-E 2 (legacy)
 
@@ -91,13 +102,16 @@ Models exposed by the `gemini` provider. Each model resolves via exact-key looku
 
 | Model ID | Label | Lifecycle |
 |----------|-------|-----------|
-| `gemini-2.5-flash-image` | Gemini 2.5 Flash Image (Nano Banana) | current |
-| `gemini-3-pro-image-preview` | Gemini 3 Pro Image (preview) | current |
-| `gemini-3.1-flash-image-preview` | Gemini 3.1 Flash Image (preview) | current |
+| `gemini-2.5-flash-image` | Gemini 2.5 Flash Image (Nano Banana) | legacy |
+| `gemini-3-pro-image` | Gemini 3 Pro Image (Nano Banana Pro) | current |
+| `gemini-3.1-flash-image` | Gemini 3.1 Flash Image (Nano Banana 2) | current |
+| `gemini-3.1-flash-lite-image` | Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite) | current |
 
-### Gemini 2.5 Flash Image (Nano Banana)
+### Gemini 2.5 Flash Image (Nano Banana) (legacy)
 
-**Best for:** Fast, low-latency generation and conversational image editing with multi-turn refinement, multi-image compositing (up to 3 inputs), character consistency across iterations, in-image text, and natural-language local edits ('remove the stain', 'change pose to running'). Strong photorealism with photographic vocabulary (lens, lighting, aspect ratio). Supports 10 aspect ratios from 21:9 cinematic to 9:16 vertical. Cheap (~$0.04/image), making it a good default for high-volume ideation.
+> Superseded by the Gemini 3 image models (gemini-3.1-flash-image and up). Still GA, but Google recommends migrating to the newer tiers for better quality, speed, and multi-image composition.
+
+**Best for:** Fast, low-latency generation and conversational image editing with multi-turn refinement, multi-image compositing (up to 3 inputs), character consistency across iterations, in-image text, and natural-language local edits ('remove the stain', 'change pose to running'). Strong photorealism with photographic vocabulary (lens, lighting, aspect ratio). Supports 14 aspect ratios from 21:9 cinematic to 9:16 vertical. Cheap (~$0.04/image), making it a good default for high-volume ideation.
 
 **Avoid:** Avoid Stable-Diffusion-style comma-separated tag lists, which underperform vs descriptive sentences. No negative-prompt parameter; phrase exclusions positively. Do not rely on transparent backgrounds. All outputs carry an invisible SynthID watermark, making them unsuitable for workflows requiring unmarked pixels. Not the strongest pick for dense professional typography. Limit reference inputs to 3 images.
 
@@ -105,25 +119,35 @@ Models exposed by the `gemini` provider. Each model resolves via exact-key looku
 
 **Bad prompt:** `journal, rainy, moody, cinematic, 8k, masterpiece, --no people (tags + unsupported negative — Google docs explicitly call this the wrong pattern)`
 
-### Gemini 3 Pro Image (preview)
+### Gemini 3 Pro Image (Nano Banana Pro)
 
-**Best for:** Higher-fidelity Pro tier with reasoning, suited to demanding production-grade work where 2.5 Flash falls short. Better at dense typography and strict brand compliance. Same prompt grammar as the Flash variants; preview-tier so behaviour can change.
+**Best for:** GA Pro tier with reasoning: highest-fidelity option, suited to demanding production-grade work where Flash falls short. Best at dense typography, accurate localisation, and strict brand compliance. Accepts up to 14 reference images. Same prompt grammar as the Flash variants.
 
-**Avoid:** Don't use for cheap drafts: cost per image is materially higher than Flash. Same SynthID-watermark caveat. Tag-soup still underperforms. Preview-tier model, so surface stability is not guaranteed.
+**Avoid:** Don't use for cheap drafts: cost per image is materially higher than Flash. Same SynthID-watermark caveat. Tag-soup still underperforms.
 
 **Good prompt:** `Magazine cover layout for a quarterly architecture journal: headline 'Concrete Futures' in bold serif, subhead 'Brutalism Reconsidered', central full-bleed photo of a weathered Le Corbusier facade at golden hour. 3:4.`
 
 **Bad prompt:** `magazine, architecture, brutalism (single-line keyword set — Gemini Pro shines on richly described prompts; underprompting wastes the cost premium)`
 
-### Gemini 3.1 Flash Image (preview)
+### Gemini 3.1 Flash Image (Nano Banana 2)
 
-**Best for:** Successor to 2.5 Flash with reasoning ('thinking') support. Good for prompts that benefit from layout reasoning: infographics, structured layouts, multi-element compositions where spatial relationships matter. Same descriptive-prose grammar as 2.5 Flash; same 10 aspect ratios.
+**Best for:** GA successor to 2.5 Flash with reasoning ('thinking') support and up to 14 reference images for multi-image composition. The general workhorse tier, good for prompts that benefit from layout reasoning: infographics, structured layouts, multi-element compositions where spatial relationships matter. Same descriptive-prose grammar as 2.5 Flash; same 14 aspect ratios.
 
-**Avoid:** Avoid tag-soup; same SynthID-watermark caveat as 2.5 Flash. Preview-tier model: schema may shift before GA, and surface text may not be perfectly stable. Don't pin production workflows to it without a fallback.
+**Avoid:** Avoid tag-soup; same SynthID-watermark caveat as 2.5 Flash. No negative-prompt parameter; phrase exclusions positively. Do not rely on transparent backgrounds.
 
 **Good prompt:** `A clean infographic explaining the water cycle on a soft pastel background, four labelled stages arranged in a circle, minimalist line illustration with gentle shadows. 4:3.`
 
 **Bad prompt:** `water cycle, infographic, 8k, ultra-detailed (tag style — use descriptive sentences for Gemini)`
+
+### Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite)
+
+**Best for:** Fastest, cheapest Gemini 3.1 image tier, engineered for speed and scale where latency and cost are the primary constraints. Supports reasoning ('thinking') and multi-image composition. Same descriptive-prose grammar and 14 aspect ratios as the rest of the family; a strong default for high-volume ideation.
+
+**Avoid:** Avoid tag-soup; same SynthID-watermark caveat. No negative-prompt parameter; phrase exclusions positively. For the highest-fidelity typography or brand work, prefer gemini-3-pro-image.
+
+**Good prompt:** `A friendly flat-illustration app icon of a smiling coffee cup with steam, rounded corners, soft drop shadow, warm palette. 1:1.`
+
+**Bad prompt:** `coffee cup icon, flat, vector, 8k (tag style — use descriptive sentences for Gemini)`
 
 ## Placeholder
 

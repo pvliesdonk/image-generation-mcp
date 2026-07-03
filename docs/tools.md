@@ -22,7 +22,7 @@ Generate an image from a text prompt. Returns immediately with a `status: "gener
 | `negative_prompt` | str | `null` | Things to avoid in the image. Native support on SD WebUI (SD 1.5/SDXL only; Flux models do NOT support negative prompts); appended as "Avoid:" on OpenAI. |
 | `aspect_ratio` | str | `"1:1"` | Desired ratio: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`. Gemini also supports: `3:4`, `4:3`, `4:5`, `5:4`, `4:1`, `1:4`, `8:1`, `1:8`, `21:9` |
 | `quality` | str | `"standard"` | Quality level: `standard` (fast, lower cost) or `hd` (higher quality, enables model reasoning + 2K on Gemini, `high` tier on OpenAI) |
-| `background` | str | `"opaque"` | Background mode: `opaque` or `transparent`. Supported by OpenAI (gpt-image-1) and Placeholder. SD WebUI ignores this parameter. |
+| `background` | str | `"opaque"` | Background mode: `opaque` or `transparent`. Supported by OpenAI's `gpt-image-1` / `gpt-image-1.5` / `gpt-image-1-mini` (not `gpt-image-2` or `chatgpt-image-latest`, which drop transparency) and Placeholder. SD WebUI ignores this parameter. |
 | `model` | str | `null` | Specific model to use (such as an SD WebUI checkpoint name or `"dall-e-3"` for OpenAI). Overrides the provider's default. Use `list_providers` to see available model IDs. |
 
 ### Return value
@@ -564,7 +564,7 @@ JSON object with a `refreshed_at` ISO 8601 timestamp and provider names, availab
     },
     "openai": {
       "available": true,
-      "description": "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, and general-purpose generation",
+      "description": "OpenAI (gpt-image-2 / dall-e-3) — best for text, logos, and general-purpose generation",
       "capabilities": {
         "provider_name": "openai",
         "models": [

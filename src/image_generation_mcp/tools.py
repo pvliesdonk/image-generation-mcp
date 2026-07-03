@@ -419,8 +419,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             background: Background transparency. ``"opaque"`` (default)
                 generates a solid background. ``"transparent"`` requests
                 an image with a transparent background. Supported by
-                gpt-image-1 and placeholder. dall-e-3 and SD WebUI
-                always produce opaque images (this parameter is ignored).
+                OpenAI gpt-image-1 / gpt-image-1.5 / gpt-image-1-mini and
+                placeholder (not gpt-image-2 or chatgpt-image-latest, which
+                drop transparency). dall-e-3 and SD WebUI always produce
+                opaque images (this parameter is ignored).
             model: Specific model to use (e.g., a checkpoint name for
                 SD WebUI, or ``"dall-e-3"`` for OpenAI). Use
                 ``list_providers`` to see available model IDs. Defaults

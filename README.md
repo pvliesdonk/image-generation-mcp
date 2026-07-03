@@ -12,7 +12,7 @@ Multi-provider image generation [MCP](https://modelcontextprotocol.io) server bu
 
 <!-- DOMAIN-START -->
 
-- **Multi-provider** — OpenAI (`gpt-image-1.5`, `gpt-image-1`, `dall-e-3`), Google Gemini (`gemini-2.5-flash-image`, `gemini-3.x` previews), SD WebUI (Stable Diffusion / Forge / reForge), and a zero-cost placeholder for testing.
+- **Multi-provider** — OpenAI (`gpt-image-2`, `gpt-image-1.5`, `dall-e-3`), Google Gemini (`gemini-3.1-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-lite-image`), SD WebUI (Stable Diffusion / Forge / reForge), and a zero-cost placeholder for testing.
 - **Per-model style metadata** — every model carries a `style_profile` (strengths, prompt grammar, lifecycle); `list_providers` includes a top-level `warnings` array for deprecated models. See [Model Catalog](https://pvliesdonk.github.io/image-generation-mcp/providers/model-catalog/).
 - **Keyword-based auto-selection** — `provider="auto"` routes by prompt content (text/logo → OpenAI, photoreal/anime → SD WebUI, draft → placeholder).
 - **CDN-style image transforms** — `image://{id}/view?format=webp&width=512&crop_x=...` resizes / re-encodes / crops on demand without re-generating.

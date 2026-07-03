@@ -315,7 +315,7 @@ class ImageService:
 
     _PROVIDER_DESCRIPTIONS: ClassVar[dict[str, str]] = {
         "openai": (
-            "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, "
+            "OpenAI (gpt-image-2 / dall-e-3) — best for text, logos, "
             "and general-purpose generation"
         ),
         "sd_webui": (

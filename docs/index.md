@@ -4,7 +4,7 @@ Multi-provider image generation [MCP](https://modelcontextprotocol.io) server bu
 
 ## Features
 
-- **Multi-provider**: OpenAI (gpt-image-1, dall-e-3), SD WebUI (Stable Diffusion WebUI), and placeholder
+- **Multi-provider**: OpenAI (gpt-image-2, dall-e-3), Google Gemini, SD WebUI (Stable Diffusion WebUI), and placeholder
 - **Auto-selection**: keyword-based routing picks the best provider for your prompt
 - **Image assets**: content-addressed registry with thumbnail previews and resource URI-based transforms
 - **Background tasks**: hybrid foreground (progress streaming) and background (polling) execution

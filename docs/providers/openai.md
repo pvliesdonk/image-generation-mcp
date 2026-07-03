@@ -16,10 +16,11 @@ The provider registers automatically when this variable is set.
 
 | Model | Status | Formats | Notes |
 |-------|--------|---------|-------|
-| `gpt-image-1` | Current (default) | PNG, JPEG, WebP | Best quality, native format selection |
-| `gpt-image-1.5` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
-| `gpt-image-1-mini` | Preview | PNG, JPEG, WebP | Capabilities assumed to match gpt-image-1 |
-| `gpt-image-2` | Flagship (when listed) | PNG, JPEG, WebP | No transparent background; entry stays dormant until OpenAI's models.list returns the id |
+| `gpt-image-2` | Flagship (default) | PNG, JPEG, WebP | Highest fidelity; no transparent-background support (use `gpt-image-1.5` if you need alpha) |
+| `gpt-image-1.5` | Current | PNG, JPEG, WebP | Production flagship with transparent-background support |
+| `gpt-image-1-mini` | Current | PNG, JPEG, WebP | Cheaper variant; capabilities assumed to match gpt-image-1 |
+| `gpt-image-1` | Legacy | PNG, JPEG, WebP | Native format selection; superseded by 1.5 / 2 |
+| `chatgpt-image-latest` | Current (alias) | PNG, JPEG, WebP | Floating alias to the current ChatGPT image model; pin a concrete id for reproducible workflows |
 | `dall-e-3` | Legacy | PNG only | Deprecated May 2026 |
 
 ## Aspect ratios and sizes
@@ -106,7 +107,7 @@ Use `list_providers` to discover available models.
 
 ## Capability discovery
 
-At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-1`, `gpt-image-1-mini`, `gpt-image-1.5`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).
+At startup, the provider calls `client.models.list()` to discover which image models are available on your API key. It filters to known image models (`gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gpt-image-1-mini`, `chatgpt-image-latest`, `dall-e-3`, `dall-e-2`) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).
 
 If the API call fails (network error, invalid key), the provider is marked as **degraded**: it remains available for generation but with an empty model list in the capabilities response.
 

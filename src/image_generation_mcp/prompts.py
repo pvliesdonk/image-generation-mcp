@@ -36,12 +36,17 @@ Choose the best provider for the user's request based on these guidelines.
 
 ### OpenAI
 
-- **Current flagship:** `gpt-image-1.5`. Strong instruction following, photoreal
-  still life, in-image text and logos, transparent backgrounds.
-- **Legacy:** `gpt-image-1` and `gpt-image-1-mini` — same descriptive prompt
-  grammar as 1.5; mini is cheaper and good for high-volume drafts.
-- **Deprecated:** `dall-e-3` (API removal 2026-05-12 — migrate new work to
-  gpt-image-1.5) and `dall-e-2` (legacy; useful only for cheap inpainting).
+- **Current flagship:** `gpt-image-2`. Highest-fidelity instruction following,
+  photoreal still life, in-image text and logos. Drops transparent-background
+  support — use `gpt-image-1.5` when you need alpha.
+- **Transparency pick:** `gpt-image-1.5` (previous-generation flagship; same
+  descriptive grammar as gpt-image-2 but keeps transparent backgrounds).
+  `gpt-image-1-mini` is a cheaper current variant for high-volume drafts.
+- **Alias:** `chatgpt-image-latest` tracks the newest ChatGPT image model (no
+  guaranteed transparency); pin a concrete id for reproducible workflows.
+- **Legacy / deprecated:** `gpt-image-1` (legacy), `dall-e-3` (deprecated, API
+  removal 2026-05-12 — migrate new work to gpt-image-2 / gpt-image-1.5), and
+  `dall-e-2` (legacy; useful only for cheap inpainting).
 - **Best for:** Text rendering, logos, typography, transparent backgrounds.
 - **Also strong at:** Photoreal still life, material fidelity (glass, metal,
   fabric), precise text on objects, complex multi-clause prompts.
@@ -52,14 +57,15 @@ Choose the best provider for the user's request based on these guidelines.
 
 ### Gemini
 
-- **Production:** `gemini-2.5-flash-image` (production GA). Cheap (~$0.04/image),
-  fast, supports 14 aspect ratios from 21:9 to 9:16 (including ultra-wide
-  4:1 / 8:1), multi-image compositing (3 references on 2.5-flash, up to 14 on
-  the Gemini 3 models), and conversational image editing. Outputs carry an
-  invisible SynthID watermark.
-- **Preview:** `gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview`
-  add reasoning ("thinking") for layout-heavy and dense-typography work.
-  Preview-tier — surface stability not guaranteed.
+- **Default:** `gemini-3.1-flash-image` (GA; Nano Banana 2). Fast, versatile
+  workhorse. Supports 14 aspect ratios from 21:9 to 9:16 (including ultra-wide
+  4:1 / 8:1), multi-image compositing (up to 14 references on the Gemini 3
+  models), reasoning ("thinking") for layout-heavy work, and conversational
+  image editing. Outputs carry an invisible SynthID watermark.
+- **Higher tiers:** `gemini-3-pro-image` (Nano Banana Pro — highest fidelity,
+  best for dense typography and brand compliance) and `gemini-3.1-flash-lite-image`
+  (Nano Banana 2 Lite — fastest, lowest cost). `gemini-2.5-flash-image` remains
+  as a legacy GA option.
 - **Best for:** Infographics, diagrams, structured layouts, complex
   illustrations, visual storytelling, multi-element compositions, character
   consistency across iterations.
@@ -98,9 +104,9 @@ Choose the best provider for the user's request based on these guidelines.
 ## Selection Rules
 
 1. If the request involves **text rendering, logos, or typography** → use
-   **openai** (gpt-image-1.5).
+   **openai** (gpt-image-2).
 2. If the request involves **transparent backgrounds** (icons, stickers) →
-   use **openai** (gpt-image-1.5 / gpt-image-1).
+   use **openai** (gpt-image-1.5 / gpt-image-1-mini; not gpt-image-2).
 3. If the request involves **infographics, diagrams, or structured layouts**
    → use **gemini** with `quality="hd"` on a Pro/3.x model.
 4. If the request involves **complex illustrations, visual storytelling, or

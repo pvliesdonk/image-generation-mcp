@@ -89,7 +89,7 @@ class TestDiscoverCapabilities:
     ) -> None:
         caps = await gemini_provider.discover_capabilities()
 
-        assert caps.models[0].model_id == "gemini-2.5-flash-image"
+        assert caps.models[0].model_id == "gemini-3.1-flash-image"
 
     async def test_discovered_at_is_recent(
         self, gemini_provider: GeminiImageProvider
@@ -154,8 +154,9 @@ class TestDiscoverCapabilities:
         # Gemini 3 image models accept up to 14 reference images; the older
         # 2.5-flash-image uses a conservative cap.
         assert by_id["gemini-2.5-flash-image"].max_input_images == 3
-        assert by_id["gemini-3.1-flash-image-preview"].max_input_images == 14
-        assert by_id["gemini-3-pro-image-preview"].max_input_images == 14
+        assert by_id["gemini-3.1-flash-image"].max_input_images == 14
+        assert by_id["gemini-3-pro-image"].max_input_images == 14
+        assert by_id["gemini-3.1-flash-lite-image"].max_input_images == 14
 
     async def test_degraded_on_unexpected_exception(
         self, gemini_provider: GeminiImageProvider, monkeypatch: pytest.MonkeyPatch

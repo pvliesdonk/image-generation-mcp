@@ -41,7 +41,7 @@ class TestOpenAIProvider:
 
     def test_default_model_is_gpt_image(self) -> None:
         provider = OpenAIImageProvider(api_key="sk-test")
-        assert provider._model == "gpt-image-1"
+        assert provider._model == "gpt-image-2"
         assert provider._is_gpt_image is True
 
     def test_dalle3_model(self) -> None:
@@ -117,7 +117,7 @@ class TestOpenAIProvider:
 
         assert result.image_data == b"fake-png-data"
         assert result.content_type == "image/png"
-        assert result.provider_metadata["model"] == "gpt-image-1"
+        assert result.provider_metadata["model"] == "gpt-image-2"
         assert result.provider_metadata["quality"] == "standard"
         assert result.provider_metadata["api_quality"] == "auto"
         assert result.provider_metadata["revised_prompt"] == "enhanced prompt"
@@ -223,6 +223,39 @@ class TestOpenAIProvider:
         assert call_kwargs["model"] == "gpt-image-2"
         assert "background" not in call_kwargs
 
+    @pytest.mark.parametrize("background", ["transparent", "opaque"])
+    async def test_chatgpt_image_latest_does_not_send_background(
+        self, background: str
+    ) -> None:
+        """chatgpt-image-latest is treated as no-background (resolves to gpt-image-2).
+
+        It routes through the gpt-image path (not DALL-E) but must NOT pass the
+        background parameter, since its current target dropped transparency.
+        """
+        provider = OpenAIImageProvider(api_key="sk-test")
+
+        b64_image = base64.b64encode(b"data").decode()
+        mock_item = MagicMock()
+        mock_item.b64_json = b64_image
+        mock_item.revised_prompt = None
+        mock_response = MagicMock()
+        mock_response.data = [mock_item]
+
+        provider._client = MagicMock()
+        provider._client.images = MagicMock()
+        provider._client.images.generate = AsyncMock(return_value=mock_response)
+
+        await provider.generate(
+            "test", model="chatgpt-image-latest", background=background
+        )
+
+        call_kwargs = provider._client.images.generate.call_args.kwargs
+        assert call_kwargs["model"] == "chatgpt-image-latest"
+        assert "background" not in call_kwargs
+        # Routed through the gpt-image path: native format kwargs present,
+        # not the DALL-E fallback (which would force response_format/size).
+        assert "output_format" in call_kwargs
+
     async def test_gpt_image_1_5_still_sends_background(self) -> None:
         """gpt-image-1.5 keeps transparency support — background passes through."""
         provider = OpenAIImageProvider(api_key="sk-test")
@@ -246,7 +279,7 @@ class TestOpenAIProvider:
 
     async def test_per_call_model_overrides_constructor(self) -> None:
         """Per-call model= overrides the constructor model in the API call."""
-        # Constructor uses gpt-image-1, per-call uses dall-e-3
+        # Constructor uses the default (gpt-image-2), per-call uses dall-e-3
         provider = OpenAIImageProvider(api_key="sk-test")
 
         b64_image = base64.b64encode(b"data").decode()
@@ -330,7 +363,7 @@ class TestOpenAIProvider:
 
     async def test_per_call_dalle3_uses_response_format(self) -> None:
         """Switching to dall-e-3 per-call sets response_format, not output_format."""
-        provider = OpenAIImageProvider(api_key="sk-test")  # default gpt-image-1
+        provider = OpenAIImageProvider(api_key="sk-test")  # default gpt-image-2
 
         b64_image = base64.b64encode(b"data").decode()
         mock_item = MagicMock()
