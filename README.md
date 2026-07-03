@@ -12,13 +12,13 @@ Multi-provider image generation [MCP](https://modelcontextprotocol.io) server bu
 
 <!-- DOMAIN-START -->
 
-- **Multi-provider** — OpenAI (`gpt-image-2`, `gpt-image-1.5`, `dall-e-3`), Google Gemini (`gemini-3.1-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-lite-image`), SD WebUI (Stable Diffusion / Forge / reForge), and a zero-cost placeholder for testing.
-- **Per-model style metadata** — every model carries a `style_profile` (strengths, prompt grammar, lifecycle); `list_providers` includes a top-level `warnings` array for deprecated models. See [Model Catalog](https://pvliesdonk.github.io/image-generation-mcp/providers/model-catalog/).
-- **Keyword-based auto-selection** — `provider="auto"` routes by prompt content (text/logo → OpenAI, photoreal/anime → SD WebUI, draft → placeholder).
-- **CDN-style image transforms** — `image://{id}/view?format=webp&width=512&crop_x=...` resizes / re-encodes / crops on demand without re-generating.
-- **Hybrid background tasks** — long-running SD generations run with `task=True` (poll for status); short OpenAI calls stream progress in the foreground.
-- **MCP Apps gallery + viewer** — interactive UI surfaces (browse generated images, edit / crop / rotate) for clients that support `app:` resources.
-- **Production deployment** — Docker (multi-arch), `.deb`/`.rpm` with hardened systemd, OIDC + bearer auth, persistent EventStore for HTTP session resumability.
+- **Multi-provider**: OpenAI (`gpt-image-2`, `gpt-image-1.5`, `dall-e-3`), Google Gemini (`gemini-3.1-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-lite-image`), SD WebUI (Stable Diffusion / Forge / reForge), and a zero-cost placeholder for testing.
+- **Per-model style metadata**: every model carries a `style_profile` (strengths, prompt grammar, lifecycle); `list_providers` includes a top-level `warnings` array for deprecated models. See [Model Catalog](https://pvliesdonk.github.io/image-generation-mcp/providers/model-catalog/).
+- **Keyword-based auto-selection**: `provider="auto"` routes by prompt content (text/logo → OpenAI, photoreal/anime → SD WebUI, draft → placeholder).
+- **CDN-style image transforms**: `image://{id}/view?format=webp&width=512&crop_x=...` resizes / re-encodes / crops on demand without re-generating.
+- **Hybrid background tasks**: long-running SD generations run with `task=True` (poll for status); short OpenAI calls stream progress in the foreground.
+- **MCP Apps gallery + viewer**: interactive UI surfaces (browse generated images, edit / crop / rotate) for clients that support `app:` resources.
+- **Production deployment**: Docker (multi-arch), `.deb`/`.rpm` with hardened systemd, OIDC + bearer auth, persistent EventStore for HTTP session resumability.
 <!-- DOMAIN-END -->
 
 ## What you can do with it
@@ -31,8 +31,8 @@ With this server mounted in an MCP client, you can ask:
 - **"Create three concept-art variations of a cyberpunk alley at dusk."** Composes `generate_image` with `provider="sd_webui"` and a stylised checkpoint like `dreamshaperXL`.
 - **"Crop this image to a 1:1 square centred on the subject and resize to 512px."** Uses `image://{id}/view?width=512&height=512&crop_x=...` resource transforms.
 - **"Show me my recent generations."** Browses the gallery via the `image://list` resource and the MCP Apps gallery viewer.
-- **"Save this style as 'cyberpunk-night' so I can apply it to future requests."** Uses the style library — markdown briefs the LLM interprets per-provider.
-- **"Replace the background of my last photo with a sunset sky."** Uses `transform_image` with the gallery `image_id` as a reference — image-to-image via Gemini.
+- **"Save this style as 'cyberpunk-night' so I can apply it to future requests."** Uses the style library, whose markdown briefs the LLM interprets per-provider.
+- **"Replace the background of my last photo with a sunset sky."** Uses `transform_image` with the gallery `image_id` as a reference (image-to-image via Gemini).
 <!-- DOMAIN-END -->
 
 <!-- ===== TEMPLATE-OWNED SECTIONS BELOW — DO NOT EDIT; CHANGES WILL BE OVERWRITTEN ON COPIER UPDATE ===== -->
@@ -51,10 +51,10 @@ If you add optional extras via the `PROJECT-EXTRAS-START` / `PROJECT-EXTRAS-END`
 
 | Extra | Includes | Use when |
 |-------|----------|----------|
-| `mcp` | `fastmcp[tasks]>=3.0,<4` | Background-task support (`task=True`) — required for long SD generations. |
+| `mcp` | `fastmcp[tasks]>=3.0,<4` | Background-task support (`task=True`), required for long SD generations. |
 | `openai` | `openai>=1.0` | Enables the OpenAI provider. |
 | `google-genai` | `google-genai>=1.0` | Enables the Gemini provider. |
-| `all` | `fastmcp[tasks]` + `openai` + `google-genai` | Everything except SD WebUI (which is HTTP-only — no extra needed). |
+| `all` | `fastmcp[tasks]` + `openai` + `google-genai` | Everything except SD WebUI (which is HTTP-only, no extra needed). |
 
 Example: `pip install image-generation-mcp[all]`.
 <!-- DOMAIN-END -->
@@ -73,9 +73,9 @@ uv sync --all-extras --all-groups
 docker pull ghcr.io/pvliesdonk/image-generation-mcp:latest
 ```
 
-A `compose.yml` ships at the repo root as a starting point — copy `.env.example` to `.env`, edit, and `docker compose up -d`.
+A `compose.yml` ships at the repo root as a starting point. Copy `.env.example` to `.env`, edit, and `docker compose up -d`.
 
-To attach a remote Python debugger (development only — the protocol is unauthenticated), see [Remote debugging](docs/deployment/docker.md#remote-debugging).
+To attach a remote Python debugger (development only; the protocol is unauthenticated), see [Remote debugging](docs/deployment/docker.md#remote-debugging).
 
 ### Linux packages (.deb / .rpm)
 
@@ -89,7 +89,7 @@ Download the `.mcpb` bundle from the [GitHub Releases](https://github.com/pvlies
 mcpb install image-generation-mcp-<version>.mcpb
 ```
 
-Claude Desktop prompts for required env vars via a GUI wizard — no manual JSON editing needed.
+Claude Desktop prompts for required env vars via a GUI wizard, with no manual JSON editing needed.
 
 For manual Claude Desktop configuration and setup options, see [Claude Desktop deployment](docs/deployment/claude-desktop.md).
 
@@ -100,11 +100,11 @@ image-generation-mcp serve                                # stdio transport
 image-generation-mcp serve --transport http --port 8000   # streamable HTTP
 ```
 
-For library usage (embedding the domain logic without the MCP transport), import from the `image_generation_mcp` package directly — see the project's domain modules under `src/image_generation_mcp/` for entry points.
+For library usage (embedding the domain logic without the MCP transport), import from the `image_generation_mcp` package directly. See the project's domain modules under `src/image_generation_mcp/` for entry points.
 
 ### Server info
 
-The server registers a built-in `get_server_info` tool (via `fastmcp_pvl_core.register_server_info_tool`) so operators can confirm the deployed version with a single MCP call. The default response carries `server_name`, `server_version`, and `core_version`. Servers that talk to a remote upstream wire upstream version reporting inside the `DOMAIN-UPSTREAM-START` / `DOMAIN-UPSTREAM-END` sentinel in `src/image_generation_mcp/server.py` — see [`CLAUDE.md`](CLAUDE.md#server-info-tool-get_server_info) for the wiring pattern.
+The server registers a built-in `get_server_info` tool (via `fastmcp_pvl_core.register_server_info_tool`) so operators can confirm the deployed version with a single MCP call. The default response carries `server_name`, `server_version`, and `core_version`. Servers that talk to a remote upstream wire upstream version reporting inside the `DOMAIN-UPSTREAM-START` / `DOMAIN-UPSTREAM-END` sentinel in `src/image_generation_mcp/server.py`; see [`CLAUDE.md`](CLAUDE.md#server-info-tool-get_server_info) for the wiring pattern.
 
 ## Configuration
 
@@ -114,7 +114,7 @@ Core environment variables shared across all `fastmcp-pvl-core`-based services:
 |---|---|---|
 | `FASTMCP_LOG_LEVEL` | `INFO` | Log level for FastMCP internals and app loggers (`DEBUG` / `INFO` / `WARNING` / `ERROR`). The `-v` CLI flag overrides to `DEBUG`. |
 | `FASTMCP_ENABLE_RICH_LOGGING` | `true` | Set to `false` for plain / structured JSON log output. |
-| `IMAGE_GENERATION_MCP_KV_STORE_URL` | `file:///data/state` | Persistent-state backend URL for pvl-core subsystems — `file:///path` (survives restarts), `memory://` (dev/ephemeral). |
+| `IMAGE_GENERATION_MCP_KV_STORE_URL` | `file:///data/state` | Persistent-state backend URL for pvl-core subsystems: `file:///path` (survives restarts), `memory://` (dev/ephemeral). |
 
 Domain-specific variables go below under [Domain configuration](#domain-configuration).
 
@@ -126,12 +126,12 @@ Callers authenticate via a bearer token or OIDC (mutually exclusive). See the [A
 
 After `copier copy` and `gh repo create --push`:
 
-1. **Fill in the DOMAIN blocks** in this README (Features, What you can do with it, Domain configuration, Key design decisions) and in `CLAUDE.md`.
-2. Configure GitHub secrets — see below.
+1. **Fill in the DOMAIN blocks** (every section marked with a `DOMAIN` sentinel comment) in this README and in `CLAUDE.md`.
+2. Configure GitHub secrets (see below).
 3. Install dev + docs tooling: `uv sync --all-extras --all-groups`.
 4. Install pre-commit hooks: `uv run pre-commit install`.
 5. Run the gate locally: `uv run pytest -x -q && uv run ruff check --fix . && uv run ruff format . && uv run mypy src/ tests/`.
-6. Push the first commit — CI should be green.
+6. Push the first commit. CI should be green.
 
 ## GitHub secrets
 
@@ -140,7 +140,7 @@ CI workflows reference three repository secrets. Configure them via **Settings �
 | Secret | Used by | How to generate |
 |---|---|---|
 | `RELEASE_TOKEN` | `release.yml`, `copier-update.yml` | Fine-grained PAT at <https://github.com/settings/personal-access-tokens/new> with `contents: write` and `pull_requests: write` (the `copier-update` cron opens PRs). Scoped to this repo. |
-| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io> — sign in with GitHub, add the repo, copy the upload token from the repo settings page. |
+| `CODECOV_TOKEN` | `ci.yml` | <https://codecov.io>: sign in with GitHub and add the repo. The upload token is on the repo settings page. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | `claude.yml`, `claude-code-review.yml` | Run `claude setup-token` locally and paste the result. |
 
 ```bash
@@ -149,7 +149,7 @@ gh secret set CODECOV_TOKEN
 gh secret set CLAUDE_CODE_OAUTH_TOKEN
 ```
 
-`GITHUB_TOKEN` is auto-provided — no action needed.
+`GITHUB_TOKEN` is auto-provided; no action needed.
 
 ## Local development
 
@@ -180,7 +180,7 @@ uv sync --all-extras --all-groups
 
 ### `uv.lock` refresh after `copier update`
 
-When `copier update` introduces new dependencies (e.g. a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
+When `copier update` introduces new dependencies (such as a new extra added to `pyproject.toml.jinja`), CI runs `uv sync --frozen` which fails against a stale lockfile. Run `uv lock` locally and commit the refreshed `uv.lock` alongside accepting the copier-update PR.
 
 ## Links
 
@@ -209,22 +209,22 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | — | No | OpenAI API key; enables OpenAI provider when set. |
-| `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | — | No | Google API key with Gemini access; enables Gemini provider when set. |
-| `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | — | No | SD WebUI URL (e.g. `http://localhost:7860`); enables SD WebUI provider when set. Deprecated alias: `A1111_HOST`. |
-| `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | — | No | SD WebUI checkpoint name for preset detection and override. Deprecated alias: `A1111_MODEL`. |
+| `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | (none) | No | OpenAI API key; enables OpenAI provider when set. |
+| `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | (none) | No | Google API key with Gemini access; enables Gemini provider when set. |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | (none) | No | SD WebUI URL (`http://localhost:7860`); enables SD WebUI provider when set. Deprecated alias: `A1111_HOST`. |
+| `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | (none) | No | SD WebUI checkpoint name for preset detection and override. Deprecated alias: `A1111_MODEL`. |
 
 ### Authentication
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `IMAGE_GENERATION_MCP_BEARER_TOKEN` | — | No | Static bearer token; enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | — | No | Public base URL for OIDC and MCP File Exchange downloads (e.g. `https://mcp.example.com`). |
-| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | — | No | OIDC discovery endpoint URL. |
-| `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | — | No | OIDC client ID. |
-| `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | — | No | OIDC client secret. |
+| `IMAGE_GENERATION_MCP_BEARER_TOKEN` | (none) | No | Static bearer token; enables bearer auth when set. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | (none) | No | Public base URL for OIDC and MCP File Exchange downloads (`https://mcp.example.com`). |
+| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | (none) | No | OIDC discovery endpoint URL. |
+| `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | (none) | No | OIDC client ID. |
+| `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | (none) | No | OIDC client secret. |
 | `IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY` | ephemeral | **Yes on Linux/Docker** | JWT signing key. |
-| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | — | No | Expected JWT audience claim. |
+| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE` | (none) | No | Expected JWT audience claim. |
 | `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | `openid` | No | Comma-separated required scopes. |
 | `IMAGE_GENERATION_MCP_OIDC_VERIFY_ACCESS_TOKEN` | `false` | No | Verify access token as JWT instead of id token. |
 
@@ -239,7 +239,7 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | `false` | No | Enable local filesystem paths as `transform_image` reference images. **Security:** grants callers server-filesystem read access via path — enable only for trusted callers or local single-user deployments. |
+| `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | `false` | No | Enable local filesystem paths as `transform_image` reference images. **Security:** grants callers server-filesystem read access via path; enable only for trusted callers or local single-user deployments. |
 | `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` | `20971520` | No | Per-reference maximum byte size for input images (default 20 MiB). |
 
 ### File Exchange (MCP downloads)
@@ -255,7 +255,7 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | Variable | Default | Required | Description |
 |---|---|---|---|
 | `IMAGE_GENERATION_MCP_SERVER_NAME` | `image-generation-mcp` | No | Server name shown to MCP clients. |
-| `IMAGE_GENERATION_MCP_INSTRUCTIONS` | (dynamic) | No | System instructions for LLM context. |
+| `IMAGE_GENERATION_MCP_INSTRUCTIONS` | (computed) | No | System instructions for LLM context. |
 | `IMAGE_GENERATION_MCP_HTTP_PATH` | `/mcp` | No | HTTP endpoint mount path. |
 | `IMAGE_GENERATION_MCP_APP_DOMAIN` | (auto) | No | MCP Apps widget sandbox domain. Auto-computed from `BASE_URL` for Claude; override for other hosts. |
 
@@ -268,10 +268,10 @@ For the full MCP tool / resource / prompt surface and per-provider setup notes, 
 
 <!-- DOMAIN-START -->
 
-- **Multi-provider with capability discovery, not feature flags.** Each provider's `discover_capabilities()` reports its actual supported aspect ratios / qualities / formats / negative-prompt support at startup; routing logic asks the capability surface, not a hard-coded enum. New providers slot in by implementing the protocol — no router edits needed. (See `docs/decisions/0001-…`, `0002-…`, `0007-…`.)
+- **Multi-provider with capability discovery, not feature flags.** Each provider's `discover_capabilities()` reports its actual supported aspect ratios / qualities / formats / negative-prompt support at startup; routing logic asks the capability surface, not a hard-coded enum. New providers slot in by satisfying the protocol, with no router edits needed. (See `docs/decisions/0001-…`, `0002-…`, `0007-…`.)
 - **Per-model `style_profile` metadata, surfaced via `list_providers`.** Closed-list providers (OpenAI, Gemini, placeholder) use exact-key lookup; SD WebUI uses a regex-ordered pattern table. Profiles include lifecycle flags (`current` / `legacy` / `deprecated`) and feed an auto-built top-level `warnings` array. (See `docs/decisions/0009-…`.)
-- **Hybrid background tasks.** Short calls (OpenAI ~5 s) stream progress in-line; long calls (SD WebUI 30-180 s) run as background tasks with `check_generation_status` polling — clients pick the mode via `task=True`. (See `docs/decisions/0005-…`.)
+- **Hybrid background tasks.** Short calls (OpenAI ~5 s) stream progress in-line; long calls (SD WebUI 30-180 s) run as background tasks with `check_generation_status` polling; clients pick the mode via `task=True`. (See `docs/decisions/0005-…`.)
 - **Image asset model: content-addressed registry + sidecar JSON metadata + on-demand transforms.** Generated images keep their full-resolution original; `image://{id}/view?format=webp&width=512&crop_x=…` resources do format conversion / resize / crop on demand without re-generating. Transforms are cached. (See `docs/decisions/0006-…`.)
-- **Style library.** User-saved markdown briefs (with YAML frontmatter for tags / aspect ratio / quality) that the LLM interprets per-provider — not copy-pasted verbatim. Distinct from per-model `style_profile`: style library is the brief; `style_profile` describes the model. (See `docs/decisions/0008-…` and `0009-…` for disambiguation.)
+- **Style library.** User-saved markdown briefs (with YAML frontmatter for tags / aspect ratio / quality) that the LLM interprets per-provider, not copy-pasted verbatim. Distinct from per-model `style_profile`: style library is the brief; `style_profile` describes the model. (See `docs/decisions/0008-…` and `0009-…` for disambiguation.)
 - **Composes `fastmcp_pvl_core.ServerConfig`, never inherits.** Domain config goes between `CONFIG-FIELDS-START` / `CONFIG-FIELDS-END` sentinels; env reads route through `fastmcp_pvl_core.env(...)` to keep prefix naming consistent.
 <!-- DOMAIN-END -->

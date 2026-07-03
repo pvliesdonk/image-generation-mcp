@@ -32,6 +32,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --all-groups
 
+
       - name: Run ruff check
         run: uv run ruff check src/ tests/
 
@@ -303,18 +304,25 @@ jobs:
           # pre-commit hook `rev:` in .pre-commit-config.yaml — template-ci
           # asserts the two stay synchronized.
           version: "3.14.2"
-          files: docs
+          # Lint the published docs site plus the user-facing README. Both are
+          # operator-facing prose and must stay Vale-clean. Internal dev docs
+          # are excluded via the glob below. Multiple paths MUST be a JSON
+          # array: vale-action only splits the `files` string when `separator`
+          # is set (it defaults to empty), so a space- or comma-joined string
+          # silently falls back to linting the whole repo (".").
+          files: '["docs", "README.md"]'
           # Dev-reference docs (working specs, design notes, ADRs) follow
           # internal conventions, not user-facing prose style — exclude from
-          # linting. This mirrors the mkdocs `exclude_docs:` block (which keeps
-          # design/** and decisions/** out of the published site). Use ONE
-          # `--glob` with brace alternation: Vale takes a single `--glob`
-          # pattern (a repeated flag keeps only the last), so multiple subtrees
-          # must be combined as `{a,b,c}`. NO inner single quotes around the
-          # glob value: vale-action splits `vale_flags` on whitespace and
-          # passes argv elements directly (no shell), so literal quotes here
-          # would be passed through to Vale, the glob would match no files,
-          # and CI would silently exit 0. Verified empirically.
+          # linting. This mirrors the mkdocs `exclude_docs:` block, which keeps
+          # design/** and decisions/** out of the published site. Use ONE
+          # `--glob` with brace alternation: Vale honors only a single `--glob`
+          # pattern (a repeated flag keeps just the last), so the subtrees must
+          # be combined as `{a,b,c}`. NO inner single quotes around the glob
+          # value: vale-action splits `vale_flags` on whitespace and passes
+          # argv elements directly (no shell), so literal quotes here would be
+          # passed through to Vale, the glob would match no files, and CI would
+          # silently exit 0. Verified empirically. Keep the subtree set in sync
+          # with the pre-commit `- id: vale` exclude (template-ci asserts it).
           vale_flags: "--glob=!docs/{superpowers,design,decisions}/**"
           # Failure gating is controlled by MinAlertLevel = error in
           # .vale.ini (governs both what Vale prints AND its exit code)
@@ -331,3 +339,51 @@ jobs:
           # don't gate PRs that don't touch them. To enforce repo-wide
           # cleanliness, set this to `nofilter`.
           filter_mode: added
+
+
+  structure:
+    name: Structural Quality (diff)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Diff-scoped, so only meaningful on a PR (needs a base branch to compare).
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "latest"
+
+      - name: Cache Python interpreter
+        uses: actions/cache@v6
+        with:
+          path: ~/.local/share/uv/python
+          key: uv-python-3.12-${{ runner.os }}
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }} --depth=50
+
+      - name: Structural quality (changed lines only)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Skip when the diff touches no Python — mirrors the diff-cover guard.
+          HAS_PY=$(git diff --name-only "origin/${BASE_REF}...HEAD" | grep -c '\.py$' || true)
+          if [ "$HAS_PY" -eq 0 ]; then
+            echo "No Python source changes — skipping structural diff gate"
+            exit 0
+          fi
+          uv run diff-quality --violations=ruff.check \
+            --options="--extend-select=C901,PLR0911,PLR0912,PLR0913,PLR0915,S" \
+            --compare-branch="origin/${BASE_REF}" --fail-under=100
