@@ -113,6 +113,19 @@ def serve(
         server.run(transport=transport)
 
 
+# DOMAIN-COMMANDS-START — add domain @app.command()s (and their helpers) below; kept across copier update
+# Domain CLI subcommands live here so the rest of this file stays byte-identical
+# to the template and applies cleanly on copier update. Use function-local
+# imports for domain modules (as ``serve`` does) to keep the top-level import
+# surface template-owned.
+# (example)
+# @app.command()
+# def widgets() -> None:
+#     """List widgets."""
+#     typer.echo("...")
+# DOMAIN-COMMANDS-END
+
+
 def main() -> None:
     """CLI entry point — used by ``[project.scripts]`` in pyproject.toml."""
     app()

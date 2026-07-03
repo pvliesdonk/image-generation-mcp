@@ -183,3 +183,12 @@ uv
 virtualenv
 walkthroughs
 zlib
+
+# --- CI / packaging / runtime vocab (v2.10.2 update) ---
+codecov
+consumer_sink
+cron
+lockfile
+scaffolded
+venv
+venv's

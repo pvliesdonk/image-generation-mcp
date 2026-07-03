@@ -66,7 +66,7 @@ Restart the application to pick up the new configuration. If the server connects
 
 ### "Command not found"
 
-Ensure `image-generation-mcp` is on your PATH. If installed in a virtualenv, use the full path to the binary. Replace only the `"command"` value in your existing config; keep `"args"` and `"env"` as-is.
+Ensure `image-generation-mcp` is on your PATH. If installed in a virtualenv, use the full path to the binary. Replace only the `"command"` value in your existing config and keep `"args"` and `"env"` as-is.
 
 macOS/Linux:
 
