@@ -84,15 +84,21 @@ Gemini, they are appended as an "Avoid:" clause with weaker effect. Placeholder
 ignores them.
 
 **Background:** Set `background="transparent"` when generating assets for
-compositing (logos, icons, stickers). Supported by OpenAI (gpt-image-1) and
-placeholder. SD WebUI ignores this parameter.
+compositing (logos, icons, stickers). Supported by OpenAI's `gpt-image-1` /
+`gpt-image-1.5` / `gpt-image-1-mini` and placeholder (not `gpt-image-2` or
+`chatgpt-image-latest`, which drop transparency). SD WebUI ignores this
+parameter.
 
 ## OpenAI
 
-**Lineup:** `gpt-image-1.5` (current flagship), `gpt-image-1` and
-`gpt-image-1-mini` (legacy; same grammar, mini is cheaper for drafts),
+**Lineup:** `gpt-image-2` (current flagship — highest fidelity, but drops
+transparent-background support), `gpt-image-1.5` (previous-generation flagship;
+the transparency pick), `gpt-image-1-mini` (cheaper current variant for
+drafts), `chatgpt-image-latest` (floating alias to the newest ChatGPT image
+model — pin a concrete id for reproducibility), `gpt-image-1` (legacy),
 `dall-e-3` (deprecated — API removal 2026-05-12, migrate new work to
-gpt-image-1.5), `dall-e-2` (legacy; useful for cheap inpainting only).
+gpt-image-2 / gpt-image-1.5), `dall-e-2` (legacy; useful for cheap inpainting
+only).
 Check the `warnings` array on `list_providers` for the canonical lifecycle
 state.
 
@@ -120,12 +126,14 @@ choose). `hd` maps to `high` for maximum detail.
 
 ## Gemini
 
-**Lineup:** `gemini-2.5-flash-image` (production GA — fast,
-cheap, strong text rendering, multi-image compositing up to 3 inputs),
-`gemini-3.1-flash-image-preview` and `gemini-3-pro-image-preview` (preview
-tier with reasoning / "thinking" support — use for layout-heavy or dense-
-typography work). All Gemini outputs carry an invisible **SynthID
-watermark** — unsuitable for workflows requiring bit-perfect originals.
+**Lineup:** `gemini-3.1-flash-image` (default GA — Nano Banana 2, fast
+versatile workhorse with reasoning / "thinking" support and multi-image
+compositing up to 14 inputs), `gemini-3-pro-image` (Nano Banana Pro —
+highest fidelity for layout-heavy or dense-typography work),
+`gemini-3.1-flash-lite-image` (Nano Banana 2 Lite — fastest, lowest cost),
+and `gemini-2.5-flash-image` (legacy GA, up to 3 inputs). All Gemini outputs
+carry an invisible **SynthID watermark** — unsuitable for workflows requiring
+bit-perfect originals.
 
 Natural language descriptions work best — similar to OpenAI prompting style.
 

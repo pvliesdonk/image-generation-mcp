@@ -89,6 +89,34 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "wastes the cost premium)"
         ),
     ),
+    "openai:chatgpt-image-latest": StyleProfile(
+        label="OpenAI ChatGPT Image (latest)",
+        style_hints=(
+            "Floating alias that always points at the image model currently "
+            "powering ChatGPT. Capabilities track whichever gpt-image model "
+            "is latest (gpt-image-2 at time of writing). Use when you want "
+            "'always newest' without pinning a version. Same descriptive-"
+            "paragraph prompt grammar as the gpt-image family."
+        ),
+        incompatible_styles=(
+            "Its capability surface can shift under you as OpenAI moves "
+            "the alias, so pin a concrete id (gpt-image-2 / gpt-image-1.5) "
+            "for reproducible production workflows. Transparent backgrounds "
+            "are not guaranteed (the alias currently resolves to gpt-image-2, "
+            "which dropped alpha); pick gpt-image-1.5 if you need "
+            "transparency. Avoid CLIP-style tag dumps and negative-prompt "
+            "syntax; real-named-people likenesses are filtered."
+        ),
+        good_example=(
+            "A cozy isometric illustration of a corner reading nook: "
+            "overstuffed armchair, tall bookshelf, warm floor lamp, potted "
+            "monstera, soft afternoon light. 1:1."
+        ),
+        bad_example=(
+            "reading nook, cozy, isometric, 8k (tag-soup — the gpt-image "
+            "family wants descriptive sentences)"
+        ),
+    ),
     "openai:gpt-image-1.5": StyleProfile(
         label="OpenAI GPT Image 1.5",
         style_hints=(
@@ -245,7 +273,7 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "text, and natural-language local edits ('remove the stain', "
             "'change pose to running'). Strong photorealism with "
             "photographic vocabulary (lens, lighting, aspect ratio). "
-            "Supports 10 aspect ratios from 21:9 cinematic to 9:16 "
+            "Supports 14 aspect ratios from 21:9 cinematic to 9:16 "
             "vertical. Cheap (~$0.04/image), making it a good default for "
             "high-volume ideation."
         ),
@@ -270,21 +298,27 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "(tags + unsupported negative — Google docs explicitly call this "
             "the wrong pattern)"
         ),
+        lifecycle="legacy",
+        deprecation_note=(
+            "Superseded by the Gemini 3 image models (gemini-3.1-flash-image "
+            "and up). Still GA, but Google recommends migrating to the newer "
+            "tiers for better quality, speed, and multi-image composition."
+        ),
     ),
-    "gemini:gemini-3.1-flash-image-preview": StyleProfile(
-        label="Gemini 3.1 Flash Image (preview)",
+    "gemini:gemini-3.1-flash-image": StyleProfile(
+        label="Gemini 3.1 Flash Image (Nano Banana 2)",
         style_hints=(
-            "Successor to 2.5 Flash with reasoning ('thinking') support. "
-            "Good for prompts that benefit from layout reasoning: "
-            "infographics, structured layouts, multi-element compositions "
-            "where spatial relationships matter. Same descriptive-prose "
-            "grammar as 2.5 Flash; same 10 aspect ratios."
+            "GA successor to 2.5 Flash with reasoning ('thinking') support "
+            "and up to 14 reference images for multi-image composition. The "
+            "general workhorse tier, good for prompts that benefit from "
+            "layout reasoning: infographics, structured layouts, multi-"
+            "element compositions where spatial relationships matter. Same "
+            "descriptive-prose grammar as 2.5 Flash; same 14 aspect ratios."
         ),
         incompatible_styles=(
             "Avoid tag-soup; same SynthID-watermark caveat as 2.5 Flash. "
-            "Preview-tier model: schema may shift before GA, and surface "
-            "text may not be perfectly stable. Don't pin production "
-            "workflows to it without a fallback."
+            "No negative-prompt parameter; phrase exclusions positively. "
+            "Do not rely on transparent backgrounds."
         ),
         good_example=(
             "A clean infographic explaining the water cycle on a soft "
@@ -296,20 +330,19 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "descriptive sentences for Gemini)"
         ),
     ),
-    "gemini:gemini-3-pro-image-preview": StyleProfile(
-        label="Gemini 3 Pro Image (preview)",
+    "gemini:gemini-3-pro-image": StyleProfile(
+        label="Gemini 3 Pro Image (Nano Banana Pro)",
         style_hints=(
-            "Higher-fidelity Pro tier with reasoning, suited to demanding "
-            "production-grade work where 2.5 Flash falls short. Better at "
-            "dense typography and strict brand compliance. Same prompt "
-            "grammar as the Flash variants; preview-tier so behaviour can "
-            "change."
+            "GA Pro tier with reasoning: highest-fidelity option, suited to "
+            "demanding production-grade work where Flash falls short. Best "
+            "at dense typography, accurate localisation, and strict brand "
+            "compliance. Accepts up to 14 reference images. Same prompt "
+            "grammar as the Flash variants."
         ),
         incompatible_styles=(
             "Don't use for cheap drafts: cost per image is materially "
             "higher than Flash. Same SynthID-watermark caveat. Tag-soup "
-            "still underperforms. Preview-tier model, so surface stability "
-            "is not guaranteed."
+            "still underperforms."
         ),
         good_example=(
             "Magazine cover layout for a quarterly architecture journal: "
@@ -321,6 +354,31 @@ MODEL_STYLES: dict[str, StyleProfile] = {
             "magazine, architecture, brutalism (single-line keyword set — "
             "Gemini Pro shines on richly described prompts; underprompting "
             "wastes the cost premium)"
+        ),
+    ),
+    "gemini:gemini-3.1-flash-lite-image": StyleProfile(
+        label="Gemini 3.1 Flash Lite Image (Nano Banana 2 Lite)",
+        style_hints=(
+            "Fastest, cheapest Gemini 3.1 image tier, engineered for speed "
+            "and scale where latency and cost are the primary constraints. "
+            "Supports reasoning ('thinking') and multi-image composition. "
+            "Same descriptive-prose grammar and 14 aspect ratios as the "
+            "rest of the family; a strong default for high-volume ideation."
+        ),
+        incompatible_styles=(
+            "Avoid tag-soup; same SynthID-watermark caveat. No negative-"
+            "prompt parameter; phrase exclusions positively. For the "
+            "highest-fidelity typography or brand work, prefer gemini-3-"
+            "pro-image."
+        ),
+        good_example=(
+            "A friendly flat-illustration app icon of a smiling coffee cup "
+            "with steam, rounded corners, soft drop shadow, warm palette. "
+            "1:1."
+        ),
+        bad_example=(
+            "coffee cup icon, flat, vector, 8k (tag style — use descriptive "
+            "sentences for Gemini)"
         ),
     ),
     # ----- Placeholder -----

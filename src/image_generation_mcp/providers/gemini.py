@@ -56,20 +56,24 @@ _ASPECT_RATIOS: dict[str, str] = {
 # gemini-2.5-flash-image does NOT support thinking.
 _THINKING_MODELS: frozenset[str] = frozenset(
     {
-        "gemini-3.1-flash-image-preview",
-        "gemini-3-pro-image-preview",
+        "gemini-3.1-flash-image",
+        "gemini-3-pro-image",
+        "gemini-3.1-flash-lite-image",
     }
 )
 
-# Known Gemini image-capable models in preference order.
-# Discovery returns this static list — models.list() does not reliably filter
-# image-generation models, so we maintain the known set here.
+# Known Gemini image-capable models in preference order (first entry is the
+# default). Discovery returns this static list — models.list() does not reliably
+# filter image-generation models, so we maintain the known set here. The GA ids
+# (no ``-preview`` suffix) are pinned; the older ``-preview`` aliases are dropped
+# now that the GA ids are generally available.
 # When adding a model, also add its reference-image cap to
 # _MAX_INPUT_IMAGES_BY_MODEL below; otherwise the conservative default applies.
 _KNOWN_IMAGE_MODELS: list[tuple[str, str]] = [
+    ("gemini-3.1-flash-image", "Gemini 3.1 Flash Image"),
+    ("gemini-3-pro-image", "Gemini 3 Pro Image"),
+    ("gemini-3.1-flash-lite-image", "Gemini 3.1 Flash Lite Image"),
     ("gemini-2.5-flash-image", "Gemini 2.5 Flash Image"),
-    ("gemini-3.1-flash-image-preview", "Gemini 3.1 Flash Image Preview"),
-    ("gemini-3-pro-image-preview", "Gemini 3 Pro Image Preview"),
 ]
 
 _SUPPORTED_ASPECT_RATIOS: tuple[str, ...] = tuple(_ASPECT_RATIOS)
@@ -82,8 +86,11 @@ _SUPPORTED_QUALITIES: tuple[str, ...] = ("standard", "hd")
 # models fall back to the conservative default.
 _MAX_INPUT_IMAGES_BY_MODEL: dict[str, int] = {
     "gemini-2.5-flash-image": 3,
-    "gemini-3.1-flash-image-preview": 14,
-    "gemini-3-pro-image-preview": 14,
+    "gemini-3.1-flash-image": 14,
+    "gemini-3-pro-image": 14,
+    # [unverified] lite cap not separately documented; assume the Gemini 3.1
+    # image-family limit of 14 rather than the conservative default.
+    "gemini-3.1-flash-lite-image": 14,
 }
 _DEFAULT_MAX_INPUT_IMAGES = 3
 
@@ -104,7 +111,7 @@ class GeminiImageProvider:
     def __init__(
         self,
         api_key: str,
-        model: str = "gemini-2.5-flash-image",
+        model: str = "gemini-3.1-flash-image",
     ) -> None:
         """Initialise the Gemini provider.
 

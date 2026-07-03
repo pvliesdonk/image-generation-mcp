@@ -16,9 +16,10 @@ The provider registers automatically when this variable is set. Get a key at [Go
 
 | Model | Notes |
 |-------|-------|
-| `gemini-2.5-flash-image` | Default (stable GA release) |
-| `gemini-3.1-flash-image-preview` | Preview (successor to 2.5 flash; faster) |
-| `gemini-3-pro-image-preview` | Preview (highest quality; best for complex scenes) |
+| `gemini-3.1-flash-image` | Default (GA; Nano Banana 2, general workhorse) |
+| `gemini-3-pro-image` | GA (Nano Banana Pro; highest quality, best for complex scenes) |
+| `gemini-3.1-flash-lite-image` | GA (Nano Banana 2 Lite; fastest, lowest cost) |
+| `gemini-2.5-flash-image` | Legacy GA (Nano Banana; superseded by 3.1 flash) |
 
 Use `list_providers` to see which models are available on your API key.
 
@@ -52,7 +53,7 @@ The `quality` parameter controls resolution, model reasoning, and response modal
 | `standard` | 1K | Minimal (default) | Image only | Free tier |
 | `hd` | 2K | High (model reasons about composition before rendering) | Text + Image | Thinking tokens billed |
 
-**How `hd` works:** When `quality="hd"` is set, the provider enables `thinking_level="High"` on supported models (`gemini-3.1-flash-image-preview`, `gemini-3-pro-image-preview`). The model reasons through the prompt, plans composition, and may generate interim images before producing the final result. Output quality improves measurably for complex prompts with multiple elements, layouts, or text.
+**How `hd` works:** When `quality="hd"` is set, the provider enables `thinking_level="High"` on supported models (`gemini-3.1-flash-image`, `gemini-3-pro-image`, `gemini-3.1-flash-lite-image`). The model reasons through the prompt, plans composition, and may generate interim images before producing the final result. Output quality improves measurably for complex prompts with multiple elements, layouts, or text.
 
 `gemini-2.5-flash-image` does not support thinking. Setting `hd` still increases resolution to 2K but skips the thinking configuration for this model.
 
@@ -99,8 +100,9 @@ Supply several reference images to compose a scene from their elements or to kee
 | Model | Max reference images |
 |-------|----------------------|
 | `gemini-2.5-flash-image` | 3 |
-| `gemini-3.1-flash-image-preview` | 14 |
-| `gemini-3-pro-image-preview` | 14 |
+| `gemini-3.1-flash-image` | 14 |
+| `gemini-3-pro-image` | 14 |
+| `gemini-3.1-flash-lite-image` | 14 |
 
 The Gemini 3 models accept up to 14 reference images. For character consistency, give the model a few clear shots of the same subject and describe the scene you want. Reference order is preserved in the request. Exceeding a model's limit raises an error before the API call; check `max_input_images` in `list_providers` to confirm the cap at runtime, and `supports_image_input` for availability.
 
@@ -109,7 +111,7 @@ transform_image(
   prompt="Place the character from the first image into the scene of the second",
   reference_images=["a1b2c3d4e5f6", "0f1e2d3c4b5a", "9a8b7c6d5e4f"],
   provider="gemini",
-  model="gemini-3-pro-image-preview"
+  model="gemini-3-pro-image"
 )
 ```
 

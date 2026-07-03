@@ -28,8 +28,8 @@ instructions without editing template-owned code:
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | (unset) | OpenAI API key. Enables the OpenAI provider (gpt-image-1, dall-e-3) when set. |
-| `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | str | (unset) | Google API key. Enables the Gemini provider (gemini-2.5-flash-image and others) when set. Get a key at [Google AI Studio](https://aistudio.google.com/apikey). |
+| `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | str | (unset) | OpenAI API key. Enables the OpenAI provider (gpt-image-2, gpt-image-1.5, dall-e-3) when set. |
+| `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | str | (unset) | Google API key. Enables the Gemini provider (gemini-3.1-flash-image and others) when set. Get a key at [Google AI Studio](https://aistudio.google.com/apikey). |
 | `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | str | (unset) | SD WebUI base URL (such as `http://localhost:7860`). Enables the SD WebUI provider when set. Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_HOST`. |
 | `IMAGE_GENERATION_MCP_SD_WEBUI_MODEL` | str | (unset) | SD WebUI checkpoint name. Used for model-aware preset detection (SD 1.5 vs SDXL vs Lightning) and checkpoint override. Deprecated alias: `IMAGE_GENERATION_MCP_A1111_MODEL`. |
 

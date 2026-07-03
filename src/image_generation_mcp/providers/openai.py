@@ -3,10 +3,12 @@
 Supports the ``gpt-image-*`` family (``gpt-image-2`` current flagship,
 ``gpt-image-1.5`` previous-generation flagship — the right pick for
 transparent backgrounds since gpt-image-2 dropped alpha support;
-``gpt-image-1`` / ``gpt-image-1-mini`` legacy variants) and ``dall-e-3``
-(deprecated, API removal scheduled 2026-05-12) plus ``dall-e-2`` (legacy;
-this server does not route edits or masks to it). Lifecycle metadata flows through
-``providers.model_styles.MODEL_STYLES`` into ``list_providers``.
+``gpt-image-1-mini`` cheaper current variant; ``gpt-image-1`` legacy;
+``chatgpt-image-latest`` floating alias to the newest ChatGPT image model)
+and ``dall-e-3`` (deprecated, API removal scheduled 2026-05-12) plus
+``dall-e-2`` (legacy; this server does not route edits or masks to it).
+Lifecycle metadata flows through ``providers.model_styles.MODEL_STYLES`` into
+``list_providers``.
 """
 
 from __future__ import annotations
@@ -69,6 +71,7 @@ _KNOWN_IMAGE_MODELS: frozenset[str] = frozenset(
         "gpt-image-1.5",
         "gpt-image-1",
         "gpt-image-1-mini",
+        "chatgpt-image-latest",
         "dall-e-3",
         "dall-e-2",
     }
@@ -76,16 +79,27 @@ _KNOWN_IMAGE_MODELS: frozenset[str] = frozenset(
 
 
 def _is_gpt_image_model(model: str) -> bool:
-    """Return True for gpt-image-* models (not dall-e)."""
-    return model.startswith("gpt-image")
+    """Return True for gpt-image-* models (not dall-e).
+
+    ``chatgpt-image-latest`` is a floating alias for the current ChatGPT image
+    model, which is a member of the gpt-image family, so it routes through the
+    gpt-image code path (sizes, formats, edit endpoint) rather than the DALL-E
+    fallback.
+    """
+    return model.startswith("gpt-image") or model == "chatgpt-image-latest"
 
 
 # Models in the gpt-image-* family that DON'T accept the ``background``
 # API parameter. Most gpt-image-* models support transparency control;
-# gpt-image-2 dropped it. Sending ``background`` to a model that doesn't
-# accept it returns a 400. Keep in sync with ``supports_background`` in
-# ``discover_capabilities()`` for the same model_ids.
-_NO_BACKGROUND_GPT_IMAGE: frozenset[str] = frozenset({"gpt-image-2"})
+# gpt-image-2 dropped it. ``chatgpt-image-latest`` is a floating alias whose
+# target isn't guaranteed to support transparency (it currently resolves to
+# gpt-image-2), so it is treated conservatively as no-background. Sending
+# ``background`` to a model that doesn't accept it returns a 400. Keep in sync
+# with ``supports_background`` in ``discover_capabilities()`` for the same
+# model_ids.
+_NO_BACKGROUND_GPT_IMAGE: frozenset[str] = frozenset(
+    {"gpt-image-2", "chatgpt-image-latest"}
+)
 
 # OpenAI's images.edit endpoint accepts up to 16 reference images for the
 # gpt-image family (multi-image composition). dall-e-3 has no edit endpoint;
@@ -120,7 +134,7 @@ class OpenAIImageProvider:
     """Image generation via OpenAI's Images API.
 
     Args:
-        model: Model name (``gpt-image-1`` or ``dall-e-3``).
+        model: Model name (e.g. ``gpt-image-2``, ``gpt-image-1.5``, ``dall-e-3``).
         api_key: OpenAI API key.
         output_format: Image format (``png``, ``jpeg``, ``webp``).
     """
@@ -128,7 +142,7 @@ class OpenAIImageProvider:
     def __init__(
         self,
         api_key: str,
-        model: str = "gpt-image-1",
+        model: str = "gpt-image-2",
         output_format: str = "png",
     ) -> None:
         self._model = model
@@ -243,7 +257,8 @@ class OpenAIImageProvider:
                 (lets OpenAI choose). ``"hd"`` maps to ``"high"``.
             background: Background transparency (``opaque``, ``transparent``).
                 Supported for gpt-image-1, gpt-image-1.5, and gpt-image-1-mini;
-                not sent to gpt-image-2 (no alpha support) or dall-e.
+                not sent to gpt-image-2 or chatgpt-image-latest (no alpha
+                support) or dall-e.
             model: Specific model to use for this call (e.g., ``"dall-e-3"``).
                 Overrides the constructor model. Size table selection adjusts
                 automatically.
@@ -575,13 +590,13 @@ class OpenAIImageProvider:
                     )
                 )
 
-        # gpt-image-2 — current OpenAI flagship beyond gpt-image-1.5. Per the
-        # 2026-04-29 research report, gpt-image-2 drops transparent-background
-        # support but otherwise mirrors gpt-image-1.5's prompt grammar and
-        # supported aspect ratios. We pin the conservative capability surface
-        # here; tighten if/when OpenAI documents differences. Output stays
-        # gated on `if "gpt-image-2" in model_ids` so the entry is dormant
-        # until OpenAI's models.list() actually returns the id.
+        # gpt-image-2 — current OpenAI flagship (GA; the provider default) and
+        # beyond gpt-image-1.5. It drops transparent-background support but
+        # otherwise mirrors gpt-image-1.5's prompt grammar and supported aspect
+        # ratios. We pin the conservative capability surface here; tighten
+        # if/when OpenAI documents differences. Gated on `if "gpt-image-2" in
+        # model_ids` like every other entry, so it only surfaces when the key's
+        # models.list() returns it.
         if "gpt-image-2" in model_ids:
             model_caps.append(
                 ModelCapabilities(
@@ -599,6 +614,31 @@ class OpenAIImageProvider:
                     supported_qualities=("standard", "hd"),
                     max_resolution=1536,
                     style_profile=resolve_style("openai", "gpt-image-2"),
+                )
+            )
+
+        # chatgpt-image-latest — floating alias for the current ChatGPT image
+        # model (a gpt-image-family member). Capabilities mirror the gpt-image
+        # surface, but transparency is not guaranteed (the alias currently
+        # resolves to gpt-image-2, which dropped it), so supports_background is
+        # False in lockstep with _NO_BACKGROUND_GPT_IMAGE.
+        if "chatgpt-image-latest" in model_ids:
+            model_caps.append(
+                ModelCapabilities(
+                    model_id="chatgpt-image-latest",
+                    display_name="ChatGPT Image (latest)",
+                    can_generate=True,
+                    can_edit=True,
+                    supports_mask=True,
+                    supports_background=False,
+                    supports_negative_prompt=False,
+                    supports_image_input=True,
+                    max_input_images=_MAX_INPUT_IMAGES,
+                    supported_aspect_ratios=tuple(_GPT_IMAGE_SIZES),
+                    supported_formats=("png", "jpeg", "webp"),
+                    supported_qualities=("standard", "hd"),
+                    max_resolution=1536,
+                    style_profile=resolve_style("openai", "chatgpt-image-latest"),
                 )
             )
 

@@ -125,7 +125,7 @@ def make_server(
         env_prefix=_ENV_PREFIX,
         domain_line=(
             "AI image generation server supporting multiple providers "
-            "(OpenAI gpt-image-1/dall-e-3, Google Gemini image, "
+            "(OpenAI gpt-image-2/dall-e-3, Google Gemini image, "
             "Stable Diffusion via SD WebUI, and a zero-cost placeholder). "
             "Start by calling list_providers to see configured providers."
         ),

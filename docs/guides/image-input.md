@@ -74,7 +74,7 @@ transform_image(
   prompt="Place the character from the first image into the scene of the second",
   reference_images=["a1b2c3d4e5f6", "0f1e2d3c4b5a", "9a8b7c6d5e4f"],
   provider="gemini",
-  model="gemini-3-pro-image-preview"
+  model="gemini-3-pro-image"
 )
 ```
 

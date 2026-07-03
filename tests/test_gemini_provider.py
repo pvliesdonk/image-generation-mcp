@@ -29,13 +29,11 @@ class TestGeminiProvider:
 
     def test_default_model(self) -> None:
         provider = GeminiImageProvider(api_key="AIza-test")
-        assert provider._model == "gemini-2.5-flash-image"
+        assert provider._model == "gemini-3.1-flash-image"
 
     def test_custom_model(self) -> None:
-        provider = GeminiImageProvider(
-            api_key="AIza-test", model="gemini-3-pro-image-preview"
-        )
-        assert provider._model == "gemini-3-pro-image-preview"
+        provider = GeminiImageProvider(api_key="AIza-test", model="gemini-3-pro-image")
+        assert provider._model == "gemini-3-pro-image"
 
     def test_aspect_ratio_table_complete(self) -> None:
         for ratio in (
@@ -79,13 +77,13 @@ class TestGeminiProvider:
 
         assert result.image_data == fake_image_bytes
         assert result.content_type == "image/png"
-        assert result.provider_metadata["model"] == "gemini-2.5-flash-image"
+        assert result.provider_metadata["model"] == "gemini-3.1-flash-image"
         assert result.provider_metadata["quality"] == "standard"
 
     async def test_generate_hd_quality(self) -> None:
         """hd quality on a thinking model enables thinking, 2K, and TEXT+IMAGE."""
         provider = GeminiImageProvider(
-            api_key="AIza-test", model="gemini-3.1-flash-image-preview"
+            api_key="AIza-test", model="gemini-3.1-flash-image"
         )
         fake_image_bytes = b"fake-png-data"
 
@@ -130,7 +128,7 @@ class TestGeminiProvider:
     async def test_generate_standard_quality_config(self) -> None:
         """standard quality uses IMAGE-only, 1K, no thinking."""
         provider = GeminiImageProvider(
-            api_key="AIza-test", model="gemini-3.1-flash-image-preview"
+            api_key="AIza-test", model="gemini-3.1-flash-image"
         )
         fake_image_bytes = b"fake-png-data"
 
@@ -201,8 +199,9 @@ class TestGeminiProvider:
 
     async def test_thinking_models_set(self) -> None:
         """Verify the thinking models set is correct."""
-        assert "gemini-3.1-flash-image-preview" in _THINKING_MODELS
-        assert "gemini-3-pro-image-preview" in _THINKING_MODELS
+        assert "gemini-3.1-flash-image" in _THINKING_MODELS
+        assert "gemini-3-pro-image" in _THINKING_MODELS
+        assert "gemini-3.1-flash-lite-image" in _THINKING_MODELS
         assert "gemini-2.5-flash-image" not in _THINKING_MODELS
 
     async def test_generate_uses_model_override(self) -> None:
@@ -224,11 +223,11 @@ class TestGeminiProvider:
             return_value=mock_response
         )
 
-        result = await provider.generate("a cat", model="gemini-3-pro-image-preview")
+        result = await provider.generate("a cat", model="gemini-3-pro-image")
 
         call_kwargs = provider._client.aio.models.generate_content.call_args.kwargs
-        assert call_kwargs["model"] == "gemini-3-pro-image-preview"
-        assert result.provider_metadata["model"] == "gemini-3-pro-image-preview"
+        assert call_kwargs["model"] == "gemini-3-pro-image"
+        assert result.provider_metadata["model"] == "gemini-3-pro-image"
 
     async def test_negative_prompt_appended(self) -> None:
         provider = GeminiImageProvider(api_key="AIza-test")
@@ -482,7 +481,10 @@ class TestGeminiProvider:
         """More references than the model's cap raises TooManyInputImages."""
         from image_generation_mcp.providers.types import InputImage, TooManyInputImages
 
-        provider = GeminiImageProvider(api_key="AIza-test")  # 2.5-flash, cap 3
+        # Pin the cap-3 model explicitly (the default is now a cap-14 model).
+        provider = GeminiImageProvider(
+            api_key="AIza-test", model="gemini-2.5-flash-image"
+        )  # cap 3
         provider._client = MagicMock()
         refs = [InputImage(data=b"x", content_type="image/png") for _ in range(4)]
         with pytest.raises(TooManyInputImages):
@@ -492,9 +494,7 @@ class TestGeminiProvider:
         """Gemini 3 models accept up to 14 reference images."""
         from image_generation_mcp.providers.types import InputImage, TooManyInputImages
 
-        provider = GeminiImageProvider(
-            api_key="AIza-test", model="gemini-3-pro-image-preview"
-        )
+        provider = GeminiImageProvider(api_key="AIza-test", model="gemini-3-pro-image")
         mock_inline = MagicMock()
         mock_inline.data = b"out-png"
         mock_inline.mime_type = "image/png"
@@ -519,7 +519,9 @@ class TestGeminiProvider:
         from image_generation_mcp.providers.types import InputImage
 
         # Constructed as 2.5-flash (cap 3) but called with a Gemini 3 model.
-        provider = GeminiImageProvider(api_key="AIza-test")
+        provider = GeminiImageProvider(
+            api_key="AIza-test", model="gemini-2.5-flash-image"
+        )
         mock_inline = MagicMock()
         mock_inline.data = b"out-png"
         mock_inline.mime_type = "image/png"
@@ -533,7 +535,7 @@ class TestGeminiProvider:
         refs = [InputImage(data=b"x", content_type="image/png") for _ in range(5)]
         # 5 refs exceeds 2.5-flash's cap (3) but is within gemini-3-pro's (14).
         await provider.generate(
-            "compose", model="gemini-3-pro-image-preview", reference_images=refs
+            "compose", model="gemini-3-pro-image", reference_images=refs
         )  # no raise
         # [prompt, 5 image parts]
         assert len(gen.call_args.kwargs["contents"]) == 6

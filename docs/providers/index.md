@@ -9,12 +9,12 @@ See the [Model Catalog](model-catalog.md) for narrative guidance on every model:
 | | Gemini | OpenAI | SD WebUI (Stable Diffusion) | Placeholder |
 |---|--------|--------|----------------------------|-------------|
 | **Best for** | General-purpose, free tier | Text, logos, typography | Photorealism, portraits, anime, artistic styles | Testing, drafts, CI |
-| **Models** | gemini-2.5-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image-preview | gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | N/A |
+| **Models** | gemini-3.1-flash-image, gemini-3-pro-image, gemini-3.1-flash-lite-image, gemini-2.5-flash-image | gpt-image-2, gpt-image-1.5, gpt-image-1, dall-e-3 | SD 1.5, SDXL, SDXL Lightning/Turbo | N/A |
 | **Quality** | High | High | Varies by model and steps | N/A (solid color) |
 | **Speed** | 5-15 s | 5-15 s | 10-60 s (depends on GPU) | Instant |
 | **Cost** | Free tier available | Per-image API pricing | Self-hosted (GPU cost) | Free |
 | **Negative prompt** | Appended as "Avoid:" clause | Appended as "Avoid:" clause | Native support | Ignored |
-| **Background control** | Not supported (ignored) | Supported (gpt-image-1 only) | Not supported (ignored) | Supported (RGBA PNG) |
+| **Background control** | Not supported (ignored) | Supported (gpt-image-1 / gpt-image-1.5 / gpt-image-1-mini; not gpt-image-2) | Not supported (ignored) | Supported (RGBA PNG) |
 | **Requires** | `IMAGE_GENERATION_MCP_GOOGLE_API_KEY` | `IMAGE_GENERATION_MCP_OPENAI_API_KEY` | Running SD WebUI + `IMAGE_GENERATION_MCP_SD_WEBUI_HOST` | Nothing |
 
 ## Which provider should I use?

@@ -44,7 +44,7 @@ Provider capabilities and supported features.
     },
     "openai": {
       "available": true,
-      "description": "OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, and general-purpose generation",
+      "description": "OpenAI (gpt-image-2 / dall-e-3) — best for text, logos, and general-purpose generation",
       "capabilities": {
         "provider_name": "openai",
         "models": [
