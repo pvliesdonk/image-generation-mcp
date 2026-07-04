@@ -2,6 +2,105 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-07-04)
+
+### Bug Fixes
+
+- **ci**: Vale Docs Prose passing baseline (#244) (#270)
+  ([#270](https://github.com/pvliesdonk/image-generation-mcp/pull/270),
+  [`a547a63`](https://github.com/pvliesdonk/image-generation-mcp/commit/a547a63d8cbe4ebfb964bc5ed1341e8c548f9c48))
+
+### Chores
+
+- Add gitleaks pre-commit + restore vendor_spa.py (closes #278) (#285)
+  ([#285](https://github.com/pvliesdonk/image-generation-mcp/pull/285),
+  [`da586dd`](https://github.com/pvliesdonk/image-generation-mcp/commit/da586dd67b9ce213dc2820f4b4a0e89626bf79da))
+
+- **copier**: Update template v2.5.3 → v2.6.0 (conflicts + lock) [red until wizard PR] (#286)
+  ([#286](https://github.com/pvliesdonk/image-generation-mcp/pull/286),
+  [`8957b1a`](https://github.com/pvliesdonk/image-generation-mcp/commit/8957b1a4ce5ff5db46f7167a676c00f9f2dbdf03))
+
+- **copier**: Update template v2.6.0 → v2.10.2 (#299)
+  ([#299](https://github.com/pvliesdonk/image-generation-mcp/pull/299),
+  [`2e07a46`](https://github.com/pvliesdonk/image-generation-mcp/commit/2e07a468708acd880dbc35671316a633f24e3b28))
+
+- **copier**: Update to v2.5.3 (#254)
+  ([#254](https://github.com/pvliesdonk/image-generation-mcp/pull/254),
+  [`1decabb`](https://github.com/pvliesdonk/image-generation-mcp/commit/1decabb688ac66df88c63c34ccad57f057ecac70))
+
+- **deps**: Bump pip from 26.0.1 to 26.1 (#224)
+  ([#224](https://github.com/pvliesdonk/image-generation-mcp/pull/224),
+  [`2b8f0ca`](https://github.com/pvliesdonk/image-generation-mcp/commit/2b8f0caa12962c66e9cb4169247e3a648b95b624))
+
+- **template**: Apply copier template v2.2.1 (#250)
+  ([#250](https://github.com/pvliesdonk/image-generation-mcp/pull/250),
+  [`9589fe9`](https://github.com/pvliesdonk/image-generation-mcp/commit/9589fe9cf54e485557b298155287967ffa721b33))
+
+- **template**: Apply copier template v2.3.0 (#253)
+  ([#253](https://github.com/pvliesdonk/image-generation-mcp/pull/253),
+  [`a727a9e`](https://github.com/pvliesdonk/image-generation-mcp/commit/a727a9ef10f2bd8779ac9393f73a4bc30182662d))
+
+### Documentation
+
+- Correct PAID_PROVIDERS default in README (openai, not openai,gemini) (#272)
+  ([#272](https://github.com/pvliesdonk/image-generation-mcp/pull/272),
+  [`5281e56`](https://github.com/pvliesdonk/image-generation-mcp/commit/5281e56fe4440b7a09c8415b175e42aca084000f))
+
+- Reference-image input closeout + prompt guidance (#262) (#269)
+  ([#269](https://github.com/pvliesdonk/image-generation-mcp/pull/269),
+  [`2ae9af6`](https://github.com/pvliesdonk/image-generation-mcp/commit/2ae9af6b22ad7fae1c60330d546aca0d791cb073))
+
+### Features
+
+- Gemini multi-image composition (#260) (#267)
+  ([#267](https://github.com/pvliesdonk/image-generation-mcp/pull/267),
+  [`17e9ffc`](https://github.com/pvliesdonk/image-generation-mcp/commit/17e9ffc78b17f6641becbb6844ae1a0a3587cb97))
+
+- OpenAI gpt-image image editing and composition (#258) (#265)
+  ([#265](https://github.com/pvliesdonk/image-generation-mcp/pull/265),
+  [`0939c46`](https://github.com/pvliesdonk/image-generation-mcp/commit/0939c460618b1fd39e4a90076faa8db053523e77))
+
+- OpenAI inpainting masks (#261) (#268)
+  ([#268](https://github.com/pvliesdonk/image-generation-mcp/pull/268),
+  [`3225161`](https://github.com/pvliesdonk/image-generation-mcp/commit/32251611f0d0c643b615178b21edf3699cf01db9))
+
+- Reference-image input — foundation + Gemini single-image i2i (#257) (#263)
+  ([#263](https://github.com/pvliesdonk/image-generation-mcp/pull/263),
+  [`dac4dbd`](https://github.com/pvliesdonk/image-generation-mcp/commit/dac4dbdb17625435e5248878eceb65e8a706287b))
+
+- SD WebUI img2img + denoising strength (#259) (#266)
+  ([#266](https://github.com/pvliesdonk/image-generation-mcp/pull/266),
+  [`a5bcb88`](https://github.com/pvliesdonk/image-generation-mcp/commit/a5bcb8820194748bb7048cb97ed4b6f849a3b15f))
+
+- **providers**: Refresh image-model catalog for current OpenAI + Gemini models (#294)
+  ([#294](https://github.com/pvliesdonk/image-generation-mcp/pull/294),
+  [`f9761b3`](https://github.com/pvliesdonk/image-generation-mcp/commit/f9761b3613ac082e5cfc996a396a5bdf379df9c4))
+
+### Refactoring
+
+- Rename domain modules to template scaffold layout (#282)
+  ([#282](https://github.com/pvliesdonk/image-generation-mcp/pull/282),
+  [`6fcb15a`](https://github.com/pvliesdonk/image-generation-mcp/commit/6fcb15aae14930340f3efea0cdfc2cc8c28396a1))
+
+- **cli**: De-fork CLI to stock typer; drop non-canonical HTTP logging middleware (#281)
+  ([#281](https://github.com/pvliesdonk/image-generation-mcp/pull/281),
+  [`f73fb57`](https://github.com/pvliesdonk/image-generation-mcp/commit/f73fb575e7bc5a9c653e870aafb0bba7e998d487))
+
+- **config**: Adopt ProjectConfig.from_env() classmethod (replaces load_config) (#280)
+  ([#280](https://github.com/pvliesdonk/image-generation-mcp/pull/280),
+  [`4f19311`](https://github.com/pvliesdonk/image-generation-mcp/commit/4f19311e9136058e1ef5db96b76c2a9ad4f42d98))
+
+- **server**: Restore template server_lifespan; remove orphaned build_event_store (closes #276)
+  (#283) ([#283](https://github.com/pvliesdonk/image-generation-mcp/pull/283),
+  [`363c73c`](https://github.com/pvliesdonk/image-generation-mcp/commit/363c73c69dcddc4b959147c1c03763ac42aebb22))
+
+### Testing
+
+- Add template client fixture + smoke coverage (closes #277) (#284)
+  ([#284](https://github.com/pvliesdonk/image-generation-mcp/pull/284),
+  [`08b7c84`](https://github.com/pvliesdonk/image-generation-mcp/commit/08b7c84e593148f5cf78c909b01f455c0ae4d79d))
+
+
 ## v1.10.1 (2026-06-18)
 
 ### Bug Fixes
