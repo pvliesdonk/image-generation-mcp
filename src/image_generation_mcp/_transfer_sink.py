@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 from image_generation_mcp._input_images import _parse_gallery_id
 from image_generation_mcp._server_deps import _get_service_from_store
+from image_generation_mcp.domain import _mime_to_ext
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,6 @@ _UPLOAD_ORIGIN_SOURCE = "upload"
 # Accepted upload-name extensions (a fast pre-check; the real check is the
 # byte-level validation in register_imported_image).
 _IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp"})
-_MIME_TO_EXT = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 
 
 class GalleryTransferSink:
@@ -95,7 +95,10 @@ class GalleryTransferSink:
         service = self._service()
         record = await asyncio.to_thread(service.get_image, handle)
         data = await asyncio.to_thread(record.original_path.read_bytes)
-        ext = _MIME_TO_EXT.get(record.content_type, "")
+        # Reuse domain.py's canonical MIME→extension map (single source of
+        # truth). A stored record's content_type is always png/jpeg/webp, so
+        # the helper's ".png" fallback is unreachable here.
+        ext = _mime_to_ext(record.content_type)
         logger.info(
             "transfer_download_served image_id=%s bytes=%d", record.id, len(data)
         )
