@@ -711,10 +711,6 @@ _IMAGE_VIEWER_HTML = """\
           }
           document.getElementById("meta-details").textContent =
             parts.join(" \\u00b7 ");
-          // In openLink mode, only show button when download_url exists
-          if (dlMode === "openLink") {
-            dlBtn.style.display = m.download_url ? "block" : "none";
-          }
         } catch (e) { console.warn("Failed to parse metadata", e); }
       }
     }
@@ -806,22 +802,34 @@ _IMAGE_VIEWER_HTML = """\
     }
 
     async function tryOpenLink() {
-      if (!currentMeta?.download_url) return false;
-      const { isError } = await app.openLink({ url: currentMeta.download_url });
-      return !isError;
+      if (!currentMeta?.image_id) return false;
+      try {
+        // Mint a one-time download URL on demand via the transfer framework.
+        const result = await app.callServerTool({
+          name: "create_download_link",
+          arguments: { ref: "image://" + currentMeta.image_id + "/view" },
+        });
+        if (result.isError) return false;
+        const textItem = result.content?.find(c => c.type === "text");
+        const url = textItem ? JSON.parse(textItem.text).url : null;
+        if (!url) return false;
+        const { isError } = await app.openLink({ url });
+        return !isError;
+      } catch (e) { console.warn("create_download_link failed", e); return false; }
     }
 
     dlBtn.addEventListener("click", async () => {
       if (!currentMeta) return;
+      let ok = false;
       try {
-        // Try downloadFile first (full-res via MCP), fall back to openLink
+        // Try downloadFile first (full-res via MCP), fall back to openLink.
         if (dlMode === "downloadFile") {
-          if (await tryDownloadFile()) return;
-          if (await tryOpenLink()) return;
+          ok = (await tryDownloadFile()) || (await tryOpenLink());
         } else {
-          if (await tryOpenLink()) return;
+          ok = await tryOpenLink();
         }
       } catch (e) { console.warn("Download failed", e); }
+      if (!ok) alert("Download failed — the download link could not be created. Please try again.");
     });
 
     // --- Cropper.js (loaded on demand) ---
@@ -1587,7 +1595,6 @@ _IMAGE_GALLERY_HTML = """\
       dlBtn.title = "Download";
       dlBtn.dataset.imageId = item.image_id;
       dlBtn.dataset.mime = item.content_type || "image/png";
-      if (item.download_url) dlBtn.dataset.downloadUrl = item.download_url;
       dlBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
       if (dlMode === "downloadFile" || dlMode === "openLink") dlBtn.style.display = "block";
       footer.appendChild(dlBtn);
@@ -1696,18 +1703,31 @@ _IMAGE_GALLERY_HTML = """\
       const mime = btn.dataset.mime || "image/png";
       if (!id) return;
       const ext = mime.split("/").pop() || "png";
+      let ok = false;
       try {
         if (dlMode === "downloadFile") {
-          await app.downloadFile({
+          ok = !(await app.downloadFile({
             contents: [{
               type: "resource_link",
               uri: "image://" + id + "/view",
               name: id + "." + ext,
               mimeType: mime,
             }],
+          })).isError;
+        } else if (dlMode === "openLink") {
+          // Mint a one-time download URL on demand via the transfer framework.
+          const result = await app.callServerTool({
+            name: "create_download_link",
+            arguments: { ref: "image://" + id + "/view" },
           });
+          if (!result.isError) {
+            const textItem = result.content?.find(c => c.type === "text");
+            const url = textItem ? JSON.parse(textItem.text).url : null;
+            if (url) ok = !(await app.openLink({ url })).isError;
+          }
         }
       } catch (ex) { console.warn("Download failed", ex); }
+      if (!ok) alert("Download failed — please try again.");
     });
 
     // --- Delete (grid) ---
@@ -1820,11 +1840,14 @@ _IMAGE_GALLERY_HTML = """\
     const ctx = app.getHostContext();
     if (ctx) handleHostContext(ctx);
 
-    // Show download buttons only when downloadFile is available.
-    // openLink fallback omitted: download_url is not returned in tool responses.
+    // Show download buttons: prefer downloadFile (native, full-res), else
+    // fall back to an on-demand create_download_link + openLink.
     const caps = app.getHostCapabilities();
     if (caps?.downloadFile) {
       dlMode = "downloadFile";
+      document.querySelectorAll(".card-dl").forEach(b => b.style.display = "block");
+    } else if (caps?.openLinks) {
+      dlMode = "openLink";
       document.querySelectorAll(".card-dl").forEach(b => b.style.display = "block");
     }
   </script>

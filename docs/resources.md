@@ -340,7 +340,7 @@ When `IMAGE_GENERATION_MCP_BASE_URL` is set, the Claude sandbox domain is auto-c
 - **Host theming:** applies `applyDocumentTheme()`, `applyHostStyleVariables()`, and `applyHostFonts()` from the ext-apps SDK; CSS uses host variables (`--color-text-primary`, `--font-sans`, etc.)
 - **Safe area insets:** respects `safeAreaInsets` from `onhostcontextchanged` for mobile notch/status bar
 - **localStorage cache:** persists rendered images (keyed by image ID, LRU-capped at 5 entries); restores cached state on `ontoolinput` before the tool result arrives
-- **Download button:** uses the ext-apps `downloadFile` API with a `resource_link` to `image://{id}/view` for the full-resolution image; falls back to `openLink` with the artifact `download_url` when the host does not support `downloadFile`
+- **Download button:** uses the ext-apps `downloadFile` API with a `resource_link` to `image://{id}/view` for the full-resolution image; when the host does not support `downloadFile`, it falls back to calling `create_download_link` on demand and opening the returned `url` via `openLink`
 
 Clients without MCP Apps support ignore this resource entirely.
 

@@ -8,7 +8,8 @@ config via :func:`_service_context` rather than calling ``server_lifespan``
 directly (so config is not loaded twice).
 
 Also exposes :func:`_get_service_from_store`, a module-level accessor used by
-the artifact HTTP handler (which runs outside FastMCP request context).
+the gallery transfer sink (which resolves the service outside FastMCP's
+request context).
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Module-level reference for non-MCP-context callers (e.g. artifact handler).
+# Module-level reference for non-MCP-context callers (e.g. the transfer sink).
 _service_store: ImageService | None = None
 
 
@@ -43,7 +44,7 @@ class LifespanState(TypedDict):
 def _get_service_from_store() -> ImageService:
     """Return the module-level ImageService reference.
 
-    Used by the artifact HTTP handler, which runs outside FastMCP's
+    Used by the gallery transfer sink, which runs outside FastMCP's
     request-context dependency injection.
 
     Returns:
@@ -122,20 +123,13 @@ async def _service_context(config: ProjectConfig) -> AsyncIterator[dict[str, Any
     # Load style library
     service.load_styles(config.styles_dir)
 
-    # Populate module-level store for artifact handler access
+    # Populate module-level store for transfer-sink access
     _service_store = service
-
-    # Initialise artifact store
-    from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
-
-    artifact_store = ArtifactStore()
-    set_artifact_store(artifact_store)
 
     try:
         yield {"service": service, "config": config}
     finally:
         _service_store = None
-        set_artifact_store(None)
         await service.aclose()
         logger.info("Service shut down")
 

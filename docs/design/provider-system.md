@@ -313,7 +313,8 @@ Every generated image is saved to `IMAGE_GENERATION_MCP_SCRATCH_DIR` (default
 | `generate_image` | `write` | `task=True` | Generate image, return metadata + `ResourceLink` |
 | `show_image` | *(none)* | -- | Display a registered image with optional transforms |
 | `list_providers` | *(none)* | -- | List available providers with availability info |
-| `create_download_link` | *(none)* | -- | Mint a one-time HTTP download URL from a `file_ref.origin_id`. Spec-compliant MCP File Exchange tool registered by `fastmcp_pvl_core.register_file_exchange` (HTTP transport only) |
+| `create_download_link` | *(none)* | -- | Mint a one-time `/transfer/{token}` URL serving a gallery image's original bytes. Registered by `fastmcp_pvl_core.register_transfer_routes` (HTTP transport + `base_url` only) |
+| `create_upload_link` | `write` | -- | Mint a one-time `/transfer/{token}` URL that ingests posted bytes as an imported gallery image. Registered by `register_transfer_routes` (HTTP transport + `base_url` only) |
 
 `generate_image` uses a fire-and-forget pattern
 (see [ADR-0005](../decisions/0005-hybrid-background-tasks.md)). It returns
@@ -341,17 +342,20 @@ For in-progress generations, it returns:
 `show_image` is wired to the MCP Apps image viewer via
 `AppConfig(resourceUri="ui://image-viewer/view.html")`.
 
-`create_download_link` mints a one-time-use HTTP download URL from a
-`file_ref.origin_id` published earlier by `show_image` (or any other producer
-calling `file_exchange.publish`). It is the spec-compliant MCP File Exchange
-download tool, registered automatically by
-`fastmcp_pvl_core.register_file_exchange()` in `make_server()` (`server.py`).
-Wiring is gated on the file-exchange handle's `http_enabled` property, which is
-true on SSE/HTTP transports with `IMAGE_GENERATION_MCP_BASE_URL` set. Tokens
-and bytes live in `fastmcp_pvl_core`'s artifact store with a configurable
-TTL (`IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL`, default 3600 s). See the
-[File Exchange guide](../guides/file-exchange.md) and #202 for the migration
-from the previous bespoke ArtifactStore.
+`create_download_link` (serve an existing gallery image's original bytes) and
+`create_upload_link` (ingest posted bytes as an imported gallery image) are
+registered by `fastmcp_pvl_core.register_transfer_routes()` in `make_server()`
+(`server.py`), which also mounts the one-time `/transfer/{token}` HTTP route.
+pvl-core owns the token store, route, size caps, and TTL; the project
+supplies only the two domain hooks in `_transfer_sink.py` — a `TransferSink`
+(`read` serves via `ImageService.get_image`; `write` commits via
+`register_imported_image`) and a `TransferValidator`. Wiring is gated on a
+non-stdio transport with `IMAGE_GENERATION_MCP_BASE_URL` set. Tokens live in a
+KV-backed store (`IMAGE_GENERATION_MCP_KV_STORE_URL`) with TTLs configurable via
+the `IMAGE_GENERATION_MCP_TRANSFER_*` env vars. This replaces the previous
+bespoke `ArtifactStore` / `/artifacts/{token}` download path (issue #307); see
+[ADR 0001](https://github.com/pvliesdonk/fastmcp-pvl-core/blob/main/docs/adr/0001-transfer-lift.md)
+in `fastmcp-pvl-core`.
 
 In read-only mode (`IMAGE_GENERATION_MCP_READ_ONLY=true`), `generate_image` is hidden.
 

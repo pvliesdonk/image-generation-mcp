@@ -137,7 +137,7 @@ class TestLoadConfigEnvVars:
         monkeypatch.setenv("IMAGE_GENERATION_MCP_BASE_URL", "https://mcp.example.com/")
         config = ProjectConfig.from_env()
         # core's ServerConfig preserves the trailing slash — consumers strip it
-        # at use (e.g. create_download_link in tools.py).
+        # at use (e.g. pvl-core's transfer-link tools).
         assert config.server.base_url == "https://mcp.example.com/"
 
     def test_paid_providers_custom(self, monkeypatch: pytest.MonkeyPatch) -> None:

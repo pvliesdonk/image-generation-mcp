@@ -49,22 +49,22 @@ Everything works out of the box:
 
 ### ChatGPT / Gemini CLI / other clients
 
-These clients cannot display `ImageContent` from tool results. Use `show_image` (which publishes a `file_ref`) followed by `create_download_link` to generate a one-time HTTP download URL that can be opened in a browser or passed to other tools.
+These clients cannot display `ImageContent` from tool results. Call `create_download_link` to generate a one-time HTTP download URL that can be opened in a browser or passed to other tools.
 
 ```
 1. generate_image(prompt="a sunset")
    → {image_id: "abc123", status: "generating", ...}
 2. check_generation_status(image_id="abc123")
    → status: "completed"
-3. show_image(uri="image://abc123/view?format=jpeg")
-   → {file_ref: {origin_id: "abc123-<hash>", mime_type: "image/jpeg", ...}, ...}
-4. create_download_link(origin_id="abc123-<hash>")
-   → {url: "https://mcp.example.com/artifacts/...", ttl_seconds: 3600, mime_type: "image/jpeg"}
+3. create_download_link(ref="image://abc123d4e5f6/view")
+   → {url: "https://mcp.example.com/transfer/...", expires_in_s: 3600}
 ```
+
+The link serves the image's original bytes. For a transformed rendering (resize or format change), read the `image://{id}/view` resource with `format`/`width`/`height`/`quality` instead.
 
 !!! tip "`create_download_link` requires HTTP transport"
     Download links are only available when the server runs with `--transport http`
-    (or `sse`). The stdio transport has no HTTP server to host the artifact
+    (or `sse`). The stdio transport has no HTTP server to host the `/transfer/{token}`
     endpoint. You also need `IMAGE_GENERATION_MCP_BASE_URL` configured.
 
 ## Known limitations

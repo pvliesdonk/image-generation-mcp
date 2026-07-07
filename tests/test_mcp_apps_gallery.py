@@ -140,16 +140,21 @@ class TestGalleryResource:
         assert "resource_link" in text
         assert "getHostCapabilities" in text
 
-    async def test_gallery_html_download_requires_downloadfile(self, server) -> None:
-        """Download buttons are only shown when downloadFile capability is present.
-        The openLink fallback is intentionally omitted: download_url is never
-        returned in gallery tool responses, so the fallback would be dead code.
+    async def test_gallery_html_download_prefers_downloadfile_else_openlink(
+        self, server
+    ) -> None:
+        """Download prefers native downloadFile, else an on-demand link.
+
+        The openLink fallback mints a one-time URL via ``create_download_link``
+        rather than relying on a server-returned ``download_url``.
         """
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert "downloadFile" in text
-        # openLink fallback removed — download_url not in tool responses
-        assert 'dlMode = "openLink"' not in text
+        assert 'dlMode = "openLink"' in text
+        assert "create_download_link" in text
+        # No reliance on an auto-minted download_url (issue #220).
+        assert "download_url" not in text
 
     async def test_gallery_html_has_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")

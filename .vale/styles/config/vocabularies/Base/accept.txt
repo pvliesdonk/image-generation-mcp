@@ -48,6 +48,7 @@ bool
 browse_gallery
 check_generation_status
 create_download_link
+create_upload_link
 delete_image
 delete_style
 denoising

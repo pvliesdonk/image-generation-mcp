@@ -328,14 +328,11 @@ def _build_lifecycle_warnings(
     return sorted(warnings)
 
 
-def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
+def register_tools(mcp: FastMCP) -> None:
     """Register all MCP tools on *mcp*.
 
     Args:
         mcp: The :class:`~fastmcp.FastMCP` instance to register tools on.
-        transport: The MCP transport in use.  ``create_download_link`` is
-            only registered for non-stdio transports (``"sse"`` or
-            ``"http"``), because stdio has no HTTP server.
     """
 
     @mcp.tool(
@@ -492,13 +489,10 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             elif len(caps.models) == 1:
                 prompt_style = caps.models[0].prompt_style
 
-        # Return immediately with pending status.  ``file_ref`` is NOT
-        # published here — at this point bytes don't exist yet AND the
-        # provider-chosen content_type (PNG / WebP / JPEG) is not yet known,
-        # so we'd be forced to lie about ``mime_type`` at publish time.
-        # Consumers poll via ``check_generation_status`` and call
-        # ``show_image`` once status="completed" — show_image is the file_ref
-        # publisher (it knows the actual ``record.content_type``).
+        # Return immediately with pending status. The image bytes don't exist
+        # yet and the provider-chosen content_type (PNG / WebP / JPEG) is not
+        # yet known. Consumers poll via ``check_generation_status`` and call
+        # ``show_image`` once status="completed".
         metadata: dict[str, Any] = {
             "status": "generating",
             "image_id": image_id,
@@ -904,9 +898,7 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
     )
     async def show_image(
         uri: str,
-        with_link: bool = True,
         service: ImageService = Depends(get_service),
-        config: ProjectConfig = Depends(get_config),
     ) -> ToolResult:
         """Display a completed image with optional on-demand transforms.
 
@@ -926,19 +918,13 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
                 params: ``format`` (``png``, ``webp``, ``jpeg``),
                 ``width`` (pixels), ``height`` (pixels),
                 ``quality`` (1-100, for lossy formats).
-            with_link: When ``True`` (default), include a one-time
-                ``download_url`` in the metadata.  Only available on
-                HTTP deployments with ``BASE_URL`` configured — absent
-                on stdio transport.  If present in the response, show
-                the URL to the user as a clickable link (the MCP App
-                widget cannot open it from its sandboxed iframe).
 
         Returns:
             For completed images: a WebP thumbnail preview (max 512px,
             under 1 MB) as ``ImageContent`` plus JSON metadata.
             For in-progress images: JSON with ``status`` and progress info.
-            For full-resolution access, use the ``image://`` resource URI
-            or the download URL.
+            For full-resolution access, use the ``image://`` resource URI,
+            or ``create_download_link`` for a one-time out-of-band URL.
         """
         parsed = urlparse(uri)
         if parsed.scheme != "image":
@@ -1049,22 +1035,6 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             "format": content_type,
             "transforms_applied": transform_params,
         }
-
-        # Auto-generate a download link when on HTTP transport with
-        # BASE_URL configured and with_link is True.
-        if with_link:
-            base_url = (config.server.base_url or "").rstrip("/")
-            if base_url:
-                from .artifacts import get_artifact_store
-
-                try:
-                    store = get_artifact_store()
-                    token = store.create_token(uri, ttl_seconds=300)
-                    metadata["download_url"] = f"{base_url}/artifacts/{token}"
-                except RuntimeError:
-                    logger.debug(
-                        "artifact_store_unavailable uri=%s", uri, exc_info=True
-                    )
 
         return ToolResult(
             content=[
@@ -1531,10 +1501,8 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             ]
         )
 
-    # create_download_link is only available on HTTP transports —
-    # stdio has no HTTP server to host the artifact endpoint.
-    if transport != "stdio":
-        _register_download_link_tool(mcp)
+    # create_download_link / create_upload_link are registered by pvl-core's
+    # register_transfer_routes (wired in server.make_server), not here.
 
     # -- Style library tools ---------------------------------------------------
 
@@ -1645,94 +1613,4 @@ def register_tools(mcp: FastMCP, *, transport: str = "stdio") -> None:
             raise ValueError(msg) from None
 
         result = {"name": name, "deleted": True}
-        return json.dumps(result, indent=2)
-
-
-def _register_download_link_tool(mcp: FastMCP) -> None:
-    """Register the ``create_download_link`` tool on *mcp*.
-
-    Separated from :func:`register_tools` so it can be conditionally
-    called only when an HTTP transport is active.
-
-    Args:
-        mcp: The :class:`~fastmcp.FastMCP` instance to register the tool on.
-    """
-
-    @mcp.tool(
-        annotations={
-            "readOnlyHint": True,
-            "destructiveHint": False,
-            "openWorldHint": False,
-        },
-        icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],
-    )
-    async def create_download_link(
-        uri: str,
-        ttl_seconds: int = 300,
-        service: ImageService = Depends(get_service),
-        config: ProjectConfig = Depends(get_config),
-    ) -> str:
-        """Create a one-time download URL for an image.
-
-        Creates a temporary HTTP endpoint that expires after a single
-        download OR when ``ttl_seconds`` elapses, whichever comes first.
-        Use this to pass images to other MCP servers (e.g., save to a
-        vault, attach to email).
-
-        The URI should be an ``image://`` resource URI, optionally with
-        transform parameters (``format``, ``width``, ``height``,
-        ``quality``).
-
-        Requires ``IMAGE_GENERATION_MCP_BASE_URL`` to be configured.
-        Only available on HTTP transport (not stdio).
-
-        Args:
-            uri: A full ``image://`` resource URI, e.g.
-                ``image://abc123/view`` or
-                ``image://abc123/view?format=webp&width=512``.
-            ttl_seconds: Link lifetime in seconds (default 300 / 5 minutes).
-
-        Returns:
-            JSON with ``download_url``, ``expires_in_seconds``, and ``uri``.
-
-        Raises:
-            ValueError: If ``IMAGE_GENERATION_MCP_BASE_URL`` is not
-                configured or the URI references an unknown image.
-        """
-        from urllib.parse import urlparse
-
-        base_url = (config.server.base_url or "").rstrip("/")
-        if not base_url:
-            msg = (
-                "IMAGE_GENERATION_MCP_BASE_URL is required for download links. "
-                "Set it to the public base URL of this server "
-                "(e.g. https://mcp.example.com)."
-            )
-            raise ValueError(msg)
-
-        parsed = urlparse(uri)
-        image_id = parsed.netloc or ""
-        if not image_id:
-            msg = f"Invalid image URI: {uri!r}. Expected format: image://{{image_id}}/view"
-            raise ValueError(msg)
-
-        await asyncio.to_thread(service.get_image, image_id)
-
-        from .artifacts import get_artifact_store
-
-        store = get_artifact_store()
-        token = store.create_token(uri, ttl_seconds=ttl_seconds)
-
-        download_url = f"{base_url}/artifacts/{token}"
-        result = {
-            "download_url": download_url,
-            "expires_in_seconds": ttl_seconds,
-            "uri": uri,
-        }
-        logger.info(
-            "Created download link for image_id=%r ttl=%ds url=%s",
-            image_id,
-            ttl_seconds,
-            download_url,
-        )
         return json.dumps(result, indent=2)

@@ -8,7 +8,6 @@ Covers:
 - show_image with resize (width-only, height-only)
 - show_image with crop (width+height)
 - show_image metadata includes model field from provider_metadata
-- show_image auto-generates download_url when base_url configured
 """
 
 from __future__ import annotations
@@ -262,12 +261,9 @@ class TestShowImageBasic:
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
         assert tool is not None
-        cfg = MagicMock()
-        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             service=service,
-            config=cfg,
         )
 
     async def test_returns_image_content(
@@ -317,12 +313,9 @@ class TestShowImageFormatConversion:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
-        cfg = MagicMock()
-        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view?{query}",
             service=service,
-            config=cfg,
         )
 
     async def test_format_webp(
@@ -372,12 +365,9 @@ class TestShowImageResize:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
-        cfg = MagicMock()
-        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view?{query}",
             service=service,
-            config=cfg,
         )
 
     async def test_width_only_resize(
@@ -450,12 +440,9 @@ class TestShowImageThumbnailCap:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
-        cfg = MagicMock()
-        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view{uri_suffix}",
             service=service,
-            config=cfg,
         )
 
     async def test_large_image_downscaled_to_512(
@@ -669,12 +656,9 @@ class TestShowImageModelField:
         mcp = FastMCP("test")
         register_tools(mcp)
         tool = await mcp.get_tool("show_image")
-        cfg = MagicMock()
-        cfg.server.base_url = None
         return await tool.fn(
             uri=f"image://{image_id}/view",
             service=service,
-            config=cfg,
         )
 
     async def test_model_present_in_metadata(
@@ -695,79 +679,6 @@ class TestShowImageModelField:
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
         assert meta["model"] is None
-
-
-# ---------------------------------------------------------------------------
-# show_image — download_url via ArtifactStore token
-# ---------------------------------------------------------------------------
-
-
-class TestShowImageDownloadUrl:
-    """show_image mints a download_url via ArtifactStore when base_url is set."""
-
-    @pytest.fixture
-    def _registered(self, service: ImageService) -> tuple[ImageService, str]:
-        result = asyncio.run(
-            PlaceholderImageProvider().generate("dl test", aspect_ratio="1:1")
-        )
-        record = service.register_image(result, "placeholder", prompt="dl test")
-        return service, record.id
-
-    async def _call_show(
-        self,
-        service: ImageService,
-        image_id: str,
-        *,
-        with_link: bool = True,
-        base_url: str | None = "https://mcp.example.com",
-    ) -> ToolResult:
-        from image_generation_mcp.artifacts import ArtifactStore, set_artifact_store
-
-        mcp = FastMCP("test")
-        register_tools(mcp)
-        artifact_store = ArtifactStore()
-        set_artifact_store(artifact_store)
-        tool = await mcp.get_tool("show_image")
-        cfg = MagicMock()
-        cfg.server.base_url = base_url
-        return await tool.fn(
-            uri=f"image://{image_id}/view",
-            with_link=with_link,
-            service=service,
-            config=cfg,
-        )
-
-    async def test_download_url_present_with_base_url(
-        self, _registered: tuple[ImageService, str]
-    ) -> None:
-        """download_url present when base_url is configured and store is active."""
-        service, image_id = _registered
-        result = await self._call_show(service, image_id, with_link=True)
-        text_items = [c for c in result.content if isinstance(c, TextContent)]
-        meta = json.loads(text_items[0].text)
-        assert "download_url" in meta
-        assert meta["download_url"].startswith("https://mcp.example.com/artifacts/")
-
-    async def test_no_download_url_when_with_link_false(
-        self, _registered: tuple[ImageService, str]
-    ) -> None:
-        """download_url suppressed when with_link=False."""
-        service, image_id = _registered
-        result = await self._call_show(service, image_id, with_link=False)
-        text_items = [c for c in result.content if isinstance(c, TextContent)]
-        meta = json.loads(text_items[0].text)
-        assert "download_url" not in meta
-
-    async def test_no_download_url_without_base_url(
-        self, _registered: tuple[ImageService, str]
-    ) -> None:
-        """download_url absent when base_url is not configured."""
-        service, image_id = _registered
-        result = await self._call_show(service, image_id, with_link=True, base_url=None)
-        text_items = [c for c in result.content if isinstance(c, TextContent)]
-        meta = json.loads(text_items[0].text)
-        assert "download_url" not in meta
-        assert "download_url" not in meta
 
 
 # ---------------------------------------------------------------------------
@@ -885,12 +796,9 @@ class TestGenerateImageErrorHandling:
         register_tools(mcp)
         show_tool = await mcp.get_tool("show_image")
         assert show_tool is not None
-        show_cfg = MagicMock()
-        show_cfg.server.base_url = None
         show_result = await show_tool.fn(
             uri=f"image://{image_id}/view",
             service=service,
-            config=show_cfg,
         )
         show_text = [c for c in show_result.content if isinstance(c, TextContent)]
         meta = json.loads(show_text[0].text)
@@ -915,12 +823,9 @@ class TestGenerateImageErrorHandling:
         register_tools(mcp)
         show_tool = await mcp.get_tool("show_image")
         assert show_tool is not None
-        show_cfg = MagicMock()
-        show_cfg.server.base_url = None
         show_result = await show_tool.fn(
             uri=f"image://{image_id}/view",
             service=service,
-            config=show_cfg,
         )
         show_text = [c for c in show_result.content if isinstance(c, TextContent)]
         meta = json.loads(show_text[0].text)
@@ -983,14 +888,10 @@ class TestShowImageInvalidScheme:
         tool = await mcp.get_tool("show_image")
         assert tool is not None
 
-        cfg = MagicMock()
-        cfg.server.base_url = None
-
         with pytest.raises(ValueError, match="Expected an image://"):
             await tool.fn(
                 uri="https://example.com/image.png",
                 service=service,
-                config=cfg,
             )
 
 
@@ -1013,13 +914,9 @@ class TestShowImageQualityTransform:
         tool = await mcp.get_tool("show_image")
         assert tool is not None
 
-        cfg = MagicMock()
-        cfg.server.base_url = None
-
         result = await tool.fn(
             uri=f"image://{image_id}/view?format=jpeg&quality=75",
             service=service,
-            config=cfg,
         )
         text_items = [c for c in result.content if isinstance(c, TextContent)]
         meta = json.loads(text_items[0].text)
@@ -1159,29 +1056,6 @@ class TestListProvidersTool:
         assert any("gpt-image-1" in w and "legacy" in w for w in warnings), (
             f"expected a legacy warning mentioning gpt-image-1; got {warnings!r}"
         )
-
-
-# ---------------------------------------------------------------------------
-# create_download_link — registered on non-stdio transports
-# ---------------------------------------------------------------------------
-
-
-class TestCreateDownloadLinkTool:
-    """create_download_link is registered by register_tools on HTTP transports only."""
-
-    async def test_registered_on_http(self) -> None:
-        """register_tools registers create_download_link for http transport."""
-        mcp = FastMCP("test")
-        register_tools(mcp, transport="http")
-        tool = await mcp.get_tool("create_download_link")
-        assert tool is not None
-
-    async def test_not_registered_on_stdio(self) -> None:
-        """No create_download_link on stdio (no HTTP server available)."""
-        mcp = FastMCP("test")
-        register_tools(mcp, transport="stdio")
-        tool = await mcp.get_tool("create_download_link")
-        assert tool is None
 
 
 # ---------------------------------------------------------------------------

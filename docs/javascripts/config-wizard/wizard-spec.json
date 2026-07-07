@@ -273,6 +273,46 @@
       "advancedGroup": "Behaviour"
     },
     {
+      "id": "transfer_ttl_default_s",
+      "label": "Transfer link default TTL (s)",
+      "help": "Default lifetime of a create_download_link/create_upload_link URL when the caller omits one. HTTP transports only. Default: 3600 (1 h).",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_TRANSFER_TTL_DEFAULT_S",
+      "advancedGroup": "Transfer links"
+    },
+    {
+      "id": "transfer_ttl_max_s",
+      "label": "Transfer link max TTL (s)",
+      "help": "Ceiling a caller-requested link TTL is clamped to. Default: 86400 (24 h).",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_TRANSFER_TTL_MAX_S",
+      "advancedGroup": "Transfer links"
+    },
+    {
+      "id": "transfer_grace_ttl_s",
+      "label": "Transfer link grace TTL (s)",
+      "help": "Post-success grace window a one-time link stays reclaimable (survives a stalled download). Default: 60.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_TRANSFER_GRACE_TTL_S",
+      "advancedGroup": "Transfer links"
+    },
+    {
+      "id": "transfer_lease_s",
+      "label": "Transfer in-flight lease (s)",
+      "help": "Reclaim window for an in-flight transfer whose handler crashed. Default: 60.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_TRANSFER_LEASE_S",
+      "advancedGroup": "Transfer links"
+    },
+    {
+      "id": "transfer_max_upload_bytes",
+      "label": "Transfer max upload bytes",
+      "help": "Per-upload size cap for create_upload_link bodies. Default: 104857600 (100 MiB).",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_TRANSFER_MAX_UPLOAD_BYTES",
+      "advancedGroup": "Transfer links"
+    },
+    {
       "id": "allow_local_file_input",
       "label": "Allow local file input",
       "help": "Enable reading input images from local file paths. Default: false.",

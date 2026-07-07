@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from fastmcp_pvl_core import ServerConfig, env, parse_bool, parse_list
+from fastmcp_pvl_core import ServerConfig, TransferConfig, env, parse_bool, parse_list
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,7 @@ class ProjectConfig:
     styles_dir: Path = field(default_factory=lambda: _DEFAULT_STYLES_DIR)
     allow_local_file_input: bool = False
     max_input_image_bytes: int = 20 * 1024 * 1024
+    transfer: TransferConfig = field(default_factory=TransferConfig)
     # CONFIG-FIELDS-END
 
     @classmethod
@@ -65,6 +66,9 @@ class ProjectConfig:
         - ``IMAGE_GENERATION_MCP_STYLES_DIR``: style preset dir; default ``~/.image-generation-mcp/styles/``.
         - ``IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT``: enable local file input; default ``false``.
         - ``IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES``: max input image size in bytes; default ``20971520`` (20 MiB).
+        - ``IMAGE_GENERATION_MCP_TRANSFER_*``: capability-link transfer tuning
+          (``TTL_DEFAULT_S``, ``TTL_MAX_S``, ``GRACE_TTL_S``, ``LEASE_S``,
+          ``MAX_UPLOAD_BYTES``) read via ``TransferConfig.from_env``.
 
         Plus all generic ``ServerConfig`` env vars (BASE_URL, BEARER_TOKEN,
         OIDC_*, EVENT_STORE_URL, SERVER_NAME, INSTRUCTIONS) — see
@@ -159,6 +163,7 @@ class ProjectConfig:
             styles_dir=styles_dir,
             allow_local_file_input=allow_local_file_input,
             max_input_image_bytes=max_input_image_bytes,
+            transfer=TransferConfig.from_env(_ENV_PREFIX),
         )
         # CONFIG-FROM-ENV-END
 
