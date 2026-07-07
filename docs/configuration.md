@@ -93,10 +93,10 @@ The `create_download_link` and `create_upload_link` tools (and the backing `/tra
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `IMAGE_GENERATION_MCP_TRANSFER_TTL_DEFAULT_S` | int | `3600` | Link lifetime (seconds) when the caller omits `ttl_s` (default 1 hour). |
-| `IMAGE_GENERATION_MCP_TRANSFER_TTL_MAX_S` | int | `86400` | Ceiling (seconds) for a caller-requested `ttl_s`; larger values are clamped to this (default 24 hours). |
-| `IMAGE_GENERATION_MCP_TRANSFER_GRACE_TTL_S` | int | `60` | Post-success grace window (seconds) during which a served-but-stalled transfer can retry. |
-| `IMAGE_GENERATION_MCP_TRANSFER_LEASE_S` | int | `60` | Reclaim window (seconds) for an in-flight reservation left behind by a crashed handler. |
+| `IMAGE_GENERATION_MCP_TRANSFER_TTL_DEFAULT_S` | number | `3600` | Link lifetime (seconds) when the caller omits `ttl_s` (default 1 hour). |
+| `IMAGE_GENERATION_MCP_TRANSFER_TTL_MAX_S` | number | `86400` | Ceiling (seconds) for a caller-requested `ttl_s`; larger values are clamped to this (default 24 hours). |
+| `IMAGE_GENERATION_MCP_TRANSFER_GRACE_TTL_S` | number | `60` | Post-success grace window (seconds) during which a served-but-stalled transfer can retry. |
+| `IMAGE_GENERATION_MCP_TRANSFER_LEASE_S` | number | `60` | Reclaim window (seconds) for an in-flight reservation left behind by a crashed handler. |
 | `IMAGE_GENERATION_MCP_TRANSFER_MAX_UPLOAD_BYTES` | int | `104857600` | Per-upload size cap in bytes for `create_upload_link` POSTs (default 100 MiB). |
 
 ## Server
