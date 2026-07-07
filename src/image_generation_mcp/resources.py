@@ -790,7 +790,7 @@ _IMAGE_VIEWER_HTML = """\
       const id = currentMeta.image_id;
       const mime = currentMeta.format || "image/png";
       const ext = mime.split("/").pop() || "png";
-      const { isError } = await app.downloadFile({
+      const res = await app.downloadFile({
         contents: [{
           type: "resource_link",
           uri: "image://" + id + "/view",
@@ -798,7 +798,8 @@ _IMAGE_VIEWER_HTML = """\
           mimeType: mime,
         }],
       });
-      return !isError;
+      if (res.isError) console.warn("downloadFile failed", res.content?.find(c => c.type === "text")?.text);
+      return !res.isError;
     }
 
     async function tryOpenLink() {
@@ -1709,14 +1710,16 @@ _IMAGE_GALLERY_HTML = """\
       let ok = false;
       try {
         if (dlMode === "downloadFile") {
-          ok = !(await app.downloadFile({
+          const res = await app.downloadFile({
             contents: [{
               type: "resource_link",
               uri: "image://" + id + "/view",
               name: id + "." + ext,
               mimeType: mime,
             }],
-          })).isError;
+          });
+          if (res.isError) console.warn("downloadFile failed", res.content?.find(c => c.type === "text")?.text);
+          ok = !res.isError;
         } else if (dlMode === "openLink") {
           // Mint a one-time download URL on demand via the transfer framework.
           const result = await app.callServerTool({

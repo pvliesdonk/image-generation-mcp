@@ -165,6 +165,8 @@ class TestGalleryResource:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert "create_download_link failed" in text
+        # The native downloadFile isError leg is logged too, not silently dropped.
+        assert "downloadFile failed" in text
         assert "Download failed — please try again." in text
 
     async def test_gallery_html_has_empty_state(self, server) -> None:

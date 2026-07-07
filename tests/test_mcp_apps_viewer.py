@@ -138,6 +138,8 @@ class TestImageViewerResource:
         text = result.contents[0].content
         # isError content is logged, not swallowed (catch + isError branch).
         assert text.count("create_download_link failed") >= 2
+        # The native downloadFile isError leg is logged too, not silently dropped.
+        assert "downloadFile failed" in text
         # Cause-neutral message; no misattribution to link creation.
         assert "could not be created" not in text
         assert "Download failed — please try again." in text

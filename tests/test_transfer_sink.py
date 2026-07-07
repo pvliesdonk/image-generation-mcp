@@ -104,6 +104,21 @@ async def test_read_serves_image_bytes(
     assert result.filename == f"{generated_id}.png"
 
 
+async def test_read_missing_backing_file_raises_provider_error(
+    sink: GalleryTransferSink, service: ImageService, generated_id: str
+) -> None:
+    """A backing file deleted after link mint raises a domain error, not raw OSError.
+
+    The existence check in ``validate`` runs at mint time, so a file removed
+    before the download (restart cleanup, external deletion) reaches ``read``.
+    ``read`` must surface a domain ``ImageProviderError`` (logged) rather than
+    leaking a bare ``OSError`` traceback.
+    """
+    service.get_image(generated_id).original_path.unlink()
+    with pytest.raises(ImageProviderError):
+        await sink.read(generated_id)
+
+
 # --- write (upload) -------------------------------------------------------
 
 

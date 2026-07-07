@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 from image_generation_mcp._input_images import _parse_gallery_id
 from image_generation_mcp._server_deps import _get_service_from_store
 from image_generation_mcp.domain import _mime_to_ext
+from image_generation_mcp.providers.types import ImageProviderError
 
 logger = logging.getLogger(__name__)
 
@@ -89,12 +90,26 @@ class GalleryTransferSink:
         return _UPLOAD_ORIGIN_SOURCE
 
     async def read(self, handle: str) -> TransferReadResult:
-        """Serve a gallery image's original bytes for a download handle."""
+        """Serve a gallery image's original bytes for a download handle.
+
+        Raises:
+            ImageProviderError: The image's backing file is gone (deleted
+                between link creation and download). ``validate`` checks
+                existence at mint time, so this covers only that later race.
+                pvl-core surfaces it to the client as a 500; a 4xx would need
+                upstream support (pvliesdonk/fastmcp-pvl-core#233).
+        """
         from fastmcp_pvl_core import TransferReadResult
 
         service = self._service()
         record = await asyncio.to_thread(service.get_image, handle)
-        data = await asyncio.to_thread(record.original_path.read_bytes)
+        try:
+            data = await asyncio.to_thread(record.original_path.read_bytes)
+        except OSError as exc:
+            logger.warning("transfer_download_file_missing image_id=%s", record.id)
+            raise ImageProviderError(
+                "gallery", f"image {record.id} is no longer available"
+            ) from exc
         # Reuse domain.py's canonical MIME→extension map (single source of
         # truth). A stored record's content_type is always png/jpeg/webp, so
         # the helper's ".png" fallback is unreachable here.
