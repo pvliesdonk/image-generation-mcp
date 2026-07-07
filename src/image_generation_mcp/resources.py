@@ -2019,9 +2019,9 @@ def register_resources(mcp: FastMCP) -> None:
         "image://list",
         mime_type="application/json",
         description=(
-            "List all generated images with their IDs, resource URIs, "
-            "and prompts. Read this to find image_ids for use with "
-            "image://*/view and image://*/metadata resources."
+            "List all gallery images (generated and imported) with their "
+            "IDs, resource URIs, and prompts. Read this to find image_ids "
+            "for use with image://*/view and image://*/metadata resources."
         ),
         icons=[
             Icon(
@@ -2046,6 +2046,8 @@ def register_resources(mcp: FastMCP) -> None:
             {
                 "image_id": img.id,
                 "status": "completed",
+                "origin": img.origin,
+                "origin_source": img.origin_source,
                 "provider": img.provider,
                 "content_type": img.content_type,
                 "original_dimensions": list(img.original_dimensions),

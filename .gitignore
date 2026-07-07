@@ -44,3 +44,6 @@ site/
 .mcp.json
 .repowise/
 docs/superpowers/
+
+# Editor / IDE tooling (e.g. codex plugin writes .vscode/mcp.json)
+.vscode/

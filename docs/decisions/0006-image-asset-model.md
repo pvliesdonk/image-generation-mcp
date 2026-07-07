@@ -98,6 +98,34 @@ each image (`{id}-original.{ext}`). The in-memory registry is a cache rebuilt
 from sidecar files on startup. This ensures provenance survives server
 restarts without introducing database dependencies.
 
+### Origin Provenance (`origin` / `origin_source`)
+
+`ImageRecord` carries an `origin` discriminator (`"generated"` — produced by a
+provider — vs `"imported"` — brought into the gallery from an external source)
+plus an `origin_source` provenance string (e.g. `"upload"`, `"fetch:<url>"`, an
+original filename). This lets a single gallery hold both provider-generated and
+externally-imported images while keeping them distinguishable; an imported
+record carries an empty `provider`/`prompt`, so `origin` is the sole
+discriminator. Introduced with the reference-image ingestion epic (issue #300).
+
+Decisions:
+
+- **`origin` is stored, not derived.** Although today `origin` is a pure
+  function of `origin_source` (imported iff a source is present), it is stored
+  as an explicit, serialized sidecar field so the discriminator is stable if a
+  future origin kind is added that is **not** source-derived (e.g. a locally
+  edited variant).
+- **Coupling invariant, single definition.** `origin="imported"` iff a truthy
+  `origin_source`; `origin="generated"` iff `origin_source is None`. One
+  canonicalizer (`_origin_pair`) defines the rule and is used at both
+  enforcement sites — strict validation at `ImageRecord` construction, lenient
+  coercion when loading persisted sidecars.
+- **Corrupt sidecar degrades, not drops.** A persisted record whose pair is
+  inconsistent (e.g. hand-edited) is coerced to a valid `("generated", None)`
+  on reload rather than raising and dropping the image from the gallery.
+- **Back-compatible.** Sidecars predating these fields have neither key and
+  load as `("generated", None)`.
+
 ### Resolution as a Read-Time Concern
 
 The `generate_image` tool generates at the provider's native resolution.
