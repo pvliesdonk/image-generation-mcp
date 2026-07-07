@@ -213,7 +213,6 @@ Display a completed image with optional on-demand transforms. Accepts a full `im
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `uri` | str | *(required)* | Full `image://` resource URI, such as `image://a1b2c3/view?format=webp&width=512` |
-| `with_link` | bool | `true` | When `true`, publish the rendered bytes to MCP File Exchange and include `file_ref` (and a backward-compat `download_url`) in the metadata. Only effective when the server runs on HTTP transport with `BASE_URL` configured. |
 
 Transforms are encoded in the URI query string using the same parameters as the `image://{id}/view` resource template: `format`, `width`, `height`, `quality`.
 
@@ -235,24 +234,13 @@ Returns a `ToolResult` with:
   "thumbnail_dimensions": [512, 342],
   "original_size_bytes": 3145728,
   "format": "image/png",
-  "transforms_applied": {},
-  "file_ref": {
-    "origin_server": "image-generation-mcp",
-    "origin_id": "a1b2c3d4e5f6",
-    "transfer": {"http": {"tool": "create_download_link"}},
-    "mime_type": "image/png",
-    "size_bytes": 3145728,
-    "preview": {"description": "watercolor painting of a mountain landscape at sunset"}
-  },
-  "download_url": "https://mcp.example.com/artifacts/7f3a...e9b1"
+  "transforms_applied": {}
 }
 ```
 
 The `model` field contains the specific model used by the provider (such as `"gpt-image-1"` or `"dreamshaper_xl"`), or `null` if the provider does not report a model name.
 
-The `file_ref` field is the spec-compliant MCP File Exchange handle. Pass `file_ref.origin_id` to `create_download_link` to mint a fresh download URL (configurable TTL, default 1 hour). Each `format`/`width`/`height`/`quality` combination publishes under its own `origin_id` (the bare `image_id` for the default rendering, `image_id-<hash>` for any transformed variant), with no URL-query-string smuggling.
-
-The `download_url` field is a backward-compat eager-mint of the same URL for clients (including the gallery UI) that don't yet drive `create_download_link` themselves. Single-use, 5-minute TTL. The MCP App widget cannot open this URL from its sandboxed iframe, so language models should present it directly to the user as a clickable link in the conversation text. Both fields are only present when `with_link` is `true` (default) and the server is running on HTTP transport with `IMAGE_GENERATION_MCP_BASE_URL` configured.
+`show_image` returns metadata and an inline thumbnail only; it does not mint a download URL. For an out-of-band full-resolution URL, call `create_download_link` with the image's `image://` URI or bare id (HTTP transport only). For in-band full-resolution access, read the `image://{id}/view` resource, optionally with `format`/`width`/`height`/`quality` transforms.
 
 The `dimensions` field reports the actual image size (or the transformed size if transforms were requested). The `thumbnail_dimensions` field reports the size of the inline preview, which is capped at 512 px. When `dimensions` and `thumbnail_dimensions` differ, the inline preview is a downscaled version; use the `image://` resource URI or `create_download_link` for full resolution.
 
@@ -653,7 +641,9 @@ These tools provide access to the same resources documented in [Resources](resou
 
 ## create_download_link
 
-Mint a one-time HTTP download URL for an image. Enables server-to-server image transfer between MCP servers (such as saving to a vault or attaching to email). The link expires after a single download or after `ttl_seconds`, whichever comes first.
+Mint a one-time HTTP download URL for a gallery image. Enables server-to-server image transfer between MCP servers (such as saving to a vault or attaching to email). The link expires after a single download or after `ttl_s`, whichever comes first.
+
+Provided by pvl-core's shared capability-link transfer routes. Available only on an HTTP or SSE transport with `IMAGE_GENERATION_MCP_BASE_URL` configured.
 
 | Property | Value |
 |----------|-------|
@@ -667,22 +657,21 @@ Mint a one-time HTTP download URL for an image. Enables server-to-server image t
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `uri` | str | *(required)* | A full `image://` resource URI, such as `image://abc123/view` or `image://abc123/view?format=webp&width=512`. |
-| `ttl_seconds` | int | 300 | Link lifetime in seconds (default 5 minutes). |
+| `ref` | str | *(required)* | The image to serve: an `image://<id>` URI or a bare 12-hex image id. |
+| `ttl_s` | number | (`TRANSFER_TTL_DEFAULT_S`, 3600) | Link lifetime in seconds. Clamped to `TRANSFER_TTL_MAX_S` (default 24 hours). |
 
 ### Return value
 
 ```json
 {
-  "download_url": "https://mcp.example.com/artifacts/7f3a...e9b1",
-  "expires_in_seconds": 300,
-  "uri": "image://abc123/view"
+  "url": "https://mcp.example.com/transfer/7f3a...e9b1",
+  "expires_in_s": 3600
 }
 ```
 
 The download URL:
-- Serves the bytes once with the appropriate `Content-Type`
-- Returns HTTP 404 after first download or after TTL expires
+- Serves the image's **original bytes** once with the appropriate `Content-Type` (no transforms; for a transformed rendering read the `image://{id}/view` resource with `format`/`width`/`height`/`quality`)
+- Returns HTTP 404 after the first download or after the TTL expires
 - Does not require bearer token or OIDC auth (the random token is the auth)
 
 ### Example workflow
@@ -694,10 +683,56 @@ User: Generate a photo and save it to my vault
    → {image_id: "a1b2c3...", status: "generating", ...}
 2. check_generation_status(image_id="a1b2c3...")
    → status: "completed"
-3. create_download_link(uri="image://a1b2c3/view?format=jpeg")
-   → {download_url: "https://mcp.example.com/artifacts/7f3a...", expires_in_seconds: 300, ...}
+3. create_download_link(ref="image://a1b2c3d4e5f6/view")
+   → {url: "https://mcp.example.com/transfer/7f3a...", expires_in_s: 3600}
 4. vault-mcp: save_artifact_from_url(url="https://...", path="photos/sunset.jpg")
 ```
+
+---
+
+## create_upload_link
+
+Mint a one-time HTTP upload URL. The caller POSTs image bytes to the URL, and the server ingests them as an imported gallery image (`origin="imported"`, `origin_source="upload"`). Enables another MCP server or client to push an image into the gallery without a shared filesystem.
+
+Provided by pvl-core's shared capability-link transfer routes. Available only on an HTTP or SSE transport with `IMAGE_GENERATION_MCP_BASE_URL` configured.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false` |
+| **Task** | No |
+| **Transport** | HTTP/SSE only (not available on stdio) |
+| **Requires** | `IMAGE_GENERATION_MCP_BASE_URL` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `ref` | str | *(required)* | Intended filename or label for the uploaded image (a `.png`/`.jpg`/`.jpeg`/`.webp` extension is checked when present). |
+| `ttl_s` | number | (`TRANSFER_TTL_DEFAULT_S`, 3600) | Link lifetime in seconds. Clamped to `TRANSFER_TTL_MAX_S` (default 24 hours). |
+
+### Return value
+
+The tool returns the upload URL:
+
+```json
+{
+  "url": "https://mcp.example.com/transfer/9c2b...a1d4",
+  "expires_in_s": 3600
+}
+```
+
+After the caller POSTs (or PUTs) the image bytes to that URL, the HTTP response is JSON describing the imported gallery entry:
+
+```json
+{
+  "image_id": "b7e9c1a2d3f4",
+  "uri": "image://b7e9c1a2d3f4/view",
+  "origin": "imported"
+}
+```
+
+The upload URL accepts a single successful upload, then expires. The transfer route is capped at the smaller of `TRANSFER_MAX_UPLOAD_BYTES` (default 100 MiB) and `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB), so an oversized body is rejected with a `413` at the route boundary rather than accepted and then failed during ingestion. The effective image-upload cap is 20 MiB by default.
 
 ---
 

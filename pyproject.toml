@@ -19,7 +19,7 @@ classifiers = [
 dependencies = [
     # httpx and uvicorn come transitively via fastmcp (pulled by
     # fastmcp-pvl-core).  Don't re-list them here.
-    "fastmcp-pvl-core>=4.3.0,<5",
+    "fastmcp-pvl-core>=4.4.0,<5",
     "typer>=0.12",
 
     # PROJECT-DEPS-START — add domain dependencies below; kept across copier update
@@ -119,10 +119,14 @@ ignore = ["E501"]
 # `# noqa: PLR0913` routine. It only bites when enable_structural_gate is on
 # (PLR0913 isn't in the base select); domain modules keep the check, and
 # C901/PLR0912/PLR0915 still catch a genuinely complex tool here.
+# tools.py additionally ignores C901/PLR0915: register_tools is a flat
+# registration hub (one @mcp.tool block per tool) whose statement/cyclomatic
+# count scales with the tool list, not with real complexity — PLR0912
+# (branches) stays active to catch a genuinely complex individual tool.
 "src/image_generation_mcp/server.py" = ["B008", "TC001", "TC002", "PLR0913"]
 "src/image_generation_mcp/cli.py" = ["B008", "PLR0913"]
 "src/image_generation_mcp/_server_deps.py" = ["B008", "TC002", "TC003", "PLR0913"]
-"src/image_generation_mcp/tools.py" = ["B008", "TC001", "TC002", "PLR0913"]
+"src/image_generation_mcp/tools.py" = ["B008", "TC001", "TC002", "PLR0913", "C901", "PLR0915"]
 "src/image_generation_mcp/resources.py" = ["B008", "TC001", "TC002", "PLR0913"]
 "src/image_generation_mcp/prompts.py" = ["B008", "TC002", "PLR0913"]
 # Path is used at runtime in ImageRecord dataclass.

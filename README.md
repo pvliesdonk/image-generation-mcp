@@ -219,7 +219,7 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | Variable | Default | Required | Description |
 |---|---|---|---|
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | (none) | No | Static bearer token; enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | (none) | No | Public base URL for OIDC and MCP File Exchange downloads (`https://mcp.example.com`). |
+| `IMAGE_GENERATION_MCP_BASE_URL` | (none) | No | Public base URL for OIDC and the capability-link transfer routes (`https://mcp.example.com`). Also enables `create_download_link` / `create_upload_link` and the `/transfer/{token}` endpoint on HTTP transports. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | (none) | No | OIDC discovery endpoint URL. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | (none) | No | OIDC client ID. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | (none) | No | OIDC client secret. |
@@ -242,13 +242,17 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 | `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | `false` | No | Enable local filesystem paths as `transform_image` reference images. **Security:** grants callers server-filesystem read access via path; enable only for trusted callers or local single-user deployments. |
 | `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` | `20971520` | No | Per-reference maximum byte size for input images (default 20 MiB). |
 
-### File Exchange (MCP downloads)
+### Capability-link transfer (HTTP downloads/uploads)
+
+The `create_download_link` / `create_upload_link` tools and the `/transfer/{token}` route register only on an HTTP or SSE transport with `BASE_URL` set, and store link tokens in `IMAGE_GENERATION_MCP_KV_STORE_URL`. The knobs below tune link lifetime and upload limits.
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_ENABLED` | `true` on http/sse, `false` on stdio | No | Master switch for the file-exchange producer. Set `false` to suppress all `file_ref` publishing. |
-| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_TTL` | `3600` | No | Default and maximum TTL (seconds) for published files and download URLs. `create_download_link`'s `ttl_seconds` is clamped to this. |
-| `IMAGE_GENERATION_MCP_FILE_EXCHANGE_CONSUME` | `true` | Recommended `false` | Master switch for the consumer side. This server is producer-only; set `false` to silence the upstream "consume on, no consumer_sink wired" startup warning. |
+| `IMAGE_GENERATION_MCP_TRANSFER_TTL_DEFAULT_S` | `3600` | No | Link lifetime (seconds) when the caller omits `ttl_s` (1 hour). |
+| `IMAGE_GENERATION_MCP_TRANSFER_TTL_MAX_S` | `86400` | No | Ceiling (seconds); a caller-requested `ttl_s` is clamped to this (24 hours). |
+| `IMAGE_GENERATION_MCP_TRANSFER_GRACE_TTL_S` | `60` | No | Post-success grace window (seconds) for a stalled transfer to retry. |
+| `IMAGE_GENERATION_MCP_TRANSFER_LEASE_S` | `60` | No | Reclaim window (seconds) for an in-flight reservation from a crashed handler. |
+| `IMAGE_GENERATION_MCP_TRANSFER_MAX_UPLOAD_BYTES` | `104857600` | No | Per-upload size cap in bytes for `create_upload_link` POSTs (100 MiB). |
 
 ### Server identity
 

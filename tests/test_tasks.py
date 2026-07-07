@@ -150,12 +150,9 @@ async def test_background_task_completes_after_return(tmp_path: Path) -> None:
 
     show_tool = await mcp.get_tool("show_image")
     assert show_tool is not None
-    show_cfg = MagicMock()
-    show_cfg.base_url = None
     show_result = await show_tool.fn(
         uri=f"image://{image_id}/view",
         service=svc,
-        config=show_cfg,
     )
     show_text = [c for c in show_result.content if isinstance(c, TextContent)]
     show_meta = json.loads(show_text[0].text)
@@ -206,12 +203,9 @@ async def test_show_image_redirects_to_check_for_in_progress(
     image_id = json.loads(text_items[0].text)["image_id"]
 
     # Call show_image immediately — should redirect to check_generation_status
-    show_cfg = MagicMock()
-    show_cfg.base_url = None
     show_result = await show_tool.fn(
         uri=f"image://{image_id}/view",
         service=svc,
-        config=show_cfg,
     )
     show_text = [c for c in show_result.content if isinstance(c, TextContent)]
     show_meta = json.loads(show_text[0].text)

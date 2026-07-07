@@ -39,7 +39,7 @@ instructions without editing template-owned code:
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_AUTH_MODE` | str | auto | OIDC auth mode: `remote` (local JWT validation) or `oidc-proxy` (DCR emulation). Auto-detected from env vars when not set (see below). |
 | `IMAGE_GENERATION_MCP_BEARER_TOKEN` | str | (unset) | Static bearer token for HTTP authentication. Enables bearer auth when set. |
-| `IMAGE_GENERATION_MCP_BASE_URL` | str | (unset) | Public base URL of the server (such as `https://mcp.example.com`). Required for OIDC and for MCP File Exchange downloads (`create_download_link`, `show_image`'s `file_ref` / auto `download_url`). Include subpath prefix if applicable. |
+| `IMAGE_GENERATION_MCP_BASE_URL` | str | (unset) | Public base URL of the server (such as `https://mcp.example.com`). Required for OIDC and for the capability-link transfer routes (`create_download_link` / `create_upload_link` and the `/transfer/{token}` endpoint). Include subpath prefix if applicable. |
 | `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | str | (unset) | OIDC discovery endpoint URL (such as `https://auth.example.com/.well-known/openid-configuration`). |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_ID` | str | (unset) | OIDC client ID registered with your identity provider. Required for `oidc-proxy` mode only. |
 | `IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET` | str | (unset) | OIDC client secret. Required for `oidc-proxy` mode only. |
@@ -86,6 +86,18 @@ instructions without editing template-owned code:
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_EVENT_STORE_URL` | str | `file:///data/state/events` | EventStore backend for SSE session resumeability. `file:///path` stores events on disk (survives restarts); `memory://` keeps events in-process only (dev/test). |
+
+## Capability-link transfer (HTTP transport)
+
+The `create_download_link` and `create_upload_link` tools (and the backing `/transfer/{token}` HTTP route) come from pvl-core's shared capability-link transfer routes. They register only on an HTTP or SSE transport with `IMAGE_GENERATION_MCP_BASE_URL` set. One-time link tokens are stored in the KV store configured by `IMAGE_GENERATION_MCP_KV_STORE_URL` (a `file:///data/state` file store in the Docker image; `memory://` for dev). The knobs below tune link lifetime and upload limits.
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `IMAGE_GENERATION_MCP_TRANSFER_TTL_DEFAULT_S` | number | `3600` | Link lifetime (seconds) when the caller omits `ttl_s` (default 1 hour). |
+| `IMAGE_GENERATION_MCP_TRANSFER_TTL_MAX_S` | number | `86400` | Ceiling (seconds) for a caller-requested `ttl_s`; larger values are clamped to this (default 24 hours). |
+| `IMAGE_GENERATION_MCP_TRANSFER_GRACE_TTL_S` | number | `60` | Post-success grace window (seconds) during which a served-but-stalled transfer can retry. |
+| `IMAGE_GENERATION_MCP_TRANSFER_LEASE_S` | number | `60` | Reclaim window (seconds) for an in-flight reservation left behind by a crashed handler. |
+| `IMAGE_GENERATION_MCP_TRANSFER_MAX_UPLOAD_BYTES` | int | `104857600` | Per-upload size cap in bytes for `create_upload_link` POSTs (default 100 MiB). |
 
 ## Server
 

@@ -26,7 +26,7 @@ from fastmcp_pvl_core import (
     resolve_auth_mode,
     wire_middleware_stack,
 )
-from mcp.types import Icon
+from mcp.types import Icon, ToolAnnotations
 
 from image_generation_mcp._server_deps import _service_context
 from image_generation_mcp.config import _ENV_PREFIX, ProjectConfig
@@ -96,6 +96,58 @@ def _build_oidc_auth() -> object | None:
     return build_oidc_proxy_auth(_load_server_config())
 
 
+# pvl-core registers the transfer tools bare (no title / hints / icon / tags).
+# Per the Tool Registration Checklist, attach the missing metadata here, and
+# tag create_upload_link ``write`` so the read-only ``mcp.disable(tags={"write"})``
+# hides it (it mutates the gallery via register_imported_image).
+_TRANSFER_TOOL_META: dict[str, tuple[ToolAnnotations, str, str | None]] = {
+    "create_download_link": (
+        ToolAnnotations(
+            title="Create Download Link",
+            readOnlyHint=True,
+            destructiveHint=False,
+            openWorldHint=False,
+        ),
+        "download",
+        None,
+    ),
+    "create_upload_link": (
+        ToolAnnotations(
+            title="Create Upload Link",
+            readOnlyHint=False,
+            destructiveHint=False,
+            openWorldHint=False,
+        ),
+        "upload",
+        "write",
+    ),
+}
+
+
+def _finalize_transfer_tool_metadata(mcp: FastMCP) -> None:
+    """Attach title/hints/icon (and the ``write`` tag) to the transfer tools.
+
+    pvl-core's ``register_transfer_routes`` registers ``create_download_link`` /
+    ``create_upload_link`` without annotations or tags; this fills that gap
+    post-registration (FastMCP tools are mutable). Accesses the tool store the
+    same way ``fastmcp_pvl_core.register_tool_icons`` does — FastMCP exposes no
+    public sync tools accessor.
+    """
+    from fastmcp.tools.tool import Tool
+
+    by_name: dict[str, list[Tool]] = {}
+    for comp in mcp.local_provider._components.values():
+        if isinstance(comp, Tool):
+            by_name.setdefault(comp.name, []).append(comp)
+
+    for name, (annotation, icon, tag) in _TRANSFER_TOOL_META.items():
+        for tool in by_name.get(name, []):
+            tool.annotations = annotation
+            tool.icons = [Icon(src=_LUCIDE.format(icon), mimeType="image/svg+xml")]
+            if tag:
+                tool.tags = tool.tags | {tag}
+
+
 def make_server(
     *,
     transport: str = "stdio",
@@ -105,8 +157,8 @@ def make_server(
 
     Args:
         transport: ``"stdio"`` / ``"http"`` / ``"sse"``.  HTTP-only
-            features (artifact downloads) are wired only when transport
-            != ``"stdio"``.
+            features (capability-link transfer routes) are wired only when
+            transport != ``"stdio"`` and ``base_url`` is set.
         config: Optional pre-loaded config; defaults to env-based load.
 
     Returns:
@@ -176,7 +228,7 @@ def make_server(
 
     wire_middleware_stack(mcp)
 
-    register_tools(mcp, transport=transport)
+    register_tools(mcp)
     register_resources(mcp)
     register_prompts(mcp)
 
@@ -202,17 +254,38 @@ def make_server(
     # transforms, mode toggles, alternative middleware, additional registrations);
     # kept across copier update. Leave empty for projects that don't customise
     # make_server() beyond the standard scaffold.
-    if transport != "stdio":
-        from image_generation_mcp.artifacts import make_artifact_handler
+    # Capability-link transfer (upload + download) via pvl-core's shared
+    # framework. Registered only on an HTTP transport with base_url set: the
+    # /transfer/{token} route needs an HTTP server, and register_transfer_routes
+    # raises ConfigurationError without base_url.
+    if transport != "stdio" and config.server.base_url:
+        from dataclasses import replace
 
-        artifact_handler = make_artifact_handler()
+        from fastmcp_pvl_core import register_transfer_routes
 
-        from starlette.requests import Request
-        from starlette.responses import Response
+        from image_generation_mcp._transfer_sink import GalleryTransferSink
 
-        @mcp.custom_route("/artifacts/{token}", methods=["GET"])
-        async def _artifact_route(request: Request) -> Response:
-            return await artifact_handler(request)
+        _transfer_sink = GalleryTransferSink(config)
+        # Cap uploads at the tighter of the transfer and domain image limits so
+        # an oversized image is rejected with a clean 413 at the route boundary,
+        # not accepted and then 500'd inside sink.write (register_imported_image
+        # raises InputImageTooLarge, which pvl-core re-raises as a generic 500).
+        # This is the "effective cap is the smaller of the two" contract the docs
+        # state (see pvliesdonk/fastmcp-pvl-core#233 for the sink-error status gap).
+        _transfer_config = replace(
+            config.transfer,
+            max_upload_bytes=min(
+                config.transfer.max_upload_bytes, config.max_input_image_bytes
+            ),
+        )
+        register_transfer_routes(
+            mcp,
+            config.server,
+            _transfer_config,
+            sink=_transfer_sink,
+            validate=_transfer_sink.validate,
+        )
+        _finalize_transfer_tool_metadata(mcp)
 
     # IG-specific: expose resources as tools for clients without resource support.
     # Apply AFTER all registrations so the transform sees every resource.
