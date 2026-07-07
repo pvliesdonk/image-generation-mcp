@@ -81,13 +81,18 @@ def _parse_gallery_id(ref: str) -> str | None:
     return None
 
 
-def _validate(ref: str, data: bytes, max_bytes: int) -> str:
-    """Validate size and decodability; return the resolved MIME type.
+def validate_image_bytes(
+    data: bytes, *, max_bytes: int, ref: str = "<imported>"
+) -> str:
+    """Validate size and decodability of image bytes; return the resolved MIME.
+
+    Shared by reference resolution (:func:`resolve_reference`) and gallery
+    import (:meth:`ImageService.register_imported_image`).
 
     Args:
-        ref: The original reference string (used in error messages).
         data: Raw image bytes to validate.
         max_bytes: Maximum allowed byte size.
+        ref: Label for error messages (a reference string or ``"<imported>"``).
 
     Returns:
         The MIME type derived from the PIL-detected image format.
@@ -140,7 +145,7 @@ def resolve_reference(
             data, _content_type = loader(gallery_id)
         except KeyError as exc:
             raise ImageReferenceNotFound(ref) from exc
-        resolved_type = _validate(ref, data, max_bytes)
+        resolved_type = validate_image_bytes(data, max_bytes=max_bytes, ref=ref)
         return InputImage(data=data, content_type=resolved_type, source_id=gallery_id)
 
     if not allow_local_files:
@@ -149,7 +154,7 @@ def resolve_reference(
     if not path.is_file():
         raise ImageReferenceNotFound(ref)
     data = path.read_bytes()
-    resolved_type = _validate(ref, data, max_bytes)
+    resolved_type = validate_image_bytes(data, max_bytes=max_bytes, ref=ref)
     logger.debug("resolved_file_reference path=%s bytes=%d", ref, len(data))
     return InputImage(data=data, content_type=resolved_type, source_id=None)
 

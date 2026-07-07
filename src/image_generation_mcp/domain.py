@@ -20,10 +20,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, ClassVar, TypeAlias
+from typing import Any, ClassVar, Literal, TypeAlias
 
 from PIL import Image as PILImage
 
+from image_generation_mcp._input_images import validate_image_bytes
 from image_generation_mcp.processing import (
     convert_format,
     crop_region,
@@ -48,9 +49,45 @@ from image_generation_mcp.styles import StyleEntry, scan_styles
 logger = logging.getLogger(__name__)
 
 
+ImageOrigin: TypeAlias = Literal["generated", "imported"]
+"""How an image entered the gallery: produced by a provider, or imported.
+
+Stored explicitly on :class:`ImageRecord` (not derived from ``origin_source``)
+so the provenance discriminator is an explicit, serialized sidecar field and
+stays stable if a future origin kind is added that is not source-derived.
+"""
+
+
+def _origin_pair(
+    raw_origin: str | None, raw_source: str | None
+) -> tuple[ImageOrigin, str | None]:
+    """Canonical ``(origin, origin_source)`` pair — the single coupling rule.
+
+    A record is ``"imported"`` only when it is **both** labeled
+    ``origin="imported"`` **and** carries a truthy ``origin_source`` (its
+    provenance); every other combination — including a stray source on a
+    ``"generated"`` record — canonicalizes to ``("generated", None)``. Both
+    conditions are load-bearing: dropping the ``raw_origin`` guard would flip a
+    generated record that picked up a stray source to ``"imported"`` on reload.
+
+    This is the one definition of the coupling, used both to validate at
+    construction (:meth:`ImageRecord.__post_init__`) and to coerce persisted
+    sidecar data on reload, so the two sites can never drift.
+    """
+    if raw_origin == "imported" and raw_source:
+        return "imported", raw_source
+    return "generated", None
+
+
 @dataclass(frozen=True)
 class ImageRecord:
-    """Metadata for a registered image in the scratch directory."""
+    """Metadata for a registered image in the scratch directory.
+
+    Invariant: ``origin`` and ``origin_source`` are a coupled pair —
+    ``origin="imported"`` carries a (truthy) ``origin_source`` (its
+    provenance), and ``origin="generated"`` carries ``origin_source=None``.
+    See :func:`_origin_pair`.
+    """
 
     id: str
     original_path: Path
@@ -66,6 +103,43 @@ class ImageRecord:
     ]  # treat as read-only; frozen prevents reassignment
     created_at: float
     source_image_ids: list[str] = field(default_factory=list)
+    origin: ImageOrigin = "generated"
+    origin_source: str | None = None
+
+    def __post_init__(self) -> None:
+        """Enforce the origin/origin_source pairing invariant.
+
+        A record is consistent iff its pair equals its own canonical form
+        (see :func:`_origin_pair`).
+        """
+        if (self.origin, self.origin_source) != _origin_pair(
+            self.origin, self.origin_source
+        ):
+            raise ValueError(
+                f"origin={self.origin!r} inconsistent with "
+                f"origin_source={self.origin_source!r}"
+            )
+
+
+@dataclass(frozen=True)
+class _PersistMeta:
+    """Metadata bundle for :meth:`ImageService._persist_image`.
+
+    Groups the domain fields shared by generated and imported images so the
+    persist helper stays under the parameter ceiling.
+    """
+
+    content_type: str
+    provider: str
+    prompt: str
+    negative_prompt: str | None
+    aspect_ratio: str
+    quality: str
+    background: str  # persisted to the sidecar only; not a field on ImageRecord
+    provider_metadata: dict[str, Any]
+    source_image_ids: list[str]
+    origin: ImageOrigin
+    origin_source: str | None
 
 
 _PENDING_TTL_S = 600  # 10 minutes — clean up stale pending entries
@@ -657,40 +731,121 @@ class ImageService:
         Returns:
             The created ImageRecord.
         """
-        self._scratch_dir.mkdir(parents=True, exist_ok=True)
-
         # Use pre-allocated ID or derive from content
         if image_id is None:
             image_id = hashlib.sha256(result.image_data).hexdigest()[:12]
+        return self._persist_image(
+            image_id=image_id,
+            data=result.image_data,
+            meta=_PersistMeta(
+                content_type=result.content_type,
+                provider=provider_name,
+                prompt=prompt,
+                negative_prompt=negative_prompt,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                background=background,
+                provider_metadata=result.provider_metadata,
+                source_image_ids=list(source_image_ids or []),
+                origin="generated",
+                origin_source=None,
+            ),
+        )
 
-        # Extract original dimensions via Pillow
-        img = PILImage.open(io.BytesIO(result.image_data))
-        original_dimensions = img.size  # (width, height)
+    def register_imported_image(
+        self,
+        data: bytes,
+        *,
+        origin_source: str,
+        max_bytes: int,
+    ) -> ImageRecord:
+        """Register externally-sourced bytes as a first-class gallery entry.
 
-        # Save original
-        ext = _mime_to_ext(result.content_type)
+        The image gets a content-addressed ID (so re-importing identical
+        bytes is idempotent) and is marked ``origin="imported"`` — it has an
+        empty provider and prompt, so ``origin`` is the sole generated/imported
+        discriminator. Every existing tool, resource, and ``transform_image``
+        reference then works on it unchanged.
+
+        Args:
+            data: Raw image bytes (from an upload, URL fetch, or base64 body).
+            origin_source: Provenance detail (e.g. ``"upload"``,
+                ``"fetch:<url>"``, or an original filename).
+            max_bytes: Maximum allowed byte size. Callers pass the configured
+                ``max_input_image_bytes`` so the cap stays uniform across every
+                input surface (no separate default here to drift from it).
+
+        Returns:
+            The created ImageRecord.
+
+        Raises:
+            InputImageTooLarge: When ``len(data) > max_bytes``.
+            InvalidInputImage: When the bytes are not a decodable image, or the
+                format is not one of PNG/JPEG/WEBP.
+            ValueError: When ``origin_source`` is empty/falsy — an imported
+                image must carry a provenance (enforced by ImageRecord's
+                origin pairing invariant).
+        """
+        content_type = validate_image_bytes(data, max_bytes=max_bytes)
+        return self._persist_image(
+            image_id=hashlib.sha256(data).hexdigest()[:12],
+            data=data,
+            meta=_PersistMeta(
+                content_type=content_type,
+                provider="",
+                prompt="",
+                negative_prompt=None,
+                aspect_ratio="",
+                quality="",
+                background="opaque",
+                provider_metadata={},
+                source_image_ids=[],
+                origin="imported",
+                origin_source=origin_source,
+            ),
+        )
+
+    def _persist_image(
+        self,
+        *,
+        image_id: str,
+        data: bytes,
+        meta: _PersistMeta,
+    ) -> ImageRecord:
+        """Persist image bytes + sidecar + registry entry; return the record.
+
+        Shared by :meth:`register_image` (generated) and
+        :meth:`register_imported_image` (imported).
+        """
+        self._scratch_dir.mkdir(parents=True, exist_ok=True)
+
+        original_dimensions = PILImage.open(io.BytesIO(data)).size  # (w, h)
+
+        ext = _mime_to_ext(meta.content_type)
         original_filename = f"{image_id}-original{ext}"
         original_path = self._scratch_dir / original_filename
-        original_path.write_bytes(result.image_data)
 
-        # Build record
-        ids = list(source_image_ids or [])
+        # Build (and thereby validate, via __post_init__) the record BEFORE
+        # writing the image file or sidecar, so an inconsistent origin pair
+        # raises without leaving an orphaned image file behind.
         record = ImageRecord(
             id=image_id,
             original_path=original_path,
-            content_type=result.content_type,
-            provider=provider_name,
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            aspect_ratio=aspect_ratio,
-            quality=quality,
+            content_type=meta.content_type,
+            provider=meta.provider,
+            prompt=meta.prompt,
+            negative_prompt=meta.negative_prompt,
+            aspect_ratio=meta.aspect_ratio,
+            quality=meta.quality,
             original_dimensions=original_dimensions,
-            provider_metadata=result.provider_metadata,
+            provider_metadata=meta.provider_metadata,
             created_at=time.time(),
-            source_image_ids=ids,
+            source_image_ids=meta.source_image_ids,
+            origin=meta.origin,
+            origin_source=meta.origin_source,
         )
+        original_path.write_bytes(data)
 
-        # Write sidecar JSON
         sidecar_path = self._scratch_dir / f"{image_id}.json"
         sidecar_data = {
             "id": record.id,
@@ -699,25 +854,27 @@ class ImageService:
             "provider": record.provider,
             "aspect_ratio": record.aspect_ratio,
             "quality": record.quality,
-            "background": background,
+            "background": meta.background,
             "content_type": record.content_type,
             "original_filename": original_filename,
-            "original_size_bytes": result.size_bytes,
+            "original_size_bytes": len(data),
             "original_dimensions": list(record.original_dimensions),
             "provider_metadata": record.provider_metadata,
             "created_at": datetime.fromtimestamp(record.created_at, tz=UTC).isoformat(),
             "source_image_ids": record.source_image_ids,
+            "origin": record.origin,
+            "origin_source": record.origin_source,
         }
         sidecar_path.write_text(json.dumps(sidecar_data, indent=2))
 
-        # Store in registry
         self._images[image_id] = record
 
         logger.info(
-            "Registered image %s from %s (%d bytes)",
+            "registered_image image_id=%s origin=%s provider=%s bytes=%d",
             image_id,
-            provider_name,
-            result.size_bytes,
+            meta.origin,
+            meta.provider,
+            len(data),
         )
         return record
 
@@ -944,6 +1101,18 @@ class ImageService:
                 if source_ids is None:
                     legacy = data.get("source_image_id")
                     source_ids = [legacy] if legacy else []
+                # Normalize the origin pair as a unit so a corrupted sidecar
+                # can never trip ImageRecord's pairing invariant on reload: an
+                # "imported" record without a source degrades to "generated"
+                # rather than dropping the whole image.
+                origin, origin_source = _origin_pair(
+                    data.get("origin"), data.get("origin_source")
+                )
+                if data.get("origin") == "imported" and origin == "generated":
+                    logger.warning(
+                        "origin_coerced image_id=%s reason=imported_without_source",
+                        image_id,
+                    )
                 record = ImageRecord(
                     id=image_id,
                     original_path=original_path,
@@ -957,6 +1126,8 @@ class ImageService:
                     provider_metadata=data.get("provider_metadata", {}),
                     created_at=created_at,
                     source_image_ids=source_ids,
+                    origin=origin,
+                    origin_source=origin_source,
                 )
                 self._images[image_id] = record
                 count += 1
