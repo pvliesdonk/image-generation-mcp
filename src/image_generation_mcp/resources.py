@@ -809,7 +809,10 @@ _IMAGE_VIEWER_HTML = """\
           name: "create_download_link",
           arguments: { ref: "image://" + currentMeta.image_id + "/view" },
         });
-        if (result.isError) return false;
+        if (result.isError) {
+          console.warn("create_download_link failed", result.content?.find(c => c.type === "text")?.text);
+          return false;
+        }
         const textItem = result.content?.find(c => c.type === "text");
         const url = textItem ? JSON.parse(textItem.text).url : null;
         if (!url) return false;
@@ -829,7 +832,7 @@ _IMAGE_VIEWER_HTML = """\
           ok = await tryOpenLink();
         }
       } catch (e) { console.warn("Download failed", e); }
-      if (!ok) alert("Download failed — the download link could not be created. Please try again.");
+      if (!ok) alert("Download failed — please try again.");
     });
 
     // --- Cropper.js (loaded on demand) ---
@@ -1720,7 +1723,9 @@ _IMAGE_GALLERY_HTML = """\
             name: "create_download_link",
             arguments: { ref: "image://" + id + "/view" },
           });
-          if (!result.isError) {
+          if (result.isError) {
+            console.warn("create_download_link failed", result.content?.find(c => c.type === "text")?.text);
+          } else {
             const textItem = result.content?.find(c => c.type === "text");
             const url = textItem ? JSON.parse(textItem.text).url : null;
             if (url) ok = !(await app.openLink({ url })).isError;

@@ -125,6 +125,23 @@ class TestImageViewerResource:
         assert "getHostCapabilities" in text
         assert "resource_link" in text
 
+    async def test_viewer_download_failure_surfaced_accurately(self, server) -> None:
+        """Download failures are logged and shown with an accurate message.
+
+        A ``create_download_link`` ``isError`` result must be logged (not
+        silently dropped), so it appears both in the ``catch`` and on the
+        ``isError`` branch. The failure alert must stay cause-neutral rather
+        than blaming link creation when the native ``downloadFile`` leg is what
+        failed.
+        """
+        result = await server.read_resource("ui://image-viewer/view.html")
+        text = result.contents[0].content
+        # isError content is logged, not swallowed (catch + isError branch).
+        assert text.count("create_download_link failed") >= 2
+        # Cause-neutral message; no misattribution to link creation.
+        assert "could not be created" not in text
+        assert "Download failed — please try again." in text
+
     async def test_viewer_html_disables_auto_resize(self, server) -> None:
         """Viewer must disable autoResize to prevent oversized iframe."""
         result = await server.read_resource("ui://image-viewer/view.html")

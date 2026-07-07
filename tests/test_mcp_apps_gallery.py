@@ -156,6 +156,17 @@ class TestGalleryResource:
         # No reliance on an auto-minted download_url (issue #220).
         assert "download_url" not in text
 
+    async def test_gallery_download_failure_is_logged(self, server) -> None:
+        """A ``create_download_link`` ``isError`` in the grid handler is logged.
+
+        The server's error content must not be silently dropped when the
+        on-demand link mint fails; the user still gets a cause-neutral alert.
+        """
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "create_download_link failed" in text
+        assert "Download failed — please try again." in text
+
     async def test_gallery_html_has_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
