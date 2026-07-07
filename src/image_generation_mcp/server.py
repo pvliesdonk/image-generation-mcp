@@ -259,15 +259,29 @@ def make_server(
     # /transfer/{token} route needs an HTTP server, and register_transfer_routes
     # raises ConfigurationError without base_url.
     if transport != "stdio" and config.server.base_url:
+        from dataclasses import replace
+
         from fastmcp_pvl_core import register_transfer_routes
 
         from image_generation_mcp._transfer_sink import GalleryTransferSink
 
         _transfer_sink = GalleryTransferSink(config)
+        # Cap uploads at the tighter of the transfer and domain image limits so
+        # an oversized image is rejected with a clean 413 at the route boundary,
+        # not accepted and then 500'd inside sink.write (register_imported_image
+        # raises InputImageTooLarge, which pvl-core re-raises as a generic 500).
+        # This is the "effective cap is the smaller of the two" contract the docs
+        # state (see pvliesdonk/fastmcp-pvl-core#233 for the sink-error status gap).
+        _transfer_config = replace(
+            config.transfer,
+            max_upload_bytes=min(
+                config.transfer.max_upload_bytes, config.max_input_image_bytes
+            ),
+        )
         register_transfer_routes(
             mcp,
             config.server,
-            config.transfer,
+            _transfer_config,
             sink=_transfer_sink,
             validate=_transfer_sink.validate,
         )

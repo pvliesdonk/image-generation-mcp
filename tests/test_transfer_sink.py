@@ -115,7 +115,23 @@ async def test_read_missing_backing_file_raises_provider_error(
     leaking a bare ``OSError`` traceback.
     """
     service.get_image(generated_id).original_path.unlink()
-    with pytest.raises(ImageProviderError):
+    with pytest.raises(ImageProviderError, match="no longer available"):
+        await sink.read(generated_id)
+
+
+async def test_read_unreadable_backing_file_raises_provider_error(
+    sink: GalleryTransferSink, service: ImageService, generated_id: str
+) -> None:
+    """A non-missing read failure (permission/IO) raises a distinct domain error.
+
+    An ``OSError`` that is *not* a missing file (here ``IsADirectoryError``, by
+    replacing the file with a directory) must not be mislabelled "no longer
+    available"; it reads as "could not be read" and is logged with a traceback.
+    """
+    path = service.get_image(generated_id).original_path
+    path.unlink()
+    path.mkdir()  # reading a directory raises IsADirectoryError (OSError, not ENOENT)
+    with pytest.raises(ImageProviderError, match="could not be read"):
         await sink.read(generated_id)
 
 

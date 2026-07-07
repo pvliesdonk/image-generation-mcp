@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import fastmcp_pvl_core
 from fastmcp_pvl_core import ServerConfig
 
 from image_generation_mcp.config import ProjectConfig
@@ -18,6 +19,7 @@ from image_generation_mcp.server import make_server
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import pytest
     from fastmcp import FastMCP
 
 
@@ -97,3 +99,33 @@ async def test_create_upload_link_hidden_in_read_only(tmp_path: Path) -> None:
     assert not await _has_tool(server, "create_upload_link")
     # The read-only download link stays available.
     assert await _has_tool(server, "create_download_link")
+
+
+def test_upload_cap_coordinated_with_domain_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The route upload cap is the smaller of the transfer and domain image caps.
+
+    pvl-core's route 413s past its own ``max_upload_bytes``, but an image over
+    the tighter domain ``max_input_image_bytes`` would otherwise pass the route
+    and 500 inside ``sink.write`` (``register_imported_image`` raises). Lowering
+    the route cap to the domain limit makes the boundary reject with a clean 413.
+    """
+    captured: dict[str, object] = {}
+    real = fastmcp_pvl_core.register_transfer_routes
+
+    def _spy(mcp, server_config, transfer_config, **kwargs):  # type: ignore[no-untyped-def]
+        captured["transfer_config"] = transfer_config
+        return real(mcp, server_config, transfer_config, **kwargs)
+
+    monkeypatch.setattr(fastmcp_pvl_core, "register_transfer_routes", _spy)
+
+    cfg = _config(tmp_path, base_url="https://mcp.example.com")
+    make_server(transport="http", config=cfg)
+
+    transfer_config = captured["transfer_config"]
+    assert transfer_config.max_upload_bytes == min(  # type: ignore[attr-defined]
+        cfg.transfer.max_upload_bytes, cfg.max_input_image_bytes
+    )
+    # With defaults the domain cap (20 MiB) is the tighter one.
+    assert transfer_config.max_upload_bytes == cfg.max_input_image_bytes  # type: ignore[attr-defined]

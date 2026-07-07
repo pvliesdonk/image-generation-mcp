@@ -93,11 +93,11 @@ class GalleryTransferSink:
         """Serve a gallery image's original bytes for a download handle.
 
         Raises:
-            ImageProviderError: The image's backing file is gone (deleted
-                between link creation and download). ``validate`` checks
-                existence at mint time, so this covers only that later race.
-                pvl-core surfaces it to the client as a 500; a 4xx would need
-                upstream support (pvliesdonk/fastmcp-pvl-core#233).
+            ImageProviderError: The backing file cannot be read — either gone
+                (deleted between link creation and download; ``validate`` checks
+                existence only at mint time) or unreadable (permission/IO). Both
+                surface to the client as a 500; a 4xx would need upstream support
+                (pvliesdonk/fastmcp-pvl-core#233).
         """
         from fastmcp_pvl_core import TransferReadResult
 
@@ -105,10 +105,21 @@ class GalleryTransferSink:
         record = await asyncio.to_thread(service.get_image, handle)
         try:
             data = await asyncio.to_thread(record.original_path.read_bytes)
-        except OSError as exc:
+        except FileNotFoundError as exc:
+            # The mint-then-delete race the docstring describes: the file is
+            # genuinely gone, so "no longer available" is accurate.
             logger.warning("transfer_download_file_missing image_id=%s", record.id)
             raise ImageProviderError(
                 "gallery", f"image {record.id} is no longer available"
+            ) from exc
+        except OSError as exc:
+            # A different read fault (permission, IO, stalled mount): don't
+            # mislabel it "missing", and keep the traceback for the operator.
+            logger.error(
+                "transfer_download_read_failed image_id=%s", record.id, exc_info=True
+            )
+            raise ImageProviderError(
+                "gallery", f"image {record.id} could not be read"
             ) from exc
         # Reuse domain.py's canonical MIME→extension map (single source of
         # truth). A stored record's content_type is always png/jpeg/webp, so
