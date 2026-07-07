@@ -732,7 +732,7 @@ After the caller POSTs (or PUTs) the image bytes to that URL, the HTTP response 
 }
 ```
 
-The upload URL accepts a single successful upload, then expires. The transfer route rejects bodies larger than `TRANSFER_MAX_UPLOAD_BYTES` (default 100 MiB), and the gallery rejects images larger than `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB), so the effective image-upload cap is the smaller of the two.
+The upload URL accepts a single successful upload, then expires. The transfer route is capped at the smaller of `TRANSFER_MAX_UPLOAD_BYTES` (default 100 MiB) and `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB), so an oversized body is rejected with a `413` at the route boundary rather than accepted and then failed during ingestion. The effective image-upload cap is 20 MiB by default.
 
 ---
 
