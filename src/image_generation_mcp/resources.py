@@ -1263,10 +1263,10 @@ _IMAGE_GALLERY_HTML = """\
 </head>
 <body>
   <div class="main" id="main">
-    <div class="origin-filter" id="origin-filter">
-      <button class="seg active" data-origin="generated">Generated</button>
-      <button class="seg" data-origin="imported">Imported</button>
-      <button class="seg" data-origin="all">All</button>
+    <div class="origin-filter" id="origin-filter" role="radiogroup" aria-label="Filter by image origin">
+      <button class="seg active" data-origin="generated" role="radio" aria-checked="true">Generated</button>
+      <button class="seg" data-origin="imported" role="radio" aria-checked="false">Imported</button>
+      <button class="seg" data-origin="all" role="radio" aria-checked="false">All</button>
     </div>
     <div class="state-loading" id="loading">
       <div class="spinner"></div>Loading gallery\u2026
@@ -1283,6 +1283,20 @@ _IMAGE_GALLERY_HTML = """\
       </div>
       <div class="empty-title">No images yet</div>
       <div class="empty-sub">Use <code>generate_image</code> to create your first image.</div>
+    </div>
+    <div class="state-empty" id="error">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="empty-title">Couldn't load the gallery</div>
+      <div class="empty-sub">Something went wrong — try again.</div>
+      <button class="seg" id="gallery-retry" type="button">Retry</button>
     </div>
     <div class="state-grid" id="grid-container">
       <div class="pip-toolbar"><button class="pip-btn" id="pip-btn" title="Picture-in-picture">\u25a3</button></div>
@@ -1328,6 +1342,7 @@ _IMAGE_GALLERY_HTML = """\
     const mainEl    = document.getElementById("main");
     const loadingEl = document.getElementById("loading");
     const emptyEl   = document.getElementById("empty");
+    const errorEl   = document.getElementById("error");
     const gridEl    = document.getElementById("grid-container");
     const gridItems = document.getElementById("gallery-grid");
     const pagEl     = document.getElementById("pagination");
@@ -1360,6 +1375,7 @@ _IMAGE_GALLERY_HTML = """\
 
     let currentPage = 1;
     let currentOrigin = "generated";
+    let galleryReqSeq = 0;
     let currentTotal = 0;
     let currentPageSize = 12;
     let dlMode = null; // "downloadFile" | "openLink" | null
@@ -1557,6 +1573,7 @@ _IMAGE_GALLERY_HTML = """\
     function show(which) {
       loadingEl.style.display = which === "loading" ? "flex" : "none";
       emptyEl.style.display   = which === "empty"   ? "block" : "none";
+      errorEl.style.display   = which === "error"   ? "block" : "none";
       gridEl.style.display    = which === "grid"    ? "block" : "none";
       // For "grid", renderGrid/renderPipStrip call updateSize after populating
       if (which !== "grid") updateSize();
@@ -1692,12 +1709,14 @@ _IMAGE_GALLERY_HTML = """\
     // --- Paginate via app-only tool ---
     async function goTo(page) {
       const ps = currentPageSize;
+      const seq = ++galleryReqSeq;
       show("loading");
       try {
         const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps, origin: currentOrigin } });
-        if (result.isError) { setGenericEmptyCopy(); show("empty"); return; }
+        if (seq !== galleryReqSeq) return;
+        if (result.isError) { console.warn("gallery_page failed", result.content?.find(c => c.type === "text")?.text); show("error"); return; }
         const text = result.content?.find(c => c.type === "text")?.text;
-        if (!text) { setGenericEmptyCopy(); show("empty"); return; }
+        if (!text) { console.warn("gallery_page returned no text"); show("error"); return; }
         const data = JSON.parse(text);
         if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
@@ -1705,15 +1724,20 @@ _IMAGE_GALLERY_HTML = """\
         currentPageSize = data.page_size || 12;
         renderGrid(data);
       } catch (e) {
+        if (seq !== galleryReqSeq) return;
         console.warn("gallery_page failed", e);
-        setGenericEmptyCopy(); show("empty");
+        show("error");
       }
     }
 
     function syncOrigin(o) {
       if (!o || (o === currentOrigin && document.querySelector("#origin-filter .seg.active")?.dataset.origin === o)) return;
       currentOrigin = o;
-      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s.dataset.origin === o));
+      document.querySelectorAll("#origin-filter .seg").forEach(s => {
+        const on = s.dataset.origin === o;
+        s.classList.toggle("active", on);
+        s.setAttribute("aria-checked", on ? "true" : "false");
+      });
     }
 
     function updateEmptyState() {
@@ -1729,24 +1753,22 @@ _IMAGE_GALLERY_HTML = """\
       }
     }
 
-    function setGenericEmptyCopy() {
-      const titleEl = document.querySelector("#empty .empty-title");
-      const subEl = document.querySelector("#empty .empty-sub");
-      if (!titleEl || !subEl) return;
-      titleEl.textContent = "No images yet";
-      subEl.innerHTML = 'Use <code>generate_image</code> to create your first image.';
-    }
-
     document.getElementById("origin-filter").addEventListener("click", (e) => {
       const btn = e.target.closest(".seg");
       if (!btn) return;
       const next = btn.dataset.origin;
       if (next === currentOrigin) return;
       currentOrigin = next;
-      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s === btn));
+      document.querySelectorAll("#origin-filter .seg").forEach(s => {
+        const on = s === btn;
+        s.classList.toggle("active", on);
+        s.setAttribute("aria-checked", on ? "true" : "false");
+      });
       currentPage = 1;
       goTo(1);
     });
+
+    document.getElementById("gallery-retry").addEventListener("click", () => { goTo(currentPage || 1); });
 
     // --- Download ---
     gridItems.addEventListener("click", async (e) => {
@@ -1850,11 +1872,12 @@ _IMAGE_GALLERY_HTML = """\
     app.ontoolinput = () => { show("loading"); };
 
     app.ontoolresult = ({ content }) => {
+      ++galleryReqSeq;
       const text = content?.find(c => c.type === "text");
-      if (!text) { setGenericEmptyCopy(); show("empty"); return; }
+      if (!text) { console.warn("gallery result had no text"); show("error"); return; }
       try {
         const data = JSON.parse(text.text);
-        if (typeof data.total !== "number") { setGenericEmptyCopy(); show("empty"); return; }
+        if (typeof data.total !== "number") { console.warn("gallery result missing numeric total"); show("error"); return; }
         if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
         currentTotal = data.total;
@@ -1862,7 +1885,7 @@ _IMAGE_GALLERY_HTML = """\
         renderGrid(data);
       } catch (e) {
         console.warn("Failed to parse gallery data", e);
-        setGenericEmptyCopy(); show("empty");
+        show("error");
       }
     };
 

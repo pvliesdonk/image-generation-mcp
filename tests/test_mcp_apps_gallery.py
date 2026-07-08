@@ -876,6 +876,7 @@ class TestGalleryOriginControl:
             "function show(which) {\n"
             '      loadingEl.style.display = which === "loading" ? "flex" : "none";\n'
             '      emptyEl.style.display   = which === "empty"   ? "block" : "none";\n'
+            '      errorEl.style.display   = which === "error"   ? "block" : "none";\n'
             '      gridEl.style.display    = which === "grid"    ? "block" : "none";\n'
             '      // For "grid", renderGrid/renderPipStrip call updateSize after populating\n'
             '      if (which !== "grid") updateSize();\n'
@@ -892,35 +893,27 @@ class TestGalleryEmptyCopyRouting:
         # itself before show("empty") so genuine-empty gets origin-aware copy.
         assert 'updateEmptyState(); show("empty")' in text
 
-    async def test_set_generic_empty_copy_defined(self, server) -> None:
+    async def test_error_paths_do_not_use_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert "function setGenericEmptyCopy" in text
-        assert '"No images yet"' in text
-        assert "generate_image" in text
+        # Only genuine-empty uses show("empty"); failures use show("error").
+        assert text.count('show("empty")') == 1
 
-    async def test_error_and_degenerate_paths_use_generic_copy(self, server) -> None:
-        result = await server.read_resource("ui://image-gallery/view.html")
-        text = result.contents[0].content
-        # All six error/degenerate paths route through setGenericEmptyCopy()
-        # then show("empty") — never the removed show("error").
-        assert text.count('setGenericEmptyCopy(); show("empty")') == 6
-
-    async def test_goto_page_error_fallback_uses_generic_copy(self, server) -> None:
+    async def test_goto_page_error_fallback_logged(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert 'console.warn("gallery_page failed"' in text
 
-    async def test_tool_result_parse_failure_uses_generic_copy(self, server) -> None:
+    async def test_tool_result_parse_failure_logged(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert 'console.warn("Failed to parse gallery data"' in text
 
-    async def test_error_state_removed(self, server) -> None:
+    async def test_error_state_present(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert 'show("error")' not in text
-        assert 'id="error"' not in text
+        assert 'show("error")' in text
+        assert 'id="error"' in text
 
     async def test_genuine_empty_still_uses_origin_aware_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
@@ -928,3 +921,112 @@ class TestGalleryEmptyCopyRouting:
         # Regression guard for the imported-origin copy set by
         # updateEmptyState(), still reachable via the genuine-empty path.
         assert "No imported images" in text
+
+
+class TestGallerySegmentedControlAria:
+    async def test_group_is_radiogroup(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'id="origin-filter"' in text
+        assert 'role="radiogroup"' in text
+        assert 'aria-label="Filter by image origin"' in text
+
+    async def test_segments_are_radios_with_checked_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Each segment is a radio; Generated is checked initially.
+        assert text.count('role="radio"') == 3
+        assert 'data-origin="generated" role="radio" aria-checked="true"' in text
+        assert 'data-origin="imported" role="radio" aria-checked="false"' in text
+        assert 'data-origin="all" role="radio" aria-checked="false"' in text
+
+    async def test_aria_checked_synced_with_active(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Both the click handler and syncOrigin must set aria-checked alongside
+        # the .active class — two sync sites.
+        assert text.count('setAttribute("aria-checked"') == 2
+
+
+class TestGalleryLoadErrorState:
+    async def test_error_state_div_present(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'id="error"' in text
+        assert "Couldn't load the gallery" in text
+        assert "try again" in text
+        assert 'id="gallery-retry"' in text
+        # Pin the errorEl declaration itself: without it show() throws on every
+        # state transition, yet the div + style-toggle assertions would still pass.
+        assert 'getElementById("error")' in text
+
+    async def test_show_has_error_branch(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert (
+            'errorEl.style.display   = which === "error"   ? "block" : "none";' in text
+        )
+
+    async def test_failure_paths_route_to_error_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # All six error/degenerate paths (goTo x3, ontoolresult x3) show the
+        # error state — never the empty state.
+        assert text.count('show("error")') == 6
+
+    async def test_genuine_empty_still_uses_empty_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # renderGrid's total === 0 branch keeps origin-aware empty copy.
+        assert 'updateEmptyState(); show("empty")' in text
+
+    async def test_iserror_logs_server_content(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The gallery_page isError branch logs result.content (the server's own
+        # error text) instead of discarding it.
+        assert 'console.warn("gallery_page failed", result.content' in text
+
+    async def test_retry_button_refetches_current_page(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'getElementById("gallery-retry")' in text
+        assert "goTo(currentPage || 1)" in text
+
+    async def test_set_generic_empty_copy_removed(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # setGenericEmptyCopy is dead once error paths leave the empty state.
+        assert "setGenericEmptyCopy" not in text
+
+
+class TestGalleryRequestSequencing:
+    async def test_request_token_declared(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "let galleryReqSeq = 0;" in text
+
+    async def test_goto_captures_and_bails_on_stale(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # goTo captures the token before awaiting and bails if superseded.
+        assert "const seq = ++galleryReqSeq;" in text
+        # Both bail sites — the success path AND the catch — must guard, else a
+        # stale error response can clobber a newer successful render.
+        assert text.count("if (seq !== galleryReqSeq) return;") == 2
+        # The capture must PRECEDE the await — a refactor moving it below the
+        # await defeats the guard entirely while leaving the counts above intact.
+        assert (
+            "const seq = ++galleryReqSeq;\n"
+            '      show("loading");\n'
+            "      try {\n"
+            "        const result = await app.callServerTool"
+        ) in text
+
+    async def test_ontoolresult_bumps_token(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # A host-initiated reload supersedes any in-flight goTo. Exactly two
+        # increments exist — goTo's capture and this bump — so deleting the
+        # ontoolresult bump drops the count to 1 and fails here.
+        assert text.count("++galleryReqSeq;") == 2
