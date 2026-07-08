@@ -289,3 +289,10 @@ def test_fetch_timeout_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setenv("IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S", "12.5")
     assert ProjectConfig.from_env().fetch_timeout_s == 12.5
+
+
+def test_fetch_timeout_invalid_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    from image_generation_mcp.config import ProjectConfig
+
+    monkeypatch.setenv("IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S", "notafloat")
+    assert ProjectConfig.from_env().fetch_timeout_s == 30.0

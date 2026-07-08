@@ -2298,6 +2298,47 @@ class TestFetchImageTool:
         )
         assert "not a valid image" in result
 
+    async def test_http_status_error_returns_generic_string(
+        self, monkeypatch, service: ImageService
+    ) -> None:
+        import httpx
+
+        import image_generation_mcp.tools as tools_mod
+
+        async def _raise(*_args, **_kwargs):
+            raise httpx.HTTPStatusError(
+                "HTTP 404 response from http://host/p",
+                request=httpx.Request("GET", "http://host/p"),
+                response=httpx.Response(404),
+            )
+
+        monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _raise)
+        tool = await self._fetch_tool()
+        result = await tool.fn(
+            url="http://93.184.216.34/x",
+            service=service,
+            config=await self._make_cfg(),
+        )
+        assert "Could not fetch the image" in result
+
+    async def test_input_image_too_large_returns_error_string(
+        self, monkeypatch, service: ImageService
+    ) -> None:
+        import image_generation_mcp.tools as tools_mod
+        from image_generation_mcp._input_images import InputImageTooLarge
+
+        async def _raise(*_args, **_kwargs):
+            raise InputImageTooLarge("fetch", 999, 100)
+
+        monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _raise)
+        tool = await self._fetch_tool()
+        result = await tool.fn(
+            url="http://93.184.216.34/x",
+            service=service,
+            config=await self._make_cfg(),
+        )
+        assert "Could not fetch the image" in result
+
     async def test_success_returns_image_uri(
         self, monkeypatch, service: ImageService
     ) -> None:
