@@ -837,3 +837,36 @@ class TestGalleryOriginControl:
         # never call updateEmptyState() directly) gets copy that matches
         # currentOrigin instead of stale text from a previous origin.
         assert 'if (which === "empty") updateEmptyState();' in text
+
+
+class TestGalleryErrorState:
+    async def test_error_state_container_present(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'id="error"' in text
+        assert "Couldn't load the gallery" in text
+        assert "try again" in text
+
+    async def test_show_toggles_error_element(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'which === "error"' in text
+
+    async def test_goto_page_error_fallback_uses_error_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'console.warn("gallery_page failed"' in text
+        assert 'show("error")' in text
+
+    async def test_tool_result_parse_failure_uses_error_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'console.warn("Failed to parse gallery data"' in text
+        assert 'show("error")' in text
+
+    async def test_genuine_empty_still_uses_origin_aware_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Regression guard: the empty path must remain unchanged — the error
+        # state must NOT call updateEmptyState().
+        assert 'if (which === "empty") updateEmptyState();' in text
