@@ -25,6 +25,7 @@ from urllib.parse import parse_qs, urlparse
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+import httpx
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
 from fastmcp.dependencies import CurrentContext, Depends
@@ -42,6 +43,7 @@ from mcp.types import (
 from PIL import Image as PILImage
 from pydantic import AnyUrl
 
+from ._fetch_image import fetch_image_into_gallery
 from ._input_images import (
     ImageReferenceNotFound,
     InputImageTooLarge,
@@ -1614,3 +1616,62 @@ def register_tools(mcp: FastMCP) -> None:
 
         result = {"name": name, "deleted": True}
         return json.dumps(result, indent=2)
+
+    @mcp.tool(
+        tags={"write"},
+        annotations={
+            "title": "Fetch Image",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": True,
+        },
+        icons=[Icon(src=_LUCIDE.format("link"), mimeType="image/svg+xml")],
+    )
+    async def fetch_image(
+        url: str,
+        service: ImageService = Depends(get_service),
+        config: ProjectConfig = Depends(get_config),
+    ) -> str:
+        """Fetch an image from a URL into the gallery.
+
+        Downloads the image at *url* (http/https only) and adds it to the
+        gallery as an imported entry you can then show, edit, or transform. The
+        fetch is SSRF-hardened: URLs targeting private, loopback, link-local, or
+        cloud-metadata addresses are refused, redirects are not followed, and the
+        download is size-capped. Hidden in read-only mode.
+
+        Args:
+            url: The http(s) URL of the image to fetch.
+
+        Returns:
+            The gallery URI (``image://<id>/view``) on success, or a message
+            describing why the fetch failed.
+        """
+        try:
+            record = await fetch_image_into_gallery(
+                service,
+                url,
+                max_bytes=config.max_input_image_bytes,
+                timeout_s=config.fetch_timeout_s,
+            )
+        except ValueError as exc:
+            logger.warning("fetch_image_rejected error=%s", exc)
+            return f"Could not fetch the image: {exc}"
+        except httpx.HTTPStatusError as exc:
+            logger.warning("fetch_image_http_error error=%s", exc)
+            return f"Could not fetch the image: {exc}"
+        except httpx.TransportError as exc:
+            logger.warning("fetch_image_transport_error error=%s", type(exc).__name__)
+            return (
+                "Could not fetch the image: the request timed out or the "
+                "connection failed."
+            )
+        except InputImageTooLarge as exc:
+            logger.warning("fetch_image_too_large error=%s", exc)
+            return f"Could not fetch the image: {exc}"
+        except InvalidInputImage:
+            logger.warning("fetch_image_not_an_image")
+            return (
+                "Could not fetch the image: the fetched content is not a valid image."
+            )
+        return f"Fetched image into the gallery: image://{record.id}/view"

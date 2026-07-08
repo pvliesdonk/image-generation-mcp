@@ -14,8 +14,10 @@ Traefik
 
 # --- HTTP / URL terminology ---
 hostname
+loopback
 subpath
 URIs
+userinfo
 
 # --- OAuth / OIDC token fields ---
 access_token
@@ -54,6 +56,7 @@ delete_style
 denoising
 downscaled
 edit_image
+fetch_image
 frontmatter
 gallery_full_image
 generate_image
@@ -97,6 +100,7 @@ content_type
 Danbooru
 dataclass
 dataclasses
+decodable
 deprioritize
 deprioritized
 Dev

@@ -241,6 +241,7 @@ All domain environment variables use the `IMAGE_GENERATION_MCP_` prefix.
 |---|---|---|---|
 | `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | `false` | No | Enable local filesystem paths as `transform_image` reference images. **Security:** grants callers server-filesystem read access via path; enable only for trusted callers or local single-user deployments. |
 | `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` | `20971520` | No | Per-reference maximum byte size for input images (default 20 MiB). |
+| `IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S` | `30.0` | No | HTTP fetch timeout in seconds, used when fetching remote image URLs. |
 
 ### Capability-link transfer (HTTP downloads/uploads)
 

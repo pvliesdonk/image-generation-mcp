@@ -276,3 +276,23 @@ def test_max_input_image_bytes_invalid_falls_back(
 ) -> None:
     monkeypatch.setenv("IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES", "notanumber")
     assert ProjectConfig.from_env().max_input_image_bytes == 20 * 1024 * 1024
+
+
+def test_fetch_timeout_default() -> None:
+    from image_generation_mcp.config import ProjectConfig
+
+    assert ProjectConfig().fetch_timeout_s == 30.0
+
+
+def test_fetch_timeout_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    from image_generation_mcp.config import ProjectConfig
+
+    monkeypatch.setenv("IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S", "12.5")
+    assert ProjectConfig.from_env().fetch_timeout_s == 12.5
+
+
+def test_fetch_timeout_invalid_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    from image_generation_mcp.config import ProjectConfig
+
+    monkeypatch.setenv("IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S", "notafloat")
+    assert ProjectConfig.from_env().fetch_timeout_s == 30.0

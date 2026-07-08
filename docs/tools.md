@@ -497,6 +497,44 @@ Raises an error if the style is not found.
 
 ---
 
+## fetch_image
+
+Fetch an image from an `http`/`https` URL into the gallery as an imported entry you can then show, edit, or transform.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: true` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `url` | str | *(required)* | The `http(s)` URL of the image to fetch. |
+
+### Return value
+
+Text confirmation with the gallery URI on success:
+
+```
+Fetched image into the gallery: image://a1b2c3d4e5f6/view
+```
+
+On failure, a message describing why the fetch was rejected, such as an SSRF-blocked target, an HTTP error, a timeout, an oversized body, or content that is not a decodable image.
+
+The fetch is SSRF-hardened: URLs targeting private, loopback, link-local, or cloud-metadata addresses are refused, and redirects are not followed. The download is capped at `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB) with a request timeout of `IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S` (default 30 seconds). The stored provenance is the fetched URL with userinfo, query, and fragment stripped, so a secret-bearing URL never persists to the image's sidecar metadata.
+
+### Example
+
+```
+User: Fetch this image and add it to the gallery: https://example.com/photo.png
+
+Tool call: fetch_image
+  url: "https://example.com/photo.png"
+```
+
+---
+
 ## list_providers
 
 List available image generation providers and their status.
