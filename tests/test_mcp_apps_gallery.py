@@ -956,6 +956,9 @@ class TestGalleryLoadErrorState:
         assert "Couldn't load the gallery" in text
         assert "try again" in text
         assert 'id="gallery-retry"' in text
+        # Pin the errorEl declaration itself: without it show() throws on every
+        # state transition, yet the div + style-toggle assertions would still pass.
+        assert 'getElementById("error")' in text
 
     async def test_show_has_error_branch(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
@@ -1008,10 +1011,14 @@ class TestGalleryRequestSequencing:
         text = result.contents[0].content
         # goTo captures the token before awaiting and bails if superseded.
         assert "const seq = ++galleryReqSeq;" in text
-        assert "if (seq !== galleryReqSeq) return;" in text
+        # Both bail sites — the success path AND the catch — must guard, else a
+        # stale error response can clobber a newer successful render.
+        assert text.count("if (seq !== galleryReqSeq) return;") == 2
 
     async def test_ontoolresult_bumps_token(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # A host-initiated reload supersedes any in-flight goTo.
-        assert "++galleryReqSeq;" in text
+        # A host-initiated reload supersedes any in-flight goTo. Exactly two
+        # increments exist — goTo's capture and this bump — so deleting the
+        # ontoolresult bump drops the count to 1 and fails here.
+        assert text.count("++galleryReqSeq;") == 2
