@@ -273,6 +273,14 @@
       "advancedGroup": "Behaviour"
     },
     {
+      "id": "fetch_timeout_s",
+      "label": "Fetch timeout (s)",
+      "help": "HTTP fetch timeout in seconds, used when fetching remote image URLs. Default: 30.0.",
+      "type": "text",
+      "var": "IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S",
+      "advancedGroup": "Behaviour"
+    },
+    {
       "id": "transfer_ttl_default_s",
       "label": "Transfer link default TTL (s)",
       "help": "Default lifetime of a create_download_link/create_upload_link URL when the caller omits one. HTTP transports only. Default: 3600 (1 h).",

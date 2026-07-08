@@ -77,6 +77,7 @@ instructions without editing template-owned code:
 |----------|------|---------|-------------|
 | `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT` | bool | `false` | Enable local filesystem paths as `transform_image` reference images. When `false` (default), only gallery `image_id` values and `image://` URIs are accepted. |
 | `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` | int | `20971520` | Per-reference maximum byte size for input images (default: 20 MiB). Applies to every reference, whether resolved from the gallery or a local file. References exceeding this limit are rejected before the provider call. |
+| `IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S` | float | `30.0` | HTTP fetch timeout in seconds, used when fetching remote image URLs. |
 
 !!! warning "Security: local file input"
     Setting `ALLOW_LOCAL_FILE_INPUT=true` grants callers read access to any file readable by the server process (they can pass arbitrary paths). Enable only for trusted callers, such as a local single-user Claude Desktop installation. Leave disabled on shared or network-accessible deployments.

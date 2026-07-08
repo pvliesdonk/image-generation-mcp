@@ -46,6 +46,7 @@ class ProjectConfig:
     allow_local_file_input: bool = False
     max_input_image_bytes: int = 20 * 1024 * 1024
     transfer: TransferConfig = field(default_factory=TransferConfig)
+    fetch_timeout_s: float = 30.0
     # CONFIG-FIELDS-END
 
     @classmethod
@@ -69,6 +70,8 @@ class ProjectConfig:
         - ``IMAGE_GENERATION_MCP_TRANSFER_*``: capability-link transfer tuning
           (``TTL_DEFAULT_S``, ``TTL_MAX_S``, ``GRACE_TTL_S``, ``LEASE_S``,
           ``MAX_UPLOAD_BYTES``) read via ``TransferConfig.from_env``.
+        - ``IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S``: HTTP fetch timeout in
+          seconds (float, default ``30.0``).
 
         Plus all generic ``ServerConfig`` env vars (BASE_URL, BEARER_TOKEN,
         OIDC_*, EVENT_STORE_URL, SERVER_NAME, INSTRUCTIONS) — see
@@ -148,6 +151,18 @@ class ProjectConfig:
                     max_input_image_bytes,
                 )
 
+        raw_fetch_timeout = env(_ENV_PREFIX, "FETCH_TIMEOUT_S")
+        fetch_timeout_s = 30.0
+        if raw_fetch_timeout:
+            try:
+                fetch_timeout_s = float(raw_fetch_timeout)
+            except ValueError:
+                logger.warning(
+                    "Invalid FETCH_TIMEOUT_S=%r — using default %s",
+                    raw_fetch_timeout,
+                    fetch_timeout_s,
+                )
+
         config = cls(
             server=server,
             server_name=server_name,
@@ -164,6 +179,7 @@ class ProjectConfig:
             allow_local_file_input=allow_local_file_input,
             max_input_image_bytes=max_input_image_bytes,
             transfer=TransferConfig.from_env(_ENV_PREFIX),
+            fetch_timeout_s=fetch_timeout_s,
         )
         # CONFIG-FROM-ENV-END
 
