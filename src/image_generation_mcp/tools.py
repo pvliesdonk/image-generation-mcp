@@ -43,6 +43,7 @@ from mcp.types import (
 from PIL import Image as PILImage
 from pydantic import AnyUrl
 
+from ._base64_image import base64_into_gallery
 from ._fetch_image import fetch_image_into_gallery
 from ._input_images import (
     ImageReferenceNotFound,
@@ -1675,3 +1676,51 @@ def register_tools(mcp: FastMCP) -> None:
                 "Could not fetch the image: the fetched content is not a valid image."
             )
         return f"Fetched image into the gallery: image://{record.id}/view"
+
+    @mcp.tool(
+        tags={"write"},
+        annotations={
+            "title": "Ingest Base64 Image",
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "openWorldHint": False,
+        },
+        icons=[Icon(src=_LUCIDE.format("file-image"), mimeType="image/svg+xml")],
+    )
+    async def ingest_base64_image(
+        data: str,
+        service: ImageService = Depends(get_service),
+        config: ProjectConfig = Depends(get_config),
+    ) -> str:
+        """Add an inline base64-encoded image to the gallery.
+
+        Decodes *data* (raw base64, a ``data:...;base64,...`` URI, or line-wrapped
+        base64 — all accepted) under a size cap and adds it to the gallery as an
+        imported entry you can then show, edit, or transform. Hidden in read-only mode.
+
+        Args:
+            data: The base64-encoded image bytes.
+
+        Returns:
+            The gallery URI (``image://<id>/view``) on success, or a message
+            describing why the image could not be ingested.
+        """
+        try:
+            record = await asyncio.to_thread(
+                base64_into_gallery,
+                service,
+                data,
+                max_bytes=config.max_input_image_bytes,
+            )
+        except ValueError as exc:
+            logger.warning("ingest_base64_rejected error=%s", exc)
+            return f"Could not decode the image: {exc}"
+        except InputImageTooLarge as exc:
+            logger.warning("ingest_base64_too_large error=%s", exc)
+            return f"Could not decode the image: {exc}"
+        except InvalidInputImage:
+            logger.warning("ingest_base64_not_an_image")
+            return (
+                "Could not decode the image: the decoded content is not a valid image."
+            )
+        return f"Ingested image into the gallery: image://{record.id}/view"

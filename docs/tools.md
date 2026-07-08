@@ -535,6 +535,44 @@ Tool call: fetch_image
 
 ---
 
+## ingest_base64_image
+
+Add an inline base64-encoded image to the gallery as an imported entry you can then show, edit, or transform.
+
+| Property | Value |
+|----------|-------|
+| **Tags** | `write` (hidden in read-only mode) |
+| **Annotations** | `readOnlyHint: false`, `destructiveHint: false`, `openWorldHint: false` |
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `data` | str | *(required)* | The base64-encoded image bytes. Raw base64, a `data:<type>;base64,...` URI, or line-wrapped base64 are all accepted. |
+
+### Return value
+
+Text confirmation with the gallery URI on success:
+
+```
+Ingested image into the gallery: image://a1b2c3d4e5f6/view
+```
+
+On failure, a message describing why the image could not be ingested: invalid base64 or an oversized image, or bytes that don't decode as an image.
+
+The decoded size is capped at `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB); oversized or invalid base64 is rejected.
+
+### Example
+
+```
+User: Here's a base64 image, add it to the gallery: iVBORw0KGgoAAAANSUhEUgAA...
+
+Tool call: ingest_base64_image
+  data: "iVBORw0KGgoAAAANSUhEUgAA..."
+```
+
+---
+
 ## list_providers
 
 List available image generation providers and their status.
