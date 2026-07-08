@@ -10,9 +10,6 @@ from PIL import Image
 
 from image_generation_mcp._base64_image import _normalize_base64, base64_into_gallery
 from image_generation_mcp._input_images import InvalidInputImage
-from image_generation_mcp.config import (
-    ProjectConfig,  # noqa: F401  (kept for parity with sibling tests)
-)
 from image_generation_mcp.domain import ImageService
 
 
