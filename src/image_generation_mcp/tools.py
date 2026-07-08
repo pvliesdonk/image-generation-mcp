@@ -1096,7 +1096,7 @@ def register_tools(mcp: FastMCP) -> None:
         scratch directory.
 
         For non-UI clients the response is a JSON object with ``total``,
-        ``page``, ``page_size``, and ``items``.  Each completed item includes
+        ``page``, ``page_size``, ``origin``, and ``items``.  Each completed item includes
         ``image_id``, ``prompt``, ``provider``, ``dimensions``,
         ``created_at``, ``thumbnail_b64`` (128 px WebP, base64-encoded),
         ``content_type``, and ``origin``.  Pending/generating items include
@@ -1210,7 +1210,8 @@ def register_tools(mcp: FastMCP) -> None:
                 upload/fetch/base64 ingestion. ``"all"`` shows both.
 
         Returns:
-            JSON with ``total``, ``page``, ``page_size``, and ``items``.
+            JSON with ``total``, ``page``, ``page_size``, ``origin``, and
+            ``items``.
             Each completed item includes ``thumbnail_b64`` (128 px WebP) and
             ``origin``. Pending/generating items omit the thumbnail.
         """

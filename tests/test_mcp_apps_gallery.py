@@ -828,3 +828,12 @@ class TestGalleryOriginControl:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert "No imported images" in text
+
+    async def test_show_refreshes_empty_copy_on_every_path(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # show() must refresh the origin-aware empty copy itself, so every
+        # show("empty") call site (including error/degenerate paths that
+        # never call updateEmptyState() directly) gets copy that matches
+        # currentOrigin instead of stale text from a previous origin.
+        assert 'if (which === "empty") updateEmptyState();' in text

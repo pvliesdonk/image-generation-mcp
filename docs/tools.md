@@ -338,6 +338,7 @@ JSON with gallery data (for non-UI clients):
   "total": 42,
   "page": 1,
   "page_size": 12,
+  "origin": "generated",
   "items": [
     {
       "image_id": "a1b2c3d4e5f6",

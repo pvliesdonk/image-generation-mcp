@@ -1555,6 +1555,7 @@ _IMAGE_GALLERY_HTML = """\
 
     // --- Display states ---
     function show(which) {
+      if (which === "empty") updateEmptyState();
       loadingEl.style.display = which === "loading" ? "flex" : "none";
       emptyEl.style.display   = which === "empty"   ? "block" : "none";
       gridEl.style.display    = which === "grid"    ? "block" : "none";
@@ -1637,7 +1638,7 @@ _IMAGE_GALLERY_HTML = """\
       lbPageItems = (items || []).filter(i => i.status === "completed" && i.image_id);
 
       if (!items || items.length === 0) {
-        if (total === 0) { updateEmptyState(); show("empty"); return; }
+        if (total === 0) { show("empty"); return; }
         show("grid");
         if (!pipActive) renderPagination();
         return;
