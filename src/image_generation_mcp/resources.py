@@ -1161,6 +1161,10 @@ _IMAGE_GALLERY_HTML = """\
       color: var(--color-text-primary, #333);
     }
 
+    .origin-filter { display: flex; gap: 4px; margin: 8px 0; }
+    .seg { background: transparent; border: 1px solid var(--color-border, #444); color: var(--color-text-secondary, #aaa); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+    .seg.active { background: var(--color-background-secondary, #333); color: var(--color-text-primary, #fff); }
+
     /* PiP compact layout */
     .main.pip-mode { padding: 4px; border-radius: 0; }
     .main.pip-mode .pip-toolbar { margin-bottom: 2px; }
@@ -1276,6 +1280,11 @@ _IMAGE_GALLERY_HTML = """\
     </div>
     <div class="state-grid" id="grid-container">
       <div class="pip-toolbar"><button class="pip-btn" id="pip-btn" title="Picture-in-picture">\u25a3</button></div>
+      <div class="origin-filter" id="origin-filter">
+        <button class="seg active" data-origin="generated">Generated</button>
+        <button class="seg" data-origin="imported">Imported</button>
+        <button class="seg" data-origin="all">All</button>
+      </div>
       <div class="gallery-grid" id="gallery-grid"></div>
       <div class="pagination" id="pagination"></div>
     </div>
@@ -1349,6 +1358,7 @@ _IMAGE_GALLERY_HTML = """\
     }
 
     let currentPage = 1;
+    let currentOrigin = "generated";
     let currentTotal = 0;
     let currentPageSize = 12;
     let dlMode = null; // "downloadFile" | "openLink" | null
@@ -1445,7 +1455,7 @@ _IMAGE_GALLERY_HTML = """\
         lbMeta.setAttribute("hidden", "");
         try {
           const ps = currentPageSize;
-          const result = await app.callServerTool({ name: "gallery_page", arguments: { page: targetPage, page_size: ps } });
+          const result = await app.callServerTool({ name: "gallery_page", arguments: { page: targetPage, page_size: ps, origin: currentOrigin } });
           if (result.isError) { lbLoading.style.display = "none"; return; }
           const text = result.content?.find(c => c.type === "text")?.text;
           if (!text) { lbLoading.style.display = "none"; return; }
@@ -1683,7 +1693,7 @@ _IMAGE_GALLERY_HTML = """\
       const ps = currentPageSize;
       show("loading");
       try {
-        const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps } });
+        const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps, origin: currentOrigin } });
         if (result.isError) { show("empty"); return; }
         const text = result.content?.find(c => c.type === "text")?.text;
         if (!text) { show("empty"); return; }
@@ -1697,6 +1707,17 @@ _IMAGE_GALLERY_HTML = """\
         show("empty");
       }
     }
+
+    document.getElementById("origin-filter").addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg");
+      if (!btn) return;
+      const next = btn.dataset.origin;
+      if (next === currentOrigin) return;
+      currentOrigin = next;
+      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s === btn));
+      currentPage = 1;
+      goTo(1);
+    });
 
     // --- Download ---
     gridItems.addEventListener("click", async (e) => {

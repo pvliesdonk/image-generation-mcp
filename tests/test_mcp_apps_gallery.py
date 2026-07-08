@@ -786,3 +786,23 @@ class TestGalleryOriginFilter:
         data = json.loads(text)
         assert {i["image_id"] for i in data["items"]} == {imp.id}
         assert data["total"] == 1
+
+
+class TestGalleryOriginControl:
+    async def test_segmented_control_present(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'data-origin="generated"' in text
+        assert 'data-origin="imported"' in text
+        assert 'data-origin="all"' in text
+
+    async def test_default_origin_is_generated(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'currentOrigin = "generated"' in text
+
+    async def test_origin_threaded_into_page_fetch(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # gallery_page fetch passes the active origin
+        assert "origin: currentOrigin" in text
