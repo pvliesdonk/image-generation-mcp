@@ -928,3 +928,28 @@ class TestGalleryEmptyCopyRouting:
         # Regression guard for the imported-origin copy set by
         # updateEmptyState(), still reachable via the genuine-empty path.
         assert "No imported images" in text
+
+
+class TestGallerySegmentedControlAria:
+    async def test_group_is_radiogroup(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'id="origin-filter"' in text
+        assert 'role="radiogroup"' in text
+        assert 'aria-label="Filter by image origin"' in text
+
+    async def test_segments_are_radios_with_checked_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Each segment is a radio; Generated is checked initially.
+        assert text.count('role="radio"') == 3
+        assert 'data-origin="generated" role="radio" aria-checked="true"' in text
+        assert 'data-origin="imported" role="radio" aria-checked="false"' in text
+        assert 'data-origin="all" role="radio" aria-checked="false"' in text
+
+    async def test_aria_checked_synced_with_active(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Both the click handler and syncOrigin must set aria-checked alongside
+        # the .active class — two sync sites.
+        assert text.count('setAttribute("aria-checked"') == 2

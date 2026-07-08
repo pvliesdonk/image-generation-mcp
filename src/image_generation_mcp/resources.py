@@ -1263,10 +1263,10 @@ _IMAGE_GALLERY_HTML = """\
 </head>
 <body>
   <div class="main" id="main">
-    <div class="origin-filter" id="origin-filter">
-      <button class="seg active" data-origin="generated">Generated</button>
-      <button class="seg" data-origin="imported">Imported</button>
-      <button class="seg" data-origin="all">All</button>
+    <div class="origin-filter" id="origin-filter" role="radiogroup" aria-label="Filter by image origin">
+      <button class="seg active" data-origin="generated" role="radio" aria-checked="true">Generated</button>
+      <button class="seg" data-origin="imported" role="radio" aria-checked="false">Imported</button>
+      <button class="seg" data-origin="all" role="radio" aria-checked="false">All</button>
     </div>
     <div class="state-loading" id="loading">
       <div class="spinner"></div>Loading gallery\u2026
@@ -1713,7 +1713,11 @@ _IMAGE_GALLERY_HTML = """\
     function syncOrigin(o) {
       if (!o || (o === currentOrigin && document.querySelector("#origin-filter .seg.active")?.dataset.origin === o)) return;
       currentOrigin = o;
-      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s.dataset.origin === o));
+      document.querySelectorAll("#origin-filter .seg").forEach(s => {
+        const on = s.dataset.origin === o;
+        s.classList.toggle("active", on);
+        s.setAttribute("aria-checked", on ? "true" : "false");
+      });
     }
 
     function updateEmptyState() {
@@ -1743,7 +1747,11 @@ _IMAGE_GALLERY_HTML = """\
       const next = btn.dataset.origin;
       if (next === currentOrigin) return;
       currentOrigin = next;
-      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s === btn));
+      document.querySelectorAll("#origin-filter .seg").forEach(s => {
+        const on = s === btn;
+        s.classList.toggle("active", on);
+        s.setAttribute("aria-checked", on ? "true" : "false");
+      });
       currentPage = 1;
       goTo(1);
     });
