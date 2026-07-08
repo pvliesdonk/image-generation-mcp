@@ -1094,6 +1094,14 @@ class TestToolAnnotations:
                     "idempotentHint": False,
                 },
             ),
+            (
+                "fetch_image",
+                {
+                    "readOnlyHint": False,
+                    "destructiveHint": False,
+                    "openWorldHint": True,
+                },
+            ),
         ],
     )
     async def test_tool_annotations(
@@ -2200,3 +2208,112 @@ class TestTransformImageTool:
                 config=cfg,
                 ctx=ctx,
             )
+
+
+# ---------------------------------------------------------------------------
+# fetch_image tool
+# ---------------------------------------------------------------------------
+
+
+class TestFetchImageTool:
+    """fetch_image maps every fetch/validation failure to a user string."""
+
+    async def _fetch_tool(self):
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("fetch_image")
+        assert tool is not None
+        return tool
+
+    async def _make_cfg(self) -> MagicMock:
+        cfg = MagicMock()
+        cfg.max_input_image_bytes = 20 * 1024 * 1024
+        cfg.fetch_timeout_s = 30.0
+        return cfg
+
+    async def test_registered_with_write_tag_and_open_world(self) -> None:
+        tool = await self._fetch_tool()
+        assert "write" in tool.tags
+        assert tool.annotations is not None
+        assert tool.annotations.title == "Fetch Image"
+        assert tool.annotations.openWorldHint is True
+        assert tool.icons
+
+    async def test_ssrf_blocked_returns_error_string(
+        self, monkeypatch, service: ImageService
+    ) -> None:
+        import image_generation_mcp.tools as tools_mod
+
+        async def _raise(*_args, **_kwargs):
+            raise ValueError("URLs targeting private, loopback, ... are not allowed.")
+
+        monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _raise)
+        tool = await self._fetch_tool()
+        result = await tool.fn(
+            url="http://169.254.169.254/x",
+            service=service,
+            config=await self._make_cfg(),
+        )
+        assert "Could not fetch the image" in result
+        assert "not allowed" in result
+
+    async def test_transport_error_returns_generic_string(
+        self, monkeypatch, service: ImageService
+    ) -> None:
+        import httpx
+
+        import image_generation_mcp.tools as tools_mod
+
+        async def _raise(*_args, **_kwargs):
+            raise httpx.TimeoutException("timed out")
+
+        monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _raise)
+        tool = await self._fetch_tool()
+        result = await tool.fn(
+            url="http://93.184.216.34/x",
+            service=service,
+            config=await self._make_cfg(),
+        )
+        assert "timed out or the connection failed" in result
+
+    async def test_non_image_returns_error_string(
+        self, monkeypatch, service: ImageService
+    ) -> None:
+        import image_generation_mcp.tools as tools_mod
+        from image_generation_mcp._input_images import InvalidInputImage
+
+        async def _raise(*_args, **_kwargs):
+            raise InvalidInputImage("input")
+
+        monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _raise)
+        tool = await self._fetch_tool()
+        result = await tool.fn(
+            url="http://93.184.216.34/x",
+            service=service,
+            config=await self._make_cfg(),
+        )
+        assert "not a valid image" in result
+
+    async def test_success_returns_image_uri(
+        self, monkeypatch, service: ImageService
+    ) -> None:
+        import image_generation_mcp.tools as tools_mod
+
+        class _Rec:
+            id = "abc123def456"
+
+        async def _ok(*_args, **_kwargs):
+            return _Rec()
+
+        monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _ok)
+        tool = await self._fetch_tool()
+        result = await tool.fn(
+            url="http://93.184.216.34/x",
+            service=service,
+            config=await self._make_cfg(),
+        )
+        assert result == "Fetched image into the gallery: image://abc123def456/view"
