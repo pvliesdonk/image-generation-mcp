@@ -1087,6 +1087,7 @@ def register_tools(mcp: FastMCP) -> None:
         app=AppConfig(resource_uri=_IMAGE_GALLERY_URI),
     )
     async def browse_gallery(
+        origin: Literal["generated", "imported", "all"] = "generated",
         service: ImageService = Depends(get_service),
     ) -> ToolResult:
         """Browse all generated images in an interactive visual gallery.
@@ -1098,12 +1099,20 @@ def register_tools(mcp: FastMCP) -> None:
         ``page``, ``page_size``, and ``items``.  Each completed item includes
         ``image_id``, ``prompt``, ``provider``, ``dimensions``,
         ``created_at``, ``thumbnail_b64`` (128 px WebP, base64-encoded),
-        and ``content_type``.  Pending/generating items include ``status``,
-        ``progress``, and ``progress_message`` instead of a thumbnail.
+        ``content_type``, and ``origin``.  Pending/generating items include
+        ``status``, ``progress``, and ``progress_message`` instead of a
+        thumbnail.
 
         Use ``browse_gallery`` to see all images; use
         ``show_image(uri="image://{image_id}/view")`` to view one
         image at full resolution.
+
+        Args:
+            origin: Which images to include. ``"generated"`` (default) shows
+                images produced by ``generate_image``/``edit_image`` plus all
+                pending generations (a pending generation always counts as
+                generated). ``"imported"`` shows images brought in via
+                upload/fetch/base64 ingestion. ``"all"`` shows both.
 
         Returns:
             JSON with gallery data (total count, page metadata, thumbnail
@@ -1113,6 +1122,7 @@ def register_tools(mcp: FastMCP) -> None:
         pending = sorted(
             service.list_pending(), key=lambda p: p.created_at, reverse=True
         )
+        images, pending = _origin_filtered(images, pending, origin)
         total = len(images) + len(pending)
 
         # Build page-1 items: pending first (newest), then completed
@@ -1150,6 +1160,7 @@ def register_tools(mcp: FastMCP) -> None:
                     ).isoformat(),
                     "thumbnail_b64": base64.b64encode(thumb_bytes).decode(),
                     "content_type": img.content_type,
+                    "origin": img.origin,
                 }
             )
 
@@ -1180,6 +1191,7 @@ def register_tools(mcp: FastMCP) -> None:
     async def gallery_page(
         page: int = 1,
         page_size: int = _GALLERY_PAGE_SIZE,
+        origin: Literal["generated", "imported", "all"] = "generated",
         service: ImageService = Depends(get_service),
     ) -> str:
         """Return a page of image thumbnails for the gallery UI.
@@ -1190,16 +1202,22 @@ def register_tools(mcp: FastMCP) -> None:
         Args:
             page: 1-based page number.
             page_size: Number of items per page (1-24, default 12).
+            origin: Which images to include. ``"generated"`` (default) shows
+                images produced by ``generate_image``/``edit_image`` plus all
+                pending generations (a pending generation always counts as
+                generated). ``"imported"`` shows images brought in via
+                upload/fetch/base64 ingestion. ``"all"`` shows both.
 
         Returns:
             JSON with ``total``, ``page``, ``page_size``, and ``items``.
-            Each completed item includes ``thumbnail_b64`` (128 px WebP).
-            Pending/generating items omit the thumbnail.
+            Each completed item includes ``thumbnail_b64`` (128 px WebP) and
+            ``origin``. Pending/generating items omit the thumbnail.
         """
         images = sorted(service.list_images(), key=lambda r: r.created_at, reverse=True)
         pending = sorted(
             service.list_pending(), key=lambda p: p.created_at, reverse=True
         )
+        images, pending = _origin_filtered(images, pending, origin)
         total = len(images) + len(pending)
 
         page = max(1, page)
@@ -1244,6 +1262,7 @@ def register_tools(mcp: FastMCP) -> None:
                         ).isoformat(),
                         "thumbnail_b64": base64.b64encode(thumb_bytes).decode(),
                         "content_type": record.content_type,
+                        "origin": record.origin,
                     }
                 )
 

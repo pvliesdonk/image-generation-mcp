@@ -729,3 +729,60 @@ class TestOriginFiltered:
         imgs, pends = _origin_filtered([gen, imp], [pend], "all")
         assert {i.id for i in imgs} == {gen.id, imp.id}
         assert pends == [pend]
+
+
+class TestGalleryOriginFilter:
+    async def _browse(self, service, **kwargs):
+        import json
+
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("browse_gallery")
+        result = await tool.fn(service=service, **kwargs)
+        text = result.content[0].text
+        return json.loads(text)
+
+    async def test_default_is_generated_only(self, service: ImageService) -> None:
+        gen = _add_image(service, 10)
+        _add_imported(service, 10)
+        data = await self._browse(service)  # no origin arg -> default "generated"
+        ids = {i["image_id"] for i in data["items"]}
+        assert ids == {gen.id}
+        assert data["total"] == 1
+        assert all(i.get("origin") == "generated" for i in data["items"])
+
+    async def test_imported_only(self, service: ImageService) -> None:
+        _add_image(service, 11)
+        imp = _add_imported(service, 11)
+        data = await self._browse(service, origin="imported")
+        assert {i["image_id"] for i in data["items"]} == {imp.id}
+        assert data["total"] == 1
+        assert data["items"][0]["origin"] == "imported"
+
+    async def test_all_includes_both(self, service: ImageService) -> None:
+        gen = _add_image(service, 12)
+        imp = _add_imported(service, 12)
+        data = await self._browse(service, origin="all")
+        assert {i["image_id"] for i in data["items"]} == {gen.id, imp.id}
+        assert data["total"] == 2
+
+    async def test_gallery_page_respects_origin(self, service: ImageService) -> None:
+        import json
+
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        _add_image(service, 13)
+        imp = _add_imported(service, 13)
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("gallery_page")
+        text = await tool.fn(service=service, origin="imported")
+        data = json.loads(text)
+        assert {i["image_id"] for i in data["items"]} == {imp.id}
+        assert data["total"] == 1
