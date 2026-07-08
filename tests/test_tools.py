@@ -1102,6 +1102,14 @@ class TestToolAnnotations:
                     "openWorldHint": True,
                 },
             ),
+            (
+                "ingest_base64_image",
+                {
+                    "readOnlyHint": False,
+                    "destructiveHint": False,
+                    "openWorldHint": False,
+                },
+            ),
         ],
     )
     async def test_tool_annotations(
@@ -2358,3 +2366,83 @@ class TestFetchImageTool:
             config=await self._make_cfg(),
         )
         assert result == "Fetched image into the gallery: image://abc123def456/view"
+
+
+class TestIngestBase64Tool:
+    """ingest_base64_image maps every decode/validation failure to a user string."""
+
+    @staticmethod
+    def _make_cfg() -> object:
+        return MagicMock(max_input_image_bytes=20 * 1024 * 1024)
+
+    async def _tool(self):
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("ingest_base64_image")
+        assert tool is not None
+        return tool
+
+    async def test_registered_write_tag_no_open_world(self) -> None:
+        tool = await self._tool()
+        assert "write" in tool.tags
+        assert tool.annotations is not None
+        assert tool.annotations.title == "Ingest Base64 Image"
+        assert tool.annotations.openWorldHint is False
+        assert tool.icons
+
+    async def test_malformed_returns_error_string(self, monkeypatch) -> None:
+        import image_generation_mcp.tools as tools_mod
+
+        def _raise(*_args, **_kwargs):
+            raise ValueError("invalid base64: Only base64 data is allowed")
+
+        monkeypatch.setattr(tools_mod, "base64_into_gallery", _raise)
+        tool = await self._tool()
+        result = await tool.fn(data="@@@@", service=object(), config=self._make_cfg())
+        assert "Could not decode the image" in result
+
+    async def test_too_large_returns_error_string(self, monkeypatch) -> None:
+        import image_generation_mcp.tools as tools_mod
+        from image_generation_mcp._input_images import InputImageTooLarge
+
+        def _raise(*_args, **_kwargs):
+            raise InputImageTooLarge("base64", 999, 100)
+
+        monkeypatch.setattr(tools_mod, "base64_into_gallery", _raise)
+        tool = await self._tool()
+        result = await tool.fn(data="aGk=", service=object(), config=self._make_cfg())
+        assert "Could not decode the image" in result
+
+    async def test_non_image_returns_error_string(self, monkeypatch) -> None:
+        import image_generation_mcp.tools as tools_mod
+        from image_generation_mcp._input_images import InvalidInputImage
+
+        def _raise(*_args, **_kwargs):
+            raise InvalidInputImage("input")
+
+        monkeypatch.setattr(tools_mod, "base64_into_gallery", _raise)
+        tool = await self._tool()
+        result = await tool.fn(
+            data="aGVsbG8=", service=object(), config=self._make_cfg()
+        )
+        assert "not a valid image" in result
+
+    async def test_success_returns_image_uri(self, monkeypatch) -> None:
+        import image_generation_mcp.tools as tools_mod
+
+        class _Rec:
+            id = "abcdef012345"
+
+        def _ok(*_args, **_kwargs):
+            return _Rec()
+
+        monkeypatch.setattr(tools_mod, "base64_into_gallery", _ok)
+        tool = await self._tool()
+        result = await tool.fn(
+            data="aGVsbG8=", service=object(), config=self._make_cfg()
+        )
+        assert result == "Ingested image into the gallery: image://abcdef012345/view"
