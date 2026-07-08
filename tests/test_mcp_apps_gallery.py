@@ -829,44 +829,66 @@ class TestGalleryOriginControl:
         text = result.contents[0].content
         assert "No imported images" in text
 
-    async def test_show_refreshes_empty_copy_on_every_path(self, server) -> None:
+    async def test_show_does_not_centralize_empty_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # show() must refresh the origin-aware empty copy itself, so every
-        # show("empty") call site (including error/degenerate paths that
-        # never call updateEmptyState() directly) gets copy that matches
-        # currentOrigin instead of stale text from a previous origin.
-        assert 'if (which === "empty") updateEmptyState();' in text
+        # show() itself must NOT decide the empty copy — callers are
+        # responsible for calling updateEmptyState() (genuine empty) or
+        # setGenericEmptyCopy() (error/degenerate) before show("empty").
+        assert 'if (which === "empty") updateEmptyState();' not in text
+        expected_show_body = (
+            "function show(which) {\n"
+            '      loadingEl.style.display = which === "loading" ? "flex" : "none";\n'
+            '      emptyEl.style.display   = which === "empty"   ? "block" : "none";\n'
+            '      gridEl.style.display    = which === "grid"    ? "block" : "none";\n'
+            '      // For "grid", renderGrid/renderPipStrip call updateSize after populating\n'
+            '      if (which !== "grid") updateSize();\n'
+            "    }"
+        )
+        assert expected_show_body in text
 
 
-class TestGalleryErrorState:
-    async def test_error_state_container_present(self, server) -> None:
+class TestGalleryEmptyCopyRouting:
+    async def test_genuine_empty_uses_origin_aware_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert 'id="error"' in text
-        assert "Couldn't load the gallery" in text
-        assert "try again" in text
+        # The total === 0 branch in renderGrid must call updateEmptyState()
+        # itself before show("empty") so genuine-empty gets origin-aware copy.
+        assert 'updateEmptyState(); show("empty")' in text
 
-    async def test_show_toggles_error_element(self, server) -> None:
+    async def test_set_generic_empty_copy_defined(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert 'which === "error"' in text
+        assert "function setGenericEmptyCopy" in text
+        assert '"No images yet"' in text
+        assert "generate_image" in text
 
-    async def test_goto_page_error_fallback_uses_error_state(self, server) -> None:
+    async def test_error_and_degenerate_paths_use_generic_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # All six error/degenerate paths route through setGenericEmptyCopy()
+        # then show("empty") — never the removed show("error").
+        assert text.count('setGenericEmptyCopy(); show("empty")') == 6
+
+    async def test_goto_page_error_fallback_uses_generic_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert 'console.warn("gallery_page failed"' in text
-        assert 'show("error")' in text
 
-    async def test_tool_result_parse_failure_uses_error_state(self, server) -> None:
+    async def test_tool_result_parse_failure_uses_generic_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert 'console.warn("Failed to parse gallery data"' in text
-        assert 'show("error")' in text
+
+    async def test_error_state_removed(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'show("error")' not in text
+        assert 'id="error"' not in text
 
     async def test_genuine_empty_still_uses_origin_aware_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # Regression guard: the empty path must remain unchanged — the error
-        # state must NOT call updateEmptyState().
-        assert 'if (which === "empty") updateEmptyState();' in text
+        # Regression guard for the imported-origin copy set by
+        # updateEmptyState(), still reachable via the genuine-empty path.
+        assert "No imported images" in text

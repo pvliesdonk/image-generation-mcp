@@ -1284,19 +1284,6 @@ _IMAGE_GALLERY_HTML = """\
       <div class="empty-title">No images yet</div>
       <div class="empty-sub">Use <code>generate_image</code> to create your first image.</div>
     </div>
-    <div class="state-empty" id="error">
-      <div class="empty-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="1.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-      </div>
-      <div class="empty-title">Couldn't load the gallery</div>
-      <div class="empty-sub">Something went wrong — try again.</div>
-    </div>
     <div class="state-grid" id="grid-container">
       <div class="pip-toolbar"><button class="pip-btn" id="pip-btn" title="Picture-in-picture">\u25a3</button></div>
       <div class="gallery-grid" id="gallery-grid"></div>
@@ -1341,7 +1328,6 @@ _IMAGE_GALLERY_HTML = """\
     const mainEl    = document.getElementById("main");
     const loadingEl = document.getElementById("loading");
     const emptyEl   = document.getElementById("empty");
-    const errorEl   = document.getElementById("error");
     const gridEl    = document.getElementById("grid-container");
     const gridItems = document.getElementById("gallery-grid");
     const pagEl     = document.getElementById("pagination");
@@ -1569,10 +1555,8 @@ _IMAGE_GALLERY_HTML = """\
 
     // --- Display states ---
     function show(which) {
-      if (which === "empty") updateEmptyState();
       loadingEl.style.display = which === "loading" ? "flex" : "none";
       emptyEl.style.display   = which === "empty"   ? "block" : "none";
-      errorEl.style.display   = which === "error"   ? "block" : "none";
       gridEl.style.display    = which === "grid"    ? "block" : "none";
       // For "grid", renderGrid/renderPipStrip call updateSize after populating
       if (which !== "grid") updateSize();
@@ -1653,7 +1637,7 @@ _IMAGE_GALLERY_HTML = """\
       lbPageItems = (items || []).filter(i => i.status === "completed" && i.image_id);
 
       if (!items || items.length === 0) {
-        if (total === 0) { show("empty"); return; }
+        if (total === 0) { updateEmptyState(); show("empty"); return; }
         show("grid");
         if (!pipActive) renderPagination();
         return;
@@ -1711,9 +1695,9 @@ _IMAGE_GALLERY_HTML = """\
       show("loading");
       try {
         const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps, origin: currentOrigin } });
-        if (result.isError) { show("error"); return; }
+        if (result.isError) { setGenericEmptyCopy(); show("empty"); return; }
         const text = result.content?.find(c => c.type === "text")?.text;
-        if (!text) { show("error"); return; }
+        if (!text) { setGenericEmptyCopy(); show("empty"); return; }
         const data = JSON.parse(text);
         if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
@@ -1722,7 +1706,7 @@ _IMAGE_GALLERY_HTML = """\
         renderGrid(data);
       } catch (e) {
         console.warn("gallery_page failed", e);
-        show("error");
+        setGenericEmptyCopy(); show("empty");
       }
     }
 
@@ -1743,6 +1727,14 @@ _IMAGE_GALLERY_HTML = """\
         titleEl.textContent = "No images yet";
         subEl.innerHTML = 'Use <code>generate_image</code> to create your first image.';
       }
+    }
+
+    function setGenericEmptyCopy() {
+      const titleEl = document.querySelector("#empty .empty-title");
+      const subEl = document.querySelector("#empty .empty-sub");
+      if (!titleEl || !subEl) return;
+      titleEl.textContent = "No images yet";
+      subEl.innerHTML = 'Use <code>generate_image</code> to create your first image.';
     }
 
     document.getElementById("origin-filter").addEventListener("click", (e) => {
@@ -1859,10 +1851,10 @@ _IMAGE_GALLERY_HTML = """\
 
     app.ontoolresult = ({ content }) => {
       const text = content?.find(c => c.type === "text");
-      if (!text) { show("error"); return; }
+      if (!text) { setGenericEmptyCopy(); show("empty"); return; }
       try {
         const data = JSON.parse(text.text);
-        if (typeof data.total !== "number") { show("error"); return; }
+        if (typeof data.total !== "number") { setGenericEmptyCopy(); show("empty"); return; }
         if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
         currentTotal = data.total;
@@ -1870,7 +1862,7 @@ _IMAGE_GALLERY_HTML = """\
         renderGrid(data);
       } catch (e) {
         console.warn("Failed to parse gallery data", e);
-        show("error");
+        setGenericEmptyCopy(); show("empty");
       }
     };
 
