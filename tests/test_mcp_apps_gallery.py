@@ -685,3 +685,246 @@ class TestPipModeHTML:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert "sendSizeChanged" in text
+
+
+def _add_imported(service: ImageService, idx: int) -> ImageRecord:
+    """Register a synthetic imported image and return its record."""
+    png = _make_png_bytes(width=64 + idx, height=64 + idx)
+    return service.register_imported_image(
+        png, origin_source="base64", max_bytes=10_000_000
+    )
+
+
+class TestOriginFiltered:
+    def test_generated_keeps_generated_and_pending(self, service: ImageService) -> None:
+        from image_generation_mcp.domain import PendingGeneration
+        from image_generation_mcp.tools import _origin_filtered
+
+        gen = _add_image(service, 1)
+        imp = _add_imported(service, 1)
+        pend = PendingGeneration(id="p0", provider="placeholder", prompt="x")
+        images = [gen, imp]
+        imgs, pends = _origin_filtered(images, [pend], "generated")
+        assert [i.id for i in imgs] == [gen.id]
+        assert pends == [pend]
+
+    def test_imported_keeps_imported_drops_pending(self, service: ImageService) -> None:
+        from image_generation_mcp.domain import PendingGeneration
+        from image_generation_mcp.tools import _origin_filtered
+
+        gen = _add_image(service, 2)
+        imp = _add_imported(service, 2)
+        pend = PendingGeneration(id="p1", provider="placeholder", prompt="x")
+        imgs, pends = _origin_filtered([gen, imp], [pend], "imported")
+        assert [i.id for i in imgs] == [imp.id]
+        assert pends == []
+
+    def test_all_keeps_everything(self, service: ImageService) -> None:
+        from image_generation_mcp.domain import PendingGeneration
+        from image_generation_mcp.tools import _origin_filtered
+
+        gen = _add_image(service, 3)
+        imp = _add_imported(service, 3)
+        pend = PendingGeneration(id="p2", provider="placeholder", prompt="x")
+        imgs, pends = _origin_filtered([gen, imp], [pend], "all")
+        assert {i.id for i in imgs} == {gen.id, imp.id}
+        assert pends == [pend]
+
+
+class TestGalleryOriginFilter:
+    async def _browse(self, service, **kwargs):
+        import json
+
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("browse_gallery")
+        result = await tool.fn(service=service, **kwargs)
+        text = result.content[0].text
+        return json.loads(text)
+
+    async def test_default_is_generated_only(self, service: ImageService) -> None:
+        gen = _add_image(service, 10)
+        _add_imported(service, 10)
+        data = await self._browse(service)  # no origin arg -> default "generated"
+        ids = {i["image_id"] for i in data["items"]}
+        assert ids == {gen.id}
+        assert data["total"] == 1
+        assert all(i.get("origin") == "generated" for i in data["items"])
+        assert data["origin"] == "generated"
+
+    async def test_imported_only(self, service: ImageService) -> None:
+        _add_image(service, 11)
+        imp = _add_imported(service, 11)
+        data = await self._browse(service, origin="imported")
+        assert {i["image_id"] for i in data["items"]} == {imp.id}
+        assert data["total"] == 1
+        assert data["items"][0]["origin"] == "imported"
+        assert data["origin"] == "imported"
+
+    async def test_all_includes_both(self, service: ImageService) -> None:
+        gen = _add_image(service, 12)
+        imp = _add_imported(service, 12)
+        data = await self._browse(service, origin="all")
+        assert {i["image_id"] for i in data["items"]} == {gen.id, imp.id}
+        assert data["total"] == 2
+
+    async def test_gallery_page_respects_origin(self, service: ImageService) -> None:
+        import json
+
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        _add_image(service, 13)
+        imp = _add_imported(service, 13)
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("gallery_page")
+        text = await tool.fn(service=service, origin="imported")
+        data = json.loads(text)
+        assert {i["image_id"] for i in data["items"]} == {imp.id}
+        assert data["total"] == 1
+        assert data["origin"] == "imported"
+
+    async def test_gallery_page_imported_filter_across_page_boundary(
+        self, service: ImageService
+    ) -> None:
+        """Filtering must happen before pagination, not after.
+
+        Six imported images alone span more than one page at page_size=4, plus
+        five generated images that must never leak into the imported result.
+        Page 2 of the *filtered* (imported-only) set holds the remaining 2
+        items with total=6. A paginate-then-filter regression would instead
+        slice the unfiltered 11-item list at [4:8] and filter afterward,
+        producing a different/short/mixed result and total=11.
+        """
+        import json
+
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        for i in range(5):
+            _add_image(service, i)
+        imported_ids = {_add_imported(service, i).id for i in range(6)}
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("gallery_page")
+        text = await tool.fn(service=service, page=2, page_size=4, origin="imported")
+        data = json.loads(text)
+
+        assert data["total"] == 6
+        assert data["page"] == 2
+        assert data["page_size"] == 4
+        assert len(data["items"]) == 2
+        for item in data["items"]:
+            assert item["origin"] == "imported"
+            assert item["image_id"] in imported_ids
+
+
+class TestGalleryOriginControl:
+    async def test_segmented_control_present(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'data-origin="generated"' in text
+        assert 'data-origin="imported"' in text
+        assert 'data-origin="all"' in text
+
+    async def test_default_origin_is_generated(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'currentOrigin = "generated"' in text
+
+    async def test_origin_threaded_into_page_fetch(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # gallery_page fetch passes the active origin
+        assert "origin: currentOrigin" in text
+
+    async def test_control_outside_hideable_grid(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The origin control must live above the grid container, which the
+        # empty state hides — otherwise a zero-result filter would trap the user.
+        assert text.index('id="origin-filter"') < text.index('id="grid-container"')
+
+    async def test_control_syncs_from_payload_origin(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The segmented control must reflect the origin echoed by the tool
+        # payload, both on initial render and on pagination.
+        assert "if (data.origin) syncOrigin(data.origin);" in text
+
+    async def test_empty_state_has_origin_aware_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "No imported images" in text
+
+    async def test_show_does_not_centralize_empty_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # show() itself must NOT decide the empty copy — callers are
+        # responsible for calling updateEmptyState() (genuine empty) or
+        # setGenericEmptyCopy() (error/degenerate) before show("empty").
+        assert 'if (which === "empty") updateEmptyState();' not in text
+        expected_show_body = (
+            "function show(which) {\n"
+            '      loadingEl.style.display = which === "loading" ? "flex" : "none";\n'
+            '      emptyEl.style.display   = which === "empty"   ? "block" : "none";\n'
+            '      gridEl.style.display    = which === "grid"    ? "block" : "none";\n'
+            '      // For "grid", renderGrid/renderPipStrip call updateSize after populating\n'
+            '      if (which !== "grid") updateSize();\n'
+            "    }"
+        )
+        assert expected_show_body in text
+
+
+class TestGalleryEmptyCopyRouting:
+    async def test_genuine_empty_uses_origin_aware_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The total === 0 branch in renderGrid must call updateEmptyState()
+        # itself before show("empty") so genuine-empty gets origin-aware copy.
+        assert 'updateEmptyState(); show("empty")' in text
+
+    async def test_set_generic_empty_copy_defined(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "function setGenericEmptyCopy" in text
+        assert '"No images yet"' in text
+        assert "generate_image" in text
+
+    async def test_error_and_degenerate_paths_use_generic_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # All six error/degenerate paths route through setGenericEmptyCopy()
+        # then show("empty") — never the removed show("error").
+        assert text.count('setGenericEmptyCopy(); show("empty")') == 6
+
+    async def test_goto_page_error_fallback_uses_generic_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'console.warn("gallery_page failed"' in text
+
+    async def test_tool_result_parse_failure_uses_generic_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'console.warn("Failed to parse gallery data"' in text
+
+    async def test_error_state_removed(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'show("error")' not in text
+        assert 'id="error"' not in text
+
+    async def test_genuine_empty_still_uses_origin_aware_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Regression guard for the imported-origin copy set by
+        # updateEmptyState(), still reachable via the genuine-empty path.
+        assert "No imported images" in text

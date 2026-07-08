@@ -325,7 +325,9 @@ Open an interactive visual gallery of all generated images. The gallery renders 
 
 ### Parameters
 
-None. The gallery loads all images automatically.
+| Name | Type | Default | Description |
+|------|------|---------|-------------|
+| `origin` | `generated` \| `imported` \| `all` | `generated` | Which images to show. `generated` shows images produced by `generate_image`/`edit_image` plus any in-progress generations; `imported` shows images brought in via upload, fetch, or base64 ingestion; `all` shows both. |
 
 ### Return value
 
@@ -336,6 +338,7 @@ JSON with gallery data (for non-UI clients):
   "total": 42,
   "page": 1,
   "page_size": 12,
+  "origin": "generated",
   "items": [
     {
       "image_id": "a1b2c3d4e5f6",
@@ -345,7 +348,8 @@ JSON with gallery data (for non-UI clients):
       "dimensions": [1024, 1024],
       "created_at": "2026-03-24T10:00:00+00:00",
       "thumbnail_b64": "<base64-encoded 128px WebP>",
-      "content_type": "image/png"
+      "content_type": "image/png",
+      "origin": "generated"
     }
   ]
 }

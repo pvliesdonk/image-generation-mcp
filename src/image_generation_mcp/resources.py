@@ -1161,6 +1161,10 @@ _IMAGE_GALLERY_HTML = """\
       color: var(--color-text-primary, #333);
     }
 
+    .origin-filter { display: flex; gap: 4px; margin: 8px 0; }
+    .seg { background: transparent; border: 1px solid var(--color-border, #444); color: var(--color-text-secondary, #aaa); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
+    .seg.active { background: var(--color-background-secondary, #333); color: var(--color-text-primary, #fff); }
+
     /* PiP compact layout */
     .main.pip-mode { padding: 4px; border-radius: 0; }
     .main.pip-mode .pip-toolbar { margin-bottom: 2px; }
@@ -1171,6 +1175,7 @@ _IMAGE_GALLERY_HTML = """\
     .main.pip-mode .card { aspect-ratio: 1; border-radius: 4px; }
     .main.pip-mode .card-overlay { display: none; }
     .main.pip-mode .pagination { display: none; }
+    .main.pip-mode .origin-filter { display: none; }
 
     /* Pagination */
     .pagination {
@@ -1258,6 +1263,11 @@ _IMAGE_GALLERY_HTML = """\
 </head>
 <body>
   <div class="main" id="main">
+    <div class="origin-filter" id="origin-filter">
+      <button class="seg active" data-origin="generated">Generated</button>
+      <button class="seg" data-origin="imported">Imported</button>
+      <button class="seg" data-origin="all">All</button>
+    </div>
     <div class="state-loading" id="loading">
       <div class="spinner"></div>Loading gallery\u2026
     </div>
@@ -1349,6 +1359,7 @@ _IMAGE_GALLERY_HTML = """\
     }
 
     let currentPage = 1;
+    let currentOrigin = "generated";
     let currentTotal = 0;
     let currentPageSize = 12;
     let dlMode = null; // "downloadFile" | "openLink" | null
@@ -1445,7 +1456,7 @@ _IMAGE_GALLERY_HTML = """\
         lbMeta.setAttribute("hidden", "");
         try {
           const ps = currentPageSize;
-          const result = await app.callServerTool({ name: "gallery_page", arguments: { page: targetPage, page_size: ps } });
+          const result = await app.callServerTool({ name: "gallery_page", arguments: { page: targetPage, page_size: ps, origin: currentOrigin } });
           if (result.isError) { lbLoading.style.display = "none"; return; }
           const text = result.content?.find(c => c.type === "text")?.text;
           if (!text) { lbLoading.style.display = "none"; return; }
@@ -1626,7 +1637,7 @@ _IMAGE_GALLERY_HTML = """\
       lbPageItems = (items || []).filter(i => i.status === "completed" && i.image_id);
 
       if (!items || items.length === 0) {
-        if (total === 0) { show("empty"); return; }
+        if (total === 0) { updateEmptyState(); show("empty"); return; }
         show("grid");
         if (!pipActive) renderPagination();
         return;
@@ -1683,20 +1694,59 @@ _IMAGE_GALLERY_HTML = """\
       const ps = currentPageSize;
       show("loading");
       try {
-        const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps } });
-        if (result.isError) { show("empty"); return; }
+        const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps, origin: currentOrigin } });
+        if (result.isError) { setGenericEmptyCopy(); show("empty"); return; }
         const text = result.content?.find(c => c.type === "text")?.text;
-        if (!text) { show("empty"); return; }
+        if (!text) { setGenericEmptyCopy(); show("empty"); return; }
         const data = JSON.parse(text);
+        if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
         currentTotal = data.total || 0;
         currentPageSize = data.page_size || 12;
         renderGrid(data);
       } catch (e) {
         console.warn("gallery_page failed", e);
-        show("empty");
+        setGenericEmptyCopy(); show("empty");
       }
     }
+
+    function syncOrigin(o) {
+      if (!o || (o === currentOrigin && document.querySelector("#origin-filter .seg.active")?.dataset.origin === o)) return;
+      currentOrigin = o;
+      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s.dataset.origin === o));
+    }
+
+    function updateEmptyState() {
+      const titleEl = document.querySelector("#empty .empty-title");
+      const subEl = document.querySelector("#empty .empty-sub");
+      if (!titleEl || !subEl) return;
+      if (currentOrigin === "imported") {
+        titleEl.textContent = "No imported images";
+        subEl.textContent = "Use fetch_image or ingest_base64_image to add one.";
+      } else {
+        titleEl.textContent = "No images yet";
+        subEl.innerHTML = 'Use <code>generate_image</code> to create your first image.';
+      }
+    }
+
+    function setGenericEmptyCopy() {
+      const titleEl = document.querySelector("#empty .empty-title");
+      const subEl = document.querySelector("#empty .empty-sub");
+      if (!titleEl || !subEl) return;
+      titleEl.textContent = "No images yet";
+      subEl.innerHTML = 'Use <code>generate_image</code> to create your first image.';
+    }
+
+    document.getElementById("origin-filter").addEventListener("click", (e) => {
+      const btn = e.target.closest(".seg");
+      if (!btn) return;
+      const next = btn.dataset.origin;
+      if (next === currentOrigin) return;
+      currentOrigin = next;
+      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s === btn));
+      currentPage = 1;
+      goTo(1);
+    });
 
     // --- Download ---
     gridItems.addEventListener("click", async (e) => {
@@ -1801,17 +1851,18 @@ _IMAGE_GALLERY_HTML = """\
 
     app.ontoolresult = ({ content }) => {
       const text = content?.find(c => c.type === "text");
-      if (!text) { show("empty"); return; }
+      if (!text) { setGenericEmptyCopy(); show("empty"); return; }
       try {
         const data = JSON.parse(text.text);
-        if (typeof data.total !== "number") { show("empty"); return; }
+        if (typeof data.total !== "number") { setGenericEmptyCopy(); show("empty"); return; }
+        if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
         currentTotal = data.total;
         currentPageSize = data.page_size || 12;
         renderGrid(data);
       } catch (e) {
         console.warn("Failed to parse gallery data", e);
-        show("empty");
+        setGenericEmptyCopy(); show("empty");
       }
     };
 
