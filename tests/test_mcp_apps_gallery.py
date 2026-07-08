@@ -1014,6 +1014,14 @@ class TestGalleryRequestSequencing:
         # Both bail sites — the success path AND the catch — must guard, else a
         # stale error response can clobber a newer successful render.
         assert text.count("if (seq !== galleryReqSeq) return;") == 2
+        # The capture must PRECEDE the await — a refactor moving it below the
+        # await defeats the guard entirely while leaving the counts above intact.
+        assert (
+            "const seq = ++galleryReqSeq;\n"
+            '      show("loading");\n'
+            "      try {\n"
+            "        const result = await app.callServerTool"
+        ) in text
 
     async def test_ontoolresult_bumps_token(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
