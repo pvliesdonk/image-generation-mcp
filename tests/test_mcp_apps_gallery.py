@@ -790,6 +790,42 @@ class TestGalleryOriginFilter:
         assert data["total"] == 1
         assert data["origin"] == "imported"
 
+    async def test_gallery_page_imported_filter_across_page_boundary(
+        self, service: ImageService
+    ) -> None:
+        """Filtering must happen before pagination, not after.
+
+        Six imported images alone span more than one page at page_size=4, plus
+        five generated images that must never leak into the imported result.
+        Page 2 of the *filtered* (imported-only) set holds the remaining 2
+        items with total=6. A paginate-then-filter regression would instead
+        slice the unfiltered 11-item list at [4:8] and filter afterward,
+        producing a different/short/mixed result and total=11.
+        """
+        import json
+
+        from fastmcp import FastMCP
+
+        from image_generation_mcp.tools import register_tools
+
+        for i in range(5):
+            _add_image(service, i)
+        imported_ids = {_add_imported(service, i).id for i in range(6)}
+
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("gallery_page")
+        text = await tool.fn(service=service, page=2, page_size=4, origin="imported")
+        data = json.loads(text)
+
+        assert data["total"] == 6
+        assert data["page"] == 2
+        assert data["page_size"] == 4
+        assert len(data["items"]) == 2
+        for item in data["items"]:
+            assert item["origin"] == "imported"
+            assert item["image_id"] in imported_ids
+
 
 class TestGalleryOriginControl:
     async def test_segmented_control_present(self, server) -> None:
