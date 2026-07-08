@@ -1375,6 +1375,7 @@ _IMAGE_GALLERY_HTML = """\
 
     let currentPage = 1;
     let currentOrigin = "generated";
+    let galleryReqSeq = 0;
     let currentTotal = 0;
     let currentPageSize = 12;
     let dlMode = null; // "downloadFile" | "openLink" | null
@@ -1708,9 +1709,11 @@ _IMAGE_GALLERY_HTML = """\
     // --- Paginate via app-only tool ---
     async function goTo(page) {
       const ps = currentPageSize;
+      const seq = ++galleryReqSeq;
       show("loading");
       try {
         const result = await app.callServerTool({ name: "gallery_page", arguments: { page, page_size: ps, origin: currentOrigin } });
+        if (seq !== galleryReqSeq) return;
         if (result.isError) { console.warn("gallery_page failed", result.content?.find(c => c.type === "text")?.text); show("error"); return; }
         const text = result.content?.find(c => c.type === "text")?.text;
         if (!text) { console.warn("gallery_page returned no text"); show("error"); return; }
@@ -1721,6 +1724,7 @@ _IMAGE_GALLERY_HTML = """\
         currentPageSize = data.page_size || 12;
         renderGrid(data);
       } catch (e) {
+        if (seq !== galleryReqSeq) return;
         console.warn("gallery_page failed", e);
         show("error");
       }
@@ -1868,6 +1872,7 @@ _IMAGE_GALLERY_HTML = """\
     app.ontoolinput = () => { show("loading"); };
 
     app.ontoolresult = ({ content }) => {
+      ++galleryReqSeq;
       const text = content?.find(c => c.type === "text");
       if (!text) { console.warn("gallery result had no text"); show("error"); return; }
       try {

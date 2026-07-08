@@ -995,3 +995,23 @@ class TestGalleryLoadErrorState:
         text = result.contents[0].content
         # setGenericEmptyCopy is dead once error paths leave the empty state.
         assert "setGenericEmptyCopy" not in text
+
+
+class TestGalleryRequestSequencing:
+    async def test_request_token_declared(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "let galleryReqSeq = 0;" in text
+
+    async def test_goto_captures_and_bails_on_stale(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # goTo captures the token before awaiting and bails if superseded.
+        assert "const seq = ++galleryReqSeq;" in text
+        assert "if (seq !== galleryReqSeq) return;" in text
+
+    async def test_ontoolresult_bumps_token(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # A host-initiated reload supersedes any in-flight goTo.
+        assert "++galleryReqSeq;" in text
