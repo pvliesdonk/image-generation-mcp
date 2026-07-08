@@ -19,7 +19,7 @@ import logging
 import re
 import time
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qs, urlparse
 
 if TYPE_CHECKING:
@@ -83,6 +83,30 @@ _THUMBNAIL_MAX_PX = 512
 _GALLERY_THUMBNAIL_MAX_PX = 128
 _GALLERY_PAGE_SIZE = 12
 _BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+
+
+def _origin_filtered(
+    images: list[ImageRecord],
+    pending: list[PendingGeneration],
+    origin: Literal["generated", "imported", "all"],
+) -> tuple[list[ImageRecord], list[PendingGeneration]]:
+    """Filter gallery records by ``origin`` (a pending generation counts as generated).
+
+    Args:
+        images: Completed image records (already sorted by the caller).
+        pending: In-progress generations.
+        origin: ``"generated"`` keeps generated images + all pending;
+            ``"imported"`` keeps imported images and drops pending;
+            ``"all"`` keeps everything.
+
+    Returns:
+        The filtered ``(images, pending)`` lists.
+    """
+    if origin == "all":
+        return images, pending
+    if origin == "imported":
+        return [i for i in images if i.origin == "imported"], []
+    return [i for i in images if i.origin == "generated"], pending
 
 
 def _any_provider_supports_image_input(service: ImageService) -> bool:

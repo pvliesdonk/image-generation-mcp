@@ -685,3 +685,47 @@ class TestPipModeHTML:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert "sendSizeChanged" in text
+
+
+def _add_imported(service: ImageService, idx: int) -> ImageRecord:
+    """Register a synthetic imported image and return its record."""
+    png = _make_png_bytes(width=64 + idx, height=64 + idx)
+    return service.register_imported_image(
+        png, origin_source="base64", max_bytes=10_000_000
+    )
+
+
+class TestOriginFiltered:
+    def test_generated_keeps_generated_and_pending(self, service: ImageService) -> None:
+        from image_generation_mcp.domain import PendingGeneration
+        from image_generation_mcp.tools import _origin_filtered
+
+        gen = _add_image(service, 1)
+        imp = _add_imported(service, 1)
+        pend = PendingGeneration(id="p0", provider="placeholder", prompt="x")
+        images = [gen, imp]
+        imgs, pends = _origin_filtered(images, [pend], "generated")
+        assert [i.id for i in imgs] == [gen.id]
+        assert pends == [pend]
+
+    def test_imported_keeps_imported_drops_pending(self, service: ImageService) -> None:
+        from image_generation_mcp.domain import PendingGeneration
+        from image_generation_mcp.tools import _origin_filtered
+
+        gen = _add_image(service, 2)
+        imp = _add_imported(service, 2)
+        pend = PendingGeneration(id="p1", provider="placeholder", prompt="x")
+        imgs, pends = _origin_filtered([gen, imp], [pend], "imported")
+        assert [i.id for i in imgs] == [imp.id]
+        assert pends == []
+
+    def test_all_keeps_everything(self, service: ImageService) -> None:
+        from image_generation_mcp.domain import PendingGeneration
+        from image_generation_mcp.tools import _origin_filtered
+
+        gen = _add_image(service, 3)
+        imp = _add_imported(service, 3)
+        pend = PendingGeneration(id="p2", provider="placeholder", prompt="x")
+        imgs, pends = _origin_filtered([gen, imp], [pend], "all")
+        assert {i.id for i in imgs} == {gen.id, imp.id}
+        assert pends == [pend]
