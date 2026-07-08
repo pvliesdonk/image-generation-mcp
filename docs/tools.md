@@ -522,7 +522,7 @@ Fetched image into the gallery: image://a1b2c3d4e5f6/view
 
 On failure, a message describing why the fetch was rejected, such as an SSRF-blocked target, an HTTP error, a timeout, an oversized body, or content that is not a decodable image.
 
-The fetch is SSRF-hardened: URLs targeting private, loopback, link-local, or cloud-metadata addresses are refused, and redirects are not followed. The download is capped at `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB) with a request timeout of `IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S` (default 30 seconds). The stored provenance is the fetched URL with userinfo and query stripped, so a secret-bearing URL never persists to the image's sidecar metadata.
+The fetch is SSRF-hardened: URLs targeting private, loopback, link-local, or cloud-metadata addresses are refused, and redirects are not followed. The download is capped at `IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES` (default 20 MiB) with a request timeout of `IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S` (default 30 seconds). The stored provenance is the fetched URL with userinfo, query, and fragment stripped, so a secret-bearing URL never persists to the image's sidecar metadata.
 
 ### Example
 

@@ -3,7 +3,8 @@
 Wraps pvl-core's SSRF-hardened ``fetch_url``: pull the bytes at an http(s) URL
 (private/loopback/metadata targets rejected, redirects refused, size-capped) and
 register them as an ``imported`` gallery entry. Stored provenance is redacted
-(userinfo + query dropped) so a secret-bearing URL never persists to the sidecar.
+(userinfo, query, and fragment dropped) so a secret-bearing URL never persists to
+the sidecar.
 """
 
 from __future__ import annotations

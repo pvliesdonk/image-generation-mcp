@@ -1655,19 +1655,19 @@ def register_tools(mcp: FastMCP) -> None:
                 timeout_s=config.fetch_timeout_s,
             )
         except ValueError as exc:
-            logger.warning("fetch_image_rejected: %s", exc)
+            logger.warning("fetch_image_rejected error=%s", exc)
             return f"Could not fetch the image: {exc}"
         except httpx.HTTPStatusError as exc:
-            logger.warning("fetch_image_http_error: %s", exc)
+            logger.warning("fetch_image_http_error error=%s", exc)
             return f"Could not fetch the image: {exc}"
         except httpx.TransportError as exc:
-            logger.warning("fetch_image_transport_error: %s", type(exc).__name__)
+            logger.warning("fetch_image_transport_error error=%s", type(exc).__name__)
             return (
                 "Could not fetch the image: the request timed out or the "
                 "connection failed."
             )
         except InputImageTooLarge as exc:
-            logger.warning("fetch_image_too_large: %s", exc)
+            logger.warning("fetch_image_too_large error=%s", exc)
             return f"Could not fetch the image: {exc}"
         except InvalidInputImage:
             logger.warning("fetch_image_not_an_image")
