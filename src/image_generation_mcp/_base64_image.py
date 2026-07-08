@@ -52,7 +52,8 @@ def base64_into_gallery(
         ValueError: Invalid base64, or a decoded size over *max_bytes* (from
             ``decode_base64_capped``).
         InvalidInputImage: The decoded bytes are not a decodable image.
-        InputImageTooLarge: The decoded bytes exceed *max_bytes* at registration.
+        InputImageTooLarge: Defensive re-check at registration; unreachable while
+            the decode cap and the registration cap are the same ``max_bytes``.
     """
     decoded = decode_base64_capped(_normalize_base64(data), max_bytes=max_bytes)
     record = service.register_imported_image(

@@ -2239,8 +2239,8 @@ class TestFetchImageTool:
 
     async def _make_cfg(self) -> MagicMock:
         cfg = MagicMock()
-        cfg.max_input_image_bytes = 20 * 1024 * 1024
-        cfg.fetch_timeout_s = 30.0
+        cfg.max_input_image_bytes = 6_666_666
+        cfg.fetch_timeout_s = 44.5
         return cfg
 
     async def test_registered_with_write_tag_and_open_world(self) -> None:
@@ -2355,7 +2355,10 @@ class TestFetchImageTool:
         class _Rec:
             id = "abc123def456"
 
-        async def _ok(*_args, **_kwargs):
+        captured = {}
+
+        async def _ok(*_args, **kwargs):
+            captured.update(kwargs)
             return _Rec()
 
         monkeypatch.setattr(tools_mod, "fetch_image_into_gallery", _ok)
@@ -2366,6 +2369,8 @@ class TestFetchImageTool:
             config=await self._make_cfg(),
         )
         assert result == "Fetched image into the gallery: image://abc123def456/view"
+        assert captured["max_bytes"] == 6_666_666
+        assert captured["timeout_s"] == 44.5
 
 
 class TestIngestBase64Tool:
@@ -2373,7 +2378,7 @@ class TestIngestBase64Tool:
 
     @staticmethod
     def _make_cfg() -> object:
-        return MagicMock(max_input_image_bytes=20 * 1024 * 1024)
+        return MagicMock(max_input_image_bytes=7_777_777)
 
     async def _tool(self):
         from fastmcp import FastMCP
@@ -2437,7 +2442,10 @@ class TestIngestBase64Tool:
         class _Rec:
             id = "abcdef012345"
 
-        def _ok(*_args, **_kwargs):
+        captured = {}
+
+        def _ok(*_args, **kwargs):
+            captured.update(kwargs)
             return _Rec()
 
         monkeypatch.setattr(tools_mod, "base64_into_gallery", _ok)
@@ -2446,3 +2454,4 @@ class TestIngestBase64Tool:
             data="aGVsbG8=", service=object(), config=self._make_cfg()
         )
         assert result == "Ingested image into the gallery: image://abcdef012345/view"
+        assert captured["max_bytes"] == 7_777_777
