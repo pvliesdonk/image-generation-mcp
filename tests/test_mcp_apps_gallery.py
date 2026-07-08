@@ -876,6 +876,7 @@ class TestGalleryOriginControl:
             "function show(which) {\n"
             '      loadingEl.style.display = which === "loading" ? "flex" : "none";\n'
             '      emptyEl.style.display   = which === "empty"   ? "block" : "none";\n'
+            '      errorEl.style.display   = which === "error"   ? "block" : "none";\n'
             '      gridEl.style.display    = which === "grid"    ? "block" : "none";\n'
             '      // For "grid", renderGrid/renderPipStrip call updateSize after populating\n'
             '      if (which !== "grid") updateSize();\n'
@@ -892,35 +893,27 @@ class TestGalleryEmptyCopyRouting:
         # itself before show("empty") so genuine-empty gets origin-aware copy.
         assert 'updateEmptyState(); show("empty")' in text
 
-    async def test_set_generic_empty_copy_defined(self, server) -> None:
+    async def test_error_paths_do_not_use_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert "function setGenericEmptyCopy" in text
-        assert '"No images yet"' in text
-        assert "generate_image" in text
+        # Only genuine-empty uses show("empty"); failures use show("error").
+        assert text.count('show("empty")') == 1
 
-    async def test_error_and_degenerate_paths_use_generic_copy(self, server) -> None:
-        result = await server.read_resource("ui://image-gallery/view.html")
-        text = result.contents[0].content
-        # All six error/degenerate paths route through setGenericEmptyCopy()
-        # then show("empty") — never the removed show("error").
-        assert text.count('setGenericEmptyCopy(); show("empty")') == 6
-
-    async def test_goto_page_error_fallback_uses_generic_copy(self, server) -> None:
+    async def test_goto_page_error_fallback_logged(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert 'console.warn("gallery_page failed"' in text
 
-    async def test_tool_result_parse_failure_uses_generic_copy(self, server) -> None:
+    async def test_tool_result_parse_failure_logged(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
         assert 'console.warn("Failed to parse gallery data"' in text
 
-    async def test_error_state_removed(self, server) -> None:
+    async def test_error_state_present(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        assert 'show("error")' not in text
-        assert 'id="error"' not in text
+        assert 'show("error")' in text
+        assert 'id="error"' in text
 
     async def test_genuine_empty_still_uses_origin_aware_copy(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
@@ -953,3 +946,52 @@ class TestGallerySegmentedControlAria:
         # Both the click handler and syncOrigin must set aria-checked alongside
         # the .active class — two sync sites.
         assert text.count('setAttribute("aria-checked"') == 2
+
+
+class TestGalleryLoadErrorState:
+    async def test_error_state_div_present(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'id="error"' in text
+        assert "Couldn't load the gallery" in text
+        assert "try again" in text
+        assert 'id="gallery-retry"' in text
+
+    async def test_show_has_error_branch(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert (
+            'errorEl.style.display   = which === "error"   ? "block" : "none";' in text
+        )
+
+    async def test_failure_paths_route_to_error_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # All six error/degenerate paths (goTo x3, ontoolresult x3) show the
+        # error state — never the empty state.
+        assert text.count('show("error")') == 6
+
+    async def test_genuine_empty_still_uses_empty_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # renderGrid's total === 0 branch keeps origin-aware empty copy.
+        assert 'updateEmptyState(); show("empty")' in text
+
+    async def test_iserror_logs_server_content(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The gallery_page isError branch logs result.content (the server's own
+        # error text) instead of discarding it.
+        assert 'console.warn("gallery_page failed", result.content' in text
+
+    async def test_retry_button_refetches_current_page(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert 'getElementById("gallery-retry")' in text
+        assert "goTo(currentPage || 1)" in text
+
+    async def test_set_generic_empty_copy_removed(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # setGenericEmptyCopy is dead once error paths leave the empty state.
+        assert "setGenericEmptyCopy" not in text
