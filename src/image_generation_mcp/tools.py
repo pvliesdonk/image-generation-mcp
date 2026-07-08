@@ -1168,6 +1168,7 @@ def register_tools(mcp: FastMCP) -> None:
             "total": total,
             "page": 1,
             "page_size": page_size,
+            "origin": origin,
             "items": all_items,
         }
 
@@ -1267,7 +1268,13 @@ def register_tools(mcp: FastMCP) -> None:
                 )
 
         return json.dumps(
-            {"total": total, "page": page, "page_size": page_size, "items": items}
+            {
+                "total": total,
+                "page": page,
+                "page_size": page_size,
+                "origin": origin,
+                "items": items,
+            }
         )
 
     _LIGHTBOX_MAX_BYTES = 1 * 1024 * 1024  # 1 MB size cap for lightbox images

@@ -1637,7 +1637,7 @@ _IMAGE_GALLERY_HTML = """\
       lbPageItems = (items || []).filter(i => i.status === "completed" && i.image_id);
 
       if (!items || items.length === 0) {
-        if (total === 0) { show("empty"); return; }
+        if (total === 0) { updateEmptyState(); show("empty"); return; }
         show("grid");
         if (!pipActive) renderPagination();
         return;
@@ -1699,6 +1699,7 @@ _IMAGE_GALLERY_HTML = """\
         const text = result.content?.find(c => c.type === "text")?.text;
         if (!text) { show("empty"); return; }
         const data = JSON.parse(text);
+        if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
         currentTotal = data.total || 0;
         currentPageSize = data.page_size || 12;
@@ -1706,6 +1707,25 @@ _IMAGE_GALLERY_HTML = """\
       } catch (e) {
         console.warn("gallery_page failed", e);
         show("empty");
+      }
+    }
+
+    function syncOrigin(o) {
+      if (!o || (o === currentOrigin && document.querySelector("#origin-filter .seg.active")?.dataset.origin === o)) return;
+      currentOrigin = o;
+      document.querySelectorAll("#origin-filter .seg").forEach(s => s.classList.toggle("active", s.dataset.origin === o));
+    }
+
+    function updateEmptyState() {
+      const titleEl = document.querySelector("#empty .empty-title");
+      const subEl = document.querySelector("#empty .empty-sub");
+      if (!titleEl || !subEl) return;
+      if (currentOrigin === "imported") {
+        titleEl.textContent = "No imported images";
+        subEl.textContent = "Use fetch_image or ingest_base64_image to add one.";
+      } else {
+        titleEl.textContent = "No images yet";
+        subEl.innerHTML = 'Use <code>generate_image</code> to create your first image.';
       }
     }
 
@@ -1827,6 +1847,7 @@ _IMAGE_GALLERY_HTML = """\
       try {
         const data = JSON.parse(text.text);
         if (typeof data.total !== "number") { show("empty"); return; }
+        if (data.origin) syncOrigin(data.origin);
         currentPage = data.page || 1;
         currentTotal = data.total;
         currentPageSize = data.page_size || 12;

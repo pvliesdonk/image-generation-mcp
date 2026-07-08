@@ -754,6 +754,7 @@ class TestGalleryOriginFilter:
         assert ids == {gen.id}
         assert data["total"] == 1
         assert all(i.get("origin") == "generated" for i in data["items"])
+        assert data["origin"] == "generated"
 
     async def test_imported_only(self, service: ImageService) -> None:
         _add_image(service, 11)
@@ -762,6 +763,7 @@ class TestGalleryOriginFilter:
         assert {i["image_id"] for i in data["items"]} == {imp.id}
         assert data["total"] == 1
         assert data["items"][0]["origin"] == "imported"
+        assert data["origin"] == "imported"
 
     async def test_all_includes_both(self, service: ImageService) -> None:
         gen = _add_image(service, 12)
@@ -786,6 +788,7 @@ class TestGalleryOriginFilter:
         data = json.loads(text)
         assert {i["image_id"] for i in data["items"]} == {imp.id}
         assert data["total"] == 1
+        assert data["origin"] == "imported"
 
 
 class TestGalleryOriginControl:
@@ -813,3 +816,15 @@ class TestGalleryOriginControl:
         # The origin control must live above the grid container, which the
         # empty state hides — otherwise a zero-result filter would trap the user.
         assert text.index('id="origin-filter"') < text.index('id="grid-container"')
+
+    async def test_control_syncs_from_payload_origin(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The segmented control must reflect the origin echoed by the tool
+        # payload, both on initial render and on pagination.
+        assert "if (data.origin) syncOrigin(data.origin);" in text
+
+    async def test_empty_state_has_origin_aware_copy(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "No imported images" in text
