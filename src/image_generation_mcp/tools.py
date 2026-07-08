@@ -1092,8 +1092,8 @@ def register_tools(mcp: FastMCP) -> None:
     ) -> ToolResult:
         """Browse all generated images in an interactive visual gallery.
 
-        Opens a gallery view showing thumbnail previews of every image in the
-        scratch directory.
+        Opens a gallery view showing thumbnail previews of images in the
+        scratch directory, filtered by ``origin`` (generated images by default).
 
         For non-UI clients the response is a JSON object with ``total``,
         ``page``, ``page_size``, ``origin``, and ``items``.  Each completed item includes
