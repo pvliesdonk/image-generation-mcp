@@ -806,3 +806,10 @@ class TestGalleryOriginControl:
         text = result.contents[0].content
         # gallery_page fetch passes the active origin
         assert "origin: currentOrigin" in text
+
+    async def test_control_outside_hideable_grid(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # The origin control must live above the grid container, which the
+        # empty state hides — otherwise a zero-result filter would trap the user.
+        assert text.index('id="origin-filter"') < text.index('id="grid-container"')

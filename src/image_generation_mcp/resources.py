@@ -1175,6 +1175,7 @@ _IMAGE_GALLERY_HTML = """\
     .main.pip-mode .card { aspect-ratio: 1; border-radius: 4px; }
     .main.pip-mode .card-overlay { display: none; }
     .main.pip-mode .pagination { display: none; }
+    .main.pip-mode .origin-filter { display: none; }
 
     /* Pagination */
     .pagination {
@@ -1262,6 +1263,11 @@ _IMAGE_GALLERY_HTML = """\
 </head>
 <body>
   <div class="main" id="main">
+    <div class="origin-filter" id="origin-filter">
+      <button class="seg active" data-origin="generated">Generated</button>
+      <button class="seg" data-origin="imported">Imported</button>
+      <button class="seg" data-origin="all">All</button>
+    </div>
     <div class="state-loading" id="loading">
       <div class="spinner"></div>Loading gallery\u2026
     </div>
@@ -1280,11 +1286,6 @@ _IMAGE_GALLERY_HTML = """\
     </div>
     <div class="state-grid" id="grid-container">
       <div class="pip-toolbar"><button class="pip-btn" id="pip-btn" title="Picture-in-picture">\u25a3</button></div>
-      <div class="origin-filter" id="origin-filter">
-        <button class="seg active" data-origin="generated">Generated</button>
-        <button class="seg" data-origin="imported">Imported</button>
-        <button class="seg" data-origin="all">All</button>
-      </div>
       <div class="gallery-grid" id="gallery-grid"></div>
       <div class="pagination" id="pagination"></div>
     </div>
