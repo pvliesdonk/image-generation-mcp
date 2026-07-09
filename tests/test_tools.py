@@ -209,6 +209,41 @@ class TestGenerateImageRegistration:
         assert "warnings" in doc
 
 
+class TestToolDescriptionIngestionHints:
+    """Tool descriptions must point the LLM at the ingestion round-trip."""
+
+    async def test_transform_image_description_names_ingestion_tools(self) -> None:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("transform_image")
+        assert tool is not None
+        doc = tool.description
+        assert doc is not None
+        # A reference image_id can be an externally-imported image; the hint
+        # names all three ingestion tools, so pin all three against removal.
+        assert "fetch_image" in doc
+        assert "ingest_base64_image" in doc
+        assert "create_upload_link" in doc
+
+    async def test_fetch_image_description_names_transform_image(self) -> None:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("fetch_image")
+        assert tool is not None
+        doc = tool.description
+        assert doc is not None
+        assert "transform_image" in doc
+
+    async def test_ingest_base64_image_description_names_transform_image(self) -> None:
+        mcp = FastMCP("test")
+        register_tools(mcp)
+        tool = await mcp.get_tool("ingest_base64_image")
+        assert tool is not None
+        doc = tool.description
+        assert doc is not None
+        assert "transform_image" in doc
+
+
 # ---------------------------------------------------------------------------
 # show_image: tool registration properties
 # ---------------------------------------------------------------------------

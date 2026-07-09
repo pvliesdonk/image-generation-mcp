@@ -576,7 +576,10 @@ def register_tools(mcp: FastMCP) -> None:
 
         Supply one or more reference images (gallery ``image_id``, an
         ``image://`` URI, or — when enabled — a local file path) plus a
-        prompt describing the change.  Served by any provider that reports
+        prompt describing the change.  A reference ``image_id`` may be any
+        gallery image, including one brought in from outside via ``fetch_image``,
+        ``ingest_base64_image``, or ``create_upload_link``.  Served by any
+        provider that reports
         ``supports_image_input`` in ``list_providers``; each provider's
         ``max_input_images`` there gives its reference-image limit (some
         accept one, others up to 16 for multi-image composition).
@@ -1687,8 +1690,9 @@ def register_tools(mcp: FastMCP) -> None:
         """Fetch an image from a URL into the gallery.
 
         Downloads the image at *url* (http/https only) and adds it to the
-        gallery as an imported entry you can then show, edit, or transform. The
-        fetch is SSRF-hardened: URLs targeting private, loopback, link-local, or
+        gallery as an imported entry you can then show, edit, or reference in
+        ``transform_image``. The fetch is SSRF-hardened: URLs targeting
+        private, loopback, link-local, or
         cloud-metadata addresses are refused, redirects are not followed, and the
         download is size-capped. Hidden in read-only mode.
 
@@ -1747,7 +1751,8 @@ def register_tools(mcp: FastMCP) -> None:
 
         Decodes *data* (raw base64, a ``data:...;base64,...`` URI, or line-wrapped
         base64 — all accepted) under a size cap and adds it to the gallery as an
-        imported entry you can then show, edit, or transform. Hidden in read-only mode.
+        imported entry you can then show, edit, or reference in ``transform_image``.
+        Hidden in read-only mode.
 
         Args:
             data: The base64-encoded image bytes.
