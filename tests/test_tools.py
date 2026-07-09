@@ -219,9 +219,11 @@ class TestToolDescriptionIngestionHints:
         assert tool is not None
         doc = tool.description
         assert doc is not None
-        # A reference image_id can be an externally-imported image.
+        # A reference image_id can be an externally-imported image; the hint
+        # names all three ingestion tools, so pin all three against removal.
         assert "fetch_image" in doc
         assert "ingest_base64_image" in doc
+        assert "create_upload_link" in doc
 
     async def test_fetch_image_description_names_transform_image(self) -> None:
         mcp = FastMCP("test")
