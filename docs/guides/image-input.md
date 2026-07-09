@@ -19,12 +19,45 @@ Every reference is a string in the `reference_images` list (and the optional
    `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true` (off by default). See
    [Configuration](../configuration.md).
 
+A gallery `image_id` may itself be an **imported** image: one brought into the
+gallery from outside rather than produced by `generate_image` or
+`transform_image`. See [Getting an external image into the gallery](#getting-an-external-image-into-the-gallery)
+below.
+
 `transform_image` runs as a background task. It returns immediately with a
 `status: "generating"` response and an `image_id`. Poll
 `check_generation_status(image_id)` until completion, then call
 `show_image(uri=original_uri)` once to display the result. Provenance is
 recorded: the response and the finished record carry `source_image_ids`
 listing every reference (and mask) the result derived from.
+
+## Getting an external image into the gallery
+
+An image the model did not generate (a URL, a user-supplied file, or inline
+bytes) becomes a first-class gallery entry through one of three ingestion
+tools, after which its `image_id` is referenced by `transform_image` exactly
+like a generated image:
+
+- [`fetch_image(url)`](../tools.md#fetch_image): download a remote
+  `http`/`https` image into the gallery (SSRF-hardened, size-capped).
+- [`ingest_base64_image(data)`](../tools.md#ingest_base64_image): decode inline
+  base64 bytes (raw, a `data:` URI, or line-wrapped) into the gallery.
+- [`create_upload_link()`](../tools.md#create_upload_link): mint a one-time
+  HTTP upload link for a caller to POST bytes to (HTTP/SSE transport only, with
+  `IMAGE_GENERATION_MCP_BASE_URL` set).
+
+A reference image is just a gallery image, so an imported image works as a
+`transform_image` reference with no provider-specific handling. Imported entries
+carry `origin: "imported"` with an `origin_source` recording where they came
+from (see [image metadata](../resources.md#origin)); generated images are
+`origin: "generated"`. The gallery viewer's origin filter groups imported and
+generated images separately.
+
+The decoded/downloaded size is bounded by
+`IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES`, remote fetches time out after
+`IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S`, and upload-link lifetime is governed by
+the `IMAGE_GENERATION_MCP_TRANSFER_*` knobs, all documented on the
+[Configuration](../configuration.md) page.
 
 ## Capability matrix
 
