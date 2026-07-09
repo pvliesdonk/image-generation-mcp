@@ -277,6 +277,7 @@ List all registered images and pending generations.
 Each item includes a `status` field: `"completed"` for registered images, `"generating"` or `"failed"` for pending background generations.
 
 Completed images also carry an `origin` field: `"generated"` for images produced by a provider (the case today), or `"imported"` for images added to the gallery from an external source. For imported images, `origin_source` records provenance and `provider`/`prompt` are empty; generated images have `origin_source: null`.
+{ #origin }
 
 ```json
 [
