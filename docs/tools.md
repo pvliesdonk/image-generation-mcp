@@ -130,6 +130,11 @@ Each entry in `reference_images` is resolved in order:
 2. **`image://` URI**: a full resource URI, such as `"image://a1b2c3d4e5f6/view"`.
 3. **Local file path**: absolute path on the server host, such as `"/home/user/photo.png"`. Only accepted when `IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true`; rejected with an error otherwise.
 
+A gallery `image_id` may itself be an **imported** image, brought into the
+gallery from a URL, an upload, or inline bytes via `fetch_image`,
+`ingest_base64_image`, or `create_upload_link`, not only a `generate_image` /
+`transform_image` output. See [Image input](guides/image-input.md#getting-an-external-image-into-the-gallery).
+
 Call `list_providers` and inspect `supports_image_input` and `max_input_images` on each model to confirm which provider can handle your input count. Reference-count limits vary by model: SD WebUI is limited to a single reference, while Gemini supports several (more on the Gemini 3 models) and OpenAI's gpt-image family supports the most for multi-image composition. `max_input_images` carries the authoritative per-model value; `dall-e-3` and `dall-e-2` do not accept reference images. See the [Image input guide](guides/image-input.md) for the current capability matrix.
 
 ### Return value
@@ -503,7 +508,7 @@ Raises an error if the style is not found.
 
 ## fetch_image
 
-Fetch an image from an `http`/`https` URL into the gallery as an imported entry you can then show, edit, or transform.
+Fetch an image from an `http`/`https` URL into the gallery as an imported entry you can then show, edit, or reference in `transform_image`.
 
 | Property | Value |
 |----------|-------|
@@ -541,7 +546,7 @@ Tool call: fetch_image
 
 ## ingest_base64_image
 
-Add an inline base64-encoded image to the gallery as an imported entry you can then show, edit, or transform.
+Add an inline base64-encoded image to the gallery as an imported entry you can then show, edit, or reference in `transform_image`.
 
 | Property | Value |
 |----------|-------|
