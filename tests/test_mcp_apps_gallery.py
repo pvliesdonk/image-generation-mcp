@@ -1034,9 +1034,10 @@ class TestGalleryLoadErrorState:
     async def test_failure_paths_route_to_error_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # All six error/degenerate paths (goTo x3, ontoolresult x3) show the
-        # error state — never the empty state.
-        assert text.count('show("error")') == 6
+        # Seven show("error") sites: the six error/degenerate paths (goTo x3,
+        # ontoolresult x3) plus the ontoolcancelled recovery (#322) — none use
+        # the empty state.
+        assert text.count('show("error")') == 7
 
     async def test_genuine_empty_still_uses_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
@@ -1090,7 +1091,23 @@ class TestGalleryRequestSequencing:
     async def test_ontoolresult_bumps_token(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # A host-initiated reload supersedes any in-flight goTo. Exactly two
-        # increments exist — goTo's capture and this bump — so deleting the
-        # ontoolresult bump drops the count to 1 and fails here.
-        assert text.count("++galleryReqSeq;") == 2
+        # Three ++galleryReqSeq increments now exist — goTo's capture, the
+        # ontoolresult bump, and the ontoolinput bump (#322) — so deleting any
+        # one drops the count and fails here.
+        assert text.count("++galleryReqSeq;") == 3
+
+    async def test_ontoolinput_bumps_token(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # A host reload STARTING (ontoolinput) must bump the token so a stale
+        # in-flight goTo bails instead of rendering over the loading state.
+        assert 'app.ontoolinput = () => { ++galleryReqSeq; show("loading"); };' in text
+
+    async def test_ontoolcancelled_recovers_to_error_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # A cancelled host load fires ontoolcancelled (not ontoolresult). Without
+        # a handler the gallery would stick on the loading spinner (worsened by
+        # the ontoolinput bump, which now also bails the in-flight goTo); route
+        # to the recoverable error state (retry button) instead.
+        assert 'app.ontoolcancelled = () => { show("error"); };' in text

@@ -1891,7 +1891,7 @@ _IMAGE_GALLERY_HTML = """\
     }
 
     // --- Lifecycle handlers (ALL before connect) ---
-    app.ontoolinput = () => { show("loading"); };
+    app.ontoolinput = () => { ++galleryReqSeq; show("loading"); };
 
     app.ontoolresult = ({ content }) => {
       ++galleryReqSeq;
@@ -1910,6 +1910,10 @@ _IMAGE_GALLERY_HTML = """\
         show("error");
       }
     };
+
+    // A cancelled host tool call fires ontoolcancelled (not ontoolresult), so
+    // leave the loading spinner for the recoverable error state (retry button).
+    app.ontoolcancelled = () => { show("error"); };
 
     function handleHostContext(ctx) {
       if (ctx.theme) applyDocumentTheme(ctx.theme);
