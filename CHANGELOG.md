@@ -2,6 +2,51 @@
 
 <!-- version list -->
 
+## v1.12.0-rc.1 (2026-07-10)
+
+### Bug Fixes
+
+- **gallery**: Bump galleryReqSeq on host reload + recover from cancelled loads (#322) (#328)
+  ([#328](https://github.com/pvliesdonk/image-generation-mcp/pull/328),
+  [`22c487f`](https://github.com/pvliesdonk/image-generation-mcp/commit/22c487f8d2142e5ce7553b26a4ba86e3758a796e))
+
+### Documentation
+
+- Reference-image ingestion narrative + LLM-facing tool hints (#310) (#326)
+  ([#326](https://github.com/pvliesdonk/image-generation-mcp/pull/326),
+  [`f022559`](https://github.com/pvliesdonk/image-generation-mcp/commit/f022559832040ea56192ada1d3772a7f8148182c))
+
+### Features
+
+- **gallery**: Filter gallery by image origin (generated/imported/all) (#318)
+  ([#318](https://github.com/pvliesdonk/image-generation-mcp/pull/318),
+  [`20c7511`](https://github.com/pvliesdonk/image-generation-mcp/commit/20c75112c71a01d0c67eda2ae3c6b7a40c5036cd))
+
+- **gallery**: Imported-image foundation — origin field + register_imported_image (#311)
+  ([#311](https://github.com/pvliesdonk/image-generation-mcp/pull/311),
+  [`d3a58af`](https://github.com/pvliesdonk/image-generation-mcp/commit/d3a58afde0664c0fe421f589901c7c8b5b606dad))
+
+- **gallery**: Load-error state + segmented-control ARIA (#317, #319) (#321)
+  ([#321](https://github.com/pvliesdonk/image-generation-mcp/pull/321),
+  [`6f8d55e`](https://github.com/pvliesdonk/image-generation-mcp/commit/6f8d55e07352a08a379f9b6b6983dca06e8679a2))
+
+- **gallery**: Radiogroup keyboard nav for the origin control (#320) (#327)
+  ([#327](https://github.com/pvliesdonk/image-generation-mcp/pull/327),
+  [`2c957c7`](https://github.com/pvliesdonk/image-generation-mcp/commit/2c957c72c67e44f5472d4f239c209c36d537cf56))
+
+- **tools**: Fetch_image — SSRF-hardened URL → gallery via fetch_url (closes #308) (#314)
+  ([#314](https://github.com/pvliesdonk/image-generation-mcp/pull/314),
+  [`90c96b9`](https://github.com/pvliesdonk/image-generation-mcp/commit/90c96b9db341412b25b1dc74775d8dfcdd2f3f65))
+
+- **tools**: Ingest_base64_image — inline base64 → gallery via decode_base64_capped (closes #309)
+  (#316) ([#316](https://github.com/pvliesdonk/image-generation-mcp/pull/316),
+  [`e410a35`](https://github.com/pvliesdonk/image-generation-mcp/commit/e410a3537392cba9868066a8972fc71c504a226e))
+
+- **transfer**: Adopt pvl-core register_transfer_routes; retire artifacts.py (closes #307, #220)
+  (#312) ([#312](https://github.com/pvliesdonk/image-generation-mcp/pull/312),
+  [`f608fad`](https://github.com/pvliesdonk/image-generation-mcp/commit/f608fadaacae337d96d8b8fcec210cfaf61b7e24))
+
+
 ## v1.11.0 (2026-07-04)
 
 ### Bug Fixes
