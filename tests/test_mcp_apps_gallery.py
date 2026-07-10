@@ -1034,9 +1034,10 @@ class TestGalleryLoadErrorState:
     async def test_failure_paths_route_to_error_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # All six error/degenerate paths (goTo x3, ontoolresult x3) show the
-        # error state — never the empty state.
-        assert text.count('show("error")') == 6
+        # Seven show("error") sites: the six error/degenerate paths (goTo x3,
+        # ontoolresult x3) plus the ontoolcancelled recovery (#322) — none use
+        # the empty state.
+        assert text.count('show("error")') == 7
 
     async def test_genuine_empty_still_uses_empty_state(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
