@@ -943,9 +943,73 @@ class TestGallerySegmentedControlAria:
     async def test_aria_checked_synced_with_active(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # Both the click handler and syncOrigin must set aria-checked alongside
-        # the .active class — two sync sites.
-        assert text.count('setAttribute("aria-checked"') == 2
+        # aria-checked, active, and tabindex are now maintained in ONE place —
+        # reflectOrigin — which both the selection path and syncOrigin call.
+        assert 's.setAttribute("aria-checked", on ? "true" : "false")' in text
+        assert text.count('setAttribute("aria-checked"') == 1
+        assert "function reflectOrigin" in text
+
+
+class TestGallerySegmentedControlKeyboard:
+    async def test_roving_tabindex_markup(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Selected segment is the only tab stop; the other two are -1.
+        assert (
+            'data-origin="generated" role="radio" aria-checked="true" tabindex="0"'
+            in text
+        )
+        assert (
+            'data-origin="imported" role="radio" aria-checked="false" tabindex="-1"'
+            in text
+        )
+        assert (
+            'data-origin="all" role="radio" aria-checked="false" tabindex="-1"' in text
+        )
+
+    async def test_reflect_origin_is_single_reflection_site(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # reflectOrigin sets active + aria-checked + tabindex, and is the sole
+        # site for each — routed to by both syncOrigin and selectOrigin.
+        assert "function reflectOrigin" in text
+        assert 's.setAttribute("tabindex", on ? "0" : "-1")' in text
+        assert text.count('setAttribute("aria-checked"') == 1
+        assert text.count('setAttribute("tabindex"') == 1
+        # definition + call in syncOrigin + call in selectOrigin
+        assert text.count("reflectOrigin(o)") == 3
+
+    async def test_select_origin_shared_by_click(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        assert "function selectOrigin" in text
+        assert "selectOrigin(btn.dataset.origin)" in text
+
+    async def test_keydown_handler_navigates(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Pin the origin-filter keydown listener specifically (a card keydown
+        # listener also exists elsewhere, so a bare "keydown" check is vacuous).
+        assert 'getElementById("origin-filter").addEventListener("keydown"' in text
+        for key in (
+            '"ArrowRight"',
+            '"ArrowLeft"',
+            '"ArrowDown"',
+            '"ArrowUp"',
+            '"Home"',
+            '"End"',
+        ):
+            assert key in text
+        # wrap-around index math for next/previous
+        assert "(i + 1) % segs.length" in text
+        assert "(i - 1 + segs.length) % segs.length" in text
+
+    async def test_keydown_selection_follows_focus(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # Arrow/Home/End select the target AND move focus to it.
+        assert "selectOrigin(target.dataset.origin)" in text
+        assert "target.focus()" in text
 
 
 class TestGalleryLoadErrorState:

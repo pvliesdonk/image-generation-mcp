@@ -1264,9 +1264,9 @@ _IMAGE_GALLERY_HTML = """\
 <body>
   <div class="main" id="main">
     <div class="origin-filter" id="origin-filter" role="radiogroup" aria-label="Filter by image origin">
-      <button class="seg active" data-origin="generated" role="radio" aria-checked="true">Generated</button>
-      <button class="seg" data-origin="imported" role="radio" aria-checked="false">Imported</button>
-      <button class="seg" data-origin="all" role="radio" aria-checked="false">All</button>
+      <button class="seg active" data-origin="generated" role="radio" aria-checked="true" tabindex="0">Generated</button>
+      <button class="seg" data-origin="imported" role="radio" aria-checked="false" tabindex="-1">Imported</button>
+      <button class="seg" data-origin="all" role="radio" aria-checked="false" tabindex="-1">All</button>
     </div>
     <div class="state-loading" id="loading">
       <div class="spinner"></div>Loading gallery\u2026
@@ -1730,14 +1730,27 @@ _IMAGE_GALLERY_HTML = """\
       }
     }
 
-    function syncOrigin(o) {
-      if (!o || (o === currentOrigin && document.querySelector("#origin-filter .seg.active")?.dataset.origin === o)) return;
-      currentOrigin = o;
+    function reflectOrigin(o) {
       document.querySelectorAll("#origin-filter .seg").forEach(s => {
         const on = s.dataset.origin === o;
         s.classList.toggle("active", on);
         s.setAttribute("aria-checked", on ? "true" : "false");
+        s.setAttribute("tabindex", on ? "0" : "-1");
       });
+    }
+
+    function selectOrigin(o) {
+      if (o === currentOrigin) return;
+      currentOrigin = o;
+      reflectOrigin(o);
+      currentPage = 1;
+      goTo(1);
+    }
+
+    function syncOrigin(o) {
+      if (!o || (o === currentOrigin && document.querySelector("#origin-filter .seg.active")?.dataset.origin === o)) return;
+      currentOrigin = o;
+      reflectOrigin(o);
     }
 
     function updateEmptyState() {
@@ -1756,16 +1769,25 @@ _IMAGE_GALLERY_HTML = """\
     document.getElementById("origin-filter").addEventListener("click", (e) => {
       const btn = e.target.closest(".seg");
       if (!btn) return;
-      const next = btn.dataset.origin;
-      if (next === currentOrigin) return;
-      currentOrigin = next;
-      document.querySelectorAll("#origin-filter .seg").forEach(s => {
-        const on = s === btn;
-        s.classList.toggle("active", on);
-        s.setAttribute("aria-checked", on ? "true" : "false");
-      });
-      currentPage = 1;
-      goTo(1);
+      selectOrigin(btn.dataset.origin);
+    });
+
+    document.getElementById("origin-filter").addEventListener("keydown", (e) => {
+      const segs = [...document.querySelectorAll("#origin-filter .seg")];
+      const i = segs.indexOf(document.activeElement);
+      if (i < 0) return;
+      let j;
+      switch (e.key) {
+        case "ArrowRight": case "ArrowDown": j = (i + 1) % segs.length; break;
+        case "ArrowLeft": case "ArrowUp": j = (i - 1 + segs.length) % segs.length; break;
+        case "Home": j = 0; break;
+        case "End": j = segs.length - 1; break;
+        default: return;
+      }
+      e.preventDefault();
+      const target = segs[j];
+      selectOrigin(target.dataset.origin);
+      target.focus();
     });
 
     document.getElementById("gallery-retry").addEventListener("click", () => { goTo(currentPage || 1); });
