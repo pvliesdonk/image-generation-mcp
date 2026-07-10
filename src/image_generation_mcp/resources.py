@@ -1911,6 +1911,10 @@ _IMAGE_GALLERY_HTML = """\
       }
     };
 
+    // A cancelled host tool call fires ontoolcancelled (not ontoolresult), so
+    // leave the loading spinner for the recoverable error state (retry button).
+    app.ontoolcancelled = () => { show("error"); };
+
     function handleHostContext(ctx) {
       if (ctx.theme) applyDocumentTheme(ctx.theme);
       if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);

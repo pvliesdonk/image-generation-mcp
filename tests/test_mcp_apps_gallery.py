@@ -1101,3 +1101,12 @@ class TestGalleryRequestSequencing:
         # A host reload STARTING (ontoolinput) must bump the token so a stale
         # in-flight goTo bails instead of rendering over the loading state.
         assert 'app.ontoolinput = () => { ++galleryReqSeq; show("loading"); };' in text
+
+    async def test_ontoolcancelled_recovers_to_error_state(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # A cancelled host load fires ontoolcancelled (not ontoolresult). Without
+        # a handler the gallery would stick on the loading spinner (worsened by
+        # the ontoolinput bump, which now also bails the in-flight goTo); route
+        # to the recoverable error state (retry button) instead.
+        assert 'app.ontoolcancelled = () => { show("error"); };' in text
