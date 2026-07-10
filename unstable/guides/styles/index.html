@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -562,6 +564,34 @@
     
   
     Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
   
 
     
@@ -1083,6 +1113,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1866,26 +1924,26 @@
 
 
 <h1 id="style-library">Style Library<a class="headerlink" href="#style-library" title="Permanent link">&para;</a></h1>
-<p>Styles are reusable presets that capture a visual direction — palette, composition, mood, medium, and constraints — for consistent image generation across conversations.</p>
+<p>Styles are reusable presets that capture a visual direction (palette, composition, mood, medium, and constraints) for consistent image generation across conversations.</p>
 <h2 id="how-styles-work">How Styles Work<a class="headerlink" href="#how-styles-work" title="Permanent link">&para;</a></h2>
 <p>A style is a <strong>creative brief</strong>, not a prompt template. When you apply a style, the LLM reads the brief and adapts it to the target provider's prompt format:</p>
 <ul>
-<li><strong>OpenAI</strong> (gpt-image-1.5 / gpt-image-1 / gpt-image-1-mini) — natural language description incorporating the style's direction.</li>
-<li><strong>Gemini</strong> (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview) — natural language, similar to OpenAI; can also incorporate the style brief into multi-image compositing or conversational refinement.</li>
-<li><strong>SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut)</strong> — comma-separated CLIP tags with a separate negative prompt.</li>
-<li><strong>SD WebUI (Flux 1 / Flux Schnell / FLUX.2)</strong> — natural language, similar to OpenAI; <strong>no</strong> native negative prompts (CFG=1 distilled).</li>
-<li><strong>SD WebUI (SD 3 / 3.5)</strong> — natural language, similar to Flux, but <strong>with</strong> native negative prompts (unlike Flux). Skip SDXL-style <code>(weight:1.2)</code> parens.</li>
-<li><strong>SD WebUI (Pony Diffusion XL / Illustrious-XL / NoobAI-XL)</strong> — Booru-style tag grammar with a mandatory <code>score_*</code> prefix on Pony.</li>
+<li><strong>OpenAI</strong> (gpt-image-1.5 / gpt-image-1 / gpt-image-1-mini): natural language description incorporating the style's direction.</li>
+<li><strong>Gemini</strong> (gemini-3.1-flash-image / gemini-3-pro-image / gemini-3.1-flash-lite-image / gemini-2.5-flash-image): natural language, similar to OpenAI; can also incorporate the style brief into multi-image compositing or conversational refinement.</li>
+<li><strong>SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut)</strong>: comma-separated CLIP tags with a separate negative prompt.</li>
+<li><strong>SD WebUI (Flux 1 / Flux Schnell / FLUX.2)</strong>: natural language, similar to OpenAI; <strong>no</strong> native negative prompts (CFG=1 distilled).</li>
+<li><strong>SD WebUI (SD 3 / 3.5)</strong>: natural language like Flux, but <strong>with</strong> native negative prompts (unlike Flux). Skip SDXL-style <code>(weight:1.2)</code> parens.</li>
+<li><strong>SD WebUI (Pony Diffusion XL / Illustrious-XL / NoobAI-XL)</strong>: Booru-style tag grammar with a mandatory <code>score_*</code> prefix on Pony.</li>
 </ul>
-<p>The style text is never copied verbatim into the generation prompt — the LLM rewrites it in the right grammar for the chosen model.</p>
+<p>The style text is never copied verbatim into the generation prompt; the LLM rewrites it in the right grammar for the chosen model.</p>
 <p>The per-model registry (<code>list_providers</code> → <code>style_profile.style_hints</code> / <code>incompatible_styles</code>) is the canonical source for what each model wants; cross-reference it from your style brief when you need provider-specific guidance.</p>
 <blockquote>
 <p><strong><code>style_profile</code> vs style library.</strong> The two are deliberately separate concerns:</p>
 <ul>
-<li><strong>Style library</strong> (this guide) — a <em>user-saved creative brief</em> applied to a generation request. Describes <em>the brief</em>.</li>
-<li><strong><code>style_profile</code></strong> (set by the registry, surfaced via <code>list_providers</code>) — <em>per-model metadata</em> describing what each model is best at. Describes <em>the model</em>.</li>
+<li><strong>Style library</strong> (this guide): a user-saved creative brief applied to a generation request. Describes the brief.</li>
+<li><strong><code>style_profile</code></strong> (set by the registry, surfaced via <code>list_providers</code>): per-model metadata describing what each model is best at. Describes the model.</li>
 </ul>
-<p>Both can use the word "style" in their everyday English sense — they don't interact. See <a href="https://github.com/pvliesdonk/image-generation-mcp/blob/main/docs/decisions/0009-model-style-metadata.md">ADR-0009</a> for the disambiguation.</p>
+<p>Both can use the word "style" in their everyday English sense and they don't interact. See <a href="https://github.com/pvliesdonk/image-generation-mcp/blob/main/docs/decisions/0009-model-style-metadata.md">ADR-0009</a> for the disambiguation.</p>
 </blockquote>
 <h2 id="style-file-format">Style File Format<a class="headerlink" href="#style-file-format" title="Permanent link">&para;</a></h2>
 <p>Each style is a Markdown file with YAML frontmatter stored in the styles directory (default: <code>~/.image-generation-mcp/styles/</code>).</p>
@@ -1918,7 +1976,7 @@
 <td><code>name</code></td>
 <td>str</td>
 <td>Yes</td>
-<td>—</td>
+<td>(none)</td>
 <td>Style identifier (must match filename without <code>.md</code>)</td>
 </tr>
 <tr>
@@ -1939,14 +1997,14 @@
 <td><code>aspect_ratio</code></td>
 <td>str</td>
 <td>No</td>
-<td>—</td>
-<td>Default aspect ratio (e.g. <code>16:9</code>, <code>1:1</code>)</td>
+<td>(none)</td>
+<td>Default aspect ratio (<code>16:9</code>, <code>1:1</code>, etc.)</td>
 </tr>
 <tr>
 <td><code>quality</code></td>
 <td>str</td>
 <td>No</td>
-<td>—</td>
+<td>(none)</td>
 <td>Default quality level (<code>standard</code> or <code>hd</code>)</td>
 </tr>
 </tbody>
@@ -1954,11 +2012,11 @@
 <h3 id="body">Body<a class="headerlink" href="#body" title="Permanent link">&para;</a></h3>
 <p>The body is free-form Markdown prose describing the visual direction. Write it as you would a creative brief for a designer:</p>
 <ul>
-<li><strong>Palette</strong> — specific colors with hex codes</li>
-<li><strong>Composition</strong> — layout rules, negative space, framing</li>
-<li><strong>Medium</strong> — illustration, photography, watercolor, etc.</li>
-<li><strong>Mood</strong> — professional, playful, dramatic, etc.</li>
-<li><strong>Constraints</strong> — what to avoid (photorealism, gradients, text, etc.)</li>
+<li><strong>Palette</strong>: specific colors with hex codes</li>
+<li><strong>Composition</strong>: layout rules, negative space, framing</li>
+<li><strong>Medium</strong>: illustration, photography, watercolor, etc.</li>
+<li><strong>Mood</strong>: professional, playful, dramatic, etc.</li>
+<li><strong>Constraints</strong>: what to avoid (photorealism, gradients, text, etc.)</li>
 </ul>
 <h2 id="creating-styles">Creating Styles<a class="headerlink" href="#creating-styles" title="Permanent link">&para;</a></h2>
 <h3 id="manually-file-on-disk">Manually (file on disk)<a class="headerlink" href="#manually-file-on-disk" title="Permanent link">&para;</a></h3>
@@ -1992,8 +2050,8 @@
 <h2 id="browsing-styles">Browsing Styles<a class="headerlink" href="#browsing-styles" title="Permanent link">&para;</a></h2>
 <h3 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong><code>style://list</code></strong> — JSON array of all styles with names, tags, and descriptions</li>
-<li><strong><code>style://{name}</code></strong> — full Markdown content of a specific style</li>
+<li><strong><code>style://list</code></strong>: JSON array of all styles with names, tags, and descriptions</li>
+<li><strong><code>style://{name}</code></strong>: full Markdown content of a specific style</li>
 </ul>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Tool call: read_resource
@@ -2141,6 +2199,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

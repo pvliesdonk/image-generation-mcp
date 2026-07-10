@@ -1,28 +1,28 @@
 # Style Library
 
-Styles are reusable presets that capture a visual direction — palette, composition, mood, medium, and constraints — for consistent image generation across conversations.
+Styles are reusable presets that capture a visual direction (palette, composition, mood, medium, and constraints) for consistent image generation across conversations.
 
 ## How Styles Work
 
 A style is a **creative brief**, not a prompt template. When you apply a style, the LLM reads the brief and adapts it to the target provider's prompt format:
 
-- **OpenAI** (gpt-image-1.5 / gpt-image-1 / gpt-image-1-mini) — natural language description incorporating the style's direction.
-- **Gemini** (gemini-2.5-flash-image / gemini-3.1-flash-image-preview / gemini-3-pro-image-preview) — natural language, similar to OpenAI; can also incorporate the style brief into multi-image compositing or conversational refinement.
-- **SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut)** — comma-separated CLIP tags with a separate negative prompt.
-- **SD WebUI (Flux 1 / Flux Schnell / FLUX.2)** — natural language, similar to OpenAI; **no** native negative prompts (CFG=1 distilled).
-- **SD WebUI (SD 3 / 3.5)** — natural language, similar to Flux, but **with** native negative prompts (unlike Flux). Skip SDXL-style `(weight:1.2)` parens.
-- **SD WebUI (Pony Diffusion XL / Illustrious-XL / NoobAI-XL)** — Booru-style tag grammar with a mandatory `score_*` prefix on Pony.
+- **OpenAI** (gpt-image-1.5 / gpt-image-1 / gpt-image-1-mini): natural language description incorporating the style's direction.
+- **Gemini** (gemini-3.1-flash-image / gemini-3-pro-image / gemini-3.1-flash-lite-image / gemini-2.5-flash-image): natural language, similar to OpenAI; can also incorporate the style brief into multi-image compositing or conversational refinement.
+- **SD WebUI (SD 1.5 / SDXL / RealVisXL / Juggernaut)**: comma-separated CLIP tags with a separate negative prompt.
+- **SD WebUI (Flux 1 / Flux Schnell / FLUX.2)**: natural language, similar to OpenAI; **no** native negative prompts (CFG=1 distilled).
+- **SD WebUI (SD 3 / 3.5)**: natural language like Flux, but **with** native negative prompts (unlike Flux). Skip SDXL-style `(weight:1.2)` parens.
+- **SD WebUI (Pony Diffusion XL / Illustrious-XL / NoobAI-XL)**: Booru-style tag grammar with a mandatory `score_*` prefix on Pony.
 
-The style text is never copied verbatim into the generation prompt — the LLM rewrites it in the right grammar for the chosen model.
+The style text is never copied verbatim into the generation prompt; the LLM rewrites it in the right grammar for the chosen model.
 
 The per-model registry (`list_providers` → `style_profile.style_hints` / `incompatible_styles`) is the canonical source for what each model wants; cross-reference it from your style brief when you need provider-specific guidance.
 
 > **`style_profile` vs style library.** The two are deliberately separate concerns:
 >
-> - **Style library** (this guide) — a *user-saved creative brief* applied to a generation request. Describes *the brief*.
-> - **`style_profile`** (set by the registry, surfaced via `list_providers`) — *per-model metadata* describing what each model is best at. Describes *the model*.
+> - **Style library** (this guide): a user-saved creative brief applied to a generation request. Describes the brief.
+> - **`style_profile`** (set by the registry, surfaced via `list_providers`): per-model metadata describing what each model is best at. Describes the model.
 >
-> Both can use the word "style" in their everyday English sense — they don't interact. See [ADR-0009](https://github.com/pvliesdonk/image-generation-mcp/blob/main/docs/decisions/0009-model-style-metadata.md) for the disambiguation.
+> Both can use the word "style" in their everyday English sense and they don't interact. See [ADR-0009](https://github.com/pvliesdonk/image-generation-mcp/blob/main/docs/decisions/0009-model-style-metadata.md) for the disambiguation.
 
 ## Style File Format
 
@@ -47,21 +47,21 @@ Suitable for hero banners and section dividers.
 
 | Field          | Type | Required | Default | Description                                             |
 | -------------- | ---- | -------- | ------- | ------------------------------------------------------- |
-| `name`         | str  | Yes      | —       | Style identifier (must match filename without `.md`)    |
+| `name`         | str  | Yes      | (none)  | Style identifier (must match filename without `.md`)    |
 | `tags`         | list | No       | `[]`    | Categorization tags for browsing/filtering              |
 | `provider`     | str  | No       | `auto`  | Suggested provider (`auto`, `openai`, `sd_webui`, etc.) |
-| `aspect_ratio` | str  | No       | —       | Default aspect ratio (e.g. `16:9`, `1:1`)               |
-| `quality`      | str  | No       | —       | Default quality level (`standard` or `hd`)              |
+| `aspect_ratio` | str  | No       | (none)  | Default aspect ratio (`16:9`, `1:1`, etc.)              |
+| `quality`      | str  | No       | (none)  | Default quality level (`standard` or `hd`)              |
 
 ### Body
 
 The body is free-form Markdown prose describing the visual direction. Write it as you would a creative brief for a designer:
 
-- **Palette** — specific colors with hex codes
-- **Composition** — layout rules, negative space, framing
-- **Medium** — illustration, photography, watercolor, etc.
-- **Mood** — professional, playful, dramatic, etc.
-- **Constraints** — what to avoid (photorealism, gradients, text, etc.)
+- **Palette**: specific colors with hex codes
+- **Composition**: layout rules, negative space, framing
+- **Medium**: illustration, photography, watercolor, etc.
+- **Mood**: professional, playful, dramatic, etc.
+- **Constraints**: what to avoid (photorealism, gradients, text, etc.)
 
 ## Creating Styles
 
@@ -105,8 +105,8 @@ Tool call: save_style
 
 ### Resources
 
-- **`style://list`** — JSON array of all styles with names, tags, and descriptions
-- **`style://{name}`** — full Markdown content of a specific style
+- **`style://list`**: JSON array of all styles with names, tags, and descriptions
+- **`style://{name}`**: full Markdown content of a specific style
 
 ### Example
 

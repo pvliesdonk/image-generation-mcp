@@ -53,6 +53,8 @@
     
       <link rel="stylesheet" href="assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -664,6 +666,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1189,6 +1219,34 @@
   
   
     <li class="md-nav__item">
+      <a href="guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="guides/prompt-writing/" class="md-nav__link">
         
   
@@ -1540,13 +1598,13 @@
 <p>Multi-provider image generation <a href="https://modelcontextprotocol.io">MCP</a> server built on <a href="https://gofastmcp.com">FastMCP</a>. Generate images from Claude Desktop, Claude Code, or any MCP client using OpenAI, Stable Diffusion (SD WebUI), or a zero-cost placeholder provider.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Multi-provider</strong> -- OpenAI (gpt-image-1, dall-e-3), SD WebUI (Stable Diffusion WebUI), and placeholder</li>
-<li><strong>Auto-selection</strong> -- keyword-based routing picks the best provider for your prompt</li>
-<li><strong>Image assets</strong> -- content-addressed registry with thumbnail previews and resource URI-based transforms</li>
-<li><strong>Background tasks</strong> -- hybrid foreground (progress streaming) and background (polling) execution</li>
-<li><strong>MCP native</strong> -- tools, resources, and prompts following the MCP specification</li>
-<li><strong>Authentication</strong> -- bearer token, OIDC, and multi-auth support</li>
-<li><strong>Docker ready</strong> -- multi-arch image with privilege dropping</li>
+<li><strong>Multi-provider</strong>: OpenAI (gpt-image-2, dall-e-3), Google Gemini, SD WebUI (Stable Diffusion WebUI), and placeholder</li>
+<li><strong>Auto-selection</strong>: keyword-based routing picks the best provider for your prompt</li>
+<li><strong>Image assets</strong>: content-addressed registry with thumbnail previews and resource URI-based transforms</li>
+<li><strong>Background tasks</strong>: hybrid foreground (progress streaming) and background (polling) execution</li>
+<li><strong>MCP native</strong>: tools, resources, and prompts following the MCP specification</li>
+<li><strong>Authentication</strong>: bearer token, OIDC, and multi-auth support</li>
+<li><strong>Docker ready</strong>: multi-arch image with privilege dropping</li>
 </ul>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>MCP Client (Claude Desktop / Claude Code)
@@ -1680,6 +1738,8 @@
     
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

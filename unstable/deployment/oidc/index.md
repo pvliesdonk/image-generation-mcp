@@ -4,7 +4,7 @@ Optional token-based authentication for HTTP deployments. Two OIDC modes are ava
 
 | Mode                       | Env var                | Use case                                               | Required vars                                                            |
 | -------------------------- | ---------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------ |
-| **`remote`** (recommended) | `AUTH_MODE=remote`     | Local JWT validation — no upstream token re-validation | `BASE_URL` + `OIDC_CONFIG_URL`                                           |
+| **`remote`** (recommended) | `AUTH_MODE=remote`     | Local JWT validation (no upstream token re-validation) | `BASE_URL` + `OIDC_CONFIG_URL`                                           |
 | **`oidc-proxy`**           | `AUTH_MODE=oidc-proxy` | DCR emulation for non-DCR IdPs                         | `BASE_URL` + `OIDC_CONFIG_URL` + `OIDC_CLIENT_ID` + `OIDC_CLIENT_SECRET` |
 
 The mode is auto-detected when `AUTH_MODE` is not set: `oidc-proxy` when client credentials are present, `remote` otherwise. For an overview of all authentication modes (bearer token, OIDC, no auth), see the [Authentication guide](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/authentication/index.md).
@@ -21,17 +21,17 @@ Prefer remote mode
 
 ### Required Variables
 
-| Variable                               | Description                                                                                |
-| -------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `IMAGE_GENERATION_MCP_BASE_URL`        | Public base URL of the server (e.g. `https://mcp.example.com`)                             |
-| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint (e.g. `https://auth.example.com/.well-known/openid-configuration`) |
+| Variable                               | Description                                                                                   |
+| -------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `IMAGE_GENERATION_MCP_BASE_URL`        | Public base URL of the server (such as `https://mcp.example.com`)                             |
+| `IMAGE_GENERATION_MCP_OIDC_CONFIG_URL` | OIDC discovery endpoint (such as `https://auth.example.com/.well-known/openid-configuration`) |
 
 ### Optional Variables
 
 | Variable                                    | Default | Description                                                                |
 | ------------------------------------------- | ------- | -------------------------------------------------------------------------- |
-| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE`        | —       | Expected JWT audience claim; leave unset if your provider does not set one |
-| `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | —       | Comma-separated required scopes                                            |
+| `IMAGE_GENERATION_MCP_OIDC_AUDIENCE`        | n/a     | Expected JWT audience claim; leave unset if your provider does not set one |
+| `IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES` | n/a     | Comma-separated required scopes                                            |
 
 ### Example
 
@@ -92,11 +92,11 @@ Authelia issues **opaque** (non-JWT) access tokens by default. This affects whic
 
 ### Remote mode (recommended)
 
-Remote mode requires only `BASE_URL` + `OIDC_CONFIG_URL` on the MCP server — no client credentials needed server-side. The client authenticates directly with Authelia; the server validates the resulting JWT access token via JWKS.
+Remote mode requires only `BASE_URL` + `OIDC_CONFIG_URL` on the MCP server (no client credentials needed server-side). The client authenticates directly with Authelia; the server validates the resulting JWT access token via JWKS.
 
 Client credentials are IdP-side only
 
-In remote mode, `CLIENT_ID` and `CLIENT_SECRET` are configured in the **Authelia client registration** (so Authelia knows which client is connecting), but they are **not** set as MCP server environment variables. The MCP server only needs the OIDC discovery URL to fetch JWKS keys for token validation.
+In remote mode, `CLIENT_ID` and `CLIENT_SECRET` are configured in the **Authelia client registration** (so Authelia knows which client is connecting), but they are not set as MCP server environment variables. The MCP server only needs the OIDC discovery URL to fetch JWKS keys for token validation.
 
 #### 1. Register the client in Authelia
 
@@ -125,7 +125,7 @@ identity_providers:
 
 Why `access_token_signed_response_alg`?
 
-Remote mode's `JWTVerifier` decodes the access token as a JWT and validates its signature against the IdP's JWKS keys. Authelia's default opaque tokens are random strings with no JWT structure — they cannot be validated locally. Setting `access_token_signed_response_alg: 'RS256'` tells Authelia to issue RFC 9068 JWT access tokens for this client.
+Remote mode's `JWTVerifier` decodes the access token as a JWT and validates its signature against the IdP's JWKS keys. Authelia's default opaque tokens are random strings with no JWT structure and cannot be validated locally. Setting `access_token_signed_response_alg: 'RS256'` tells Authelia to issue RFC 9068 JWT access tokens for this client.
 
 Why `token_endpoint_auth_method`?
 
@@ -138,7 +138,7 @@ IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
 IMAGE_GENERATION_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
 ```
 
-No `CLIENT_ID`, `CLIENT_SECRET`, or `JWT_SIGNING_KEY` needed — the server only validates tokens, it does not participate in the OAuth flow.
+No `CLIENT_ID`, `CLIENT_SECRET`, or `JWT_SIGNING_KEY` needed: the server validates tokens without participating in the OAuth handshake.
 
 #### 3. Start with HTTP transport
 
@@ -148,7 +148,7 @@ image-generation-mcp serve --transport http --port 8000
 
 ### OIDCProxy mode (fallback)
 
-Use oidc-proxy only when remote mode is not viable (e.g., your IdP cannot issue JWT access tokens). Be aware of the [session lifetime limitation](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/authentication/#known-limitations-oidc-session-lifetime).
+Use oidc-proxy only when remote mode is not viable (such as when your IdP cannot issue JWT access tokens). Be aware of the [session lifetime limitation](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/authentication/#known-limitations-oidc-session-lifetime).
 
 #### 1. Register the client in Authelia
 
@@ -168,7 +168,7 @@ identity_providers:
         token_endpoint_auth_method: 'client_secret_post'
 ```
 
-No `access_token_signed_response_alg` needed — oidc-proxy verifies the `id_token` (always a JWT) instead of the access token.
+No `access_token_signed_response_alg` needed. OIDCProxy verifies the `id_token` (always a JWT) instead of the access token.
 
 #### 2. Set environment variables
 
@@ -186,7 +186,7 @@ IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=$(openssl rand -hex 32)
 image-generation-mcp serve --transport http --port 8000
 ```
 
-For subpath deployments (e.g., public URL `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
+For subpath deployments (such as public URL `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
 
 See also `examples/oidc.env`.
 
@@ -221,7 +221,7 @@ Client → image-generation-mcp (with OIDCProxy) → OIDC Provider (Authelia/Key
 
 Session lifetime
 
-OIDCProxy re-validates upstream tokens on every request. When the upstream token expires (typically 1h), sessions die even though the proxy JWT is still valid. See [Known Limitations](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/authentication/#known-limitations-oidc-session-lifetime).
+OIDCProxy re-validates upstream tokens on every request. When the upstream token expires (typically 1 h), sessions die even though the proxy JWT is still valid. See [Known Limitations](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/authentication/#known-limitations-oidc-session-lifetime).
 
 ## Docker Compose with OIDC
 
@@ -265,7 +265,7 @@ IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET=your-client-secret
 IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=your-stable-hex-key
 ```
 
-For a prefixed deployment (e.g., `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
+For a prefixed deployment (such as `https://mcp.example.com/vault/mcp`), see [Subpath Deployments](#subpath-deployments) below.
 
 ## Subpath Deployments
 
@@ -274,13 +274,13 @@ When OIDC is enabled behind a reverse-proxy subpath, `BASE_URL` and `HTTP_PATH` 
 | Variable    | Purpose                                                    | Example                         |
 | ----------- | ---------------------------------------------------------- | ------------------------------- |
 | `BASE_URL`  | Public URL of the server, **including the subpath prefix** | `https://mcp.example.com/vault` |
-| `HTTP_PATH` | Internal MCP endpoint mount point — **no subpath prefix**  | `/mcp`                          |
+| `HTTP_PATH` | Internal MCP endpoint mount point (**no subpath prefix**)  | `/mcp`                          |
 
 The reverse proxy strips the subpath prefix before forwarding to the application. FastMCP concatenates `BASE_URL + HTTP_PATH` to build the public resource URL, so including the prefix in both produces broken URLs with duplicated path segments.
 
 Do not duplicate the subpath
 
-Setting `BASE_URL=https://mcp.example.com/vault` **and** `HTTP_PATH=/vault/mcp` produces a duplicated resource URL: `https://mcp.example.com/vault/vault/mcp`. The subpath belongs in `BASE_URL` only.
+Setting `BASE_URL=https://mcp.example.com/vault` together with `HTTP_PATH=/vault/mcp` produces a duplicated resource URL: `https://mcp.example.com/vault/vault/mcp`. The subpath belongs in `BASE_URL` only.
 
 ### Configuration
 
@@ -303,8 +303,8 @@ The reverse proxy must:
 
 1. **Strip the prefix** (`/vault`) from operational routes before forwarding to the app
 1. **Forward OAuth discovery routes** to this service (without stripping prefixes):
-   - `/.well-known/oauth-authorization-server` — authorization server metadata
-   - `/.well-known/oauth-protected-resource/vault/mcp` — protected resource metadata
+   - `/.well-known/oauth-authorization-server` (authorization server metadata)
+   - `/.well-known/oauth-protected-resource/vault/mcp` (protected resource metadata)
 
 Example Traefik configuration:
 
@@ -328,7 +328,7 @@ This configuration requires that no other OAuth service claims `/.well-known/oau
 
 Shared-hostname subpath with native OIDC is not supported
 
-When multiple OAuth-capable services share a hostname (e.g., `mcp-auth-proxy` at the root and `image-generation-mcp` at `/vault`), native OIDC on a subpath does not work.
+When multiple OAuth-capable services share a hostname (such as `mcp-auth-proxy` at the root and `image-generation-mcp` at `/vault`), native OIDC on a subpath does not work.
 
 **Why:** FastMCP serves the OAuth authorization-server metadata at `/.well-known/oauth-authorization-server` (host root), regardless of the subpath in `BASE_URL`. The FastMCP codebase contains an RFC 8414 path-aware override (`OIDCProxy.get_well_known_routes()`) that would serve it at `/.well-known/oauth-authorization-server/vault`. However, this method is not wired into the route mounting flow and is effectively dead code.
 
@@ -338,5 +338,5 @@ This works when `image-generation-mcp` is the **only** OAuth service on the host
 
 **Recommendations for shared-hostname scenarios:**
 
-- **Dedicated hostname** (preferred): give `image-generation-mcp` its own hostname (e.g., `vault.example.com`) so discovery routes do not collide.
+- **Dedicated hostname** (preferred): give `image-generation-mcp` its own hostname (such as `vault.example.com`) so discovery routes do not collide.
 - **External auth gateway**: use `mcp-auth-proxy` as a sidecar instead of native OIDC. The MCP server runs unauthenticated behind the proxy, and the proxy handles OAuth discovery at its own routes.

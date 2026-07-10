@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -575,6 +577,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1080,6 +1110,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1887,11 +1945,11 @@
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The env file contains secrets (API keys, OIDC credentials). The package sets permissions to <code>0640 root:image-generation-mcp</code> -- do not loosen these.</p>
+<p>The env file contains secrets (API keys, OIDC credentials). The package sets permissions to <code>0640 root:image-generation-mcp</code>. Do not loosen these.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>systemd <code>EnvironmentFile</code> does <strong>not</strong> perform shell substitution. Generate values like the JWT signing key separately (<code>openssl rand -hex 32</code>) and paste the result into the env file.</p>
+<p>systemd <code>EnvironmentFile</code> does not perform shell substitution. Generate values like the JWT signing key separately (<code>openssl rand -hex 32</code>) and paste the result into the env file.</p>
 </div>
 <h2 id="service-management">Service management<a class="headerlink" href="#service-management" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Enable and start</span>
@@ -2029,7 +2087,7 @@
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># RHEL / Fedora</span>
 <a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>remove<span class="w"> </span>image-generation-mcp
 </code></pre></div>
-<p>The package stops and disables the service automatically. It does <strong>not</strong> remove the system user or data directory -- delete those manually if desired:</p>
+<p>The package stops and disables the service automatically. It does not remove the system user or data directory. Delete those manually if desired:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>sudo<span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/image-generation-mcp<span class="w"> </span>/etc/image-generation-mcp
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>sudo<span class="w"> </span>userdel<span class="w"> </span>image-generation-mcp
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>sudo<span class="w"> </span>groupdel<span class="w"> </span>image-generation-mcp
@@ -2095,6 +2153,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

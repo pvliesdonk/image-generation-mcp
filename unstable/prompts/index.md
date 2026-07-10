@@ -14,14 +14,14 @@ MCP clients (like Claude) can load this prompt to understand provider strengths 
 
 The prompt covers:
 
-- **Provider strengths** -- what each provider (OpenAI, SD WebUI, Placeholder) is best at
-- **Selection rules** -- ordered decision logic:
+- **Provider strengths:** what each provider (OpenAI, SD WebUI, Placeholder) is best at
+- **Selection rules:** ordered decision logic:
   1. Text/logos/typography -> use OpenAI
   1. Photorealism/portraits/product shots -> prefer SD WebUI (fall back to OpenAI)
   1. Art/illustration/anime -> prefer SD WebUI (fall back to OpenAI)
   1. Quick test/placeholder -> use placeholder
   1. General requests -> default to OpenAI
-- **Usage guidance** -- how to call `generate_image` with `provider="auto"` or a specific provider name
+- **Usage guidance:** how to call `generate_image` with `provider="auto"` or a specific provider name
 
 ______________________________________________________________________
 
@@ -37,13 +37,13 @@ MCP clients should load this prompt when generating images with the SD WebUI pro
 
 The prompt covers:
 
-- **Tag format** -- comma-separated descriptive tags ordered by importance: `subject, medium, style, lighting, camera, quality tags`
-- **Example prompts** -- portrait, landscape, and product shot examples
-- **Quality tags** -- `masterpiece, best quality`, `highly detailed, sharp focus`, `8k, ultra high res`
-- **Negative prompts** -- general-purpose negative prompt for avoiding common artifacts, plus photorealism and anime-specific additions
-- **CLIP token limits** -- SD 1.5: 77 tokens per chunk, SDXL: 77 tokens per chunk with two encoders
-- **BREAK syntax** -- how to separate concepts into different CLIP chunks
-- **Aspect ratios** -- supported ratios: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`
+- **Tag format:** comma-separated descriptive tags ordered by importance: `subject, medium, style, lighting, camera, quality tags`
+- **Example prompts:** portrait, landscape, and product shot examples
+- **Quality tags:** `masterpiece, best quality`, `highly detailed, sharp focus`, `8k, ultra high res`
+- **Negative prompts:** general-purpose negative prompt for avoiding common artifacts, plus photorealism and anime-specific additions
+- **CLIP token limits:** SD 1.5: 77 tokens per chunk, SDXL: 77 tokens per chunk with two encoders
+- **BREAK syntax:** how to separate concepts into different CLIP chunks
+- **Aspect ratios:** supported ratios: `1:1`, `16:9`, `9:16`, `3:2`, `2:3`
 
 ### Example prompt format
 
@@ -58,11 +58,11 @@ ______________________________________________________________________
 
 ## apply_style
 
-Apply a saved style preset to an image generation request. Loads the style's creative brief and instructs the LLM to interpret it per-provider — not copy it verbatim.
+Apply a saved style preset to an image generation request. Loads the style's creative brief and instructs the LLM to interpret it as creative direction, not copy it verbatim.
 
 ### When to use
 
-Use when a user references a saved style (e.g. "use the website style") or you want to apply consistent visual direction across multiple generations.
+Use when a user references a saved style (such as "use the website style") or you want to apply consistent visual direction across multiple generations.
 
 ### Arguments
 
@@ -79,9 +79,9 @@ The prompt:
 1. Presents the style body and frontmatter defaults to the LLM
 1. Instructs the LLM to interpret the style as creative direction, not a prompt template
 1. Provides provider-specific adaptation guidance:
-   - **OpenAI** — compose in natural language
-   - **SD WebUI (SD 1.5/SDXL)** — compose as CLIP tags with negative prompts
-   - **SD WebUI (Flux)** — compose in natural language
+   - **OpenAI:** compose in natural language
+   - **SD WebUI (SD 1.5/SDXL):** compose as CLIP tags with negative prompts
+   - **SD WebUI (Flux):** compose in natural language
 1. Uses frontmatter defaults (provider, aspect_ratio, quality) unless the user overrides
 
 ### Example

@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -575,6 +577,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -889,6 +919,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#server-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#providers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -933,10 +974,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reference-image-input-transform_image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference image input (transform_image)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#session-persistence-http-transport" class="md-nav__link">
     <span class="md-ellipsis">
       
         Session persistence (HTTP transport)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-link-transfer-http-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability-link transfer (HTTP transport)
       
     </span>
   </a>
@@ -1014,7 +1077,7 @@
   <a href="#production-remote-mode-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production — remote mode (recommended)
+        Production: remote mode (recommended)
       
     </span>
   </a>
@@ -1025,7 +1088,7 @@
   <a href="#production-oidc-proxy-mode-dcr-emulation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production — oidc-proxy mode (DCR emulation)
+        Production: oidc-proxy mode (DCR emulation)
       
     </span>
   </a>
@@ -1287,6 +1350,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1602,6 +1693,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#server-identity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server identity
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#providers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1646,10 +1748,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#reference-image-input-transform_image" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference image input (transform_image)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#session-persistence-http-transport" class="md-nav__link">
     <span class="md-ellipsis">
       
         Session persistence (HTTP transport)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-link-transfer-http-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability-link transfer (HTTP transport)
       
     </span>
   </a>
@@ -1727,7 +1851,7 @@
   <a href="#production-remote-mode-recommended" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production — remote mode (recommended)
+        Production: remote mode (recommended)
       
     </span>
   </a>
@@ -1738,7 +1862,7 @@
   <a href="#production-oidc-proxy-mode-dcr-emulation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Production — oidc-proxy mode (DCR emulation)
+        Production: oidc-proxy mode (DCR emulation)
       
     </span>
   </a>
@@ -1809,6 +1933,17 @@
 </tr>
 </tbody>
 </table>
+<h2 id="server-identity">Server identity<a class="headerlink" href="#server-identity" title="Permanent link">&para;</a></h2>
+<p>These two are read by the scaffold's <code>make_server()</code> (not by
+<code>ServerConfig</code>), so an operator can rename an instance or override its
+instructions without editing template-owned code:</p>
+<ul>
+<li><code>IMAGE_GENERATION_MCP_SERVER_NAME</code>: the server name reported to clients and
+  by <code>get_server_info</code>. Defaults to <code>image-generation-mcp</code>.</li>
+<li><code>IMAGE_GENERATION_MCP_INSTRUCTIONS</code>: replaces the default MCP instructions
+  text. Unset, the scaffold builds the default (which advertises this
+  override).</li>
+</ul>
 <!-- DOMAIN-CONFIG-VARS-START -->
 <h2 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h2>
 <table>
@@ -1824,25 +1959,25 @@
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OPENAI_API_KEY</code></td>
 <td>str</td>
-<td>--</td>
-<td>OpenAI API key. Enables the OpenAI provider (gpt-image-1, dall-e-3) when set.</td>
+<td>(unset)</td>
+<td>OpenAI API key. Enables the OpenAI provider (gpt-image-2, gpt-image-1.5, dall-e-3) when set.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_GOOGLE_API_KEY</code></td>
 <td>str</td>
-<td>--</td>
-<td>Google API key. Enables the Gemini provider (gemini-2.5-flash-image and others) when set. Get a key at <a href="https://aistudio.google.com/apikey">Google AI Studio</a>.</td>
+<td>(unset)</td>
+<td>Google API key. Enables the Gemini provider (gemini-3.1-flash-image and others) when set. Get a key at <a href="https://aistudio.google.com/apikey">Google AI Studio</a>.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_SD_WEBUI_HOST</code></td>
 <td>str</td>
-<td>--</td>
-<td>SD WebUI base URL (e.g. <code>http://localhost:7860</code>). Enables the SD WebUI provider when set. Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo. Deprecated alias: <code>IMAGE_GENERATION_MCP_A1111_HOST</code>.</td>
+<td>(unset)</td>
+<td>SD WebUI base URL (such as <code>http://localhost:7860</code>). Enables the SD WebUI provider when set. Compatible with AUTOMATIC1111, Forge, reForge, and Forge-neo. Deprecated alias: <code>IMAGE_GENERATION_MCP_A1111_HOST</code>.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_SD_WEBUI_MODEL</code></td>
 <td>str</td>
-<td>--</td>
+<td>(unset)</td>
 <td>SD WebUI checkpoint name. Used for model-aware preset detection (SD 1.5 vs SDXL vs Lightning) and checkpoint override. Deprecated alias: <code>IMAGE_GENERATION_MCP_A1111_MODEL</code>.</td>
 </tr>
 </tbody>
@@ -1862,54 +1997,54 @@
 <td><code>IMAGE_GENERATION_MCP_AUTH_MODE</code></td>
 <td>str</td>
 <td>auto</td>
-<td>OIDC auth mode: <code>remote</code> (local JWT validation) or <code>oidc-proxy</code> (DCR emulation). Auto-detected from env vars when not set — see below.</td>
+<td>OIDC auth mode: <code>remote</code> (local JWT validation) or <code>oidc-proxy</code> (DCR emulation). Auto-detected from env vars when not set (see below).</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_BEARER_TOKEN</code></td>
 <td>str</td>
-<td>--</td>
+<td>(unset)</td>
 <td>Static bearer token for HTTP authentication. Enables bearer auth when set.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_BASE_URL</code></td>
 <td>str</td>
-<td>--</td>
-<td>Public base URL of the server (e.g. <code>https://mcp.example.com</code>). Required for OIDC and for MCP File Exchange downloads (<code>create_download_link</code>, <code>show_image</code>'s <code>file_ref</code> / auto <code>download_url</code>). Include subpath prefix if applicable.</td>
+<td>(unset)</td>
+<td>Public base URL of the server (such as <code>https://mcp.example.com</code>). Required for OIDC and for the capability-link transfer routes (<code>create_download_link</code> / <code>create_upload_link</code> and the <code>/transfer/{token}</code> endpoint). Include subpath prefix if applicable.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_CONFIG_URL</code></td>
 <td>str</td>
-<td>--</td>
-<td>OIDC discovery endpoint URL (e.g. <code>https://auth.example.com/.well-known/openid-configuration</code>).</td>
+<td>(unset)</td>
+<td>OIDC discovery endpoint URL (such as <code>https://auth.example.com/.well-known/openid-configuration</code>).</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_CLIENT_ID</code></td>
 <td>str</td>
-<td>--</td>
+<td>(unset)</td>
 <td>OIDC client ID registered with your identity provider. Required for <code>oidc-proxy</code> mode only.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET</code></td>
 <td>str</td>
-<td>--</td>
+<td>(unset)</td>
 <td>OIDC client secret. Required for <code>oidc-proxy</code> mode only.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY</code></td>
 <td>str</td>
 <td>ephemeral</td>
-<td>JWT signing key for session tokens. <strong>Required on Linux/Docker for <code>oidc-proxy</code> mode</strong> -- the default ephemeral key invalidates all tokens on restart. Generate with <code>openssl rand -hex 32</code>. Not needed for <code>remote</code> mode.</td>
+<td>JWT signing key for session tokens. <strong>Required on Linux/Docker for <code>oidc-proxy</code> mode</strong>: the default ephemeral key invalidates all tokens on restart. Generate with <code>openssl rand -hex 32</code>. Not needed for <code>remote</code> mode.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_AUDIENCE</code></td>
 <td>str</td>
-<td>--</td>
+<td>(unset)</td>
 <td>Expected JWT audience claim. Leave unset if your provider does not set one.</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES</code></td>
 <td>str</td>
-<td>--</td>
+<td>(unset)</td>
 <td>Comma-separated required OIDC scopes. For <code>oidc-proxy</code> mode, defaults to <code>openid</code>.</td>
 </tr>
 <tr>
@@ -1925,9 +2060,9 @@
 <p>When <code>AUTH_MODE</code> is not set explicitly, the mode is auto-detected:</p>
 <ul>
 <li><strong><code>oidc-proxy</code></strong>: when all four OIDC variables (<code>BASE_URL</code>, <code>OIDC_CONFIG_URL</code>, <code>OIDC_CLIENT_ID</code>, <code>OIDC_CLIENT_SECRET</code>) are set. Backward compatible with existing deployments.</li>
-<li><strong><code>remote</code></strong>: when <code>BASE_URL</code> + <code>OIDC_CONFIG_URL</code> are set but <code>CLIENT_ID</code>/<code>CLIENT_SECRET</code> are not. Recommended for new deployments — avoids the <a href="../guides/authentication/#known-limitations-oidc-session-lifetime">OIDCProxy session lifetime issue</a>.</li>
+<li><strong><code>remote</code></strong>: when <code>BASE_URL</code> + <code>OIDC_CONFIG_URL</code> are set but <code>CLIENT_ID</code>/<code>CLIENT_SECRET</code> are not. Recommended for new deployments (avoids the <a href="../guides/authentication/#known-limitations-oidc-session-lifetime">OIDCProxy session lifetime issue</a>).</li>
 </ul>
-<p>Set <code>AUTH_MODE</code> explicitly to override auto-detection (e.g., <code>AUTH_MODE=remote</code> even when client credentials are present).</p>
+<p>Set <code>AUTH_MODE</code> explicitly to override auto-detection (such as <code>AUTH_MODE=remote</code> even when client credentials are present).</p>
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -1948,7 +2083,7 @@
 <td><code>IMAGE_GENERATION_MCP_PAID_PROVIDERS</code></td>
 <td>str</td>
 <td><code>openai</code></td>
-<td>Comma-separated list of provider names that cost money. When the MCP client supports <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/elicitation">elicitation</a>, <code>generate_image</code> asks for confirmation before using these providers. Set to empty string to disable confirmation. <strong>Note:</strong> Gemini <code>quality="hd"</code> uses thinking tokens which are billed — consider adding <code>gemini</code> if you use <code>hd</code> quality frequently.</td>
+<td>Comma-separated list of provider names that cost money. When the MCP client supports <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/elicitation">elicitation</a>, <code>generate_image</code> asks for confirmation before using these providers. Set to empty string to disable confirmation. Gemini <code>quality="hd"</code> uses thinking tokens which are billed; consider adding <code>gemini</code> if you use <code>hd</code> quality frequently.</td>
 </tr>
 </tbody>
 </table>
@@ -1971,6 +2106,41 @@
 </tr>
 </tbody>
 </table>
+<h2 id="reference-image-input-transform_image">Reference image input (<code>transform_image</code>)<a class="headerlink" href="#reference-image-input-transform_image" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Enable local filesystem paths as <code>transform_image</code> reference images. When <code>false</code> (default), only gallery <code>image_id</code> values and <code>image://</code> URIs are accepted.</td>
+</tr>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES</code></td>
+<td>int</td>
+<td><code>20971520</code></td>
+<td>Per-reference maximum byte size for input images (default: 20 MiB). Applies to every reference, whether resolved from the gallery or a local file. References exceeding this limit are rejected before the provider call.</td>
+</tr>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S</code></td>
+<td>float</td>
+<td><code>30.0</code></td>
+<td>HTTP fetch timeout in seconds, used when fetching remote image URLs.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Security: local file input</p>
+<p>Setting <code>ALLOW_LOCAL_FILE_INPUT=true</code> grants callers read access to any file readable by the server process (they can pass arbitrary paths). Enable only for trusted callers, such as a local single-user Claude Desktop installation. Leave disabled on shared or network-accessible deployments.</p>
+</div>
 <h2 id="session-persistence-http-transport">Session persistence (HTTP transport)<a class="headerlink" href="#session-persistence-http-transport" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1986,7 +2156,51 @@
 <td><code>IMAGE_GENERATION_MCP_EVENT_STORE_URL</code></td>
 <td>str</td>
 <td><code>file:///data/state/events</code></td>
-<td>EventStore backend for SSE session resumability. <code>file:///path</code> stores events on disk (survives restarts); <code>memory://</code> keeps events in-process only (dev/test).</td>
+<td>EventStore backend for SSE session resumeability. <code>file:///path</code> stores events on disk (survives restarts); <code>memory://</code> keeps events in-process only (dev/test).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="capability-link-transfer-http-transport">Capability-link transfer (HTTP transport)<a class="headerlink" href="#capability-link-transfer-http-transport" title="Permanent link">&para;</a></h2>
+<p>The <code>create_download_link</code> and <code>create_upload_link</code> tools (and the backing <code>/transfer/{token}</code> HTTP route) come from pvl-core's shared capability-link transfer routes. They register only on an HTTP or SSE transport with <code>IMAGE_GENERATION_MCP_BASE_URL</code> set. One-time link tokens are stored in the KV store configured by <code>IMAGE_GENERATION_MCP_KV_STORE_URL</code> (a <code>file:///data/state</code> file store in the Docker image; <code>memory://</code> for dev). The knobs below tune link lifetime and upload limits.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_TRANSFER_TTL_DEFAULT_S</code></td>
+<td>number</td>
+<td><code>3600</code></td>
+<td>Link lifetime (seconds) when the caller omits <code>ttl_s</code> (default 1 hour).</td>
+</tr>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_TRANSFER_TTL_MAX_S</code></td>
+<td>number</td>
+<td><code>86400</code></td>
+<td>Ceiling (seconds) for a caller-requested <code>ttl_s</code>; larger values are clamped to this (default 24 hours).</td>
+</tr>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_TRANSFER_GRACE_TTL_S</code></td>
+<td>number</td>
+<td><code>60</code></td>
+<td>Post-success grace window (seconds) during which a served-but-stalled transfer can retry.</td>
+</tr>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_TRANSFER_LEASE_S</code></td>
+<td>number</td>
+<td><code>60</code></td>
+<td>Reclaim window (seconds) for an in-flight reservation left behind by a crashed handler.</td>
+</tr>
+<tr>
+<td><code>IMAGE_GENERATION_MCP_TRANSFER_MAX_UPLOAD_BYTES</code></td>
+<td>int</td>
+<td><code>104857600</code></td>
+<td>Per-upload size cap in bytes for <code>create_upload_link</code> POSTs (default 100 MiB).</td>
 </tr>
 </tbody>
 </table>
@@ -2010,8 +2224,8 @@
 <tr>
 <td><code>IMAGE_GENERATION_MCP_INSTRUCTIONS</code></td>
 <td>str</td>
-<td>(dynamic)</td>
-<td>System-level instructions injected into LLM context. Defaults to a description reflecting the read-only/read-write state.</td>
+<td>(generated at startup)</td>
+<td>System-level instructions injected into model context. Defaults to a description reflecting the read-only/read-write state.</td>
 </tr>
 <tr>
 <td><code>FASTMCP_LOG_LEVEL</code></td>
@@ -2036,9 +2250,9 @@
 <div class="admonition tip">
 <p class="admonition-title">MCP Apps domain (usually automatic)</p>
 <p>When <code>BASE_URL</code> is set (which it should be for HTTP deployments), the
-Claude sandbox domain is <strong>auto-computed</strong> — no extra configuration needed.</p>
+Claude sandbox domain is <strong>auto-computed</strong>: no extra configuration needed.</p>
 <p>The computation is <code>sha256(BASE_URL + HTTP_PATH)[:32] + ".claudemcpcontent.com"</code>.
-Set <code>APP_DOMAIN</code> explicitly only if you need to override this (e.g. for
+Set <code>APP_DOMAIN</code> explicitly only if you need to override this (such as for
 a non-Claude host like ChatGPT, or a custom HTTP path).</p>
 <p>To compute manually:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Python</span>
@@ -2067,13 +2281,13 @@ a non-Claude host like ChatGPT, or a custom HTTP path).</p>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nv">IMAGE_GENERATION_MCP_SD_WEBUI_HOST</span><span class="o">=</span>http://localhost:7860
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nv">IMAGE_GENERATION_MCP_SD_WEBUI_MODEL</span><span class="o">=</span>realisticVisionV60B1_v51VAE.safetensors
 </code></pre></div>
-<h3 id="production-remote-mode-recommended">Production — remote mode (recommended)<a class="headerlink" href="#production-remote-mode-recommended" title="Permanent link">&para;</a></h3>
+<h3 id="production-remote-mode-recommended">Production: remote mode (recommended)<a class="headerlink" href="#production-remote-mode-recommended" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">IMAGE_GENERATION_MCP_READ_ONLY</span><span class="o">=</span><span class="nb">false</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">IMAGE_GENERATION_MCP_OPENAI_API_KEY</span><span class="o">=</span>sk-...
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nv">IMAGE_GENERATION_MCP_BASE_URL</span><span class="o">=</span>https://mcp.example.com
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nv">IMAGE_GENERATION_MCP_OIDC_CONFIG_URL</span><span class="o">=</span>https://auth.example.com/.well-known/openid-configuration
 </code></pre></div>
-<h3 id="production-oidc-proxy-mode-dcr-emulation">Production — oidc-proxy mode (DCR emulation)<a class="headerlink" href="#production-oidc-proxy-mode-dcr-emulation" title="Permanent link">&para;</a></h3>
+<h3 id="production-oidc-proxy-mode-dcr-emulation">Production: oidc-proxy mode (DCR emulation)<a class="headerlink" href="#production-oidc-proxy-mode-dcr-emulation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">IMAGE_GENERATION_MCP_READ_ONLY</span><span class="o">=</span><span class="nb">false</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">IMAGE_GENERATION_MCP_OPENAI_API_KEY</span><span class="o">=</span>sk-...
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">IMAGE_GENERATION_MCP_BASE_URL</span><span class="o">=</span>https://mcp.example.com
@@ -2144,6 +2358,8 @@ a non-Claude host like ChatGPT, or a custom HTTP path).</p>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

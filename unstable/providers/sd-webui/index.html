@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -575,6 +577,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -947,6 +977,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-input-img2img" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image input (img2img)
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1379,6 +1420,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1844,6 +1913,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#image-input-img2img" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image input (img2img)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#background-transparency" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2018,23 +2098,23 @@
 <tbody>
 <tr>
 <td><code>1:1</code></td>
-<td>768x768</td>
+<td><code>768x768</code></td>
 </tr>
 <tr>
 <td><code>16:9</code></td>
-<td>912x512</td>
+<td><code>912x512</code></td>
 </tr>
 <tr>
 <td><code>9:16</code></td>
-<td>512x912</td>
+<td><code>512x912</code></td>
 </tr>
 <tr>
 <td><code>3:2</code></td>
-<td>768x512</td>
+<td><code>768x512</code></td>
 </tr>
 <tr>
 <td><code>2:3</code></td>
-<td>512x768</td>
+<td><code>512x768</code></td>
 </tr>
 </tbody>
 </table>
@@ -2080,23 +2160,23 @@
 <tbody>
 <tr>
 <td><code>1:1</code></td>
-<td>1024x1024</td>
+<td><code>1024x1024</code></td>
 </tr>
 <tr>
 <td><code>16:9</code></td>
-<td>1344x768</td>
+<td><code>1344x768</code></td>
 </tr>
 <tr>
 <td><code>9:16</code></td>
-<td>768x1344</td>
+<td><code>768x1344</code></td>
 </tr>
 <tr>
 <td><code>3:2</code></td>
-<td>1216x832</td>
+<td><code>1216x832</code></td>
 </tr>
 <tr>
 <td><code>2:3</code></td>
-<td>832x1216</td>
+<td><code>832x1216</code></td>
 </tr>
 </tbody>
 </table>
@@ -2220,11 +2300,11 @@
 <h3 id="sd-15-sdxl-lightning-prompt_style-clip">SD 1.5 / SDXL / Lightning (<code>prompt_style: "clip"</code>)<a class="headerlink" href="#sd-15-sdxl-lightning-prompt_style-clip" title="Permanent link">&para;</a></h3>
 <p>Use comma-separated CLIP tags ordered by importance. Include quality tags (<code>masterpiece, best quality</code>) and a negative prompt for best results. See the <a href="../../guides/prompt-writing/">Prompt Writing Guide</a> for detailed tag recommendations and BREAK syntax.</p>
 <h3 id="flux-prompt_style-natural_language">Flux (<code>prompt_style: "natural_language"</code>)<a class="headerlink" href="#flux-prompt_style-natural_language" title="Permanent link">&para;</a></h3>
-<p>Flux models use a T5 text encoder instead of CLIP. Write prompts as natural language descriptions — complete sentences, not comma-separated tags.</p>
+<p>Flux models use a T5 text encoder instead of CLIP. Write prompts as natural language descriptions: complete sentences, not comma-separated tags.</p>
 <p><strong>Do NOT use with Flux:</strong>
-- Quality tags (<code>masterpiece</code>, <code>best quality</code>) — meaningless to T5
-- Negative prompts — Flux does not support them (the server omits them automatically)
-- <code>BREAK</code> syntax — Flux does not use CLIP chunking</p>
+- Quality tags (<code>masterpiece</code>, <code>best quality</code>): meaningless to T5
+- Negative prompts: Flux does not support them (the server omits them automatically)
+- <code>BREAK</code> syntax: Flux does not use CLIP chunking</p>
 <p><strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>A dramatic mountain landscape at sunset with towering peaks reflected
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>in a perfectly still alpine lake, storm clouds lit orange and purple
@@ -2241,37 +2321,39 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>generate_image(prompt=&quot;...&quot;, provider=&quot;sd_webui&quot;, model=&quot;dreamshaperXL_v21.safetensors&quot;)
 </code></pre></div>
 <p>Use <code>list_providers</code> to discover available checkpoints and their model IDs.</p>
+<h2 id="image-input-img2img">Image input (img2img)<a class="headerlink" href="#image-input-img2img" title="Permanent link">&para;</a></h2>
+<p>Any discovered SD WebUI checkpoint accepts a single reference image through the <code>transform_image</code> tool. When a reference image is supplied, the provider calls <code>/sdapi/v1/img2img</code> instead of <code>/sdapi/v1/txt2img</code>.</p>
+<p>The <code>strength</code> parameter controls <code>denoising_strength</code> in the SD WebUI API payload. Values range from 0.0 to 1.0 (default 0.75 when omitted). Lower values preserve more of the reference image; higher values allow the model to regenerate more of the output.</p>
+<p><code>list_providers</code> reports <code>supports_image_input: true</code> and <code>max_input_images: 1</code> for every discovered checkpoint. Pass exactly one reference image; passing more than one returns an error.</p>
 <h2 id="background-transparency">Background transparency<a class="headerlink" href="#background-transparency" title="Permanent link">&para;</a></h2>
 <p>The <code>background</code> parameter is <strong>not supported</strong> by SD WebUI. When <code>background="transparent"</code> is passed, it is silently ignored (a debug log is emitted). Stable Diffusion does not natively support transparent background generation.</p>
 <h2 id="capability-discovery">Capability discovery<a class="headerlink" href="#capability-discovery" title="Permanent link">&para;</a></h2>
 <p>At startup, the provider calls:</p>
 <ul>
-<li><code>GET /sdapi/v1/sd-models</code> -- lists all installed checkpoints</li>
-<li><code>GET /sdapi/v1/options</code> -- identifies the currently active checkpoint</li>
+<li><code>GET /sdapi/v1/sd-models</code>: lists all installed checkpoints</li>
+<li><code>GET /sdapi/v1/options</code>: identifies the currently active checkpoint</li>
 </ul>
 <p>Each checkpoint is mapped to a <code>ModelCapabilities</code> object with architecture-specific defaults (resolution, steps, CFG, sampler) based on the same name detection used for generation presets.</p>
-<p>If the SD WebUI server is unreachable (connection error or timeout), the provider is marked as <strong>degraded</strong> -- it remains available for generation but with an empty model list in the capabilities response. This prevents a slow or offline SD WebUI instance from blocking server startup.</p>
+<p>If the SD WebUI server is unreachable (connection error or timeout), the provider is marked as <strong>degraded</strong>: it remains available for generation but with an empty model list in the capabilities response. This prevents a slow or offline SD WebUI instance from blocking server startup.</p>
 <h2 id="negative-prompts">Negative prompts<a class="headerlink" href="#negative-prompts" title="Permanent link">&para;</a></h2>
 <p>SD WebUI has native negative prompt support via the <code>negative_prompt</code> field in the API payload. This is more effective than OpenAI's "Avoid:" workaround.</p>
-<blockquote>
-<p><strong>Note:</strong> Flux models do not support negative prompts. When a Flux checkpoint is detected, the <code>negative_prompt</code> field is omitted from the API payload entirely. If a negative prompt is provided, it is silently ignored with a debug log.</p>
-</blockquote>
+<p>Flux models do not support negative prompts. When a Flux checkpoint is detected, the <code>negative_prompt</code> field is omitted from the API payload entirely. If a negative prompt is provided, it is silently ignored with a debug log.</p>
 <p>See the <a href="../../guides/prompt-writing/">Prompt Writing Guide</a> for recommended negative prompts.</p>
 <h2 id="progress-polling">Progress polling<a class="headerlink" href="#progress-polling" title="Permanent link">&para;</a></h2>
-<p>During image generation, the provider concurrently polls <code>GET /sdapi/v1/progress</code> every 2 seconds to report step-level progress. Progress updates are surfaced through <code>show_image</code> polling responses as <code>progress</code> (0.0–1.0) and <code>progress_message</code> (e.g., <code>"Step 9/30 (ETA 12s)"</code>).</p>
+<p>During image generation, the provider concurrently polls <code>GET /sdapi/v1/progress</code> every 2 seconds to report step-level progress. Progress updates are surfaced through <code>show_image</code> polling responses as <code>progress</code> (0.0 to 1.0) and <code>progress_message</code> (such as <code>"Step 9/30 (ETA 12s)"</code>).</p>
 <ul>
-<li><strong>First poll fires immediately</strong> (poll-then-sleep pattern) — even fast generations receive at least one progress update</li>
-<li><strong>Polling failures are silently handled</strong> — if the progress endpoint returns an error or is unreachable, generation continues uninterrupted (failures logged at debug level)</li>
-<li><strong>Polling stops automatically</strong> when generation completes — the polling task is cancelled in a <code>finally</code> block</li>
+<li><strong>First poll fires immediately</strong> (poll-then-sleep pattern): even fast generations receive at least one progress update</li>
+<li><strong>Polling failures are silently handled</strong>: if the progress endpoint returns an error or is unreachable, generation continues uninterrupted (failures logged at debug level)</li>
+<li><strong>Polling stops automatically</strong> when generation completes (the polling task is cancelled in a <code>finally</code> block)</li>
 </ul>
 <p>No additional configuration is required. Progress polling activates whenever the fire-and-forget pattern is used (which is always, as of v1.1.0).</p>
 <h2 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h2>
 <p>The provider extracts from the SD WebUI response:</p>
 <ul>
-<li><strong>seed</strong> -- the random seed used for generation (useful for reproducibility)</li>
-<li><strong>model name</strong> -- the active checkpoint name (from response <code>info</code> JSON)</li>
-<li><strong>size</strong> -- pixel dimensions used</li>
-<li><strong>steps</strong> -- number of diffusion steps</li>
+<li><strong>seed</strong>: the random seed used for generation (useful for reproducibility)</li>
+<li><strong>model name</strong>: the active checkpoint name (from response <code>info</code> JSON)</li>
+<li><strong>size</strong>: pixel dimensions used</li>
+<li><strong>steps</strong>: number of diffusion steps</li>
 </ul>
 <h2 id="timeout">Timeout<a class="headerlink" href="#timeout" title="Permanent link">&para;</a></h2>
 <p>The default timeout is <strong>180 seconds</strong>. SDXL at high resolution on consumer GPUs can take 30-60+ seconds. If you experience timeouts, ensure your WebUI is responding.</p>
@@ -2311,9 +2393,9 @@
 <td>Verify WebUI is running with <code>--api</code> flag at the configured host</td>
 </tr>
 <tr>
-<td>Timeout (180s)</td>
+<td>Timeout (180 s)</td>
 <td>Generation too slow</td>
-<td>Check GPU utilization; consider a faster model or lower resolution</td>
+<td>Check GPU load; consider a faster model or lower resolution</td>
 </tr>
 <tr>
 <td>HTTP 404</td>
@@ -2383,6 +2465,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

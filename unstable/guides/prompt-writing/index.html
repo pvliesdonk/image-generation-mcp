@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/prompt-writing/">
       
       
-        <link rel="prev" href="../client-compatibility/">
+        <link rel="prev" href="../image-input/">
       
       
         <link rel="next" href="../image-assets/">
@@ -54,6 +54,8 @@
     
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -575,6 +577,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1083,6 +1113,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1935,7 +1993,7 @@
 <li><strong>SD 1.5:</strong> 77 tokens per CLIP chunk</li>
 <li><strong>SDXL:</strong> 77 tokens per chunk, but uses two CLIP encoders (ViT-L + ViT-bigG)</li>
 </ul>
-<p>Front-load the most important tags -- tokens beyond the first 77-token chunk have diminishing influence.</p>
+<p>Front-load the most important tags. Tokens beyond the first 77-token chunk have diminishing influence.</p>
 <hr />
 <h2 id="provider-agnostic-tips">Provider-agnostic tips<a class="headerlink" href="#provider-agnostic-tips" title="Permanent link">&para;</a></h2>
 <h3 id="aspect-ratios">Aspect ratios<a class="headerlink" href="#aspect-ratios" title="Permanent link">&para;</a></h3>
@@ -2073,6 +2131,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -575,6 +577,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1080,6 +1110,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -2102,7 +2160,7 @@
 <tr>
 <td><strong><code>remote</code></strong> (recommended)</td>
 <td><code>AUTH_MODE=remote</code></td>
-<td>Local JWT validation — no upstream token re-validation</td>
+<td>Local JWT validation (no upstream token re-validation)</td>
 <td><code>BASE_URL</code> + <code>OIDC_CONFIG_URL</code></td>
 </tr>
 <tr>
@@ -2134,11 +2192,11 @@
 <tbody>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_BASE_URL</code></td>
-<td>Public base URL of the server (e.g. <code>https://mcp.example.com</code>)</td>
+<td>Public base URL of the server (such as <code>https://mcp.example.com</code>)</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_CONFIG_URL</code></td>
-<td>OIDC discovery endpoint (e.g. <code>https://auth.example.com/.well-known/openid-configuration</code>)</td>
+<td>OIDC discovery endpoint (such as <code>https://auth.example.com/.well-known/openid-configuration</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -2154,12 +2212,12 @@
 <tbody>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_AUDIENCE</code></td>
-<td>—</td>
+<td>n/a</td>
 <td>Expected JWT audience claim; leave unset if your provider does not set one</td>
 </tr>
 <tr>
 <td><code>IMAGE_GENERATION_MCP_OIDC_REQUIRED_SCOPES</code></td>
-<td>—</td>
+<td>n/a</td>
 <td>Comma-separated required scopes</td>
 </tr>
 </tbody>
@@ -2254,10 +2312,10 @@
 </ul>
 </div>
 <h3 id="remote-mode-recommended_1">Remote mode (recommended)<a class="headerlink" href="#remote-mode-recommended_1" title="Permanent link">&para;</a></h3>
-<p>Remote mode requires only <code>BASE_URL</code> + <code>OIDC_CONFIG_URL</code> on the MCP server — no client credentials needed server-side. The client authenticates directly with Authelia; the server validates the resulting JWT access token via JWKS.</p>
+<p>Remote mode requires only <code>BASE_URL</code> + <code>OIDC_CONFIG_URL</code> on the MCP server (no client credentials needed server-side). The client authenticates directly with Authelia; the server validates the resulting JWT access token via JWKS.</p>
 <div class="admonition note">
 <p class="admonition-title">Client credentials are IdP-side only</p>
-<p>In remote mode, <code>CLIENT_ID</code> and <code>CLIENT_SECRET</code> are configured in the <strong>Authelia client registration</strong> (so Authelia knows which client is connecting), but they are <strong>not</strong> set as MCP server environment variables. The MCP server only needs the OIDC discovery URL to fetch JWKS keys for token validation.</p>
+<p>In remote mode, <code>CLIENT_ID</code> and <code>CLIENT_SECRET</code> are configured in the <strong>Authelia client registration</strong> (so Authelia knows which client is connecting), but they are not set as MCP server environment variables. The MCP server only needs the OIDC discovery URL to fetch JWKS keys for token validation.</p>
 </div>
 <h4 id="1-register-the-client-in-authelia">1. Register the client in Authelia<a class="headerlink" href="#1-register-the-client-in-authelia" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">identity_providers</span><span class="p">:</span>
@@ -2283,7 +2341,7 @@
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Why <code>access_token_signed_response_alg</code>?</p>
-<p>Remote mode's <code>JWTVerifier</code> decodes the access token as a JWT and validates its signature against the IdP's JWKS keys. Authelia's default opaque tokens are random strings with no JWT structure — they cannot be validated locally. Setting <code>access_token_signed_response_alg: 'RS256'</code> tells Authelia to issue RFC 9068 JWT access tokens for this client.</p>
+<p>Remote mode's <code>JWTVerifier</code> decodes the access token as a JWT and validates its signature against the IdP's JWKS keys. Authelia's default opaque tokens are random strings with no JWT structure and cannot be validated locally. Setting <code>access_token_signed_response_alg: 'RS256'</code> tells Authelia to issue RFC 9068 JWT access tokens for this client.</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Why <code>token_endpoint_auth_method</code>?</p>
@@ -2293,12 +2351,12 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">IMAGE_GENERATION_MCP_BASE_URL</span><span class="o">=</span>https://mcp.example.com
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">IMAGE_GENERATION_MCP_OIDC_CONFIG_URL</span><span class="o">=</span>https://auth.example.com/.well-known/openid-configuration
 </code></pre></div>
-<p>No <code>CLIENT_ID</code>, <code>CLIENT_SECRET</code>, or <code>JWT_SIGNING_KEY</code> needed — the server only validates tokens, it does not participate in the OAuth flow.</p>
+<p>No <code>CLIENT_ID</code>, <code>CLIENT_SECRET</code>, or <code>JWT_SIGNING_KEY</code> needed: the server validates tokens without participating in the OAuth handshake.</p>
 <h4 id="3-start-with-http-transport">3. Start with HTTP transport<a class="headerlink" href="#3-start-with-http-transport" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>image-generation-mcp<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </code></pre></div>
 <h3 id="oidcproxy-mode-fallback">OIDCProxy mode (fallback)<a class="headerlink" href="#oidcproxy-mode-fallback" title="Permanent link">&para;</a></h3>
-<p>Use oidc-proxy only when remote mode is not viable (e.g., your IdP cannot issue JWT access tokens). Be aware of the <a href="../../guides/authentication/#known-limitations-oidc-session-lifetime">session lifetime limitation</a>.</p>
+<p>Use oidc-proxy only when remote mode is not viable (such as when your IdP cannot issue JWT access tokens). Be aware of the <a href="../../guides/authentication/#known-limitations-oidc-session-lifetime">session lifetime limitation</a>.</p>
 <h4 id="1-register-the-client-in-authelia_1">1. Register the client in Authelia<a class="headerlink" href="#1-register-the-client-in-authelia_1" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">identity_providers</span><span class="p">:</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">oidc</span><span class="p">:</span>
@@ -2314,7 +2372,7 @@
 <a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">        </span><span class="c1"># Authelia defaults to client_secret_basic; Claude Code uses client_secret_post</span>
 <a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">        </span><span class="nt">token_endpoint_auth_method</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;client_secret_post&#39;</span>
 </code></pre></div>
-<p>No <code>access_token_signed_response_alg</code> needed — oidc-proxy verifies the <code>id_token</code> (always a JWT) instead of the access token.</p>
+<p>No <code>access_token_signed_response_alg</code> needed. OIDCProxy verifies the <code>id_token</code> (always a JWT) instead of the access token.</p>
 <h4 id="2-set-environment-variables_1">2. Set environment variables<a class="headerlink" href="#2-set-environment-variables_1" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nv">IMAGE_GENERATION_MCP_BASE_URL</span><span class="o">=</span>https://mcp.example.com
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">IMAGE_GENERATION_MCP_OIDC_CONFIG_URL</span><span class="o">=</span>https://auth.example.com/.well-known/openid-configuration
@@ -2325,7 +2383,7 @@
 <h4 id="3-start-with-http-transport_1">3. Start with HTTP transport<a class="headerlink" href="#3-start-with-http-transport_1" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>image-generation-mcp<span class="w"> </span>serve<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
 </code></pre></div>
-<p>For subpath deployments (e.g., public URL <code>https://mcp.example.com/vault/mcp</code>), see <a href="#subpath-deployments">Subpath Deployments</a> below.</p>
+<p>For subpath deployments (such as public URL <code>https://mcp.example.com/vault/mcp</code>), see <a href="#subpath-deployments">Subpath Deployments</a> below.</p>
 <p>See also <code>examples/oidc.env</code>.</p>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <h3 id="remote-mode">Remote mode<a class="headerlink" href="#remote-mode" title="Permanent link">&para;</a></h3>
@@ -2351,7 +2409,7 @@
 </ol>
 <div class="admonition warning">
 <p class="admonition-title">Session lifetime</p>
-<p>OIDCProxy re-validates upstream tokens on every request. When the upstream token expires (typically 1h), sessions die even though the proxy JWT is still valid. See <a href="../../guides/authentication/#known-limitations-oidc-session-lifetime">Known Limitations</a>.</p>
+<p>OIDCProxy re-validates upstream tokens on every request. When the upstream token expires (typically 1 h), sessions die even though the proxy JWT is still valid. See <a href="../../guides/authentication/#known-limitations-oidc-session-lifetime">Known Limitations</a>.</p>
 </div>
 <h2 id="docker-compose-with-oidc">Docker Compose with OIDC<a class="headerlink" href="#docker-compose-with-oidc" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">services</span><span class="p">:</span>
@@ -2389,7 +2447,7 @@
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="nv">IMAGE_GENERATION_MCP_OIDC_CLIENT_SECRET</span><span class="o">=</span>your-client-secret
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nv">IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY</span><span class="o">=</span>your-stable-hex-key
 </code></pre></div>
-<p>For a prefixed deployment (e.g., <code>https://mcp.example.com/vault/mcp</code>), see <a href="#subpath-deployments">Subpath Deployments</a> below.</p>
+<p>For a prefixed deployment (such as <code>https://mcp.example.com/vault/mcp</code>), see <a href="#subpath-deployments">Subpath Deployments</a> below.</p>
 <h2 id="subpath-deployments">Subpath Deployments<a class="headerlink" href="#subpath-deployments" title="Permanent link">&para;</a></h2>
 <p>When OIDC is enabled behind a reverse-proxy subpath, <code>BASE_URL</code> and <code>HTTP_PATH</code> serve different roles:</p>
 <table>
@@ -2408,7 +2466,7 @@
 </tr>
 <tr>
 <td><code>HTTP_PATH</code></td>
-<td>Internal MCP endpoint mount point — <strong>no subpath prefix</strong></td>
+<td>Internal MCP endpoint mount point (<strong>no subpath prefix</strong>)</td>
 <td><code>/mcp</code></td>
 </tr>
 </tbody>
@@ -2416,7 +2474,7 @@
 <p>The reverse proxy strips the subpath prefix before forwarding to the application. FastMCP concatenates <code>BASE_URL + HTTP_PATH</code> to build the public resource URL, so including the prefix in both produces broken URLs with duplicated path segments.</p>
 <div class="admonition danger">
 <p class="admonition-title">Do not duplicate the subpath</p>
-<p>Setting <code>BASE_URL=https://mcp.example.com/vault</code> <strong>and</strong> <code>HTTP_PATH=/vault/mcp</code> produces a duplicated resource URL: <code>https://mcp.example.com/vault/vault/mcp</code>. The subpath belongs in <code>BASE_URL</code> only.</p>
+<p>Setting <code>BASE_URL=https://mcp.example.com/vault</code> together with <code>HTTP_PATH=/vault/mcp</code> produces a duplicated resource URL: <code>https://mcp.example.com/vault/vault/mcp</code>. The subpath belongs in <code>BASE_URL</code> only.</p>
 </div>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <p>Environment variables:</p>
@@ -2431,8 +2489,8 @@
 <ol>
 <li><strong>Strip the prefix</strong> (<code>/vault</code>) from operational routes before forwarding to the app</li>
 <li><strong>Forward OAuth discovery routes</strong> to this service (without stripping prefixes):<ul>
-<li><code>/.well-known/oauth-authorization-server</code> — authorization server metadata</li>
-<li><code>/.well-known/oauth-protected-resource/vault/mcp</code> — protected resource metadata</li>
+<li><code>/.well-known/oauth-authorization-server</code> (authorization server metadata)</li>
+<li><code>/.well-known/oauth-protected-resource/vault/mcp</code> (protected resource metadata)</li>
 </ul>
 </li>
 </ol>
@@ -2454,14 +2512,14 @@
 <h3 id="shared-hostname-limitation">Shared-hostname limitation<a class="headerlink" href="#shared-hostname-limitation" title="Permanent link">&para;</a></h3>
 <div class="admonition warning">
 <p class="admonition-title">Shared-hostname subpath with native OIDC is not supported</p>
-<p>When multiple OAuth-capable services share a hostname (e.g., <code>mcp-auth-proxy</code> at the root and <code>image-generation-mcp</code> at <code>/vault</code>), native OIDC on a subpath does not work.</p>
+<p>When multiple OAuth-capable services share a hostname (such as <code>mcp-auth-proxy</code> at the root and <code>image-generation-mcp</code> at <code>/vault</code>), native OIDC on a subpath does not work.</p>
 <p><strong>Why:</strong> FastMCP serves the OAuth authorization-server metadata at <code>/.well-known/oauth-authorization-server</code> (host root), regardless of the subpath in <code>BASE_URL</code>. The FastMCP codebase contains an RFC 8414 path-aware override (<code>OIDCProxy.get_well_known_routes()</code>) that would serve it at <code>/.well-known/oauth-authorization-server/vault</code>. However, this method is not wired into the route mounting flow and is effectively dead code.</p>
 <p>The protected-resource metadata (<code>/.well-known/oauth-protected-resource/vault/mcp</code>) is correctly path-namespaced and does not collide. Only the authorization-server discovery route is the problem.</p>
 <p>This works when <code>image-generation-mcp</code> is the <strong>only</strong> OAuth service on the hostname — the host-root <code>/.well-known/oauth-authorization-server</code> does not collide with anything. It breaks when another service already owns that route.</p>
 </div>
 <p><strong>Recommendations for shared-hostname scenarios:</strong></p>
 <ul>
-<li><strong>Dedicated hostname</strong> (preferred): give <code>image-generation-mcp</code> its own hostname (e.g., <code>vault.example.com</code>) so discovery routes do not collide.</li>
+<li><strong>Dedicated hostname</strong> (preferred): give <code>image-generation-mcp</code> its own hostname (such as <code>vault.example.com</code>) so discovery routes do not collide.</li>
 <li><strong>External auth gateway</strong>: use <code>mcp-auth-proxy</code> as a sidecar instead of native OIDC. The MCP server runs unauthenticated behind the proxy, and the proxy handles OAuth discovery at its own routes.</li>
 </ul>
 <!-- DOMAIN-OIDC-EXTRA-START -->
@@ -2530,6 +2588,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

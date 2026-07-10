@@ -11,6 +11,7 @@ image-generation-mcp is a multi-provider image generation MCP server supporting 
 - [Installation](https://pvliesdonk.github.io/image-generation-mcp/unstable/getting-started/installation/index.md): Installation from PyPI, uv, source, or Docker
 - [Claude Desktop](https://pvliesdonk.github.io/image-generation-mcp/unstable/getting-started/claude-desktop/index.md): Claude Desktop MCP configuration
 - [Claude Code](https://pvliesdonk.github.io/image-generation-mcp/unstable/getting-started/claude-code/index.md): Claude Code MCP configuration
+- [Configuration Generator](https://pvliesdonk.github.io/image-generation-mcp/unstable/configuration-generator/index.md): Interactive configuration wizard
 
 ## Providers
 
@@ -34,6 +35,7 @@ image-generation-mcp is a multi-provider image generation MCP server supporting 
 ## Guides
 
 - [Authentication](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/authentication/index.md): Authentication modes -- bearer, OIDC, multi-auth
+- [Image Input (image-to-image)](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/image-input/index.md): Image input -- editing, composition, and masking via transform_image
 - [Prompt Writing](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/prompt-writing/index.md): Provider-specific prompt writing tips
 - [Style Library](https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/styles/index.md): Style library -- reusable creative briefs for consistent generation
 

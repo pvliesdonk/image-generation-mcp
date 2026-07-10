@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://pvliesdonk.github.io/image-generation-mcp/unstable/getting-started/installation/">
+        <link rel="canonical" href="https://pvliesdonk.github.io/image-generation-mcp/unstable/guides/image-input/">
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../client-compatibility/">
       
       
-        <link rel="next" href="../claude-desktop/">
+        <link rel="next" href="../prompt-writing/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Installation - Image Generation MCP Server</title>
+        <title>Image Input (image-to-image) - Image Generation MCP Server</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#image-input-editing-composition-and-masking" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              Image Input (image-to-image)
             
           </span>
         </div>
@@ -250,13 +250,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
           
   
   
@@ -331,11 +329,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../guides/authentication/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../authentication/" class="md-tabs__link">
           
   
   
@@ -443,31 +443,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -485,7 +482,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -500,37 +497,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Installation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
         
   
   
@@ -546,98 +516,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prerequisites
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#from-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        From PyPI
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="From PyPI">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#available-extras" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available extras
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#from-source" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        From source
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#docker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -650,7 +528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../claude-desktop/" class="md-nav__link">
+      <a href="../../getting-started/claude-desktop/" class="md-nav__link">
         
   
   
@@ -678,7 +556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../claude-code/" class="md-nav__link">
+      <a href="../../getting-started/claude-code/" class="md-nav__link">
         
   
   
@@ -1139,28 +1017,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -1178,7 +1059,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1196,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/authentication/" class="md-nav__link">
+      <a href="../authentication/" class="md-nav__link">
         
   
   
@@ -1224,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/client-compatibility/" class="md-nav__link">
+      <a href="../client-compatibility/" class="md-nav__link">
         
   
   
@@ -1249,10 +1130,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../guides/image-input/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1268,6 +1176,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-input-images-are-supplied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How input images are supplied
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-an-external-image-into-the-gallery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting an external image into the gallery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#edit-and-style-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edit and style transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-image-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-image composition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inpainting-with-a-mask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inpainting with a mask
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlling-edit-strength-sd-webui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlling edit strength (SD WebUI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-pages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related pages
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1280,7 +1313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/prompt-writing/" class="md-nav__link">
+      <a href="../prompt-writing/" class="md-nav__link">
         
   
   
@@ -1308,7 +1341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/image-assets/" class="md-nav__link">
+      <a href="../image-assets/" class="md-nav__link">
         
   
   
@@ -1336,7 +1369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/styles/" class="md-nav__link">
+      <a href="../styles/" class="md-nav__link">
         
   
   
@@ -1564,10 +1597,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#how-input-images-are-supplied" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        How input images are supplied
       
     </span>
   </a>
@@ -1575,22 +1608,77 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#from-pypi" class="md-nav__link">
+  <a href="#getting-an-external-image-into-the-gallery" class="md-nav__link">
     <span class="md-ellipsis">
       
-        From PyPI
+        Getting an external image into the gallery
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="From PyPI">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capability-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflows">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#available-extras" class="md-nav__link">
+  <a href="#edit-and-style-transfer" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available extras
+        Edit and style transfer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-image-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-image composition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inpainting-with-a-mask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inpainting with a mask
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#controlling-edit-strength-sd-webui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlling edit strength (SD WebUI)
       
     </span>
   </a>
@@ -1603,32 +1691,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#from-source" class="md-nav__link">
+  <a href="#related-pages" class="md-nav__link">
     <span class="md-ellipsis">
       
-        From source
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#docker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Docker
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#verify-installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verify installation
+        Related pages
       
     </span>
   </a>
@@ -1655,87 +1721,167 @@
   
 
 
-<h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
-<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<h1 id="image-input-editing-composition-and-masking">Image input: editing, composition, and masking<a class="headerlink" href="#image-input-editing-composition-and-masking" title="Permanent link">&para;</a></h1>
+<p>The <a href="../../tools/#transform_image"><code>transform_image</code></a> tool feeds one or more
+existing images <em>into</em> generation. Use it to edit a picture from a text
+instruction, transfer a style, compose several references into one scene, or
+repaint a masked region. This is distinct from <code>generate_image</code> (text only,
+no reference image) and from <code>edit_image</code> (local geometry operations such as
+crop, rotate, and flip).</p>
+<h2 id="how-input-images-are-supplied">How input images are supplied<a class="headerlink" href="#how-input-images-are-supplied" title="Permanent link">&para;</a></h2>
+<p>Every reference is a string in the <code>reference_images</code> list (and the optional
+<code>mask</code>). Three forms are accepted:</p>
+<ol>
+<li>A gallery <code>image_id</code>, the 12-character hex ID returned by a prior
+   <code>generate_image</code> or <code>transform_image</code> call.</li>
+<li>An <code>image://&lt;id&gt;/view</code> resource URI.</li>
+<li>A local filesystem path, allowed only when
+   <code>IMAGE_GENERATION_MCP_ALLOW_LOCAL_FILE_INPUT=true</code> (off by default). See
+   <a href="../../configuration/">Configuration</a>.</li>
+</ol>
+<p>A gallery <code>image_id</code> may itself be an <strong>imported</strong> image: one brought into the
+gallery from outside rather than produced by <code>generate_image</code> or
+<code>transform_image</code>. See <a href="#getting-an-external-image-into-the-gallery">Getting an external image into the gallery</a>
+below.</p>
+<p><code>transform_image</code> runs as a background task. It returns immediately with a
+<code>status: "generating"</code> response and an <code>image_id</code>. Poll
+<code>check_generation_status(image_id)</code> until completion, then call
+<code>show_image(uri=original_uri)</code> once to display the result. Provenance is
+recorded: the response and the finished record carry <code>source_image_ids</code>
+listing every reference (and mask) the result derived from.</p>
+<h2 id="getting-an-external-image-into-the-gallery">Getting an external image into the gallery<a class="headerlink" href="#getting-an-external-image-into-the-gallery" title="Permanent link">&para;</a></h2>
+<p>An image the model did not generate (a URL, a user-supplied file, or inline
+bytes) becomes a first-class gallery entry through one of three ingestion
+tools, after which its <code>image_id</code> is referenced by <code>transform_image</code> exactly
+like a generated image:</p>
 <ul>
-<li>Python 3.11 or later</li>
-<li><code>pip</code> or <a href="https://docs.astral.sh/uv/"><code>uv</code></a> package manager</li>
+<li><a href="../../tools/#fetch_image"><code>fetch_image(url)</code></a>: download a remote
+  <code>http</code>/<code>https</code> image into the gallery (SSRF-hardened, size-capped).</li>
+<li><a href="../../tools/#ingest_base64_image"><code>ingest_base64_image(data)</code></a>: decode inline
+  base64 bytes (raw, a <code>data:</code> URI, or line-wrapped) into the gallery.</li>
+<li><a href="../../tools/#create_upload_link"><code>create_upload_link()</code></a>: mint a one-time
+  HTTP upload link for a caller to POST bytes to (HTTP/SSE transport only, with
+  <code>IMAGE_GENERATION_MCP_BASE_URL</code> set).</li>
 </ul>
-<h2 id="from-pypi">From PyPI<a class="headerlink" href="#from-pypi" title="Permanent link">&para;</a></h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">pip</label><label for="__tabbed_1_2">uv</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Core + MCP server</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pip<span class="w"> </span>install<span class="w"> </span>image-generation-mcp<span class="o">[</span>mcp<span class="o">]</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># With OpenAI provider</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>pip<span class="w"> </span>install<span class="w"> </span>image-generation-mcp<span class="o">[</span>all<span class="o">]</span>
-</code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Core + MCP server</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>image-generation-mcp<span class="o">[</span>mcp<span class="o">]</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># With OpenAI provider</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>image-generation-mcp<span class="o">[</span>all<span class="o">]</span>
-</code></pre></div>
-</div>
-</div>
-</div>
-<h3 id="available-extras">Available extras<a class="headerlink" href="#available-extras" title="Permanent link">&para;</a></h3>
+<p>A reference image is just a gallery image, so an imported image works as a
+<code>transform_image</code> reference with no provider-specific handling. Imported entries
+carry <code>origin: "imported"</code> with an <code>origin_source</code> recording where they came
+from (see <a href="../../resources/#origin">image metadata</a>); generated images are
+<code>origin: "generated"</code>. The gallery viewer's origin filter groups imported and
+generated images separately.</p>
+<p>The decoded/downloaded size is bounded by
+<code>IMAGE_GENERATION_MCP_MAX_INPUT_IMAGE_BYTES</code>, remote fetches time out after
+<code>IMAGE_GENERATION_MCP_FETCH_TIMEOUT_S</code>, and upload-link lifetime is governed by
+the <code>IMAGE_GENERATION_MCP_TRANSFER_*</code> knobs, all documented on the
+<a href="../../configuration/">Configuration</a> page.</p>
+<h2 id="capability-matrix">Capability matrix<a class="headerlink" href="#capability-matrix" title="Permanent link">&para;</a></h2>
+<p>Reference-image support varies by provider and model. Call <code>list_providers</code>
+and read each model's <code>supports_image_input</code>, <code>max_input_images</code>, and
+<code>supports_mask</code> for the authoritative runtime values.</p>
 <table>
 <thead>
 <tr>
-<th>Extra</th>
-<th>Includes</th>
-<th>When to use</th>
+<th>Capability</th>
+<th>Gemini</th>
+<th>OpenAI</th>
+<th>SD WebUI</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>mcp</code></td>
-<td><code>fastmcp[tasks]&gt;=3.0,&lt;4</code></td>
-<td>Minimal MCP server (SD WebUI + placeholder)</td>
+<td>Image-to-image edit</td>
+<td>Yes</td>
+<td>gpt-image family</td>
+<td>Yes (img2img)</td>
 </tr>
 <tr>
-<td><code>openai</code></td>
-<td><code>openai&gt;=1.0</code></td>
-<td>OpenAI provider only (no MCP server)</td>
+<td>Reference images per call</td>
+<td>3 (2.5-flash), 14 (Gemini 3)</td>
+<td>up to 16</td>
+<td>1</td>
 </tr>
 <tr>
-<td><code>all</code></td>
-<td><code>fastmcp[tasks]</code> + <code>openai</code></td>
-<td>Full installation with all providers</td>
+<td>Multi-image composition</td>
+<td>Yes (Gemini 3)</td>
+<td>Yes</td>
+<td>No (single init image)</td>
 </tr>
 <tr>
-<td><code>dev</code></td>
-<td>All above + pytest, ruff, mypy, pip-audit</td>
-<td>Development and testing</td>
+<td>Inpainting mask</td>
+<td>No</td>
+<td>gpt-image family</td>
+<td>No</td>
 </tr>
 <tr>
-<td><code>docs</code></td>
-<td>mkdocs-material, mkdocstrings, mkdocs-llmstxt</td>
-<td>Documentation site build</td>
+<td>Denoising <code>strength</code></td>
+<td>No</td>
+<td>No</td>
+<td>Yes (<code>0.0</code>-<code>1.0</code>)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="from-source">From source<a class="headerlink" href="#from-source" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/pvliesdonk/image-generation-mcp.git
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>image-generation-mcp
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>uv<span class="w"> </span>sync<span class="w"> </span>--extra<span class="w"> </span>all<span class="w"> </span>--extra<span class="w"> </span>dev
+<p>When <code>provider="auto"</code>, selection is capability-aware: it picks a provider
+whose model accepts the supplied reference count, and a mask request is routed
+only to a mask-capable model.</p>
+<h2 id="workflows">Workflows<a class="headerlink" href="#workflows" title="Permanent link">&para;</a></h2>
+<h3 id="edit-and-style-transfer">Edit and style transfer<a class="headerlink" href="#edit-and-style-transfer" title="Permanent link">&para;</a></h3>
+<p>Pass a single reference and describe the change. Good for background swaps,
+restyles, and other description-driven edits.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>transform_image(
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  prompt=&quot;Repaint this photo in the style of a watercolor landscape&quot;,
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  reference_images=[&quot;a1b2c3d4e5f6&quot;]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>)
 </code></pre></div>
-<h2 id="docker">Docker<a class="headerlink" href="#docker" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/pvliesdonk/image-generation-mcp:latest
+<p>Any image-input provider handles a single reference. See
+<a href="../../providers/gemini/#image-input-image-to-image">Gemini</a>,
+<a href="../../providers/openai/#image-input-editing-and-composition">OpenAI</a>, and
+<a href="../../providers/sd-webui/#image-input-img2img">SD WebUI</a>.</p>
+<h3 id="multi-image-composition">Multi-image composition<a class="headerlink" href="#multi-image-composition" title="Permanent link">&para;</a></h3>
+<p>Supply several references to compose a scene from their elements or to keep a
+character consistent across generations. The Gemini 3 models accept up to 14
+references; OpenAI's gpt-image family accepts up to 16.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>transform_image(
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  prompt=&quot;Place the character from the first image into the scene of the second&quot;,
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  reference_images=[&quot;a1b2c3d4e5f6&quot;, &quot;0f1e2d3c4b5a&quot;, &quot;9a8b7c6d5e4f&quot;],
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  provider=&quot;gemini&quot;,
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  model=&quot;gemini-3-pro-image&quot;
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>)
 </code></pre></div>
-<p>See <a href="../../deployment/docker/">Docker deployment</a> for Docker Compose setup.</p>
-<h2 id="verify-installation">Verify installation<a class="headerlink" href="#verify-installation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Check the CLI is available</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>image-generation-mcp<span class="w"> </span>--help
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Start with placeholder provider (no API keys needed)</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nv">IMAGE_GENERATION_MCP_READ_ONLY</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span>image-generation-mcp<span class="w"> </span>serve
+<p>See <a href="../../providers/gemini/#multi-image-composition-and-character-consistency">Gemini multi-image composition</a>.</p>
+<h3 id="inpainting-with-a-mask">Inpainting with a mask<a class="headerlink" href="#inpainting-with-a-mask" title="Permanent link">&para;</a></h3>
+<p>Supply a <code>mask</code> to repaint only the masked region of the first reference
+image. Masks are an OpenAI gpt-image capability. The mask must match the first
+reference image's size and format and carry an alpha channel; OpenAI enforces
+this and returns an error on a mismatch.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>transform_image(
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  prompt=&quot;Replace the masked area with a vase of flowers&quot;,
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  reference_images=[&quot;a1b2c3d4e5f6&quot;],
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  mask=&quot;b2c3d4e5f6a1&quot;,
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  provider=&quot;openai&quot;
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>)
 </code></pre></div>
-<p>The server starts in stdio mode by default. Press Ctrl+C to stop.</p>
+<p>See <a href="../../providers/openai/#masks">OpenAI masks</a>.</p>
+<h3 id="controlling-edit-strength-sd-webui">Controlling edit strength (SD WebUI)<a class="headerlink" href="#controlling-edit-strength-sd-webui" title="Permanent link">&para;</a></h3>
+<p>For SD WebUI img2img, <code>strength</code> is the denoising strength, from <code>0.0</code> to
+<code>1.0</code>. Lower values preserve the reference image; higher values regenerate
+more of it. It defaults to <code>0.75</code> and has no effect on other providers or
+without a reference image.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>transform_image(
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  prompt=&quot;Turn this sketch into a finished oil painting&quot;,
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  reference_images=[&quot;a1b2c3d4e5f6&quot;],
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  provider=&quot;sd_webui&quot;,
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  strength=0.55
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>)
+</code></pre></div>
+<p>See <a href="../../providers/sd-webui/#image-input-img2img">SD WebUI img2img</a>.</p>
+<h2 id="related-pages">Related pages<a class="headerlink" href="#related-pages" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../tools/#transform_image">Tools: <code>transform_image</code></a> for the full
+  parameter reference.</li>
+<li><a href="../image-assets/">Image Assets</a> for how generated images are stored and
+  addressed.</li>
+<li><a href="../../providers/">Providers overview</a> for per-provider detail.</li>
+</ul>
 
 
 

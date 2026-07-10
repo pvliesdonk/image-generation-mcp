@@ -135,7 +135,7 @@ After restarting Claude Desktop:
 
 ### Tools not visible
 
-- Check that `IMAGE_GENERATION_MCP_READ_ONLY` is set to `"false"` -- the `generate_image` tool is hidden in read-only mode (the default)
+- Check that `IMAGE_GENERATION_MCP_READ_ONLY` is set to `"false"` (the `generate_image` tool is hidden in read-only mode, which is the default)
 - `list_providers` is always visible regardless of read-only mode
 
 ### Generation fails

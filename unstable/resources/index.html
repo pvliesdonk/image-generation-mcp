@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -562,6 +564,34 @@
     
   
     Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
   
 
     
@@ -1446,6 +1476,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/prompt-writing/" class="md-nav__link">
         
   
@@ -2084,7 +2142,7 @@
 <a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a><span class="w">    </span><span class="p">},</span>
 <a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a><span class="w">    </span><span class="nt">&quot;openai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a><span class="w">      </span><span class="nt">&quot;available&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OpenAI (gpt-image-1 / dall-e-3) — best for text, logos, and general-purpose generation&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a><span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OpenAI (gpt-image-2 / dall-e-3) — best for text, logos, and general-purpose generation&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a><span class="w">      </span><span class="nt">&quot;capabilities&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="w">        </span><span class="nt">&quot;provider_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;openai&quot;</span><span class="p">,</span>
 <a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="w">        </span><span class="nt">&quot;models&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -2117,7 +2175,7 @@
 <a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="w">  </span><span class="nt">&quot;supported_backgrounds&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;opaque&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;transparent&quot;</span><span class="p">]</span>
 <a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a><span class="p">}</span>
 </code></pre></div>
-<p>Only registered (configured) providers appear. Degraded providers (where capability discovery failed at startup) show <code>"degraded": true</code> with an empty <code>models</code> list -- they remain available for generation.</p>
+<p>Only registered (configured) providers appear. Degraded providers (where capability discovery failed at startup) show <code>"degraded": true</code> with an empty <code>models</code> list; they remain available for generation.</p>
 <p>The JSON envelope contains a top-level <code>warnings</code> array (always present, may be empty) listing deprecated or legacy models that are configured. Each entry in <code>models</code> may carry a <code>style_profile</code> sub-object with <code>label</code>, <code>style_hints</code>, <code>incompatible_styles</code>, <code>good_example</code>, <code>bad_example</code>, <code>lifecycle</code>, and (when set) <code>deprecation_note</code>. See <a href="../providers/model-catalog/">Model Catalog</a> for the full registry.</p>
 <hr />
 <h2 id="infoprompt-guide">info://prompt-guide<a class="headerlink" href="#infoprompt-guide" title="Permanent link">&para;</a></h2>
@@ -2126,10 +2184,10 @@
 <h3 id="content">Content<a class="headerlink" href="#content" title="Permanent link">&para;</a></h3>
 <p>Markdown document covering:</p>
 <ul>
-<li><strong>General tips</strong> — aspect ratio selection, quality levels, when to use negative prompts</li>
-<li><strong>OpenAI</strong> — natural-language prompts, style keywords, text rendering tips</li>
-<li><strong>SD WebUI (Stable Diffusion)</strong> — CLIP tags for SD 1.5/SDXL, natural language for Flux, negative prompts, BREAK syntax, model-specific advice</li>
-<li><strong>Placeholder</strong> — prompt-to-color mapping explanation</li>
+<li><strong>General tips:</strong> aspect ratio selection and quality levels; when and how to use negative prompts</li>
+<li><strong>OpenAI:</strong> natural-language prompts, style keywords, and text rendering tips</li>
+<li><strong>SD WebUI (Stable Diffusion):</strong> CLIP-tag prompting for SD 1.5/SDXL and natural-language prompting for Flux; negative prompts, BREAK syntax, and model-specific advice</li>
+<li><strong>Placeholder:</strong> prompt-to-color mapping explanation</li>
 </ul>
 <p>The <code>generate_image</code> tool description references this resource. LLM clients can read it before generating images to produce better prompts.</p>
 <hr />
@@ -2246,13 +2304,13 @@
 <td><code>rotate</code></td>
 <td>int</td>
 <td><code>0</code></td>
-<td>Rotation in degrees — 90, 180, or 270 (lossless)</td>
+<td>Rotation in degrees: 90, 180, or 270 (lossless)</td>
 </tr>
 <tr>
 <td><code>flip</code></td>
 <td>str</td>
 <td><em>(none)</em></td>
-<td>Flip axis — <code>horizontal</code> or <code>vertical</code> (lossless)</td>
+<td>Flip axis: <code>horizontal</code> or <code>vertical</code> (lossless)</td>
 </tr>
 </tbody>
 </table>
@@ -2272,7 +2330,7 @@
 </tr>
 <tr>
 <td><code>format</code> only</td>
-<td>Format conversion (e.g. PNG to WebP)</td>
+<td>Format conversion (PNG to WebP)</td>
 </tr>
 <tr>
 <td><code>width</code> + <code>height</code></td>
@@ -2358,39 +2416,42 @@
 <p><strong>MIME type:</strong> <code>application/json</code></p>
 <h3 id="response_4">Response<a class="headerlink" href="#response_4" title="Permanent link">&para;</a></h3>
 <p>Each item includes a <code>status</code> field: <code>"completed"</code> for registered images, <code>"generating"</code> or <code>"failed"</code> for pending background generations.</p>
+<p id="origin">Completed images also carry an <code>origin</code> field: <code>"generated"</code> for images produced by a provider (the case today), or <code>"imported"</code> for images added to the gallery from an external source. For imported images, <code>origin_source</code> records provenance and <code>provider</code>/<code>prompt</code> are empty; generated images have <code>origin_source: null</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">[</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="p">{</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="nt">&quot;image_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a1b2c3d4e5f6&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;openai&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a watercolor painting of mountains at sunset&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">&quot;aspect_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;16:9&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1710777600.0</span><span class="p">,</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="p">},</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="p">{</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">&quot;image_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c3d4e5f6a7b8&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sd_webui&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a cyberpunk cityscape&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generating&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">    </span><span class="nt">&quot;progress&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="nt">&quot;progress_message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Step 9/30 (ETA 12s)&quot;</span>
-<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">  </span><span class="p">},</span>
-<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">  </span><span class="p">{</span>
-<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">    </span><span class="nt">&quot;image_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b2c3d4e5f6a7&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;placeholder&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test image&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">    </span><span class="nt">&quot;aspect_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1:1&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1710777500.0</span><span class="p">,</span>
-<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span>
-<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">  </span><span class="p">}</span>
-<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="p">]</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nt">&quot;origin&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generated&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">&quot;origin_source&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;openai&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a watercolor painting of mountains at sunset&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">&quot;aspect_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;16:9&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1710777600.0</span><span class="p">,</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="nt">&quot;image_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c3d4e5f6a7b8&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sd_webui&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a cyberpunk cityscape&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generating&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">    </span><span class="nt">&quot;progress&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">    </span><span class="nt">&quot;progress_message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Step 9/30 (ETA 12s)&quot;</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">  </span><span class="p">},</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">  </span><span class="p">{</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">    </span><span class="nt">&quot;image_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b2c3d4e5f6a7&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">    </span><span class="nt">&quot;provider&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;placeholder&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test image&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">    </span><span class="nt">&quot;aspect_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1:1&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1710777500.0</span><span class="p">,</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="w">  </span><span class="p">}</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="p">]</span>
 </code></pre></div>
 <p>Pending generations (status <code>"generating"</code> or <code>"failed"</code>) appear in the list alongside completed images. They are cleaned up automatically after a 10-minute TTL.</p>
 <hr />
 <h2 id="uiimage-viewerviewhtml">ui://image-viewer/view.html<a class="headerlink" href="#uiimage-viewerviewhtml" title="Permanent link">&para;</a></h2>
 <p>Interactive image viewer rendered by MCP Apps-capable clients (Claude Desktop, claude.ai).</p>
 <p><strong>MIME type:</strong> <code>text/html;profile=mcp-app</code></p>
-<p>This resource is an <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps">MCP App</a> — a custom HTML page loaded in a sandboxed iframe via the <code>@modelcontextprotocol/ext-apps</code> SDK. It is wired to the <code>show_image</code> tool via <code>AppConfig(resourceUri=...)</code>.</p>
+<p>This resource is an <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps">MCP App</a>: a custom HTML page loaded in a sandboxed iframe via the <code>@modelcontextprotocol/ext-apps</code> SDK. It is wired to the <code>show_image</code> tool via <code>AppConfig(resourceUri=...)</code>.</p>
 <h3 id="sandbox-domain">Sandbox domain<a class="headerlink" href="#sandbox-domain" title="Permanent link">&para;</a></h3>
 <p>When <code>IMAGE_GENERATION_MCP_BASE_URL</code> is set, the Claude sandbox domain is auto-computed as <code>sha256(BASE_URL + HTTP_PATH)[:32].claudemcpcontent.com</code>. Override with <code>IMAGE_GENERATION_MCP_APP_DOMAIN</code> for other hosts or custom setups. When neither is set (stdio transport), the host assigns its own sandbox origin.</p>
 <h3 id="viewer-states">Viewer states<a class="headerlink" href="#viewer-states" title="Permanent link">&para;</a></h3>
@@ -2406,7 +2467,7 @@
 <tr>
 <td>Waiting</td>
 <td>Widget loaded, no tool result yet</td>
-<td>"Waiting for image..."</td>
+<td>"Waiting for image…"</td>
 </tr>
 <tr>
 <td>Generating</td>
@@ -2432,10 +2493,10 @@
 </table>
 <h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Host theming</strong> — applies <code>applyDocumentTheme()</code>, <code>applyHostStyleVariables()</code>, and <code>applyHostFonts()</code> from the ext-apps SDK; CSS uses host variables (<code>--color-text-primary</code>, <code>--font-sans</code>, etc.)</li>
-<li><strong>Safe area insets</strong> — respects <code>safeAreaInsets</code> from <code>onhostcontextchanged</code> for mobile notch/status bar</li>
-<li><strong>localStorage cache</strong> — persists rendered images (keyed by image ID, LRU-capped at 5 entries); restores cached state on <code>ontoolinput</code> before the tool result arrives</li>
-<li><strong>Download button</strong> — uses the ext-apps <code>downloadFile</code> API with a <code>resource_link</code> to <code>image://{id}/view</code> for the full-resolution image; falls back to <code>openLink</code> with the artifact <code>download_url</code> when the host does not support <code>downloadFile</code></li>
+<li><strong>Host theming:</strong> applies <code>applyDocumentTheme()</code>, <code>applyHostStyleVariables()</code>, and <code>applyHostFonts()</code> from the ext-apps SDK; CSS uses host variables (<code>--color-text-primary</code>, <code>--font-sans</code>, etc.)</li>
+<li><strong>Safe area insets:</strong> respects <code>safeAreaInsets</code> from <code>onhostcontextchanged</code> for mobile notch/status bar</li>
+<li><strong>localStorage cache:</strong> persists rendered images (keyed by image ID, LRU-capped at 5 entries); restores cached state on <code>ontoolinput</code> before the tool result arrives</li>
+<li><strong>Download button:</strong> uses the ext-apps <code>downloadFile</code> API with a <code>resource_link</code> to <code>image://{id}/view</code> for the full-resolution image; when the host does not support <code>downloadFile</code>, it falls back to calling <code>create_download_link</code> on demand and opening the returned <code>url</code> via <code>openLink</code></li>
 </ul>
 <p>Clients without MCP Apps support ignore this resource entirely.</p>
 <hr />
@@ -2445,15 +2506,15 @@
 <p>This resource is an <a href="https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/apps">MCP App</a> wired to the <code>browse_gallery</code> tool via <code>AppConfig(resourceUri=...)</code>. It shares the same sandbox domain configuration as <code>ui://image-viewer/view.html</code>.</p>
 <h3 id="features_1">Features<a class="headerlink" href="#features_1" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Thumbnail grid</strong> — responsive grid using CSS <code>auto-fill</code> with 140 px minimum card width; 3×3 at typical inline size, adapts to available width (4×3 at wider sizes)</li>
-<li><strong>Page size</strong> — fixed at 12 items per page, set server-side by <code>browse_gallery</code> and propagated via <code>data.page_size</code></li>
-<li><strong>Pagination</strong> — Prev/Next buttons call the <code>gallery_page</code> app-only tool; page indicator shows current/total</li>
-<li><strong>Hover overlay</strong> — prompt excerpt (2-line clamp) and provider badge on thumbnail hover; keyboard-accessible (<code>:focus-within</code>)</li>
-<li><strong>Download button</strong> — uses <code>resource_link</code> to <code>image://{id}/view</code> with <code>downloadFile</code> → <code>openLink</code> fallback</li>
-<li><strong>Lightbox</strong> — clicking a thumbnail opens a full-resolution overlay via <code>gallery_full_image</code> (app-only); prev/next navigation with cross-page support; close via ✕ button, Escape key, or backdrop click; fullscreen toggle when <code>requestDisplayMode("fullscreen")</code> is available from the host</li>
-<li><strong>Pending items</strong> — in-progress generations appear with spinner overlay and prompt label</li>
-<li><strong>Empty state</strong> — friendly message with <code>generate_image</code> call-to-action when no images exist</li>
-<li><strong>Host theming</strong> — same theme/CSS-variable/safe-area integration as the image viewer</li>
+<li><strong>Thumbnail grid:</strong> responsive grid using CSS <code>auto-fill</code> with 140 px minimum card width; 3×3 at typical inline size, adapts to available width (4×3 at wider sizes)</li>
+<li><strong>Page size:</strong> fixed at 12 items per page, set server-side by <code>browse_gallery</code> and propagated via <code>data.page_size</code></li>
+<li><strong>Pagination:</strong> Prev/Next buttons call the <code>gallery_page</code> app-only tool; page indicator shows current/total</li>
+<li><strong>Hover overlay:</strong> prompt excerpt (2-line clamp) and provider badge on thumbnail hover; keyboard-accessible (<code>:focus-within</code>)</li>
+<li><strong>Download button:</strong> uses <code>resource_link</code> to <code>image://{id}/view</code> with <code>downloadFile</code> → <code>openLink</code> fallback</li>
+<li><strong>Lightbox:</strong> clicking a thumbnail opens a full-resolution overlay via <code>gallery_full_image</code> (app-only); prev/next navigation with cross-page support; close via ✕ button, Escape key, or backdrop click; fullscreen toggle when <code>requestDisplayMode("fullscreen")</code> is available from the host</li>
+<li><strong>Pending items:</strong> in-progress generations appear with spinner overlay and prompt label</li>
+<li><strong>Empty state:</strong> friendly message with <code>generate_image</code> call-to-action when no images exist</li>
+<li><strong>Host theming:</strong> same theme/CSS-variable/safe-area integration as the image viewer</li>
 </ul>
 <p>Clients without MCP Apps support receive the raw JSON response from <code>browse_gallery</code> instead.</p>
 
@@ -2517,6 +2578,8 @@
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -575,6 +577,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -907,6 +937,56 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#image-input-editing-and-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image input (editing and composition)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image input (editing and composition)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capability-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-reference-image-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported reference image formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#masks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Masks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1290,6 +1370,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1743,6 +1851,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#image-input-editing-and-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image input (editing and composition)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image input (editing and composition)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capability-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-reference-image-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported reference image formats
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#masks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Masks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#error-handling" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1792,22 +1950,34 @@
 </thead>
 <tbody>
 <tr>
-<td><code>gpt-image-1</code></td>
-<td>Current (default)</td>
+<td><code>gpt-image-2</code></td>
+<td>Flagship (default)</td>
 <td>PNG, JPEG, WebP</td>
-<td>Best quality, native format selection</td>
+<td>Highest fidelity; no transparent-background support (use <code>gpt-image-1.5</code> if you need alpha)</td>
 </tr>
 <tr>
 <td><code>gpt-image-1.5</code></td>
-<td>Preview</td>
+<td>Current</td>
 <td>PNG, JPEG, WebP</td>
-<td>Capabilities assumed to match gpt-image-1</td>
+<td>Production flagship with transparent-background support</td>
 </tr>
 <tr>
 <td><code>gpt-image-1-mini</code></td>
-<td>Preview</td>
+<td>Current</td>
 <td>PNG, JPEG, WebP</td>
-<td>Capabilities assumed to match gpt-image-1</td>
+<td>Cheaper variant; capabilities assumed to match gpt-image-1</td>
+</tr>
+<tr>
+<td><code>gpt-image-1</code></td>
+<td>Legacy</td>
+<td>PNG, JPEG, WebP</td>
+<td>Native format selection; superseded by 1.5 / 2</td>
+</tr>
+<tr>
+<td><code>chatgpt-image-latest</code></td>
+<td>Current (alias)</td>
+<td>PNG, JPEG, WebP</td>
+<td>Floating alias to the current ChatGPT image model; pin a concrete id for reproducible workflows</td>
 </tr>
 <tr>
 <td><code>dall-e-3</code></td>
@@ -1829,23 +1999,23 @@
 <tbody>
 <tr>
 <td><code>1:1</code></td>
-<td>1024x1024</td>
+<td><code>1024x1024</code></td>
 </tr>
 <tr>
 <td><code>16:9</code></td>
-<td>1536x1024</td>
+<td><code>1536x1024</code></td>
 </tr>
 <tr>
 <td><code>9:16</code></td>
-<td>1024x1536</td>
+<td><code>1024x1536</code></td>
 </tr>
 <tr>
 <td><code>3:2</code></td>
-<td>1536x1024</td>
+<td><code>1536x1024</code></td>
 </tr>
 <tr>
 <td><code>2:3</code></td>
-<td>1024x1536</td>
+<td><code>1024x1536</code></td>
 </tr>
 </tbody>
 </table>
@@ -1860,23 +2030,23 @@
 <tbody>
 <tr>
 <td><code>1:1</code></td>
-<td>1024x1024</td>
+<td><code>1024x1024</code></td>
 </tr>
 <tr>
 <td><code>16:9</code></td>
-<td>1792x1024</td>
+<td><code>1792x1024</code></td>
 </tr>
 <tr>
 <td><code>9:16</code></td>
-<td>1024x1792</td>
+<td><code>1024x1792</code></td>
 </tr>
 <tr>
 <td><code>3:2</code></td>
-<td>1792x1024</td>
+<td><code>1792x1024</code></td>
 </tr>
 <tr>
 <td><code>2:3</code></td>
-<td>1024x1792</td>
+<td><code>1024x1792</code></td>
 </tr>
 </tbody>
 </table>
@@ -1920,11 +2090,11 @@
 <tbody>
 <tr>
 <td><code>gpt-image-1</code></td>
-<td>Supported -- passed to the API as-is (<code>"opaque"</code> or <code>"transparent"</code>)</td>
+<td>Supported (passed to the API as-is: <code>"opaque"</code> or <code>"transparent"</code>)</td>
 </tr>
 <tr>
 <td><code>dall-e-3</code></td>
-<td>Not supported -- parameter is ignored</td>
+<td>Not supported (parameter is ignored)</td>
 </tr>
 </tbody>
 </table>
@@ -1947,11 +2117,44 @@
 <p>When switching to <code>dall-e-3</code>, the larger DALL-E 3 size table is used and output format is forced to PNG (the only format DALL-E 3 supports). When switching to <code>gpt-image-1</code>, the standard size table and configured output format are used.</p>
 <p>Use <code>list_providers</code> to discover available models.</p>
 <h2 id="capability-discovery">Capability discovery<a class="headerlink" href="#capability-discovery" title="Permanent link">&para;</a></h2>
-<p>At startup, the provider calls <code>client.models.list()</code> to discover which image models are available on your API key. It filters to known image models (<code>gpt-image-1</code>, <code>gpt-image-1-mini</code>, <code>gpt-image-1.5</code>, <code>dall-e-3</code>, <code>dall-e-2</code>) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).</p>
-<p>If the API call fails (network error, invalid key), the provider is marked as <strong>degraded</strong> -- it remains available for generation but with an empty model list in the capabilities response.</p>
+<p>At startup, the provider calls <code>client.models.list()</code> to discover which image models are available on your API key. It filters to known image models (<code>gpt-image-2</code>, <code>gpt-image-1.5</code>, <code>gpt-image-1</code>, <code>gpt-image-1-mini</code>, <code>chatgpt-image-latest</code>, <code>dall-e-3</code>, <code>dall-e-2</code>) and maps each to a capabilities object with model-specific defaults (supported sizes, formats, features).</p>
+<p>If the API call fails (network error, invalid key), the provider is marked as <strong>degraded</strong>: it remains available for generation but with an empty model list in the capabilities response.</p>
 <h2 id="cost">Cost<a class="headerlink" href="#cost" title="Permanent link">&para;</a></h2>
 <p>OpenAI charges per image generated. Pricing varies by model, size, and quality level. See the <a href="https://openai.com/api/pricing/">OpenAI pricing page</a> for current rates.</p>
 <p><code>gpt-image-1</code> is generally more expensive than <code>dall-e-3</code> but produces higher quality output with more flexible format options.</p>
+<h2 id="image-input-editing-and-composition">Image input (editing and composition)<a class="headerlink" href="#image-input-editing-and-composition" title="Permanent link">&para;</a></h2>
+<p>The gpt-image family (<code>gpt-image-2</code>, <code>gpt-image-1.5</code>, <code>gpt-image-1</code>, <code>gpt-image-1-mini</code>) accepts reference images through the <code>transform_image</code> tool. The provider routes these requests through OpenAI's <code>images.edit</code> endpoint, supporting both single-image edits and multi-image composition with up to 16 reference images per call.</p>
+<p><code>dall-e-3</code> and <code>dall-e-2</code> do not support reference-image input. Supplying reference images to either model raises an unsupported-input error (<code>ImageInputUnsupported</code>).</p>
+<h3 id="capability-fields">Capability fields<a class="headerlink" href="#capability-fields" title="Permanent link">&para;</a></h3>
+<p>The <code>list_providers</code> response includes two fields on each model entry that clients use to determine routing:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>supports_image_input</code></td>
+<td>bool</td>
+<td><code>true</code> for all gpt-image models; <code>false</code> for dall-e models</td>
+</tr>
+<tr>
+<td><code>max_input_images</code></td>
+<td>int</td>
+<td><code>16</code> for gpt-image models; absent for dall-e models</td>
+</tr>
+</tbody>
+</table>
+<p>Use these fields to decide which provider and model to pass to <code>transform_image</code>. When <code>supports_image_input</code> is <code>false</code>, pass the images to a Gemini provider instead.</p>
+<h3 id="supported-reference-image-formats">Supported reference image formats<a class="headerlink" href="#supported-reference-image-formats" title="Permanent link">&para;</a></h3>
+<p>The endpoint accepts PNG, JPEG, and WebP references. Each reference image is sent as a named file tuple using the source image's content type.</p>
+<h3 id="masks">Masks<a class="headerlink" href="#masks" title="Permanent link">&para;</a></h3>
+<p>The <code>transform_image</code> tool accepts a <code>mask</code> parameter for region-targeted inpainting on gpt-image models. When supplied, the mask is forwarded to OpenAI's <code>images.edit</code> endpoint alongside the reference images. When no mask is supplied, edits apply globally using the reference images as compositional context.</p>
+<p>The mask must match the first reference image's dimensions and format and carry an alpha channel. OpenAI enforces this at the API level; a mismatch returns an HTTP 400 error.</p>
+<p>Use <code>list_providers</code> to check the <code>supports_mask</code> field on each model before passing a mask. Currently <code>true</code> for all gpt-image models (<code>gpt-image-1</code>, <code>gpt-image-1.5</code>, <code>gpt-image-1-mini</code>, <code>gpt-image-2</code>); <code>false</code> for dall-e models. Passing a mask to a provider or model that does not support it raises an error.</p>
 <h2 id="error-handling">Error handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2040,6 +2243,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

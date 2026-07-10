@@ -53,6 +53,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -573,6 +575,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1078,6 +1108,34 @@
     
   
     Client Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
   
 
     
@@ -1663,7 +1721,7 @@
 </code></pre></div>
 <p>Or download the <code>.mcpb</code> bundle from the <a href="https://github.com/pvliesdonk/image-generation-mcp/releases">GitHub Releases</a> page and double-click to install; Claude Desktop prompts for required env vars via a GUI wizard, no manual JSON editing needed.</p>
 <h3 id="2-configure-claude-desktop">2. Configure Claude Desktop<a class="headerlink" href="#2-configure-claude-desktop" title="Permanent link">&para;</a></h3>
-<p>If you installed via <code>.mcpb</code>, skip this step — Claude Desktop was configured automatically by the wizard.</p>
+<p>If you installed via <code>.mcpb</code>, skip this step. Claude Desktop was configured automatically by the wizard.</p>
 <p>Otherwise, add the server to your Claude Desktop configuration file. The path varies by operating system:</p>
 <ul>
 <li><strong>macOS:</strong> <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></li>
@@ -1699,7 +1757,7 @@
 <li>Check Claude Desktop logs for error messages</li>
 </ol>
 <h3 id="command-not-found">"Command not found"<a class="headerlink" href="#command-not-found" title="Permanent link">&para;</a></h3>
-<p>Ensure <code>image-generation-mcp</code> is on your PATH. If installed in a virtualenv, use the full path to the binary. Replace only the <code>"command"</code> value in your existing config — keep <code>"args"</code> and <code>"env"</code> as-is.</p>
+<p>Ensure <code>image-generation-mcp</code> is on your PATH. If installed in a virtualenv, use the full path to the binary. Replace only the <code>"command"</code> value in your existing config and keep <code>"args"</code> and <code>"env"</code> as-is.</p>
 <p>macOS/Linux:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1787,6 +1845,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

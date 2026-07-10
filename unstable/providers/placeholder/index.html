@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -562,6 +564,34 @@
     
   
     Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
   
 
     
@@ -1216,6 +1246,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/prompt-writing/" class="md-nav__link">
         
   
@@ -1591,13 +1649,13 @@
 <p>The placeholder provider generates simple solid-color PNG images without any external dependencies or API keys. The color is selected from a palette of 6 predefined colors using a SHA-256 hash of the prompt as an index, so the same prompt always produces the same color.</p>
 <h2 id="when-to-use">When to use<a class="headerlink" href="#when-to-use" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Testing</strong> -- verify your MCP client configuration without API costs</li>
-<li><strong>Drafts and mock-ups</strong> -- create placeholder images during development</li>
-<li><strong>CI pipelines</strong> -- test image generation workflows without external services</li>
-<li><strong>Demos</strong> -- show the image generation flow without requiring API keys</li>
+<li><strong>Testing:</strong> verify your MCP client configuration without API costs</li>
+<li><strong>Drafts and mock-ups:</strong> create placeholder images during development</li>
+<li><strong>CI pipelines:</strong> test image generation workflows without external services</li>
+<li><strong>Demos:</strong> show the image generation flow without requiring API keys</li>
 </ul>
 <h2 id="availability">Availability<a class="headerlink" href="#availability" title="Permanent link">&para;</a></h2>
-<p>The placeholder provider is <strong>always registered</strong> -- it requires no configuration, no API key, and no external service.</p>
+<p>The placeholder provider is <strong>always registered</strong>: no configuration or API key is needed.</p>
 <h2 id="aspect-ratios">Aspect ratios<a class="headerlink" href="#aspect-ratios" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1609,40 +1667,40 @@
 <tbody>
 <tr>
 <td><code>1:1</code></td>
-<td>256x256</td>
+<td><code>256x256</code></td>
 </tr>
 <tr>
 <td><code>16:9</code></td>
-<td>640x360</td>
+<td><code>640x360</code></td>
 </tr>
 <tr>
 <td><code>9:16</code></td>
-<td>360x640</td>
+<td><code>360x640</code></td>
 </tr>
 <tr>
 <td><code>3:2</code></td>
-<td>480x320</td>
+<td><code>480x320</code></td>
 </tr>
 <tr>
 <td><code>2:3</code></td>
-<td>320x480</td>
+<td><code>320x480</code></td>
 </tr>
 </tbody>
 </table>
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>prompt</strong> -- used to determine the output color (via SHA-256 hash index into a 6-color palette)</li>
-<li><strong>negative_prompt</strong> -- ignored</li>
-<li><strong>quality</strong> -- ignored</li>
-<li><strong>aspect_ratio</strong> -- maps to pixel sizes above</li>
-<li><strong>background</strong> -- <code>"opaque"</code> (default) produces RGB PNG; <code>"transparent"</code> produces RGBA PNG with alpha channel set to 0</li>
+<li><strong>prompt:</strong> used to determine the output color (via SHA-256 hash index into a 6-color palette)</li>
+<li><strong>negative_prompt:</strong> ignored</li>
+<li><strong>quality:</strong> ignored</li>
+<li><strong>aspect_ratio:</strong> maps to pixel sizes above</li>
+<li><strong>background:</strong> <code>"opaque"</code> (default) produces RGB PNG; <code>"transparent"</code> produces RGBA PNG with alpha channel set to 0</li>
 </ul>
 <h2 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Format:</strong> PNG (RGB for opaque, RGBA for transparent)</li>
 <li><strong>Content:</strong> Solid color fill (fully transparent when <code>background="transparent"</code>)</li>
 <li><strong>Size:</strong> ~1-2 KB per image</li>
-<li><strong>Generation time:</strong> Instant (&lt; 1ms)</li>
+<li><strong>Generation time:</strong> Instant (&lt; 1 ms)</li>
 </ul>
 
 
@@ -1705,6 +1763,8 @@
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

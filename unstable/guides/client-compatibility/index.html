@@ -16,7 +16,7 @@
         <link rel="prev" href="../authentication/">
       
       
-        <link rel="next" href="../prompt-writing/">
+        <link rel="next" href="../image-input/">
       
       
         
@@ -54,6 +54,8 @@
     
     
       <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/config-wizard.css">
     
     <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -562,6 +564,34 @@
     
   
     Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
   
 
     
@@ -1222,7 +1252,7 @@
   <a href="#claude-mobile-mcp-apps-viewer-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Claude Mobile — MCP Apps viewer fails
+        Claude Mobile: MCP Apps viewer fails
       
     </span>
   </a>
@@ -1249,6 +1279,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1632,7 +1690,7 @@
   <a href="#claude-mobile-mcp-apps-viewer-fails" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Claude Mobile — MCP Apps viewer fails
+        Claude Mobile: MCP Apps viewer fails
       
     </span>
   </a>
@@ -1676,7 +1734,7 @@
 
 
 <h1 id="client-compatibility">Client Compatibility<a class="headerlink" href="#client-compatibility" title="Permanent link">&para;</a></h1>
-<p>image-generation-mcp works with any MCP client, but image display capabilities vary significantly across clients. This guide covers what works where and how to get the best experience on each platform.</p>
+<p>image-generation-mcp works with any MCP client, but image display capabilities vary across clients. This guide covers what works where and how to get the best experience on each platform.</p>
 <h2 id="image-display-strategies">Image display strategies<a class="headerlink" href="#image-display-strategies" title="Permanent link">&para;</a></h2>
 <p>The server provides multiple ways to deliver images, in order of richness:</p>
 <table>
@@ -1799,33 +1857,32 @@ objects.</p>
 <p>Everything works out of the box:</p>
 <ol>
 <li><code>generate_image</code> returns metadata + resource link</li>
-<li><code>show_image</code> displays a thumbnail preview inline <strong>and</strong> renders the interactive MCP Apps viewer with metadata</li>
+<li><code>show_image</code> displays a thumbnail preview inline and renders the interactive MCP Apps viewer with metadata</li>
 <li>Full-resolution access via <code>image://</code> resource URIs</li>
 </ol>
 <h3 id="claude-code">Claude Code<a class="headerlink" href="#claude-code" title="Permanent link">&para;</a></h3>
 <p><code>show_image</code> returns a thumbnail that Claude can see in context. The MCP Apps viewer is not supported. Use <code>create_download_link</code> when you need to save or share the full-resolution image.</p>
 <h3 id="chatgpt-gemini-cli-other-clients">ChatGPT / Gemini CLI / other clients<a class="headerlink" href="#chatgpt-gemini-cli-other-clients" title="Permanent link">&para;</a></h3>
-<p>These clients cannot display <code>ImageContent</code> from tool results. Use <code>show_image</code> (which publishes a <code>file_ref</code>) followed by <code>create_download_link</code> to generate a one-time HTTP download URL that can be opened in a browser or passed to other tools.</p>
+<p>These clients cannot display <code>ImageContent</code> from tool results. Call <code>create_download_link</code> to generate a one-time HTTP download URL that can be opened in a browser or passed to other tools.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>1. generate_image(prompt=&quot;a sunset&quot;)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>   → {image_id: &quot;abc123&quot;, status: &quot;generating&quot;, ...}
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>2. check_generation_status(image_id=&quot;abc123&quot;)
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   → status: &quot;completed&quot;
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>3. show_image(uri=&quot;image://abc123/view?format=jpeg&quot;)
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   → {file_ref: {origin_id: &quot;abc123-&lt;hash&gt;&quot;, mime_type: &quot;image/jpeg&quot;, ...}, ...}
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>4. create_download_link(origin_id=&quot;abc123-&lt;hash&gt;&quot;)
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   → {url: &quot;https://mcp.example.com/artifacts/...&quot;, ttl_seconds: 3600, mime_type: &quot;image/jpeg&quot;}
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>3. create_download_link(ref=&quot;image://abc123d4e5f6/view&quot;)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>   → {url: &quot;https://mcp.example.com/transfer/...&quot;, expires_in_s: 3600}
 </code></pre></div>
+<p>The link serves the image's original bytes. For a transformed rendering (resize or format change), read the <code>image://{id}/view</code> resource with <code>format</code>/<code>width</code>/<code>height</code>/<code>quality</code> instead.</p>
 <div class="admonition tip">
 <p class="admonition-title"><code>create_download_link</code> requires HTTP transport</p>
 <p>Download links are only available when the server runs with <code>--transport http</code>
-(or <code>sse</code>). The stdio transport has no HTTP server to host the artifact
+(or <code>sse</code>). The stdio transport has no HTTP server to host the <code>/transfer/{token}</code>
 endpoint. You also need <code>IMAGE_GENERATION_MCP_BASE_URL</code> configured.</p>
 </div>
 <h2 id="known-limitations">Known limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
-<h3 id="claude-mobile-mcp-apps-viewer-fails">Claude Mobile — MCP Apps viewer fails<a class="headerlink" href="#claude-mobile-mcp-apps-viewer-fails" title="Permanent link">&para;</a></h3>
+<h3 id="claude-mobile-mcp-apps-viewer-fails">Claude Mobile: MCP Apps viewer fails<a class="headerlink" href="#claude-mobile-mcp-apps-viewer-fails" title="Permanent link">&para;</a></h3>
 <p>The Claude mobile app has a bug in streamable-HTTP session recovery. After the server restarts or a session times out, the mobile app fails to re-establish the MCP session, causing "Failed to fetch app content" errors for the image viewer.</p>
-<p><strong>Root cause:</strong> The mobile app retries with a stale session ID (HTTP 404), then retries without the auth token (HTTP 401), then starts a new session but sends tool calls without completing the <code>initialize</code> handshake (HTTP 400). This cycle repeats indefinitely.</p>
-<p><strong>Workaround:</strong> Image generation itself still works — the <code>generate_image</code> tool returns metadata with resource URIs. Use <code>create_download_link</code> to get an HTTP URL for viewing the image in a browser.</p>
+<p><strong>Root cause:</strong> The mobile app first retries with a stale session ID (HTTP 404), then retries without the auth token (HTTP 401). It then starts a new session but sends tool calls before completing the <code>initialize</code> handshake (HTTP 400), and this cycle repeats indefinitely.</p>
+<p><strong>Workaround:</strong> Image generation itself still works. The <code>generate_image</code> tool returns metadata with resource URIs. Use <code>create_download_link</code> to get an HTTP URL for viewing the image in a browser.</p>
 <p><strong>Status:</strong> Upstream bug in the Claude mobile app. The server-side behavior is correct (verified by comparing with successful claude.ai web sessions on the same server).</p>
 <h3 id="imagecontent-size-limit">ImageContent size limit<a class="headerlink" href="#imagecontent-size-limit" title="Permanent link">&para;</a></h3>
 <p>Claude Desktop and claude.ai impose a ~1 MB limit on tool result content. To stay under this limit, <code>show_image</code> always returns a WebP thumbnail (max 512px) as <code>ImageContent</code>, regardless of the requested transforms. The metadata reports both the actual transformed dimensions (<code>dimensions</code>) and the preview dimensions (<code>thumbnail_dimensions</code>).</p>
@@ -1895,6 +1952,8 @@ endpoint. You also need <code>IMAGE_GENERATION_MCP_BASE_URL</code> configured.</
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

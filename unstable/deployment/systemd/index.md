@@ -75,11 +75,11 @@ IMAGE_GENERATION_MCP_OIDC_JWT_SIGNING_KEY=paste-generated-key-here
 
 Warning
 
-The env file contains secrets (API keys, OIDC credentials). The package sets permissions to `0640 root:image-generation-mcp` -- do not loosen these.
+The env file contains secrets (API keys, OIDC credentials). The package sets permissions to `0640 root:image-generation-mcp`. Do not loosen these.
 
 Note
 
-systemd `EnvironmentFile` does **not** perform shell substitution. Generate values like the JWT signing key separately (`openssl rand -hex 32`) and paste the result into the env file.
+systemd `EnvironmentFile` does not perform shell substitution. Generate values like the JWT signing key separately (`openssl rand -hex 32`) and paste the result into the env file.
 
 ## Service management
 
@@ -195,7 +195,7 @@ sudo apt remove image-generation-mcp
 sudo dnf remove image-generation-mcp
 ```
 
-The package stops and disables the service automatically. It does **not** remove the system user or data directory -- delete those manually if desired:
+The package stops and disables the service automatically. It does not remove the system user or data directory. Delete those manually if desired:
 
 ```
 sudo rm -rf /var/lib/image-generation-mcp /etc/image-generation-mcp

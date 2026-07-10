@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://pvliesdonk.github.io/image-generation-mcp/unstable/providers/">
       
       
-        <link rel="prev" href="../getting-started/claude-code/">
+        <link rel="prev" href="../configuration-generator/">
       
       
         <link rel="next" href="gemini/">
@@ -54,6 +54,8 @@
     
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/config-wizard.css">
     
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -562,6 +564,34 @@
     
   
     Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
   
 
     
@@ -1194,6 +1224,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/prompt-writing/" class="md-nav__link">
         
   
@@ -1543,7 +1601,7 @@
 
 <h1 id="providers">Providers<a class="headerlink" href="#providers" title="Permanent link">&para;</a></h1>
 <p>image-generation-mcp supports multiple image generation providers. Each provider is registered at startup based on available configuration (API keys, service URLs).</p>
-<p>See the <a href="model-catalog/">Model Catalog</a> for narrative guidance on every model — what each is best at, what fights it, prompt grammar examples, and lifecycle status.</p>
+<p>See the <a href="model-catalog/">Model Catalog</a> for narrative guidance on every model: strengths, known weaknesses, prompt grammar examples, and lifecycle status.</p>
 <h2 id="provider-comparison">Provider comparison<a class="headerlink" href="#provider-comparison" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1565,10 +1623,10 @@
 </tr>
 <tr>
 <td><strong>Models</strong></td>
-<td>gemini-2.5-flash-image, gemini-3.1-flash-image-preview, gemini-3-pro-image-preview</td>
-<td>gpt-image-1, dall-e-3</td>
+<td>gemini-3.1-flash-image, gemini-3-pro-image, gemini-3.1-flash-lite-image, gemini-2.5-flash-image</td>
+<td>gpt-image-2, gpt-image-1.5, gpt-image-1, dall-e-3</td>
 <td>SD 1.5, SDXL, SDXL Lightning/Turbo</td>
-<td>--</td>
+<td>N/A</td>
 </tr>
 <tr>
 <td><strong>Quality</strong></td>
@@ -1579,9 +1637,9 @@
 </tr>
 <tr>
 <td><strong>Speed</strong></td>
-<td>5-15s</td>
-<td>5-15s</td>
-<td>10-60s (depends on GPU)</td>
+<td>5-15 s</td>
+<td>5-15 s</td>
+<td>10-60 s (depends on GPU)</td>
 <td>Instant</td>
 </tr>
 <tr>
@@ -1601,7 +1659,7 @@
 <tr>
 <td><strong>Background control</strong></td>
 <td>Not supported (ignored)</td>
-<td>Supported (gpt-image-1 only)</td>
+<td>Supported (gpt-image-1 / gpt-image-1.5 / gpt-image-1-mini; not gpt-image-2)</td>
 <td>Not supported (ignored)</td>
 <td>Supported (RGBA PNG)</td>
 </tr>
@@ -1671,14 +1729,14 @@
 </tbody>
 </table>
 <p>The first matching rule wins. Within a rule, the first available provider is selected. If no provider in the chain is available, any registered provider is returned as a fallback.</p>
-<p>When <code>background="transparent"</code> is requested, providers with transparent background support are preferred within each selection rule. This is a secondary filter -- keyword heuristics still determine the rule.</p>
+<p>When <code>background="transparent"</code> is requested, providers with transparent background support are preferred within each selection rule. This is a secondary filter; keyword heuristics still determine the rule.</p>
 <h2 id="provider-registration">Provider registration<a class="headerlink" href="#provider-registration" title="Permanent link">&para;</a></h2>
 <p>Providers are registered automatically at startup based on environment variables:</p>
 <ol>
-<li><strong>Placeholder</strong> -- always registered (zero cost, no configuration)</li>
-<li><strong>OpenAI</strong> -- registered when <code>IMAGE_GENERATION_MCP_OPENAI_API_KEY</code> is set</li>
-<li><strong>Gemini</strong> -- registered when <code>IMAGE_GENERATION_MCP_GOOGLE_API_KEY</code> is set</li>
-<li><strong>SD WebUI</strong> -- registered when <code>IMAGE_GENERATION_MCP_SD_WEBUI_HOST</code> is set</li>
+<li><strong>Placeholder</strong>: always registered (zero cost, no configuration)</li>
+<li><strong>OpenAI</strong>: registered when <code>IMAGE_GENERATION_MCP_OPENAI_API_KEY</code> is set</li>
+<li><strong>Gemini</strong>: registered when <code>IMAGE_GENERATION_MCP_GOOGLE_API_KEY</code> is set</li>
+<li><strong>SD WebUI</strong>: registered when <code>IMAGE_GENERATION_MCP_SD_WEBUI_HOST</code> is set</li>
 </ol>
 
 
@@ -1741,6 +1799,8 @@
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>

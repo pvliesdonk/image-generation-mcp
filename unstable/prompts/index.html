@@ -55,6 +55,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../stylesheets/config-wizard.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -562,6 +564,34 @@
     
   
     Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration-generator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration Generator
   
 
     
@@ -1300,6 +1330,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../guides/image-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Image Input (image-to-image)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../guides/prompt-writing/" class="md-nav__link">
         
   
@@ -1762,8 +1820,8 @@
 <h3 id="content-summary">Content summary<a class="headerlink" href="#content-summary" title="Permanent link">&para;</a></h3>
 <p>The prompt covers:</p>
 <ul>
-<li><strong>Provider strengths</strong> -- what each provider (OpenAI, SD WebUI, Placeholder) is best at</li>
-<li><strong>Selection rules</strong> -- ordered decision logic:<ol>
+<li><strong>Provider strengths:</strong> what each provider (OpenAI, SD WebUI, Placeholder) is best at</li>
+<li><strong>Selection rules:</strong> ordered decision logic:<ol>
 <li>Text/logos/typography -&gt; use OpenAI</li>
 <li>Photorealism/portraits/product shots -&gt; prefer SD WebUI (fall back to OpenAI)</li>
 <li>Art/illustration/anime -&gt; prefer SD WebUI (fall back to OpenAI)</li>
@@ -1771,7 +1829,7 @@
 <li>General requests -&gt; default to OpenAI</li>
 </ol>
 </li>
-<li><strong>Usage guidance</strong> -- how to call <code>generate_image</code> with <code>provider="auto"</code> or a specific provider name</li>
+<li><strong>Usage guidance:</strong> how to call <code>generate_image</code> with <code>provider="auto"</code> or a specific provider name</li>
 </ul>
 <hr />
 <h2 id="sd_prompt_guide">sd_prompt_guide<a class="headerlink" href="#sd_prompt_guide" title="Permanent link">&para;</a></h2>
@@ -1781,13 +1839,13 @@
 <h3 id="content-summary_1">Content summary<a class="headerlink" href="#content-summary_1" title="Permanent link">&para;</a></h3>
 <p>The prompt covers:</p>
 <ul>
-<li><strong>Tag format</strong> -- comma-separated descriptive tags ordered by importance: <code>subject, medium, style, lighting, camera, quality tags</code></li>
-<li><strong>Example prompts</strong> -- portrait, landscape, and product shot examples</li>
-<li><strong>Quality tags</strong> -- <code>masterpiece, best quality</code>, <code>highly detailed, sharp focus</code>, <code>8k, ultra high res</code></li>
-<li><strong>Negative prompts</strong> -- general-purpose negative prompt for avoiding common artifacts, plus photorealism and anime-specific additions</li>
-<li><strong>CLIP token limits</strong> -- SD 1.5: 77 tokens per chunk, SDXL: 77 tokens per chunk with two encoders</li>
-<li><strong>BREAK syntax</strong> -- how to separate concepts into different CLIP chunks</li>
-<li><strong>Aspect ratios</strong> -- supported ratios: <code>1:1</code>, <code>16:9</code>, <code>9:16</code>, <code>3:2</code>, <code>2:3</code></li>
+<li><strong>Tag format:</strong> comma-separated descriptive tags ordered by importance: <code>subject, medium, style, lighting, camera, quality tags</code></li>
+<li><strong>Example prompts:</strong> portrait, landscape, and product shot examples</li>
+<li><strong>Quality tags:</strong> <code>masterpiece, best quality</code>, <code>highly detailed, sharp focus</code>, <code>8k, ultra high res</code></li>
+<li><strong>Negative prompts:</strong> general-purpose negative prompt for avoiding common artifacts, plus photorealism and anime-specific additions</li>
+<li><strong>CLIP token limits:</strong> SD 1.5: 77 tokens per chunk, SDXL: 77 tokens per chunk with two encoders</li>
+<li><strong>BREAK syntax:</strong> how to separate concepts into different CLIP chunks</li>
+<li><strong>Aspect ratios:</strong> supported ratios: <code>1:1</code>, <code>16:9</code>, <code>9:16</code>, <code>3:2</code>, <code>2:3</code></li>
 </ul>
 <h3 id="example-prompt-format">Example prompt format<a class="headerlink" href="#example-prompt-format" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>1girl, long hair, blue eyes, school uniform, standing, cherry blossoms,
@@ -1796,9 +1854,9 @@
 <p>See the <a href="../guides/prompt-writing/">Prompt Writing Guide</a> for more detailed examples and tips.</p>
 <hr />
 <h2 id="apply_style">apply_style<a class="headerlink" href="#apply_style" title="Permanent link">&para;</a></h2>
-<p>Apply a saved style preset to an image generation request. Loads the style's creative brief and instructs the LLM to interpret it per-provider — not copy it verbatim.</p>
+<p>Apply a saved style preset to an image generation request. Loads the style's creative brief and instructs the LLM to interpret it as creative direction, not copy it verbatim.</p>
 <h3 id="when-to-use_2">When to use<a class="headerlink" href="#when-to-use_2" title="Permanent link">&para;</a></h3>
-<p>Use when a user references a saved style (e.g. "use the website style") or you want to apply consistent visual direction across multiple generations.</p>
+<p>Use when a user references a saved style (such as "use the website style") or you want to apply consistent visual direction across multiple generations.</p>
 <h3 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1831,9 +1889,9 @@
 <li>Presents the style body and frontmatter defaults to the LLM</li>
 <li>Instructs the LLM to interpret the style as creative direction, not a prompt template</li>
 <li>Provides provider-specific adaptation guidance:<ul>
-<li><strong>OpenAI</strong> — compose in natural language</li>
-<li><strong>SD WebUI (SD 1.5/SDXL)</strong> — compose as CLIP tags with negative prompts</li>
-<li><strong>SD WebUI (Flux)</strong> — compose in natural language</li>
+<li><strong>OpenAI:</strong> compose in natural language</li>
+<li><strong>SD WebUI (SD 1.5/SDXL):</strong> compose as CLIP tags with negative prompts</li>
+<li><strong>SD WebUI (Flux):</strong> compose in natural language</li>
 </ul>
 </li>
 <li>Uses frontmatter defaults (provider, aspect_ratio, quality) unless the user overrides</li>
@@ -1911,6 +1969,8 @@
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/config-wizard/wizard.js" type="module"></script>
       
     
   </body>
