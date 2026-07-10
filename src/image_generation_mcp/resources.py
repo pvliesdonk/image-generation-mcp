@@ -1891,7 +1891,7 @@ _IMAGE_GALLERY_HTML = """\
     }
 
     // --- Lifecycle handlers (ALL before connect) ---
-    app.ontoolinput = () => { show("loading"); };
+    app.ontoolinput = () => { ++galleryReqSeq; show("loading"); };
 
     app.ontoolresult = ({ content }) => {
       ++galleryReqSeq;

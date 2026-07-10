@@ -1090,7 +1090,14 @@ class TestGalleryRequestSequencing:
     async def test_ontoolresult_bumps_token(self, server) -> None:
         result = await server.read_resource("ui://image-gallery/view.html")
         text = result.contents[0].content
-        # A host-initiated reload supersedes any in-flight goTo. Exactly two
-        # increments exist — goTo's capture and this bump — so deleting the
-        # ontoolresult bump drops the count to 1 and fails here.
-        assert text.count("++galleryReqSeq;") == 2
+        # Three ++galleryReqSeq increments now exist — goTo's capture, the
+        # ontoolresult bump, and the ontoolinput bump (#322) — so deleting any
+        # one drops the count and fails here.
+        assert text.count("++galleryReqSeq;") == 3
+
+    async def test_ontoolinput_bumps_token(self, server) -> None:
+        result = await server.read_resource("ui://image-gallery/view.html")
+        text = result.contents[0].content
+        # A host reload STARTING (ontoolinput) must bump the token so a stale
+        # in-flight goTo bails instead of rendering over the loading state.
+        assert 'app.ontoolinput = () => { ++galleryReqSeq; show("loading"); };' in text
