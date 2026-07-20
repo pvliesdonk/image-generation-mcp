@@ -248,7 +248,6 @@ networks:
 With the corresponding `.env`:
 
 ```bash
-IMAGE_GENERATION_MCP_READ_ONLY=true
 IMAGE_GENERATION_MCP_BASE_URL=https://mcp.example.com
 IMAGE_GENERATION_MCP_OIDC_CONFIG_URL=https://auth.example.com/.well-known/openid-configuration
 IMAGE_GENERATION_MCP_OIDC_CLIENT_ID=image-generation-mcp

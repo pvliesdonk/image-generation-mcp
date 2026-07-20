@@ -37,6 +37,9 @@ src/image_generation_mcp/
 - Type hints everywhere
 - Tests: `pytest` with fixtures in `tests/fixtures/`
 
+The automated Claude review runs **only after CI passes** — if CI is red, no
+review is posted. Fix CI and push; the review runs on the next green run.
+
 ## Hard PR Acceptance Gates
 
 Every PR must pass **all** of the following before merge. Do not open or push a PR until these are green locally:
