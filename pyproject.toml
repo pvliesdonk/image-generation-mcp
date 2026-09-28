@@ -57,10 +57,10 @@ dependencies = [
 # PROJECT-EXTRAS-START — add domain-specific optional-dependency groups below; kept across copier update
 # fastmcp-pvl-core already pins fastmcp>=3,<4; adding `[tasks]` here
 # attaches the task-queue extra on top.
-mcp = ["fastmcp[tasks]>=3.0,<4"]
+mcp = ["fastmcp[tasks]>=4,<5"]
 openai = ["openai>=1.0"]
 google-genai = ["google-genai>=1.0"]
-all = ["fastmcp[tasks]>=3.0,<4", "openai>=1.0", "google-genai>=1.0"]
+all = ["fastmcp[tasks]>=4,<5", "openai>=1.0", "google-genai>=1.0"]
 # Pulls debugpy transitively via fastmcp-pvl-core's [debug] extra.  The
 # version range is inherited from the [project] dependency on
 # fastmcp-pvl-core above; pip resolves a single, consistent version.
